@@ -39,8 +39,8 @@ find_package(
 
 # Require bitprim-core of at least version 3.0.0 and output ${bitprim_core_CPPFLAGS/LIBS/PKG}.
 #------------------------------------------------------------------------------
-if (NOT TARGET bitprim)
-  find_package(bitprim 3.0.0 REQUIRED)
+if (NOT TARGET bitprim-core)
+  find_package(bitprim-core 3.0.0 REQUIRED)
 endif()
 
 # Set flags.
@@ -155,7 +155,7 @@ target_include_directories(bitprim-database PUBLIC
 
 target_compile_definitions(bitprim-database PUBLIC -DBCD_STATIC)
 
-target_link_libraries(bitprim-database bitprim)
+target_link_libraries(bitprim-database bitprim-core)
 
 # Group sources
 file(GLOB_RECURSE headers
