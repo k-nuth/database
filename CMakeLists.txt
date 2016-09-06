@@ -1,8 +1,8 @@
 cmake_policy(VERSION 3.4)
 
-# libbitcoin-database
+# bitprim-database
 #==============================================================================
-project(libbitcoin-database
+project(bitprim-database
   VERSION 3.0.0
   LANGUAGES CXX C)
 cmake_minimum_required(VERSION 3.4)
@@ -37,10 +37,10 @@ find_package(
   Boost 1.56.0 REQUIRED
   COMPONENTS unit_test_framework)
 
-# Require bitcoin of at least version 3.0.0 and output ${bitcoin_CPPFLAGS/LIBS/PKG}.
+# Require bitprim-core of at least version 3.0.0 and output ${bitprim_core_CPPFLAGS/LIBS/PKG}.
 #------------------------------------------------------------------------------
-if (NOT TARGET libbitcoin)
-  find_package(libbitcoin 3.0.0 REQUIRED)
+if (NOT TARGET bitprim)
+  find_package(bitprim 3.0.0 REQUIRED)
 endif()
 
 # Set flags.
@@ -122,14 +122,14 @@ _add_cxx_compile_flag(-fvisibility-inlines-hidden _has_visibility_inlines_hidden
 
 # Build
 #==============================================================================
-# src/libbitcoin-database.la => ${libdir}
+# src/bitprim-database.la => ${libdir}
 #------------------------------------------------------------------------------
 set(MODE STATIC)
 if (ENABLE_SHARED)
   set(MODE SHARED)
 endif()
 
-add_library(libbitcoin-database ${MODE}
+add_library(bitprim-database ${MODE}
   src/data_base.cpp
   src/settings.cpp
   src/databases/block_database.cpp
@@ -149,21 +149,21 @@ add_library(libbitcoin-database ${MODE}
   src/primitives/slab_manager.cpp
   src/result/block_result.cpp
   src/result/transaction_result.cpp)
-target_include_directories(libbitcoin-database PUBLIC
+target_include_directories(bitprim-database PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 
-target_compile_definitions(libbitcoin-database PUBLIC -DBCD_STATIC)
+target_compile_definitions(bitprim-database PUBLIC -DBCD_STATIC)
 
-target_link_libraries(libbitcoin-database libbitcoin)
+target_link_libraries(bitprim-database bitprim)
 
 # Group sources
 file(GLOB_RECURSE headers
   RELATIVE ${CMAKE_CURRENT_LIST_DIR}
   include/*.h include/*.hpp)
-target_sources(libbitcoin-database PRIVATE "${headers}")
+target_sources(bitprim-database PRIVATE "${headers}")
 
-get_target_property(sources libbitcoin-database SOURCES)
+get_target_property(sources bitprim-database SOURCES)
 foreach (source ${sources})
   get_filename_component(group ${source} DIRECTORY)
   if (MSVC)
@@ -172,10 +172,10 @@ foreach (source ${sources})
   source_group("${group}" FILES ${source})
 endforeach()
 
-# local: test/libbitcoin_database_test
+# local: test/bitprim_database_test
 #------------------------------------------------------------------------------
 if (WITH_TESTS)
-  add_executable(libbitcoin_database_test
+  add_executable(bitprim_database_test
     test/block_database.cpp
     test/data_base.cpp
     test/hash_table.cpp
@@ -185,20 +185,20 @@ if (WITH_TESTS)
     test/structure.cpp
     test/transaction_database.cpp)
   if (ENABLE_SHARED)
-    target_compile_definitions(libbitcoin_database_test PRIVATE -DBOOST_TEST_DYN_LINK)
+    target_compile_definitions(bitprim_database_test PRIVATE -DBOOST_TEST_DYN_LINK)
   endif()
-  target_link_libraries(libbitcoin_database_test libbitcoin-database)
+  target_link_libraries(bitprim_database_test bitprim-database)
 
-  target_include_directories(libbitcoin_database_test SYSTEM PUBLIC ${Boost_INCLUDE_DIR})
-  target_link_libraries(libbitcoin_database_test
+  target_include_directories(bitprim_database_test SYSTEM PUBLIC ${Boost_INCLUDE_DIR})
+  target_link_libraries(bitprim_database_test
     ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
 
   enable_testing()
-  set(_libbitcoin_tests database_tests hash_table_tests structure_tests data_base_tests)
-  foreach (_test_name ${_libbitcoin_tests})
+  set(_bitprim_tests database_tests hash_table_tests structure_tests data_base_tests)
+  foreach (_test_name ${_bitprim_tests})
     add_test(
       NAME test.${_test_name}
-      COMMAND libbitcoin_database_test
+      COMMAND bitprim_database_test
         --run_test=${_test_name}
         --show_progress=no
         --detect_memory_leak=0
@@ -212,7 +212,7 @@ endif()
 if (WITH_TOOLS)
   add_executable(tools.block_db
     tools/block_db/block_db.cpp)
-  target_link_libraries(tools.block_db libbitcoin-database)
+  target_link_libraries(tools.block_db bitprim-database)
 endif()
 
 # local: tools/count_records/count_records
@@ -220,7 +220,7 @@ endif()
 if (WITH_TOOLS)
   add_executable(tools.count_records
     tools/count_records/count_records.cpp)
-  target_link_libraries(tools.count_records libbitcoin-database)
+  target_link_libraries(tools.count_records bitprim-database)
 endif()
 
 # local: tools/history_db/history_db
@@ -228,7 +228,7 @@ endif()
 if (WITH_TOOLS)
   add_executable(tools.history_db
     tools/history_db/history_db.cpp)
-  target_link_libraries(tools.history_db libbitcoin-database)
+  target_link_libraries(tools.history_db bitprim-database)
 endif()
 
 # local: tools/initchain/initchain
@@ -236,7 +236,7 @@ endif()
 if (WITH_TOOLS)
   add_executable(tools.initchain_db
     tools/initchain/initchain.cpp)
-  target_link_libraries(tools.initchain_db libbitcoin-database)
+  target_link_libraries(tools.initchain_db bitprim-database)
 endif()
 
 # local: tools/mmr_add_row/mmr_add_row
@@ -244,7 +244,7 @@ endif()
 if (WITH_TOOLS)
   add_executable(tools.mmr_add_row
     tools/mmr_add_row/mmr_add_row.cpp)
-  target_link_libraries(tools.mmr_add_row libbitcoin-database)
+  target_link_libraries(tools.mmr_add_row bitprim-database)
 endif()
 
 # local: tools/mmr_create/mmr_create
@@ -252,7 +252,7 @@ endif()
 if (WITH_TOOLS)
   add_executable(tools.mmr_create
     tools/mmr_create/mmr_create.cpp)
-  target_link_libraries(tools.mmr_create libbitcoin-database)
+  target_link_libraries(tools.mmr_create bitprim-database)
 endif()
 
 # local: tools/mmr_delete_last_row/mmr_delete_last_row
@@ -260,7 +260,7 @@ endif()
 if (WITH_TOOLS)
   add_executable(tools.mmr_delete_last_row
     tools/mmr_delete_last_row/mmr_delete_last_row.cpp)
-  target_link_libraries(tools.mmr_delete_last_row libbitcoin-database)
+  target_link_libraries(tools.mmr_delete_last_row bitprim-database)
 endif()
 
 # local: tools/mmr_lookup/mmr_lookup
@@ -268,7 +268,7 @@ endif()
 if (WITH_TOOLS)
   add_executable(tools.mmr_lookup
     tools/mmr_lookup/mmr_lookup.cpp)
-  target_link_libraries(tools.mmr_lookup libbitcoin-database)
+  target_link_libraries(tools.mmr_lookup bitprim-database)
 endif()
 
 # local: tools/read_htdb_record_value/read_htdb_record_value
@@ -276,14 +276,14 @@ endif()
 if (WITH_TOOLS)
   add_executable(tools.read_htdb_record_value
     tools/read_htdb_record_value/read_htdb_record_value.cpp)
-  target_link_libraries(tools.read_htdb_record_value libbitcoin-database)
+  target_link_libraries(tools.read_htdb_record_value bitprim-database)
 endif()
 # local: tools/read_htdb_slab_value/read_htdb_slab_value
 #------------------------------------------------------------------------------
 if (WITH_TOOLS)
   add_executable(tools.read_htdb_slab_value
     tools/read_htdb_slab_value/read_htdb_slab_value.cpp)
-  target_link_libraries(tools.read_htdb_slab_value libbitcoin-database)
+  target_link_libraries(tools.read_htdb_slab_value bitprim-database)
 endif()
 
 # local: tools/show_array/show_array
@@ -291,7 +291,7 @@ endif()
 if (WITH_TOOLS)
   add_executable(tools.show_array
     tools/show_array/show_array.cpp)
-  target_link_libraries(tools.show_array libbitcoin-database)
+  target_link_libraries(tools.show_array bitprim-database)
 endif()
 
 # local: tools/show_linked_records/show_linked_records
@@ -299,7 +299,7 @@ endif()
 if (WITH_TOOLS)
   add_executable(tools.show_linked_records
     tools/show_linked_records/show_linked_records.cpp)
-  target_link_libraries(tools.show_linked_records libbitcoin-database)
+  target_link_libraries(tools.show_linked_records bitprim-database)
 endif()
 
 # local: tools/show_records/show_records
@@ -307,7 +307,7 @@ endif()
 if (WITH_TOOLS)
   add_executable(tools.show_records
     tools/show_records/show_records.cpp)
-  target_link_libraries(tools.show_records libbitcoin-database)
+  target_link_libraries(tools.show_records bitprim-database)
 endif()
 
 # local: tools/spend_db/spend_db
@@ -315,7 +315,7 @@ endif()
 if (WITH_TOOLS)
   add_executable(tools.spend_db
     tools/spend_db/spend_db.cpp)
-  target_link_libraries(tools.spend_db libbitcoin-database)
+  target_link_libraries(tools.spend_db bitprim-database)
 endif()
 
 # local: tools/stealth_db/stealth_db
@@ -323,7 +323,7 @@ endif()
 if (WITH_TOOLS)
   add_executable(tools.stealth_db
     tools/stealth_db/stealth_db.cpp)
-  target_link_libraries(tools.stealth_db libbitcoin-database)
+  target_link_libraries(tools.stealth_db bitprim-database)
 endif()
 
 # local: tools/transaction_db/transaction_db
@@ -331,16 +331,16 @@ endif()
 if (WITH_TOOLS)
   add_executable(tools.transaction_db
     tools/transaction_db/transaction_db.cpp)
-  target_link_libraries(tools.transaction_db libbitcoin-database)
+  target_link_libraries(tools.transaction_db bitprim-database)
 endif()
 
 # Install
 #==============================================================================
-install(TARGETS libbitcoin-database
-  EXPORT libbitcoin-database
+install(TARGETS bitprim-database
+  EXPORT bitprim-database
   ARCHIVE DESTINATION lib)
 
-set(_libbitcoin_headers
+set(_bitprim_headers
   # include_bitcoin_HEADERS =
   bitcoin/database.hpp
   # include_bitcoin_database_HEADERS =
@@ -380,7 +380,7 @@ set(_libbitcoin_headers
   # include_bitcoin_database_result_HEADERS =
   bitcoin/database/result/block_result.hpp
   bitcoin/database/result/transaction_result.hpp)
-foreach (_header ${_libbitcoin_headers})
+foreach (_header ${_bitprim_headers})
   get_filename_component(_directory "${_header}" DIRECTORY)
   install(FILES "include/${_header}" DESTINATION "include/${_directory}")
 endforeach()
@@ -389,9 +389,9 @@ endforeach()
 #==============================================================================
 include(CMakePackageConfigHelpers)
 
-export(EXPORT libbitcoin-database
-  FILE "${CMAKE_CURRENT_BINARY_DIR}/libbitcoin-databaseTargets.cmake")
-export(PACKAGE libbitcoin-database)
+export(EXPORT bitprim-database
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/bitprim-databaseTargets.cmake")
+export(PACKAGE bitprim-database)
 
 if (UNIX)
   set(_config_package_location "lib/cmake")
@@ -399,21 +399,21 @@ elseif (WIN32)
   set(_config_package_location "cmake")
 endif()
 
-install(EXPORT libbitcoin-database
-  FILE libbitcoin-databaseTargets.cmake
+install(EXPORT bitprim-database
+  FILE bitprim-databaseTargets.cmake
   DESTINATION ${_config_package_location})
 
-configure_file(libbitcoin-databaseConfig.cmake.in
-  "${CMAKE_CURRENT_BINARY_DIR}/libbitcoin-databaseConfig.cmake"
+configure_file(bitprim-databaseConfig.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/bitprim-databaseConfig.cmake"
   @ONLY)
 
 write_basic_package_version_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/libbitcoin-databaseConfigVersion.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/bitprim-databaseConfigVersion.cmake"
   VERSION ${PROJECT_VERSION}
   COMPATIBILITY AnyNewerVersion)
 
 install(
   FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/libbitcoin-databaseConfig.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/libbitcoin-databaseConfigVersion.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/bitprim-databaseConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/bitprim-databaseConfigVersion.cmake"
   DESTINATION ${_config_package_location})

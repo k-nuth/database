@@ -1,0 +1,12 @@
+# - Config file for the BITPRIM_DATABASE package
+#
+#  BITPRIM_DATABASE_INCLUDE_DIRS - include directories for BITPRIM_DATABASE
+#  BITPRIM_DATABASE_LIBRARIES    - libraries to link against
+
+get_filename_component(BITPRIM_DATABASE_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+set(BITPRIM_DATABASE_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
+
+include("${BITPRIM_DATABASE_CMAKE_DIR}/bitprim-databaseTargets.cmake")
+set(BITPRIM_DATABASE_LIBRARIES bitprim-database)
+
+find_package(bitprim 3.0.0 REQUIRED)
