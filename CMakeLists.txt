@@ -122,6 +122,27 @@ _add_cxx_compile_flag(-fvisibility-inlines-hidden _has_visibility_inlines_hidden
 
 # Build
 #==============================================================================
+function(_group_sources target sources_dir)
+  file(GLOB_RECURSE _headers
+    ${sources_dir}/include/*.h ${sources_dir}/include/*.hpp)
+  target_sources(${target} PRIVATE ${_headers})
+
+  get_target_property(sources ${target} SOURCES)
+  foreach (source ${sources})
+    get_filename_component(group ${source} ABSOLUTE)
+    get_filename_component(group ${group} DIRECTORY)
+    file(RELATIVE_PATH group "${sources_dir}" "${group}")
+    if (group)
+      if (MSVC)
+        string(REPLACE "/" "\\" group "${group}")
+      endif()
+      source_group("${group}" FILES "${source}")
+    endif()
+  endforeach()
+
+  set_target_properties(${target} PROPERTIES FOLDER "database")
+endfunction()
+
 # src/bitprim-database.la => ${libdir}
 #------------------------------------------------------------------------------
 set(MODE STATIC)
@@ -157,22 +178,7 @@ target_compile_definitions(bitprim-database PUBLIC -DBCD_STATIC)
 
 target_link_libraries(bitprim-database bitprim-core)
 
-set_target_properties(bitprim-database PROPERTIES FOLDER "database")
-
-# Group sources
-file(GLOB_RECURSE headers
-  RELATIVE ${CMAKE_CURRENT_LIST_DIR}
-  include/*.h include/*.hpp)
-target_sources(bitprim-database PRIVATE "${headers}")
-
-get_target_property(sources bitprim-database SOURCES)
-foreach (source ${sources})
-  get_filename_component(group ${source} DIRECTORY)
-  if (MSVC)
-    string(REPLACE "/" "\\" group ${group})
-  endif()
-  source_group("${group}" FILES ${source})
-endforeach()
+_group_sources(bitprim-database "${CMAKE_CURRENT_LIST_DIR}")
 
 # Tests
 #==============================================================================
@@ -197,7 +203,7 @@ if (WITH_TESTS)
   target_link_libraries(bitprim_database_test
     ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
 
-  set_target_properties(bitprim_database_test PROPERTIES FOLDER "database")
+  _group_sources(bitprim_database_test "${CMAKE_CURRENT_LIST_DIR}/test")
 
   enable_testing()
   set(_bitprim_tests database_tests hash_table_tests structure_tests data_base_tests)
@@ -221,7 +227,7 @@ if (WITH_TOOLS)
   add_executable(tools.block_db
     tools/block_db/block_db.cpp)
   target_link_libraries(tools.block_db bitprim-database)
-  set_target_properties(tools.block_db PROPERTIES FOLDER "database")
+  _group_sources(tools.block_db "${CMAKE_CURRENT_LIST_DIR}/tools/block_db")
 endif()
 
 # local: tools/count_records/count_records
@@ -230,7 +236,7 @@ if (WITH_TOOLS)
   add_executable(tools.count_records
     tools/count_records/count_records.cpp)
   target_link_libraries(tools.count_records bitprim-database)
-  set_target_properties(tools.count_records PROPERTIES FOLDER "database")
+  _group_sources(tools.count_records "${CMAKE_CURRENT_LIST_DIR}/tools/count_records")
 endif()
 
 # local: tools/history_db/history_db
@@ -239,16 +245,16 @@ if (WITH_TOOLS)
   add_executable(tools.history_db
     tools/history_db/history_db.cpp)
   target_link_libraries(tools.history_db bitprim-database)
-  set_target_properties(tools.history_db PROPERTIES FOLDER "database")
+  _group_sources(tools.history_db "${CMAKE_CURRENT_LIST_DIR}/tools/history_db")
 endif()
 
-# local: tools/initchain/initchain
+# local: tools/initchain/initchain_db
 #------------------------------------------------------------------------------
 if (WITH_TOOLS)
   add_executable(tools.initchain_db
     tools/initchain/initchain.cpp)
   target_link_libraries(tools.initchain_db bitprim-database)
-  set_target_properties(tools.initchain_db PROPERTIES FOLDER "database")
+  _group_sources(tools.initchain_db "${CMAKE_CURRENT_LIST_DIR}/tools/initchain")
 endif()
 
 # local: tools/mmr_add_row/mmr_add_row
@@ -257,7 +263,7 @@ if (WITH_TOOLS)
   add_executable(tools.mmr_add_row
     tools/mmr_add_row/mmr_add_row.cpp)
   target_link_libraries(tools.mmr_add_row bitprim-database)
-  set_target_properties(tools.mmr_add_row PROPERTIES FOLDER "database")
+  _group_sources(tools.mmr_add_row "${CMAKE_CURRENT_LIST_DIR}/tools/mmr_add_row")
 endif()
 
 # local: tools/mmr_create/mmr_create
@@ -266,7 +272,7 @@ if (WITH_TOOLS)
   add_executable(tools.mmr_create
     tools/mmr_create/mmr_create.cpp)
   target_link_libraries(tools.mmr_create bitprim-database)
-  set_target_properties(tools.mmr_create PROPERTIES FOLDER "database")
+  _group_sources(tools.mmr_create "${CMAKE_CURRENT_LIST_DIR}/tools/mmr_create")
 endif()
 
 # local: tools/mmr_delete_last_row/mmr_delete_last_row
@@ -275,7 +281,7 @@ if (WITH_TOOLS)
   add_executable(tools.mmr_delete_last_row
     tools/mmr_delete_last_row/mmr_delete_last_row.cpp)
   target_link_libraries(tools.mmr_delete_last_row bitprim-database)
-  set_target_properties(tools.mmr_delete_last_row PROPERTIES FOLDER "database")
+  _group_sources(tools.mmr_delete_last_row "${CMAKE_CURRENT_LIST_DIR}/tools/mmr_delete_last_row")
 endif()
 
 # local: tools/mmr_lookup/mmr_lookup
@@ -284,7 +290,7 @@ if (WITH_TOOLS)
   add_executable(tools.mmr_lookup
     tools/mmr_lookup/mmr_lookup.cpp)
   target_link_libraries(tools.mmr_lookup bitprim-database)
-  set_target_properties(tools.mmr_lookup PROPERTIES FOLDER "database")
+  _group_sources(tools.mmr_lookup "${CMAKE_CURRENT_LIST_DIR}/tools/mmr_lookup")
 endif()
 
 # local: tools/read_htdb_record_value/read_htdb_record_value
@@ -293,7 +299,7 @@ if (WITH_TOOLS)
   add_executable(tools.read_htdb_record_value
     tools/read_htdb_record_value/read_htdb_record_value.cpp)
   target_link_libraries(tools.read_htdb_record_value bitprim-database)
-  set_target_properties(tools.read_htdb_record_value PROPERTIES FOLDER "database")
+  _group_sources(tools.read_htdb_record_value "${CMAKE_CURRENT_LIST_DIR}/tools/read_htdb_record_value")
 endif()
 # local: tools/read_htdb_slab_value/read_htdb_slab_value
 #------------------------------------------------------------------------------
@@ -301,7 +307,7 @@ if (WITH_TOOLS)
   add_executable(tools.read_htdb_slab_value
     tools/read_htdb_slab_value/read_htdb_slab_value.cpp)
   target_link_libraries(tools.read_htdb_slab_value bitprim-database)
-  set_target_properties(tools.read_htdb_slab_value PROPERTIES FOLDER "database")
+  _group_sources(tools.read_htdb_slab_value "${CMAKE_CURRENT_LIST_DIR}/tools/read_htdb_slab_value")
 endif()
 
 # local: tools/show_array/show_array
@@ -310,7 +316,7 @@ if (WITH_TOOLS)
   add_executable(tools.show_array
     tools/show_array/show_array.cpp)
   target_link_libraries(tools.show_array bitprim-database)
-  set_target_properties(tools.show_array PROPERTIES FOLDER "database")
+  _group_sources(tools.show_array "${CMAKE_CURRENT_LIST_DIR}/tools/show_array")
 endif()
 
 # local: tools/show_linked_records/show_linked_records
@@ -319,7 +325,7 @@ if (WITH_TOOLS)
   add_executable(tools.show_linked_records
     tools/show_linked_records/show_linked_records.cpp)
   target_link_libraries(tools.show_linked_records bitprim-database)
-  set_target_properties(tools.show_linked_records PROPERTIES FOLDER "database")
+  _group_sources(tools.show_linked_records "${CMAKE_CURRENT_LIST_DIR}/tools/initchain")
 endif()
 
 # local: tools/show_records/show_records
@@ -328,7 +334,7 @@ if (WITH_TOOLS)
   add_executable(tools.show_records
     tools/show_records/show_records.cpp)
   target_link_libraries(tools.show_records bitprim-database)
-  set_target_properties(tools.show_records PROPERTIES FOLDER "database")
+  _group_sources(tools.show_records "${CMAKE_CURRENT_LIST_DIR}/tools/show_records")
 endif()
 
 # local: tools/spend_db/spend_db
@@ -337,7 +343,7 @@ if (WITH_TOOLS)
   add_executable(tools.spend_db
     tools/spend_db/spend_db.cpp)
   target_link_libraries(tools.spend_db bitprim-database)
-  set_target_properties(tools.spend_db PROPERTIES FOLDER "database")
+  _group_sources(tools.spend_db "${CMAKE_CURRENT_LIST_DIR}/tools/spend_db")
 endif()
 
 # local: tools/stealth_db/stealth_db
@@ -346,7 +352,7 @@ if (WITH_TOOLS)
   add_executable(tools.stealth_db
     tools/stealth_db/stealth_db.cpp)
   target_link_libraries(tools.stealth_db bitprim-database)
-  set_target_properties(tools.stealth_db PROPERTIES FOLDER "database")
+  _group_sources(tools.stealth_db "${CMAKE_CURRENT_LIST_DIR}/tools/stealth_db")
 endif()
 
 # local: tools/transaction_db/transaction_db
@@ -355,7 +361,7 @@ if (WITH_TOOLS)
   add_executable(tools.transaction_db
     tools/transaction_db/transaction_db.cpp)
   target_link_libraries(tools.transaction_db bitprim-database)
-  set_target_properties(tools.transaction_db PROPERTIES FOLDER "database")
+  _group_sources(tools.transaction_db "${CMAKE_CURRENT_LIST_DIR}/tools/transaction_db")
 endif()
 
 # Install
