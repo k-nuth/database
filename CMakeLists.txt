@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 3.4)
 project(bitprim-database
   VERSION 3.0.0
   LANGUAGES CXX C)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Check for baseline language coverage in the compiler for the C++11 standard.
 #------------------------------------------------------------------------------
@@ -156,6 +157,8 @@ target_compile_definitions(bitprim-database PUBLIC -DBCD_STATIC)
 
 target_link_libraries(bitprim-database bitprim-core)
 
+set_target_properties(bitprim-database PROPERTIES FOLDER "database")
+
 # Group sources
 file(GLOB_RECURSE headers
   RELATIVE ${CMAKE_CURRENT_LIST_DIR}
@@ -171,6 +174,8 @@ foreach (source ${sources})
   source_group("${group}" FILES ${source})
 endforeach()
 
+# Tests
+#==============================================================================
 # local: test/bitprim_database_test
 #------------------------------------------------------------------------------
 if (WITH_TESTS)
@@ -192,6 +197,8 @@ if (WITH_TESTS)
   target_link_libraries(bitprim_database_test
     ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
 
+  set_target_properties(bitprim_database_test PROPERTIES FOLDER "database")
+
   enable_testing()
   set(_bitprim_tests database_tests hash_table_tests structure_tests data_base_tests)
   foreach (_test_name ${_bitprim_tests})
@@ -206,12 +213,15 @@ if (WITH_TESTS)
   endforeach()
 endif()
 
+# Tools
+#==============================================================================
 # local: tools/block_db/block_db
 #------------------------------------------------------------------------------
 if (WITH_TOOLS)
   add_executable(tools.block_db
     tools/block_db/block_db.cpp)
   target_link_libraries(tools.block_db bitprim-database)
+  set_target_properties(tools.block_db PROPERTIES FOLDER "database")
 endif()
 
 # local: tools/count_records/count_records
@@ -220,6 +230,7 @@ if (WITH_TOOLS)
   add_executable(tools.count_records
     tools/count_records/count_records.cpp)
   target_link_libraries(tools.count_records bitprim-database)
+  set_target_properties(tools.count_records PROPERTIES FOLDER "database")
 endif()
 
 # local: tools/history_db/history_db
@@ -228,6 +239,7 @@ if (WITH_TOOLS)
   add_executable(tools.history_db
     tools/history_db/history_db.cpp)
   target_link_libraries(tools.history_db bitprim-database)
+  set_target_properties(tools.history_db PROPERTIES FOLDER "database")
 endif()
 
 # local: tools/initchain/initchain
@@ -236,6 +248,7 @@ if (WITH_TOOLS)
   add_executable(tools.initchain_db
     tools/initchain/initchain.cpp)
   target_link_libraries(tools.initchain_db bitprim-database)
+  set_target_properties(tools.initchain_db PROPERTIES FOLDER "database")
 endif()
 
 # local: tools/mmr_add_row/mmr_add_row
@@ -244,6 +257,7 @@ if (WITH_TOOLS)
   add_executable(tools.mmr_add_row
     tools/mmr_add_row/mmr_add_row.cpp)
   target_link_libraries(tools.mmr_add_row bitprim-database)
+  set_target_properties(tools.mmr_add_row PROPERTIES FOLDER "database")
 endif()
 
 # local: tools/mmr_create/mmr_create
@@ -252,6 +266,7 @@ if (WITH_TOOLS)
   add_executable(tools.mmr_create
     tools/mmr_create/mmr_create.cpp)
   target_link_libraries(tools.mmr_create bitprim-database)
+  set_target_properties(tools.mmr_create PROPERTIES FOLDER "database")
 endif()
 
 # local: tools/mmr_delete_last_row/mmr_delete_last_row
@@ -260,6 +275,7 @@ if (WITH_TOOLS)
   add_executable(tools.mmr_delete_last_row
     tools/mmr_delete_last_row/mmr_delete_last_row.cpp)
   target_link_libraries(tools.mmr_delete_last_row bitprim-database)
+  set_target_properties(tools.mmr_delete_last_row PROPERTIES FOLDER "database")
 endif()
 
 # local: tools/mmr_lookup/mmr_lookup
@@ -268,6 +284,7 @@ if (WITH_TOOLS)
   add_executable(tools.mmr_lookup
     tools/mmr_lookup/mmr_lookup.cpp)
   target_link_libraries(tools.mmr_lookup bitprim-database)
+  set_target_properties(tools.mmr_lookup PROPERTIES FOLDER "database")
 endif()
 
 # local: tools/read_htdb_record_value/read_htdb_record_value
@@ -276,6 +293,7 @@ if (WITH_TOOLS)
   add_executable(tools.read_htdb_record_value
     tools/read_htdb_record_value/read_htdb_record_value.cpp)
   target_link_libraries(tools.read_htdb_record_value bitprim-database)
+  set_target_properties(tools.read_htdb_record_value PROPERTIES FOLDER "database")
 endif()
 # local: tools/read_htdb_slab_value/read_htdb_slab_value
 #------------------------------------------------------------------------------
@@ -283,6 +301,7 @@ if (WITH_TOOLS)
   add_executable(tools.read_htdb_slab_value
     tools/read_htdb_slab_value/read_htdb_slab_value.cpp)
   target_link_libraries(tools.read_htdb_slab_value bitprim-database)
+  set_target_properties(tools.read_htdb_slab_value PROPERTIES FOLDER "database")
 endif()
 
 # local: tools/show_array/show_array
@@ -291,6 +310,7 @@ if (WITH_TOOLS)
   add_executable(tools.show_array
     tools/show_array/show_array.cpp)
   target_link_libraries(tools.show_array bitprim-database)
+  set_target_properties(tools.show_array PROPERTIES FOLDER "database")
 endif()
 
 # local: tools/show_linked_records/show_linked_records
@@ -299,6 +319,7 @@ if (WITH_TOOLS)
   add_executable(tools.show_linked_records
     tools/show_linked_records/show_linked_records.cpp)
   target_link_libraries(tools.show_linked_records bitprim-database)
+  set_target_properties(tools.show_linked_records PROPERTIES FOLDER "database")
 endif()
 
 # local: tools/show_records/show_records
@@ -307,6 +328,7 @@ if (WITH_TOOLS)
   add_executable(tools.show_records
     tools/show_records/show_records.cpp)
   target_link_libraries(tools.show_records bitprim-database)
+  set_target_properties(tools.show_records PROPERTIES FOLDER "database")
 endif()
 
 # local: tools/spend_db/spend_db
@@ -315,6 +337,7 @@ if (WITH_TOOLS)
   add_executable(tools.spend_db
     tools/spend_db/spend_db.cpp)
   target_link_libraries(tools.spend_db bitprim-database)
+  set_target_properties(tools.spend_db PROPERTIES FOLDER "database")
 endif()
 
 # local: tools/stealth_db/stealth_db
@@ -323,6 +346,7 @@ if (WITH_TOOLS)
   add_executable(tools.stealth_db
     tools/stealth_db/stealth_db.cpp)
   target_link_libraries(tools.stealth_db bitprim-database)
+  set_target_properties(tools.stealth_db PROPERTIES FOLDER "database")
 endif()
 
 # local: tools/transaction_db/transaction_db
@@ -331,6 +355,7 @@ if (WITH_TOOLS)
   add_executable(tools.transaction_db
     tools/transaction_db/transaction_db.cpp)
   target_link_libraries(tools.transaction_db bitprim-database)
+  set_target_properties(tools.transaction_db PROPERTIES FOLDER "database")
 endif()
 
 # Install
