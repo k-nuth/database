@@ -60,8 +60,8 @@ BOOST_AUTO_TEST_CASE(spend_database__test)
     chain::input_point value3{ hash_literal("3cc768bbaef30587c72c6eba8dbf6aeec4ef24172ae6fe357f2e24c2b0fa44d5"), 3 };
     chain::input_point value4{ hash_literal("4742b3eac32d35961f9da9d42d495ff13cc768bbaef30587c72c6eba8dbf6aee"), 4 };
 
-    data_base::touch_file(DIRECTORY "/spend");
-    spend_database db(DIRECTORY "/spend");
+    store::create(DIRECTORY "/spend");
+    spend_database db(DIRECTORY "/spend", 1000, 50);
     BOOST_REQUIRE(db.create());
 
     db.store(key1, value1);
@@ -70,36 +70,36 @@ BOOST_AUTO_TEST_CASE(spend_database__test)
 
     // Test fetch.
     const auto spend1 = db.get(key1);
-    BOOST_REQUIRE(spend1.valid);
-    BOOST_REQUIRE(spend1.hash == value1.hash);
-    BOOST_REQUIRE_EQUAL(spend1.index, value1.index);
+    BOOST_REQUIRE(spend1.is_valid());
+    BOOST_REQUIRE(spend1.hash() == value1.hash());
+    BOOST_REQUIRE_EQUAL(spend1.index(), value1.index());
 
     const auto spend2 = db.get(key2);
-    BOOST_REQUIRE(spend2.valid);
-    BOOST_REQUIRE(spend2.hash == value2.hash);
-    BOOST_REQUIRE_EQUAL(spend2.index, value2.index);
+    BOOST_REQUIRE(spend2.is_valid());
+    BOOST_REQUIRE(spend2.hash() == value2.hash());
+    BOOST_REQUIRE_EQUAL(spend2.index(), value2.index());
 
     const auto spend3 = db.get(key3);
-    BOOST_REQUIRE(spend3.valid);
-    BOOST_REQUIRE(spend3.hash == value3.hash);
-    BOOST_REQUIRE_EQUAL(spend3.index, value3.index);
+    BOOST_REQUIRE(spend3.is_valid());
+    BOOST_REQUIRE(spend3.hash() == value3.hash());
+    BOOST_REQUIRE_EQUAL(spend3.index(), value3.index());
 
     // Record shouldnt exist yet.
-    BOOST_REQUIRE(!db.get(key4).valid);
+    BOOST_REQUIRE(!db.get(key4).is_valid());
 
     // Delete record.
-    db.remove(key3);
-    BOOST_REQUIRE(!db.get(key3).valid);
+    db.unlink(key3);
+    BOOST_REQUIRE(!db.get(key3).is_valid());
 
     // Add another record.
     db.store(key4, value4);
 
     // Fetch it.
     const auto spend4 = db.get(key4);
-    BOOST_REQUIRE(spend4.valid);
-    BOOST_REQUIRE(spend4.hash == value4.hash);
-    BOOST_REQUIRE_EQUAL(spend4.index, value4.index);
-    db.sync();
+    BOOST_REQUIRE(spend4.is_valid());
+    BOOST_REQUIRE(spend4.hash() == value4.hash());
+    BOOST_REQUIRE_EQUAL(spend4.index(), value4.index());
+    db.synchronize();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

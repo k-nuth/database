@@ -48,10 +48,12 @@ struct BCD_API history_statinfo
 class BCD_API history_database
 {
 public:
+    typedef boost::filesystem::path path;
+    typedef std::shared_ptr<shared_mutex> mutex_ptr;
+
     /// Construct the database.
-    history_database(const boost::filesystem::path& lookup_filename,
-        const boost::filesystem::path& rows_filename,
-        std::shared_ptr<shared_mutex> mutex=nullptr);
+    history_database(const path& lookup_filename, const path& rows_filename,
+        size_t buckets, size_t expansion, mutex_ptr mutex=nullptr);
 
     /// Close the database (all threads must first be stopped).
     ~history_database();
@@ -60,10 +62,7 @@ public:
     bool create();
 
     /// Call before using the database.
-    bool start();
-
-    /// Call to signal a stop of current operations.
-    bool stop();
+    bool open();
 
     /// Call to unload the memory map.
     bool close();
@@ -77,14 +76,17 @@ public:
         uint32_t input_height, const chain::input_point& previous);
 
     /// Delete the last row that was added to key.
-    void delete_last_row(const short_hash& key);
+    bool delete_last_row(const short_hash& key);
 
     /// Get the output and input points associated with the address hash.
     chain::history_compact::list get(const short_hash& key, size_t limit,
         size_t from_height) const;
 
-    /// Synchonise with disk.
-    void sync();
+    /// Commit latest inserts.
+    void synchronize();
+
+    /// Flush the memory maps to disk.
+    bool flush();
 
     /// Return statistical info about the database.
     history_statinfo statinfo() const;
@@ -92,6 +94,9 @@ public:
 private:
     typedef record_hash_table<short_hash> record_map;
     typedef record_multimap<short_hash> record_multiple_map;
+
+    // The starting size of the hash table, used by create.
+    const size_t initial_map_file_size_;
 
     /// Hash table used for start index lookup for linked list by address hash.
     memory_map lookup_file_;

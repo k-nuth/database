@@ -22,34 +22,31 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <memory>
-#include <boost/filesystem.hpp>
 #include <bitcoin/bitcoin.hpp>
 #include <bitcoin/database/memory/memory.hpp>
 
 namespace libbitcoin {
 namespace database {
 
-using namespace boost::filesystem;
 using namespace bc::chain;
 
-BC_CONSTEXPR size_t number_buckets = 228110589;
-BC_CONSTEXPR size_t header_size = record_hash_table_header_size(number_buckets);
-BC_CONSTEXPR size_t initial_map_file_size = header_size + minimum_records_size;
+static constexpr auto value_size = std::tuple_size<point>::value;
+static BC_CONSTEXPR auto record_size = hash_table_record_size<point>(value_size);
 
-BC_CONSTEXPR size_t value_size = std::tuple_size<chain::point>::value;
-BC_CONSTEXPR size_t record_size = hash_table_record_size<chain::point>(value_size);
-
-spend_database::spend_database(const path& filename,
-    std::shared_ptr<shared_mutex> mutex)
-  : lookup_file_(filename, mutex), 
-    lookup_header_(lookup_file_, number_buckets),
-    lookup_manager_(lookup_file_, header_size, record_size),
+// Spends use a hash table index, O(1).
+spend_database::spend_database(const path& filename, size_t buckets,
+    size_t expansion, mutex_ptr mutex)
+  : initial_map_file_size_(record_hash_table_header_size(buckets) + 
+        minimum_records_size),
+  
+    lookup_file_(filename, mutex, expansion),
+    lookup_header_(lookup_file_, buckets),
+    lookup_manager_(lookup_file_, record_hash_table_header_size(buckets),
+        record_size),
     lookup_map_(lookup_header_, lookup_manager_)
 {
 }
 
-// Close does not call stop because there is no way to detect thread join.
 spend_database::~spend_database()
 {
     close();
@@ -61,12 +58,12 @@ spend_database::~spend_database()
 // Initialize files and start.
 bool spend_database::create()
 {
-    // Resize and create require a started file.
-    if (!lookup_file_.start())
+    // Resize and create require an opened file.
+    if (!lookup_file_.open())
         return false;
 
     // This will throw if insufficient disk space.
-    lookup_file_.resize(initial_map_file_size);
+    lookup_file_.resize(initial_map_file_size_);
 
     if (!lookup_header_.create() ||
         !lookup_manager_.create())
@@ -81,17 +78,12 @@ bool spend_database::create()
 // Startup and shutdown.
 // ----------------------------------------------------------------------------
 
-bool spend_database::start()
+bool spend_database::open()
 {
     return
-        lookup_file_.start() &&
+        lookup_file_.open() &&
         lookup_header_.start() &&
         lookup_manager_.start();
-}
-
-bool spend_database::stop()
-{
-    return lookup_file_.stop();
 }
 
 bool spend_database::close()
@@ -99,22 +91,34 @@ bool spend_database::close()
     return lookup_file_.close();
 }
 
+// Commit latest inserts.
+void spend_database::synchronize()
+{
+    lookup_manager_.sync();
+}
+
+// Flush the memory map to disk.
+bool spend_database::flush()
+{
+    return lookup_file_.flush();
+}
+
+// Queries.
 // ----------------------------------------------------------------------------
 
-spend spend_database::get(const output_point& outpoint) const
+input_point spend_database::get(const output_point& outpoint) const
 {
-    spend result{ false };
+    input_point point;
     const auto memory = lookup_map_.find(outpoint);
 
     if (!memory)
-        return result;
+        return point;
 
-    const auto hash_start = REMAP_ADDRESS(memory);
-    const auto index_start = hash_start + hash_size;
-    std::copy(hash_start, index_start, result.hash.begin());
-    result.index = from_little_endian_unsafe<uint32_t>(index_start);
-    result.valid = true;
-    return result;
+    // The order of properties in this serialization was changed in v3.
+    // Previously it was { index, hash }, which was inconsistent with wire.
+    auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(memory));
+    point.from_data(deserial);
+    return point;
 }
 
 void spend_database::store(const chain::output_point& outpoint,
@@ -122,24 +126,17 @@ void spend_database::store(const chain::output_point& outpoint,
 {
     const auto write = [&spend](memory_ptr data)
     {
-        auto serial = make_serializer(REMAP_ADDRESS(data));
-        serial.write_data(spend.to_data());
+        auto serial = make_unsafe_serializer(REMAP_ADDRESS(data));
+        serial.write_bytes(spend.to_data());
     };
 
     lookup_map_.store(outpoint, write);
 }
 
-void spend_database::remove(const output_point& outpoint)
+bool spend_database::unlink(const output_point& outpoint)
 {
-    DEBUG_ONLY(bool success =) lookup_map_.unlink(outpoint);
-    BITCOIN_ASSERT(success);
+    return lookup_map_.unlink(outpoint);
 }
-
-void spend_database::sync()
-{
-    lookup_manager_.sync();
-}
-
 spend_statinfo spend_database::statinfo() const
 {
     return

@@ -75,12 +75,12 @@ bool parse_point(Point& point, const std::string& arg)
         return false;
     }
 
-    point.hash = hash;
+    point.set_hash(hash);
     const auto& index_string = tokens[1];
 
     try
     {
-        point.index = lexical_cast<uint32_t>(index_string);
+        point.set_index(lexical_cast<uint32_t>(index_string));
     }
     catch (const bad_lexical_cast&)
     {
@@ -158,9 +158,9 @@ int main(int argc, char** argv)
         args.push_back(argv[i]);
 
     if (command == "initialize_new")
-        data_base::touch_file(filename);
+        store::create(filename);
 
-    spend_database db(filename);
+    spend_database db(filename, 1000, 50);
 
     if (command == "initialize_new")
     {
@@ -180,18 +180,18 @@ int main(int argc, char** argv)
         if (!parse_point(outpoint, args[0]))
             return -1;
 
-        const auto result = db.start();
+        const auto result = db.open();
         BITCOIN_ASSERT(result);
 
         const auto spend = db.get(outpoint);
 
-        if (!spend.valid)
+        if (!spend.is_valid())
         {
             std::cout << "Not found!" << std::endl;
             return -1;
         }
 
-        std::cout << encode_hash(spend.hash) << ":" << spend.index
+        std::cout << encode_hash(spend.hash()) << ":" << spend.index()
             << std::endl;
     }
     else if (command == "store")
@@ -212,11 +212,11 @@ int main(int argc, char** argv)
         if (!parse_point(spend, args[1]))
             return -1;
 
-        const auto result = db.start();
+        const auto result = db.open();
         BITCOIN_ASSERT(result);
 
         db.store(outpoint, spend);
-        db.sync();
+        db.synchronize();
     }
     else if (command == "remove")
     {
@@ -231,11 +231,11 @@ int main(int argc, char** argv)
         if (!parse_point(outpoint, args[0]))
             return -1;
 
-        const auto result = db.start();
+        const auto result = db.open();
         BITCOIN_ASSERT(result);
 
-        db.remove(outpoint);
-        db.sync();
+        db.unlink(outpoint);
+        db.synchronize();
     }
     else if (command == "statinfo")
     {
@@ -245,7 +245,7 @@ int main(int argc, char** argv)
             return -1;
         }
 
-        const auto result = db.start();
+        const auto result = db.open();
         BITCOIN_ASSERT(result);
 
         auto info = db.statinfo();

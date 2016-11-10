@@ -41,11 +41,15 @@ namespace database {
 class BCD_API memory_map
 {
 public:
+    typedef boost::filesystem::path path;
     typedef std::shared_ptr<shared_mutex> mutex_ptr;
 
+    static const size_t default_expansion;
+
     /// Construct a database (start is currently called, may throw).
-    memory_map(const boost::filesystem::path& filename);
-    memory_map(const boost::filesystem::path& filename, mutex_ptr mutex);
+    memory_map(const path& filename);
+    memory_map(const path& filename, mutex_ptr mutex);
+    memory_map(const path& filename, mutex_ptr mutex, size_t expansion);
 
     /// Close the database.
     ~memory_map();
@@ -54,17 +58,17 @@ public:
     memory_map(const memory_map&) = delete;
     void operator=(const memory_map&) = delete;
 
-    /// Start or restart the database, mapping database files.
-    bool start();
+    /// Open and map database files.
+    bool open();
 
-    /// Stop current work (optional, speeds shutdown with multiple threads).
-    bool stop();
+    /// Flush the memory map to disk.
+    bool flush();
 
-    /// Unmap database files, can be restarted.
+    /// Unmap and release database files, can be restarted.
     bool close();
 
-    /// True if stop has signaled the end of work.
-    bool stopped() const;
+    /// Determine if the database is closed.
+    bool closed() const;
 
     size_t size() const;
     memory_ptr access();
@@ -95,6 +99,7 @@ private:
 
     // File system.
     const int file_handle_;
+    const size_t expansion_;
     const boost::filesystem::path filename_;
 
     // Protected by internal mutex.
@@ -102,7 +107,6 @@ private:
     size_t file_size_;
     size_t logical_size_;
     std::atomic<bool> closed_;
-    std::atomic<bool> stopped_;
     mutable upgrade_mutex mutex_;
 };
 

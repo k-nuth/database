@@ -37,13 +37,23 @@ slab_hash_table<KeyType>::slab_hash_table(slab_hash_table_header& header,
 
 // This is not limited to storing unique key values. If duplicate keyed values
 // are store then retrieval and unlinking will fail as these multiples cannot
-// be differentiated. Therefore the database is not currently able to support
-// multiple transactions with the same hash, as required by BIP30.
+// be differentiated except in the order written (used by bip30).
 template <typename KeyType>
 file_offset slab_hash_table<KeyType>::store(const KeyType& key,
     write_function write, const size_t value_size)
 {
     // Store current bucket value.
+
+    // For a given key in this hash table new item creation must be atomic from
+    // read of the old value to write of the new. Otherwise concurrent write of
+    // hash table conflicts will corrupt the key's record row. Unfortunmately
+    // there is no efficient way to lock a given bucket, so we lock across
+    // all buckets. But given that this protection is required for concurrent
+    // write but not for read-while-write (slock) we need not lock read.
+    ///////////////////////////////////////////////////////////////////////////
+    // Critical Section.
+    mutex_.lock();
+
     const auto old_begin = read_bucket_value(key);
     slab_row<KeyType> item(manager_, 0);
     const auto new_begin = item.create(key, value_size, old_begin);
@@ -52,13 +62,50 @@ file_offset slab_hash_table<KeyType>::store(const KeyType& key,
     // Link record to header.
     link(key, new_begin);
 
-    // Return position,
-    return new_begin + item.value_begin;
+    mutex_.unlock();
+    ///////////////////////////////////////////////////////////////////////////
+
+    // Return the file offset of the slab data segment.
+    return new_begin + slab_row<KeyType>::prefix_size;
+}
+
+// Execute a writer against a key's buffer if the key is found.
+// Return the file offset of the found value (or zero).
+template <typename KeyType>
+file_offset slab_hash_table<KeyType>::update(const KeyType& key,
+    write_function write)
+{
+    // Find start item...
+    auto current = read_bucket_value(key);
+
+    // Iterate through list...
+    while (current != header_.empty)
+    {
+        const slab_row<KeyType> item(manager_, current);
+
+        // Found.
+        if (item.compare(key))
+        {
+            write(item.data());
+            return item.offset();
+        }
+
+        const auto previous = current;
+        current = item.next_position();
+
+        // This may otherwise produce an infinite loop here.
+        // It indicates that a write operation has interceded.
+        // So we must return gracefully vs. looping forever.
+        if (previous == current)
+            return 0;
+    }
+
+    return 0;
 }
 
 // This is limited to returning the first of multiple matching key values.
 template <typename KeyType>
-const memory_ptr slab_hash_table<KeyType>::find(const KeyType& key) const
+memory_ptr slab_hash_table<KeyType>::find(const KeyType& key) const
 {
     // Find start item...
     auto current = read_bucket_value(key);

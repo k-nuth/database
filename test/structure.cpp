@@ -49,9 +49,9 @@ BOOST_FIXTURE_TEST_SUITE(structure_tests, structure_directory_setup_fixture)
 
 BOOST_AUTO_TEST_CASE(hash_table_header__test)
 {
-    data_base::touch_file(DIRECTORY "/hash_table_header");
+    store::create(DIRECTORY "/hash_table_header");
     memory_map file(DIRECTORY "/hash_table_header");
-    BOOST_REQUIRE(file.start());
+    BOOST_REQUIRE(file.open());
     BOOST_REQUIRE(REMAP_ADDRESS(file.access()) != nullptr);
     file.resize(4 + 4 * 10);
 
@@ -65,9 +65,9 @@ BOOST_AUTO_TEST_CASE(hash_table_header__test)
 
 BOOST_AUTO_TEST_CASE(slab_manager__test)
 {
-    data_base::touch_file(DIRECTORY "/slab_manager");
+    store::create(DIRECTORY "/slab_manager");
     memory_map file(DIRECTORY "/slab_manager");
-    BOOST_REQUIRE(file.start());
+    BOOST_REQUIRE(file.open());
     BOOST_REQUIRE(REMAP_ADDRESS(file.access()) != nullptr);
     file.resize(200);
 
@@ -88,9 +88,9 @@ BOOST_AUTO_TEST_CASE(slab_manager__test)
 
 BOOST_AUTO_TEST_CASE(record_manager__test)
 {
-    data_base::touch_file(DIRECTORY "/record_manager");
+    store::create(DIRECTORY "/record_manager");
     memory_map file(DIRECTORY "/record_manager");
-    BOOST_REQUIRE(file.start());
+    BOOST_REQUIRE(file.open());
     BOOST_REQUIRE(REMAP_ADDRESS(file.access()) != nullptr);
     file.resize(4);
 
@@ -108,9 +108,9 @@ BOOST_AUTO_TEST_CASE(record_manager__test)
 
 BOOST_AUTO_TEST_CASE(record_list__test)
 {
-    data_base::touch_file(DIRECTORY "/record_list");
+    store::create(DIRECTORY "/record_list");
     memory_map file(DIRECTORY "/record_list");
-    BOOST_REQUIRE(file.start());
+    BOOST_REQUIRE(file.open());
     BOOST_REQUIRE(REMAP_ADDRESS(file.access()) != nullptr);
 
     file.resize(4);

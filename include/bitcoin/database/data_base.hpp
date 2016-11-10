@@ -24,7 +24,6 @@
 #include <cstddef>
 #include <memory>
 #include <boost/filesystem.hpp>
-#include <boost/interprocess/sync/file_lock.hpp>
 #include <bitcoin/bitcoin.hpp>
 #include <bitcoin/database/databases/block_database.hpp>
 #include <bitcoin/database/databases/spend_database.hpp>
@@ -33,124 +32,107 @@
 #include <bitcoin/database/databases/stealth_database.hpp>
 #include <bitcoin/database/define.hpp>
 #include <bitcoin/database/settings.hpp>
+#include <bitcoin/database/store.hpp>
 
 namespace libbitcoin {
 namespace database {
 
-typedef uint64_t handle;
-
+/// This class is thread safe and implements the sequential locking pattern.
 class BCD_API data_base
+  : public store
 {
 public:
+    typedef store::handle handle;
     typedef boost::filesystem::path path;
 
-    class store
-    {
-    public:
-        store(const path& prefix);
-        bool touch_all() const;
+    // Construct.
+    // ----------------------------------------------------------------------------
 
-        path database_lock;
-        path blocks_lookup;
-        path blocks_index;
-        path history_lookup;
-        path history_rows;
-        path stealth_rows;
-        path spends_lookup;
-        path transactions_lookup;
-    };
-
-    /// Create a new database file with a given path prefix and default paths.
-    static bool initialize(const path& prefix, const chain::block& genesis);
-    static bool touch_file(const path& file_path);
-
-    /// Construct all databases.
     data_base(const settings& settings);
 
-    /// Stop all databases (threads must be joined).
+    // Open and close.
+    // ------------------------------------------------------------------------
+
+    /// Create and open all databases.
+    bool create(const chain::block& genesis);
+
+    /// Open all databases.
+    bool open() override;
+
+    /// Close all databases.
+    bool close() override;
+
+    /// Call close on destruct.
     ~data_base();
 
-    // Startup and shutdown.
+    // Readers.
     // ------------------------------------------------------------------------
 
-    /// Create and start all databases.
-    bool create();
+    const block_database& blocks() const;
 
-    /// Start all databases.
-    bool start();
+    const transaction_database& transactions() const;
 
-    /// Signal all databases to stop work.
-    bool stop();
+    /// Invalid if indexes not initialized.
+    const spend_database& spends() const;
 
-    /// Stop all databases (threads must be joined).
-    bool close();
+    /// Invalid if indexes not initialized.
+    const history_database& history() const;
 
-    // Locking.
+    /// Invalid if indexes not initialized.
+    const stealth_database& stealth() const;
+
+    // Writers.
     // ------------------------------------------------------------------------
 
-    handle begin_read();
-    bool begin_write();
-    bool end_write();
-    bool is_read_valid(handle handle);
-    bool is_write_locked(handle handle);
+    /// Store a block in the database.
+    /// Returns false if a block already exists at height.
+    bool insert(const chain::block& block, size_t height);
 
-    // Push and pop.
-    // ------------------------------------------------------------------------
+    /// Returns false if height is not the current top + 1 or not linked.
+    bool push(const chain::block& block, size_t height);
 
-    /// Commit block at next height with indexing and no duplicate protection.
-    void push(const chain::block& block);
+    /// Returns false if first_height is not the current top + 1 or not linked.
+    bool push(const chain::block::list& blocks, size_t first_height);
 
-    /// Commit block at given height with indexing and no duplicate protection.
-    /// If height is not count + 1 then the count will not equal top height.
-    void push(const chain::block& block, uint64_t height);
-
-    /// Throws if the chain is empty.
-    chain::block pop();
+    /// Pop the set of blocks above the given hash.
+    /// Returns true with empty list if height is empty.
+    /// Returns false if the database is corrupt or the hash doesn't exit.
+    /// Any blocks returned were successfully popped prior to any failure.
+    bool pop_above(chain::block::list& out_blocks,
+        const hash_digest& fork_hash);
 
 protected:
-    data_base(const store& paths, size_t history_height, size_t stealth_height);
-    data_base(const path& prefix, size_t history_height, size_t stealth_height);
+    void start();
+    void synchronize();
+    bool flush() override;
+
+    std::shared_ptr<block_database> blocks_;
+    std::shared_ptr<transaction_database> transactions_;
+    std::shared_ptr<spend_database> spends_;
+    std::shared_ptr<history_database> history_;
+    std::shared_ptr<stealth_database> stealth_;
 
 private:
     typedef chain::input::list inputs;
     typedef chain::output::list outputs;
-    typedef std::atomic<size_t> sequential_lock;
-    typedef boost::interprocess::file_lock file_lock;
 
-    static void uninitialize_lock(const path& lock);
-    static file_lock initialize_lock(const path& lock);
-
-    void synchronize();
+    void push_transactions(const chain::block& block, size_t height);
     void push_inputs(const hash_digest& tx_hash, size_t height,
         const inputs& inputs);
     void push_outputs(const hash_digest& tx_hash, size_t height,
         const outputs& outputs);
     void push_stealth(const hash_digest& tx_hash, size_t height,
         const outputs& outputs);
+
+    chain::block pop();
     void pop_inputs(const inputs& inputs, size_t height);
     void pop_outputs(const outputs& outputs, size_t height);
 
-    const path lock_file_path_;
-    const size_t history_height_;
-    const size_t stealth_height_;
-
-    // Atomic counter for implementing the sequential lock pattern.
-    sequential_lock sequential_lock_;
-
-    // Allows us to restrict database access to our process (or fail).
-    std::shared_ptr<file_lock> file_lock_;
+    std::atomic<bool> closed_;
+    const settings& settings_;
 
     // Cross-database mutext to prevent concurrent file remapping.
     std::shared_ptr<shared_mutex> mutex_;
-
-public:
-
-    /// Individual database query engines.
-    block_database blocks;
-    history_database history;
-    spend_database spends;
-    stealth_database stealth;
-    transaction_database transactions;
 };
 
 } // namespace database

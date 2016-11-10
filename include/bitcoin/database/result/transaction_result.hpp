@@ -34,21 +34,33 @@ class BCD_API transaction_result
 {
 public:
     transaction_result(const memory_ptr slab);
+    transaction_result(const memory_ptr slab, hash_digest&& hash);
+    transaction_result(const memory_ptr slab, const hash_digest& hash);
 
     /// True if this transaction result is valid (found).
     operator bool() const;
 
+    /// The transaction hash (from cache).
+    const hash_digest& hash() const;
+
     /// The height of the block which includes the transaction.
     size_t height() const;
 
-    /// The position of the transaction within its block.
-    size_t index() const;
+    /// The ordinal position of the transaction within its block.
+    size_t position() const;
+
+    /// True if all transaction outputs are spent at or below fork_height.
+    bool is_spent(size_t fork_height) const;
+
+    /// The output at the specified index within this transaction.
+    chain::output output(uint32_t index) const;
 
     /// The transaction.
     chain::transaction transaction() const;
 
 private:
     const memory_ptr slab_;
+    const hash_digest hash_;
 };
 
 } // namespace database

@@ -32,11 +32,15 @@ class BCD_API settings
 {
 public:
     settings();
-    settings(bc::settings context);
+    settings(config::settings context);
 
     /// Properties.
-    uint32_t history_start_height;
-    uint32_t stealth_start_height;
+    uint16_t file_growth_rate;
+    uint32_t index_start_height;
+    uint32_t block_table_buckets;
+    uint32_t transaction_table_buckets;
+    uint32_t spend_table_buckets;
+    uint32_t history_table_buckets;
     boost::filesystem::path directory;
 };
 

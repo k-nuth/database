@@ -34,15 +34,29 @@ class BCD_API block_result
 {
 public:
     block_result(const memory_ptr slab);
+    block_result(const memory_ptr slab, hash_digest&& hash);
+    block_result(const memory_ptr slab, const hash_digest& hash);
 
     /// True if this block result is valid (found).
     operator bool() const;
+
+    /// The block header hash (from cache).
+    const hash_digest& hash() const;
 
     /// The block header.
     chain::header header() const;
 
     /// The height of this block in the chain.
     size_t height() const;
+
+    /// The header.bits of this block.
+    uint32_t bits() const;
+
+    /// The header.timestamp of this block.
+    uint32_t timestamp() const;
+
+    /// The header.version of this block.
+    uint32_t version() const;
 
     /// The number of transactions in this block.
     size_t transaction_count() const;
@@ -52,6 +66,7 @@ public:
 
 private:
     const memory_ptr slab_;
+    const hash_digest hash_;
 };
 
 } // namespace database

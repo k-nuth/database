@@ -21,8 +21,6 @@
 
 #include <cstdint>
 #include <cstddef>
-#include <memory>
-#include <boost/filesystem.hpp>
 #include <bitcoin/bitcoin.hpp>
 #include <bitcoin/database/memory/memory.hpp>
 #include <bitcoin/database/primitives/record_multimap_iterable.hpp>
@@ -31,32 +29,43 @@
 namespace libbitcoin {
 namespace database {
 
-using namespace boost::filesystem;
 using namespace bc::chain;
 
-BC_CONSTEXPR size_t number_buckets = 97210744;
-BC_CONSTEXPR size_t header_size = record_hash_table_header_size(number_buckets);
-BC_CONSTEXPR size_t initial_lookup_file_size = header_size + minimum_records_size;
+static constexpr auto rows_header_size = 0u;
 
-BC_CONSTEXPR size_t record_size = hash_table_multimap_record_size<short_hash>();
+static constexpr auto flag_size = sizeof(uint8_t);
+static constexpr auto point_size = hash_size + sizeof(uint32_t);
+static constexpr auto height_position = flag_size + point_size;
+static constexpr auto height_size = sizeof(uint32_t);
+static constexpr auto checksum_size = sizeof(uint64_t);
+static constexpr auto value_size = flag_size + point_size + height_size +
+    checksum_size;
 
-BC_CONSTEXPR size_t value_size = 1 + 36 + 4 + 8;
-BC_CONSTEXPR size_t row_record_size = hash_table_record_size<hash_digest>(value_size);
+static BC_CONSTEXPR auto record_size = 
+    hash_table_multimap_record_size<short_hash>();
+static BC_CONSTEXPR auto row_record_size = 
+    hash_table_record_size<hash_digest>(value_size);
 
+// History uses a hash table index, O(1).
 history_database::history_database(const path& lookup_filename,
-    const path& rows_filename, std::shared_ptr<shared_mutex> mutex)
-  : lookup_file_(lookup_filename, mutex), 
-    lookup_header_(lookup_file_, number_buckets),
-    lookup_manager_(lookup_file_, header_size, record_size),
+    const path& rows_filename, size_t buckets, size_t expansion,
+    mutex_ptr mutex)
+  : initial_map_file_size_(record_hash_table_header_size(buckets) +
+        minimum_records_size),
+
+    lookup_file_(lookup_filename, mutex, expansion), 
+    lookup_header_(lookup_file_, buckets),
+    lookup_manager_(lookup_file_, record_hash_table_header_size(buckets),
+        record_size),
     lookup_map_(lookup_header_, lookup_manager_),
-    rows_file_(rows_filename, mutex),
-    rows_manager_(rows_file_, 0, row_record_size),
+
+    rows_file_(rows_filename, mutex, expansion),
+    rows_manager_(rows_file_, rows_header_size, row_record_size),
     rows_list_(rows_manager_),
     rows_multimap_(lookup_map_, rows_list_)
 {
 }
 
-// Close does not call stop because there is no way to detect thread join.
 history_database::~history_database()
 {
     close();
@@ -68,13 +77,13 @@ history_database::~history_database()
 // Initialize files and start.
 bool history_database::create()
 {
-    // Resize and create require a started file.
-    if (!lookup_file_.start() ||
-        !rows_file_.start())
+    // Resize and create require an opened file.
+    if (!lookup_file_.open() ||
+        !rows_file_.open())
         return false;
 
     // These will throw if insufficient disk space.
-    lookup_file_.resize(initial_lookup_file_size);
+    lookup_file_.resize(initial_map_file_size_);
     rows_file_.resize(minimum_records_size);
 
     if (!lookup_header_.create() ||
@@ -92,21 +101,14 @@ bool history_database::create()
 // Startup and shutdown.
 // ----------------------------------------------------------------------------
 
-bool history_database::start()
+bool history_database::open()
 {
     return
-        lookup_file_.start() &&
-        rows_file_.start() &&
+        lookup_file_.open() &&
+        rows_file_.open() &&
         lookup_header_.start() &&
         lookup_manager_.start() &&
         rows_manager_.start();
-}
-
-bool history_database::stop()
-{
-    return
-        lookup_file_.stop() &&
-        rows_file_.stop();
 }
 
 bool history_database::close()
@@ -116,16 +118,33 @@ bool history_database::close()
         rows_file_.close();
 }
 
+// Commit latest inserts.
+void history_database::synchronize()
+{
+    lookup_manager_.sync();
+    rows_manager_.sync();
+}
+
+// Flush the memory maps to disk.
+bool history_database::flush()
+{
+    return
+        lookup_file_.flush() &&
+        rows_file_.flush();
+}
+
+// Queries.
 // ----------------------------------------------------------------------------
 
 void history_database::add_output(const short_hash& key,
     const output_point& outpoint, uint32_t output_height, uint64_t value)
 {
+    // TODO: use output_point serialization.
     auto write = [&](memory_ptr data)
     {
-        auto serial = make_serializer(REMAP_ADDRESS(data));
+        auto serial = make_unsafe_serializer(REMAP_ADDRESS(data));
         serial.write_byte(static_cast<uint8_t>(point_kind::output));
-        serial.write_data(outpoint.to_data());
+        serial.write_bytes(outpoint.to_data());
         serial.write_4_bytes_little_endian(output_height);
         serial.write_8_bytes_little_endian(value);
     };
@@ -136,20 +155,22 @@ void history_database::add_input(const short_hash& key,
     const output_point& inpoint, uint32_t input_height,
     const input_point& previous)
 {
+    // TODO: use input_point serialization.
     auto write = [&](memory_ptr data)
     {
-        auto serial = make_serializer(REMAP_ADDRESS(data));
+        auto serial = make_unsafe_serializer(REMAP_ADDRESS(data));
         serial.write_byte(static_cast<uint8_t>(point_kind::spend));
-        serial.write_data(inpoint.to_data());
+        serial.write_bytes(inpoint.to_data());
         serial.write_4_bytes_little_endian(input_height);
         serial.write_8_bytes_little_endian(previous.checksum());
     };
     rows_multimap_.add_row(key, write);
 }
 
-void history_database::delete_last_row(const short_hash& key)
+// This is the history unlink.
+bool history_database::delete_last_row(const short_hash& key)
 {
-    rows_multimap_.delete_last_row(key);
+    return rows_multimap_.delete_last_row(key);
 }
 
 history_compact::list history_database::get(const short_hash& key,
@@ -158,15 +179,14 @@ history_compact::list history_database::get(const short_hash& key,
     // Read the height value from the row.
     const auto read_height = [](uint8_t* data)
     {
-        static constexpr file_offset height_position = 1 + 36;
-        const auto height_address = data + height_position;
-        return from_little_endian_unsafe<uint32_t>(height_address);
+        return from_little_endian_unsafe<uint32_t>(data + height_position);
     };
 
+    // TODO: add serialization to history_compact.
     // Read a row from the data for the history list.
     const auto read_row = [](uint8_t* data)
     {
-        auto deserial = make_deserializer_unsafe(data);
+        auto deserial = make_unsafe_deserializer(data);
         return history_compact
         {
             // output or spend?
@@ -199,17 +219,11 @@ history_compact::list history_database::get(const short_hash& key,
 
         // Skip rows below from_height.
         if (from_height == 0 || read_height(address) >= from_height)
-            result.emplace_back(read_row(address));
+            result.push_back(read_row(address));
     }
 
     // TODO: we could sort result here.
     return result;
-}
-
-void history_database::sync()
-{
-    lookup_manager_.sync();
-    rows_manager_.sync();
 }
 
 history_statinfo history_database::statinfo() const

@@ -98,9 +98,9 @@ int main(int argc, char** argv)
         args.push_back(argv[i]);
 
     if (command == "initialize_new")
-        data_base::touch_file(map_filename);
+        store::create(map_filename);
 
-    transaction_database db(map_filename);
+    transaction_database db(map_filename, 1000, 50);
 
     if (command == "initialize_new")
     {
@@ -122,8 +122,8 @@ int main(int argc, char** argv)
             return -1;
         }
 
-        db.start();
-        auto result = db.get(hash);
+        db.open();
+        auto result = db.get(hash, max_size_t);
         if (!result)
         {
             std::cout << "Not found!" << std::endl;
@@ -133,7 +133,7 @@ int main(int argc, char** argv)
         const data_chunk data = result.transaction().to_data();
 
         std::cout << "height: " << result.height() << std::endl;
-        std::cout << "index: " << result.index() << std::endl;
+        std::cout << "position: " << result.position() << std::endl;
         std::cout << "tx: " << encode_base16(data) << std::endl;
     }
     else if (command == "store")
@@ -163,11 +163,11 @@ int main(int argc, char** argv)
         if (!tx.from_data(data))
             throw end_of_stream();
 
-        const auto result = db.start();
+        const auto result = db.open();
         BITCOIN_ASSERT(result);
 
         db.store(height, index, tx);
-        db.sync();
+        db.synchronize();
     }
     else if (command == "remove")
     {
@@ -184,11 +184,11 @@ int main(int argc, char** argv)
             return -1;
         }
 
-        const auto result = db.start();
+        const auto result = db.open();
         BITCOIN_ASSERT(result);
 
-        db.remove(hash);
-        db.sync();
+        db.unlink(hash);
+        db.synchronize();
     }
     else
     {

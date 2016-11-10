@@ -46,9 +46,12 @@ struct BCD_API spend_statinfo
 class BCD_API spend_database
 {
 public:
+    typedef boost::filesystem::path path;
+    typedef std::shared_ptr<shared_mutex> mutex_ptr;
+
     /// Construct the database.
-    spend_database(const boost::filesystem::path& filename,
-        std::shared_ptr<shared_mutex> mutex=nullptr);
+    spend_database(const path& filename, size_t buckets, size_t expansion,
+        mutex_ptr mutex=nullptr);
 
     /// Close the database (all threads must first be stopped).
     ~spend_database();
@@ -57,33 +60,35 @@ public:
     bool create();
 
     /// Call before using the database.
-    bool start();
-
-    /// Call to signal a stop of current operations.
-    bool stop();
+    bool open();
 
     /// Call to unload the memory map.
     bool close();
 
-    /// Get input spend of an output point.
-    chain::spend get(const chain::output_point& outpoint) const;
+    /// Get inpoint that spent the given outpoint.
+    chain::input_point get(const chain::output_point& outpoint) const;
 
     /// Store a spend in the database.
     void store(const chain::output_point& outpoint,
         const chain::input_point& spend);
 
     /// Delete outpoint spend item from database.
-    void remove(const chain::output_point& outpoint);
+    bool unlink(const chain::output_point& outpoint);
 
-    /// Synchronise storage with disk so things are consistent.
-    /// Should be done at the end of every block write.
-    void sync();
+    /// Commit latest inserts.
+    void synchronize();
+
+    /// Flush the memory map to disk.
+    bool flush();
 
     /// Return statistical info about the database.
     spend_statinfo statinfo() const;
 
 private:
     typedef record_hash_table<chain::point> record_map;
+
+    // The starting size of the hash table, used by create.
+    const size_t initial_map_file_size_;
 
     // Hash table used for looking up inpoint spends by outpoint.
     memory_map lookup_file_;

@@ -154,11 +154,11 @@ int main(int argc, char** argv)
 
     if (command == "initialize_new")
     {
-        data_base::touch_file(map_filename);
-        data_base::touch_file(rows_filename);
+        store::create(map_filename);
+        store::create(rows_filename);
     }
 
-    block_database db(map_filename, rows_filename);
+    block_database db(map_filename, rows_filename, 1000, 50);
 
     if (command == "initialize_new")
     {
@@ -173,7 +173,7 @@ int main(int argc, char** argv)
             return -1;
         }
 
-        const auto result = db.start();
+        const auto result = db.open();
         BITCOIN_ASSERT(result);
         std::shared_ptr<block_result> block_data;
 
@@ -202,18 +202,18 @@ int main(int argc, char** argv)
 
         const auto block_header = block_data->header();
         const auto txs_size = block_data->transaction_count();
-        const auto merkle = encode_hash(block_header.merkle);
-        const auto previous = encode_hash(block_header.previous_block_hash);
+        const auto merkle = encode_hash(block_header.merkle());
+        const auto previous = encode_hash(block_header.previous_block_hash());
 
         // Show details.
         std::cout << "height: " << block_data->height() << std::endl;
         std::cout << "hash: " << encode_hash(block_header.hash()) << std::endl;
-        std::cout << "version: " << block_header.version << std::endl;
+        std::cout << "version: " << block_header.version() << std::endl;
         std::cout << "previous: " << previous << std::endl;
         std::cout << "merkle: " << merkle << std::endl;
-        std::cout << "timestamp: " << block_header.timestamp << std::endl;
-        std::cout << "bits: " << block_header.bits << std::endl;
-        std::cout << "nonce: " << block_header.nonce << std::endl;
+        std::cout << "timestamp: " << block_header.timestamp() << std::endl;
+        std::cout << "bits: " << block_header.bits() << std::endl;
+        std::cout << "nonce: " << block_header.nonce() << std::endl;
 
         if (txs_size > 0)
         {
@@ -255,11 +255,14 @@ int main(int argc, char** argv)
         if (block.from_data(data))
             throw end_of_stream();
 
-        const auto result = db.start();
+        const auto result = db.open();
         BITCOIN_ASSERT(result);
 
-        db.store(block);
-        db.sync();
+        size_t top;
+        /* bool */ db.top(top);
+
+        db.store(block, top);
+        db.synchronize();
     }
     else if (command == "unlink")
     {
@@ -273,15 +276,15 @@ int main(int argc, char** argv)
         if (!parse_uint(from_height, args[0]))
             return -1;
 
-        const auto result = db.start();
+        const auto result = db.open();
         BITCOIN_ASSERT(result);
 
         db.unlink(from_height);
-        db.sync();
+        db.synchronize();
     }
     else if (command == "last_height")
     {
-        const auto result = db.start();
+        const auto result = db.open();
         BITCOIN_ASSERT(result);
 
         size_t height;

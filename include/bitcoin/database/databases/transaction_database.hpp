@@ -41,9 +41,12 @@ namespace database {
 class BCD_API transaction_database
 {
 public:
+    typedef boost::filesystem::path path;
+    typedef std::shared_ptr<shared_mutex> mutex_ptr;
+
     /// Construct the database.
-    transaction_database(const boost::filesystem::path& map_filename,
-        std::shared_ptr<shared_mutex> mutex=nullptr);
+    transaction_database(const path& map_filename, size_t buckets,
+        size_t expansion, mutex_ptr mutex = nullptr);
 
     /// Close the database (all threads must first be stopped).
     ~transaction_database();
@@ -52,33 +55,37 @@ public:
     bool create();
 
     /// Call before using the database.
-    bool start();
-
-    /// Call to signal a stop of current operations.
-    bool stop();
+    bool open();
 
     /// Call to unload the memory map.
     bool close();
 
-    /// Fetch transaction from its hash.
+    /// Fetch transaction by its hash.
     transaction_result get(const hash_digest& hash) const;
 
-    /// Denormalization to optimize utxo lookup.
-    bool get_height(size_t& height, const hash_digest& hash) const;
+    /// Fetch transaction by its hash, at or below the specified block height.
+    transaction_result get(const hash_digest& hash, size_t fork_height) const;
 
-    /// Store a transaction in the database. Returns a unique index
-    /// which can be used to reference the transaction.
-    void store(size_t height, size_t index, const chain::transaction& tx);
+    /// Store a transaction in the database.
+    void store(size_t height, size_t position, const chain::transaction& tx);
+
+    /// Update the spender height of the output in the tx store.
+    bool update(const chain::output_point& point, size_t spender_height);
 
     /// Delete a transaction from database.
-    void remove(const hash_digest& hash);
+    bool unlink(const hash_digest& hash);
 
-    /// Synchronise storage with disk so things are consistent.
-    /// Should be done at the end of every block write.
-    void sync();
+    /// Commit latest inserts.
+    void synchronize();
+
+    /// Flush the memory map to disk.
+    bool flush();
 
 private:
     typedef slab_hash_table<hash_digest> slab_map;
+
+    // The starting size of the hash table, used by create.
+    const size_t initial_map_file_size_;
 
     // Hash table used for looking up txs by hash.
     memory_map lookup_file_;

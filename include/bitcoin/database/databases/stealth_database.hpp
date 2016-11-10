@@ -34,11 +34,14 @@ namespace database {
 class BCD_API stealth_database
 {
 public:
+    typedef chain::stealth_compact::list list;
     typedef std::function<void(memory_ptr)> write_function;
+    typedef boost::filesystem::path path;
+    typedef std::shared_ptr<shared_mutex> mutex_ptr;
 
     /// Construct the database.
-    stealth_database(const boost::filesystem::path& rows_filename,
-        std::shared_ptr<shared_mutex> mutex=nullptr);
+    stealth_database(const path& rows_filename, size_t expansion,
+        mutex_ptr mutex=nullptr);
 
     /// Close the database (all threads must first be stopped).
     ~stealth_database();
@@ -47,28 +50,26 @@ public:
     bool create();
 
     /// Call before using the database.
-    bool start();
-
-    /// Call to signal a stop of current operations.
-    bool stop();
+    bool open();
 
     /// Call to unload the memory map.
     bool close();
 
     /// Linearly scan all entries, discarding those after from_height.
-    chain::stealth_compact::list scan(const binary& filter,
-        size_t from_height) const;
+    list scan(const binary& filter, size_t from_height) const;
 
     /// Add a stealth row to the database.
     void store(uint32_t prefix, uint32_t height,
         const chain::stealth_compact& row);
 
-    /// Delete all rows after and including from_height (no implemented).
-    void unlink(size_t from_height);
+    /// Delete stealth row (not implemented.
+    bool unlink();
 
-    /// Synchronise storage with disk so things are consistent.
-    /// Should be done at the end of every block write.
-    void sync();
+    /// Commit latest inserts.
+    void synchronize();
+
+    /// Flush the memory map to disk.
+    bool flush();
 
 private:
     void write_index();

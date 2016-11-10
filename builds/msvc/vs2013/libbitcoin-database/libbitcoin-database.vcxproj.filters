@@ -55,6 +55,9 @@
     <ClCompile Include="..\..\..\..\src\primitives\record_manager.cpp">
       <Filter>src\primitives</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\src\store.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\bitcoin\database\version.hpp">
@@ -134,6 +137,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\include\bitcoin\database\primitives\record_multimap_iterable.hpp">
       <Filter>include\bitcoin\database\primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\bitcoin\database\store.hpp">
+      <Filter>include\bitcoin\database</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

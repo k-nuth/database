@@ -52,14 +52,15 @@ static_assert(sizeof(void*) == sizeof(uint64_t), "Not a 64 bit system!");
 namespace libbitcoin {
 namespace database {
 
-using boost::filesystem::path;
+#define FAIL -1
+#define INVALID_HANDLE -1
 
-#define EXPANSION_NUMERATOR 150
-#define EXPANSION_DENOMINATOR 100
+// The percentage increase, e.g. 50 is 150% of the target size.
+const size_t memory_map::default_expansion = 50;
 
 size_t memory_map::file_size(int file_handle)
 {
-    if (file_handle == -1)
+    if (file_handle == INVALID_HANDLE)
         return 0;
 
     // This is required because off_t is defined as long, whcih is 32 bits in
@@ -67,16 +68,16 @@ size_t memory_map::file_size(int file_handle)
 #ifdef _WIN32
 #ifdef _WIN64
     struct _stat64 sbuf;
-    if (_fstat64(file_handle, &sbuf) == -1)
+    if (_fstat64(file_handle, &sbuf) == FAIL)
         return 0;
 #else
     struct _stat32 sbuf;
-    if (_fstat32(file_handle, &sbuf) == -1)
+    if (_fstat32(file_handle, &sbuf) == FAIL)
         return 0;
 #endif
 #else
     struct stat sbuf;
-    if (fstat(file_handle, &sbuf) == -1)
+    if (fstat(file_handle, &sbuf) == FAIL)
         return 0;
 #endif
 
@@ -91,7 +92,7 @@ int memory_map::open_file(const path& filename)
     int handle = _wopen(filename.wstring().c_str(), O_RDWR,
         FILE_OPEN_PERMISSIONS);
 #else
-    int handle = open(filename.string().c_str(), O_RDWR,
+    int handle = ::open(filename.string().c_str(), O_RDWR,
         FILE_OPEN_PERMISSIONS);
 #endif
     return handle;
@@ -105,7 +106,7 @@ bool memory_map::handle_error(const std::string& context,
 #else
     const auto error = errno;
 #endif
-    log::fatal(LOG_DATABASE)
+    LOG_FATAL(LOG_DATABASE)
         << "The file failed to " << context << ": "
         << filename << " : " << error;
     return false;
@@ -113,39 +114,44 @@ bool memory_map::handle_error(const std::string& context,
 
 void memory_map::log_mapping()
 {
-    log::debug(LOG_DATABASE)
+    LOG_DEBUG(LOG_DATABASE)
         << "Mapping: " << filename_ << " [" << file_size_
         << "] (" << page() << ")";
 }
 
 void memory_map::log_resizing(size_t size)
 {
-    log::debug(LOG_DATABASE)
+    LOG_DEBUG(LOG_DATABASE)
         << "Resizing: " << filename_ << " [" << size << "]";
 }
 
 void memory_map::log_unmapped()
 {
-    log::debug(LOG_DATABASE)
+    LOG_DEBUG(LOG_DATABASE)
         << "Unmapped: " << filename_ << " [" << logical_size_ << "]";
 }
 
-// mmap documentation: tinyurl.com/hnbw8t5
 memory_map::memory_map(const path& filename)
+  : memory_map(filename, nullptr, default_expansion)
+{
+}
+
+memory_map::memory_map(const path& filename, mutex_ptr mutex)
+  : memory_map(filename, mutex, default_expansion)
+{
+}
+
+// mmap documentation: tinyurl.com/hnbw8t5
+memory_map::memory_map(const path& filename, mutex_ptr mutex, size_t expansion)
   : file_handle_(open_file(filename)),
+    expansion_(expansion),
     filename_(filename),
     data_(nullptr),
     file_size_(file_size(file_handle_)),
     logical_size_(file_size_),
     closed_(true),
-    stopped_(true)
+    remap_mutex_(mutex)
 {
-}
-
-memory_map::memory_map(const path& filename, mutex_ptr mutex)
-  : memory_map(filename)
-{
-    remap_mutex_ = mutex;
 }
 
 // Database threads must be joined before close is called (or destruct).
@@ -158,17 +164,17 @@ memory_map::~memory_map()
 // ----------------------------------------------------------------------------
 
 // Map the database file and signal start.
-bool memory_map::start()
+bool memory_map::open()
 {
     // Critical Section (internal/unconditional)
     ///////////////////////////////////////////////////////////////////////////
     mutex_.lock_upgrade();
 
-    if (!stopped_)
+    if (!closed_)
     {
         mutex_.unlock_upgrade();
         //---------------------------------------------------------------------
-        // Start is not idempotent (should be called on single thread).
+        // Open is not idempotent (should be called on single thread).
         return false;
     }
 
@@ -179,13 +185,10 @@ bool memory_map::start()
     // Initialize data_.
     if (!map(file_size_))
         error_name = "map";
-    else if (madvise(data_, 0, MADV_RANDOM) == -1)
+    else if (madvise(data_, 0, MADV_RANDOM) == FAIL)
         error_name = "madvise";
     else
-    {
         closed_ = false;
-        stopped_ = false;
-    }
 
     mutex_.unlock();
     ///////////////////////////////////////////////////////////////////////////
@@ -198,31 +201,39 @@ bool memory_map::start()
     return true;
 }
 
-bool memory_map::stop()
+bool memory_map::flush()
 {
+    std::string error_name;
+
     // Critical Section (internal/unconditional)
     ///////////////////////////////////////////////////////////////////////////
     mutex_.lock_upgrade();
 
-    if (stopped_)
+    if (closed_)
     {
         mutex_.unlock_upgrade();
         //---------------------------------------------------------------------
-        // Stop is idempotent (may be called from multiple threads).
         return true;
     }
 
     mutex_.unlock_upgrade_and_lock();
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    stopped_ = true;
+
+    if (msync(data_, logical_size_, MS_SYNC) == FAIL)
+        error_name = "flush";
 
     mutex_.unlock();
     ///////////////////////////////////////////////////////////////////////////
 
+    // Keep logging out of the critical section.
+    if (!error_name.empty())
+        return handle_error(error_name, filename_);
+
+    ////log_flushed();
     return true;
 }
 
-// Close does not call stop because there is no way to detect thread join.
+// Close is idempotent and thread safe.
 bool memory_map::close()
 {
     std::string error_name;
@@ -235,7 +246,6 @@ bool memory_map::close()
     {
         mutex_.unlock_upgrade();
         //---------------------------------------------------------------------
-        // Close is idempotent (may be called from multiple threads).
         return true;
     }
 
@@ -244,15 +254,15 @@ bool memory_map::close()
 
     closed_ = true;
 
-    if (msync(data_, logical_size_, MS_SYNC) == -1)
+    if (msync(data_, logical_size_, MS_SYNC) == FAIL)
         error_name = "msync";
-    else if (munmap(data_, file_size_) == -1)
+    else if (munmap(data_, file_size_) == FAIL)
         error_name = "munmap";
-    else if (ftruncate(file_handle_, logical_size_) == -1)
+    else if (ftruncate(file_handle_, logical_size_) == FAIL)
         error_name = "ftruncate";
-    else if (fsync(file_handle_) == -1)
+    else if (fsync(file_handle_) == FAIL)
         error_name = "fsync";
-    else if (::close(file_handle_) == -1)
+    else if (::close(file_handle_) == FAIL)
         error_name = "close";
 
     mutex_.unlock();
@@ -266,13 +276,13 @@ bool memory_map::close()
     return true;
 }
 
-bool memory_map::stopped() const
+bool memory_map::closed() const
 {
     // Critical Section (internal/unconditional)
     ///////////////////////////////////////////////////////////////////////////
     shared_lock lock(mutex_);
 
-    return stopped_;
+    return closed_;
     ///////////////////////////////////////////////////////////////////////////
 }
 
@@ -298,13 +308,13 @@ memory_ptr memory_map::access()
 // throws runtime_error
 memory_ptr memory_map::resize(size_t size)
 {
-    return reserve(size, EXPANSION_DENOMINATOR);
+    return reserve(size, 0);
 }
 
 // throws runtime_error
 memory_ptr memory_map::reserve(size_t size)
 {
-    return reserve(size, EXPANSION_NUMERATOR);
+    return reserve(size, expansion_);
 }
 
 // throws runtime_error
@@ -321,7 +331,9 @@ memory_ptr memory_map::reserve(size_t size, size_t expansion)
 
     if (size > file_size_)
     {
-        const auto target = size * expansion / EXPANSION_DENOMINATOR;
+        // TODO: manage overflow (requires ceiling_multiply).
+        // Expansion is an integral number that represents a real number factor.
+        const size_t target = size * ((expansion + 100.0) / 100.0);
 
         if (!truncate_mapped(target))
         {
@@ -361,7 +373,7 @@ size_t memory_map::page()
 
 bool memory_map::unmap()
 {
-    const auto success = (munmap(data_, file_size_) != -1);
+    const auto success = (munmap(data_, file_size_) != FAIL);
     file_size_ = 0;
     data_ = nullptr;
     return success;
@@ -392,7 +404,7 @@ bool memory_map::remap(size_t size)
 
 bool memory_map::truncate(size_t size)
 {
-    return ftruncate(file_handle_, size) != -1;
+    return ftruncate(file_handle_, size) != FAIL;
 }
 
 bool memory_map::truncate_mapped(size_t size)

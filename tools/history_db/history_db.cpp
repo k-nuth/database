@@ -81,12 +81,12 @@ bool parse_point(Point& point, const std::string& arg)
         return false;
     }
 
-    point.hash = hash;
+    point.set_hash(hash);
     const auto& index = tokens[1];
 
     try
     {
-        point.index = lexical_cast<uint32_t>(index);
+        point.set_index(lexical_cast<uint32_t>(index));
     }
     catch (const bad_lexical_cast&)
     {
@@ -164,11 +164,11 @@ int main(int argc, char** argv)
 
     if (command == "initialize_new")
     {
-        data_base::touch_file(map_filename);
-        data_base::touch_file(rows_filename);
+        store::create(map_filename);
+        store::create(rows_filename);
     }
 
-    history_database db(map_filename, rows_filename);
+    history_database db(map_filename, rows_filename, 1000, 50);
 
     if (command == "initialize_new")
     {
@@ -199,11 +199,11 @@ int main(int argc, char** argv)
         if (!parse_uint(value, args[3]))
             return -1;
 
-        const auto result = db.start();
+        const auto result = db.open();
         BITCOIN_ASSERT(result);
 
         db.add_output(key, outpoint, output_height, value);
-        db.sync();
+        db.synchronize();
     }
     else if (command == "add_spend")
     {
@@ -229,11 +229,11 @@ int main(int argc, char** argv)
         if (!parse_uint(spend_height, args[3]))
             return -1;
 
-        const auto result = db.start();
+        const auto result = db.open();
         BITCOIN_ASSERT(result);
 
         db.add_input(key, spend, spend_height, previous);
-        db.sync();
+        db.synchronize();
     }
     else if (command == "delete_last_row")
     {
@@ -247,11 +247,11 @@ int main(int argc, char** argv)
         if (!parse_key(key, args[0]))
             return -1;
 
-        const auto result = db.start();
+        const auto result = db.open();
         BITCOIN_ASSERT(result);
 
         db.delete_last_row(key);
-        db.sync();
+        db.synchronize();
     }
     else if (command == "fetch")
     {
@@ -275,7 +275,7 @@ int main(int argc, char** argv)
             if (!parse_uint(from_height, args[2]))
                 return -1;
 
-        const auto result = db.start();
+        const auto result = db.open();
         BITCOIN_ASSERT(result);
 
         auto history = db.get(key, limit, from_height);
@@ -286,8 +286,8 @@ int main(int argc, char** argv)
                 std::cout << "OUTPUT: ";
             else //if (row.id == point_ident::spend)
                 std::cout << "SPEND:  ";
-            std::cout << encode_hash(row.point.hash) << ":"
-                << row.point.index << " " << row.height << " " << row.value
+            std::cout << encode_hash(row.point.hash()) << ":"
+                << row.point.index() << " " << row.height << " " << row.value
                 << std::endl;
         }
     }
@@ -299,7 +299,7 @@ int main(int argc, char** argv)
             return -1;
         }
 
-        const auto result = db.start();
+        const auto result = db.open();
         BITCOIN_ASSERT(result);
 
         auto info = db.statinfo();

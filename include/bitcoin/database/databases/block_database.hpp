@@ -21,7 +21,6 @@
 #define LIBBITCOIN_DATABASE_BLOCK_DATABASE_HPP
 
 #include <cstddef>
-#include <cstdint>
 #include <memory>
 #include <boost/filesystem.hpp>
 #include <bitcoin/bitcoin.hpp>
@@ -39,12 +38,15 @@ namespace database {
 class BCD_API block_database
 {
 public:
+    typedef std::vector<size_t> heights;
+    typedef boost::filesystem::path path;
+    typedef std::shared_ptr<shared_mutex> mutex_ptr;
+
     static const file_offset empty;
 
     /// Construct the database.
-    block_database(const boost::filesystem::path& map_filename,
-        const boost::filesystem::path& index_filename,
-        std::shared_ptr<shared_mutex> mutex=nullptr);
+    block_database(const path& map_filename, const path& index_filename,
+        size_t buckets, size_t expansion, mutex_ptr mutex=nullptr);
 
     /// Close the database (all threads must first be stopped).
     ~block_database();
@@ -53,13 +55,13 @@ public:
     bool create();
 
     /// Call before using the database.
-    bool start();
-
-    /// Call to signal a stop of current operations.
-    bool stop();
+    bool open();
 
     /// Call to unload the memory map.
     bool close();
+
+    /// Determine if a block exists at the given height.
+    bool exists(size_t height) const;
 
     /// Fetch block by height using the index table.
     block_result get(size_t height) const;
@@ -68,26 +70,22 @@ public:
     block_result get(const hash_digest& hash) const;
 
     /// Store a block in the database.
-    void store(const chain::block& block);
-
-    /// Store a block in the database.
     void store(const chain::block& block, size_t height);
 
-    /// Unlink all blocks upwards from (and including) from_height.
-    void unlink(size_t from_height);
+    /// The list of heights representing all chain gaps.
+    bool gaps(heights& out_gaps) const;
 
-    /// Synchronise storage with disk so things are consistent.
-    /// Should be done at the end of every block write.
-    void sync();
+    /// Unlink all blocks upwards from (and including) from_height.
+    bool unlink(size_t from_height);
+
+    /// Commit latest inserts.
+    void synchronize();
+
+    /// Flush the memory maps to disk.
+    bool flush();
 
     /// The index of the highest existing block, independent of gaps.
     bool top(size_t& out_height) const;
-
-    /// Return the first and last gaps in the blockchain, or false if none.
-    bool gap_range(size_t& out_first, size_t& out_last) const;
-
-    /// The index of the first missing block starting from given height.
-    bool next_gap(size_t& out_height, size_t start_height) const;
 
 private:
     typedef slab_hash_table<hash_digest> slab_map;
@@ -100,6 +98,9 @@ private:
 
     /// Use block index to get block hash table position from height.
     file_offset read_position(array_index height) const;
+
+    // The starting size of the hash table, used by create.
+    const size_t initial_map_file_size_;
 
     /// Hash table used for looking up blocks by hash.
     memory_map lookup_file_;

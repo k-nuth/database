@@ -30,8 +30,8 @@ using namespace bc::database;
 transaction random_tx(size_t fudge)
 {
     static const auto genesis = block::genesis_mainnet();
-    auto result = genesis.transactions[0];
-    result.inputs[0].previous_output.index = fudge;
+    auto result = genesis.transactions()[0];
+    result.inputs()[0].previous_output().set_index(fudge);
     return result;
 }
 
@@ -59,85 +59,85 @@ BOOST_FIXTURE_TEST_SUITE(database_tests, block_database_directory_setup_fixture)
 BOOST_AUTO_TEST_CASE(block_database__test)
 {
     auto block0 = block::genesis_mainnet();
-    block0.transactions.push_back(random_tx(0));
-    block0.transactions.push_back(random_tx(1));
+    block0.transactions().push_back(random_tx(0));
+    block0.transactions().push_back(random_tx(1));
     //const auto h0 = block0.header.hash();
 
     block block1;
-    block1.header = block0.header;
-    block1.header.nonce = 4;
-    block1.transactions.push_back(random_tx(2));
-    block1.transactions.push_back(random_tx(3));
-    block1.transactions.push_back(random_tx(4));
-    block1.transactions.push_back(random_tx(5));
+    block1.set_header(header(block0.header()));
+    block1.header().set_nonce(4);
+    block1.transactions().push_back(random_tx(2));
+    block1.transactions().push_back(random_tx(3));
+    block1.transactions().push_back(random_tx(4));
+    block1.transactions().push_back(random_tx(5));
     //const auto h1 = block1.header.hash();
 
     block block2;
-    block2.header = block0.header;
-    block2.header.nonce = 110;
-    block2.transactions.push_back(random_tx(6));
-    block2.transactions.push_back(random_tx(7));
-    block2.transactions.push_back(random_tx(8));
-    block2.transactions.push_back(random_tx(9));
-    block2.transactions.push_back(random_tx(10));
-    const auto h2 = block2.header.hash();
+    block2.set_header(header(block0.header()));
+    block2.header().set_nonce(110);
+    block2.transactions().push_back(random_tx(6));
+    block2.transactions().push_back(random_tx(7));
+    block2.transactions().push_back(random_tx(8));
+    block2.transactions().push_back(random_tx(9));
+    block2.transactions().push_back(random_tx(10));
+    const auto h2 = block2.header().hash();
 
     block block3;
-    block3.header = block0.header;
-    block3.header.nonce = 88;
-    block3.transactions.push_back(random_tx(11));
-    block3.transactions.push_back(random_tx(12));
-    block3.transactions.push_back(random_tx(13));
-    //const auto h3 = block3.header.hash();
+    block3.set_header(header(block0.header()));
+    block3.header().set_nonce(88);
+    block3.transactions().push_back(random_tx(11));
+    block3.transactions().push_back(random_tx(12));
+    block3.transactions().push_back(random_tx(13));
+    //const auto h3 = block3.header().hash();
 
     block block4a;
-    block4a.header = block0.header;
-    block4a.header.nonce = 63;
-    block4a.transactions.push_back(random_tx(14));
-    block4a.transactions.push_back(random_tx(15));
-    block4a.transactions.push_back(random_tx(16));
-    const auto h4a = block4a.header.hash();
+    block4a.set_header(header(block0.header()));
+    block4a.header().set_nonce(63);
+    block4a.transactions().push_back(random_tx(14));
+    block4a.transactions().push_back(random_tx(15));
+    block4a.transactions().push_back(random_tx(16));
+    const auto h4a = block4a.header().hash();
 
     block block5a;
-    block5a.header = block0.header;
-    block5a.header.nonce = 99;
-    block5a.transactions.push_back(random_tx(17));
-    block5a.transactions.push_back(random_tx(18));
-    block5a.transactions.push_back(random_tx(19));
-    block5a.transactions.push_back(random_tx(20));
-    block5a.transactions.push_back(random_tx(21));
-    const auto h5a = block5a.header.hash();
+    block5a.set_header(header(block0.header()));
+    block5a.header().set_nonce(99);
+    block5a.transactions().push_back(random_tx(17));
+    block5a.transactions().push_back(random_tx(18));
+    block5a.transactions().push_back(random_tx(19));
+    block5a.transactions().push_back(random_tx(20));
+    block5a.transactions().push_back(random_tx(21));
+    const auto h5a = block5a.header().hash();
 
     block block4b;
-    block4b.header = block0.header;
-    block4b.header.nonce = 633;
-    block4b.transactions.push_back(random_tx(22));
-    block4b.transactions.push_back(random_tx(23));
-    block4b.transactions.push_back(random_tx(24));
-    const auto h4b = block4b.header.hash();
+    block4b.set_header(header(block0.header()));
+    block4b.header().set_nonce(633);
+    block4b.transactions().push_back(random_tx(22));
+    block4b.transactions().push_back(random_tx(23));
+    block4b.transactions().push_back(random_tx(24));
+    const auto h4b = block4b.header().hash();
 
     block block5b;
-    block5b.header = block0.header;
-    block5b.header.nonce = 222;
-    block5b.transactions.push_back(random_tx(25));
-    block5b.transactions.push_back(random_tx(26));
-    block5b.transactions.push_back(random_tx(27));
-    block5b.transactions.push_back(random_tx(28));
-    block5b.transactions.push_back(random_tx(29));
-    const auto h5b = block5b.header.hash();
+    block5b.set_header(header(block0.header()));
+    block5b.header().set_nonce(222);
+    block5b.transactions().push_back(random_tx(25));
+    block5b.transactions().push_back(random_tx(26));
+    block5b.transactions().push_back(random_tx(27));
+    block5b.transactions().push_back(random_tx(28));
+    block5b.transactions().push_back(random_tx(29));
+    const auto h5b = block5b.header().hash();
 
-    data_base::touch_file(DIRECTORY "/block_lookup");
-    data_base::touch_file(DIRECTORY "/block_rows");
-    block_database db(DIRECTORY "/block_lookup", DIRECTORY "/block_rows");
+    store::create(DIRECTORY "/block_lookup");
+    store::create(DIRECTORY "/block_rows");
+    block_database db(DIRECTORY "/block_lookup", DIRECTORY "/block_rows", 1000, 50);
     BOOST_REQUIRE(db.create());
 
     size_t height;
     BOOST_REQUIRE(!db.top(height));
 
-    db.store(block0);
-    db.store(block1);
-    db.store(block2);
-    db.store(block3);
+    db.store(block0, 0);
+    db.store(block1, 1);
+    db.store(block2, 2);
+    db.store(block3, 3);
     BOOST_REQUIRE(db.top(height));
     BOOST_REQUIRE_EQUAL(height, 3u);
 
@@ -146,14 +146,16 @@ BOOST_AUTO_TEST_CASE(block_database__test)
         auto res_h2 = db.get(h2);
         BOOST_REQUIRE(res_h2);
         BOOST_REQUIRE(res_h2.header().hash() == h2);
-
-        for (size_t i = 0; i < res_h2.transaction_count(); ++i)
-            BOOST_REQUIRE(res_h2.transaction_hash(i) == block2.transactions[i].hash());
+        BOOST_REQUIRE(res_h2.transaction_hash(0) == block2.transactions()[0].hash());
+        BOOST_REQUIRE(res_h2.transaction_hash(1) == block2.transactions()[1].hash());
+        BOOST_REQUIRE(res_h2.transaction_hash(2) == block2.transactions()[2].hash());
+        BOOST_REQUIRE(res_h2.transaction_hash(3) == block2.transactions()[3].hash());
+        BOOST_REQUIRE(res_h2.transaction_hash(4) == block2.transactions()[4].hash());
     }
 
     // Try a fork event.
-    db.store(block4a);
-    db.store(block5a);
+    db.store(block4a, 4);
+    db.store(block5a, 5);
 
     // Fetch blocks.
     {
@@ -187,8 +189,8 @@ BOOST_AUTO_TEST_CASE(block_database__test)
     }
 
     // Add new blocks.
-    db.store(block4b);
-    db.store(block5b);
+    db.store(block4b, 4);
+    db.store(block5b, 5);
     BOOST_REQUIRE(db.top(height));
     BOOST_REQUIRE_EQUAL(height, 5u);
 
@@ -200,9 +202,11 @@ BOOST_AUTO_TEST_CASE(block_database__test)
         auto res5b = db.get(5);
         BOOST_REQUIRE(res5b);
         BOOST_REQUIRE(res5b.header().hash() == h5b);
-
-        for (size_t i = 0; i < res5b.transaction_count(); ++i)
-            BOOST_REQUIRE(res5b.transaction_hash(i) == block5b.transactions[i].hash());
+        BOOST_REQUIRE(res5b.transaction_hash(0) == block5b.transactions()[0].hash());
+        BOOST_REQUIRE(res5b.transaction_hash(1) == block5b.transactions()[1].hash());
+        BOOST_REQUIRE(res5b.transaction_hash(2) == block5b.transactions()[2].hash());
+        BOOST_REQUIRE(res5b.transaction_hash(3) == block5b.transactions()[3].hash());
+        BOOST_REQUIRE(res5b.transaction_hash(4) == block5b.transactions()[4].hash());
     }
 
     // Test also fetch by hash.
@@ -210,7 +214,7 @@ BOOST_AUTO_TEST_CASE(block_database__test)
         auto res_h5b = db.get(h5b);
         BOOST_REQUIRE(res_h5b);
         BOOST_REQUIRE(res_h5b.header().hash() == h5b);
-        db.sync();
+        db.synchronize();
     }
 }
 

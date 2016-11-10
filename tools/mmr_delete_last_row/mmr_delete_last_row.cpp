@@ -6,6 +6,8 @@ using namespace boost;
 using namespace bc;
 using namespace bc::database;
 
+static const size_t buckets = 1000;
+
 void show_usage()
 {
     std::cerr << "Usage: mmr_delete_last_row KEY VALUE_SIZE "
@@ -29,10 +31,10 @@ int mmr_lookup(
     std::copy(key_data.begin(), key_data.end(), key.begin());
 
     memory_map ht_file(map_filename);
-    auto result = ht_file.start();
+    auto result = ht_file.open();
     BITCOIN_ASSERT(result);
 
-    record_hash_table_header header(ht_file);
+    record_hash_table_header header(ht_file, buckets);
     result = header.start();
     BITCOIN_ASSERT(result);
 
@@ -47,7 +49,7 @@ int mmr_lookup(
 
     record_hash_table<hash_type> ht(header, ht_manager);
     memory_map lrs_file(rows_filename);
-    result = lrs_file.start();
+    result = lrs_file.open();
     BITCOIN_ASSERT(result);
 
     const size_t lrs_record_size = record_list_offset + value_size;

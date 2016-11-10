@@ -84,7 +84,7 @@ void record_multimap<KeyType>::add_to_list(memory_ptr start_info,
     // The records_ and start_info remap safe pointers are in distinct files.
     write(records_.get(new_begin));
 
-    auto serial = make_serializer(address);
+    auto serial = make_unsafe_serializer(address);
 
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
@@ -94,10 +94,12 @@ void record_multimap<KeyType>::add_to_list(memory_ptr start_info,
 }
 
 template <typename KeyType>
-void record_multimap<KeyType>::delete_last_row(const KeyType& key)
+bool record_multimap<KeyType>::delete_last_row(const KeyType& key)
 {
     const auto start_info = map_.find(key);
-    BITCOIN_ASSERT_MSG(start_info, "The row to delete was not found.");
+
+    if (!start_info)
+        return false;
 
     auto address = REMAP_ADDRESS(start_info);
 
@@ -116,17 +118,16 @@ void record_multimap<KeyType>::delete_last_row(const KeyType& key)
         // Free existing remap pointer to prevent deadlock in map_.unlink.
         address = nullptr;
 
-        DEBUG_ONLY(bool success =) map_.unlink(key);
-        BITCOIN_ASSERT(success);
-        return;
+        return map_.unlink(key);
     }
 
-    auto serial = make_serializer(address);
+    auto serial = make_unsafe_serializer(address);
 
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
     unique_lock lock(mutex_);
     serial.template write_little_endian<array_index>(new_begin);
+    return true;
     ///////////////////////////////////////////////////////////////////////////
 }
 
@@ -139,7 +140,7 @@ void record_multimap<KeyType>::create_new(const KeyType& key,
 
     const auto write_start_info = [this, first](memory_ptr data)
     {
-        auto serial = make_serializer(REMAP_ADDRESS(data));
+        auto serial = make_unsafe_serializer(REMAP_ADDRESS(data));
 
         // Critical Section
         ///////////////////////////////////////////////////////////////////////////
