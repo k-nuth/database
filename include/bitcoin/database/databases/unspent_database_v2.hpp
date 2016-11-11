@@ -92,8 +92,8 @@ public:
 
     /// Synchronise storage with disk so things are consistent.
     /// Should be done at the end of every block write.
-    void synchronize();
-    void flush();
+    bool synchronize();
+    bool flush();
 
     
 

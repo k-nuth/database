@@ -559,9 +559,7 @@ void data_base::pop_inputs(const input::list& inputs, size_t height)
 }
 
 // void data_base::pop_outputs(const output::list& outputs, size_t height)
-void data_base::pop_outputs(hash_digest const& tx_hash, size_t height,
-    output::list const& outputs)
-{
+void data_base::pop_outputs(hash_digest const& tx_hash, output::list const& outputs, size_t height) {
     //TODO Fer: cuando se llama a esto?
     //std::cout << "FER -- void data_base::pop_outputs(hash_digest const& tx_hash, size_t height, output::list const& outputs)\n";
 

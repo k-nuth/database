@@ -144,16 +144,18 @@ void unspent_database_v2::remove(output_point const& outpoint) {
     // BITCOIN_ASSERT(success);
 }
 
-void unspent_database_v2::flush() {
+bool unspent_database_v2::flush() {
     boost::unique_lock<shared_mutex> lock(mutex_);
     //std::cout << "void unspent_database_v2::flush()\n";
     lookup_map_->flush();
+    return true;
 }
 
-void unspent_database_v2::synchronize() {
+bool unspent_database_v2::synchronize() {
     boost::unique_lock<shared_mutex> lock(mutex_);
     //std::cout << "void unspent_database_v2::synchronize()\n";
     lookup_map_->flush();
+    return true;
 }
 
 

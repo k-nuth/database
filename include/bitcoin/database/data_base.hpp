@@ -141,8 +141,7 @@ private:
     chain::block pop();
     void pop_inputs(const inputs& inputs, size_t height);
     // void pop_outputs(const outputs& outputs, size_t height);
-    void pop_outputs(hash_digest const& tx_hash, size_t height,
-        outputs const& outputs);
+    void pop_outputs(hash_digest const& tx_hash, outputs const& outputs, size_t height);
 
     std::atomic<bool> closed_;
     const settings& settings_;
