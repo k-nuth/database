@@ -325,6 +325,8 @@ void data_base::push_transactions(const block& block, size_t height)
 void data_base::push_inputs(const hash_digest& tx_hash, size_t height,
     const input::list& inputs)
 {
+    //std::cout << "FER - void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const input::list& inputs)\n";
+
     for (uint32_t index = 0; index < inputs.size(); ++index)
     {
         const auto& input = inputs[index];
@@ -335,7 +337,8 @@ void data_base::push_inputs(const hash_digest& tx_hash, size_t height,
         if (height < settings_.index_start_height)
             continue;
 
-        spends_->store(input.previous_output(), point);
+        // spends_->store(input.previous_output(), point);
+        unspents.remove(input.previous_output());
 
         // Try to extract an address.
         const auto address = payment_address::extract(input.script());
@@ -345,11 +348,16 @@ void data_base::push_inputs(const hash_digest& tx_hash, size_t height,
         const auto& previous = input.previous_output();
         history_->add_input(address.hash(), point, height, previous);
     }
+
+    //std::cout << "FER - void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const input::list& inputs) - END\n";
+
 }
 
 void data_base::push_outputs(const hash_digest& tx_hash, size_t height,
     const output::list& outputs)
 {
+    //std::cout << "FER - void data_base::push_outputs(const hash_digest& tx_hash, size_t height, const output::list& outputs)\n";
+
     if (height < settings_.index_start_height)
         return;
 
@@ -357,6 +365,8 @@ void data_base::push_outputs(const hash_digest& tx_hash, size_t height,
     {
         const auto& output = outputs[index];
         const output_point point{ tx_hash, index };
+
+        unspents.store(point);
 
         // Try to extract an address.
         const auto address = payment_address::extract(output.script());
@@ -366,11 +376,16 @@ void data_base::push_outputs(const hash_digest& tx_hash, size_t height,
         const auto value = output.value();
         history_->add_output(address.hash(), point, height, value);
     }
+
+    //std::cout << "FER - void data_base::push_outputs(const hash_digest& tx_hash, size_t height, const output::list& outputs) - END\n";
+
 }
 
 void data_base::push_stealth(const hash_digest& tx_hash, size_t height,
     const output::list& outputs)
 {
+    // std::cout << "void data_base::push_stealth(const hash_digest& tx_hash, size_t height, const output::list& outputs)\n";
+
     if (height < settings_.index_start_height || outputs.empty())
         return;
 
@@ -405,6 +420,9 @@ void data_base::push_stealth(const hash_digest& tx_hash, size_t height,
 
         stealth_->store(prefix, height, row);
     }
+
+    // std::cout << "void data_base::push_stealth(const hash_digest& tx_hash, size_t height, const output::list& outputs) - END\n";
+
 }
 
 // This precludes popping the genesis block.
@@ -504,6 +522,7 @@ block data_base::pop()
 
 void data_base::pop_inputs(const input::list& inputs, size_t height)
 {
+    //std::cout << "FER -- void data_base::pop_inputs(const input::list& inputs, size_t height)\n";
     static const auto not_spent = output::validation::not_spent;
 
     // Loop in reverse.
@@ -515,6 +534,7 @@ void data_base::pop_inputs(const input::list& inputs, size_t height)
             continue;
 
         /* bool */ spends_->unlink(input->previous_output());
+        unspents.store(input->previous_output());
 
         // Try to extract an address.
         const auto address = payment_address::extract(input->script());
@@ -522,16 +542,40 @@ void data_base::pop_inputs(const input::list& inputs, size_t height)
         if (address)
             /* bool */ history_->delete_last_row(address.hash());
     }
+    //std::cout << "FER -- void data_base::pop_inputs(const input::list& inputs, size_t height) - END\n";
 }
 
-void data_base::pop_outputs(const output::list& outputs, size_t height)
+// void data_base::pop_outputs(const output::list& outputs, size_t height)
+void data_base::pop_outputs(hash_digest const& tx_hash, size_t height,
+    output::list const& outputs)
 {
+    //TODO Fer: cuando se llama a esto?
+    //std::cout << "FER -- void data_base::pop_outputs(hash_digest const& tx_hash, size_t height, output::list const& outputs)\n";
+
     if (height < settings_.index_start_height)
         return;
 
     // Loop in reverse.
-    for (auto output = outputs.rbegin(); output != outputs.rend(); ++output)
-    {
+    // for (auto output = outputs.rbegin(); output != outputs.rend(); ++output)
+    // {
+    //     // Try to extract an address.
+    //     const auto address = payment_address::extract(output->script());
+
+    //     if (address)
+    //         /* bool */ history_->delete_last_row(address.hash());
+
+    //     // TODO: try to extract a stealth info and if found unlink index.
+    //     // Stealth unlink is not implemented.
+    //     /* bool */ stealth_->unlink();
+    // }
+
+    // Loop in reverse.
+    for (uint32_t i = outputs.size(); i-- > 0;) {
+        const auto& output = outputs[i];
+
+        const chain::output_point point {tx_hash, i};
+        unspents.remove(point);
+
         // Try to extract an address.
         const auto address = payment_address::extract(output->script());
 
@@ -542,6 +586,9 @@ void data_base::pop_outputs(const output::list& outputs, size_t height)
         // Stealth unlink is not implemented.
         /* bool */ stealth_->unlink();
     }
+
+    //std::cout << "FER -- void data_base::pop_outputs(hash_digest const& tx_hash, size_t height, output::list const& outputs) - END\n";
+  
 }
 
 } // namespace data_base

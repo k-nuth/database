@@ -108,6 +108,7 @@ bool spend_database::flush()
 
 input_point spend_database::get(const output_point& outpoint) const
 {
+    //std::cout << "spend spend_database::get(const output_point& outpoint) const\n";
     input_point point;
     const auto memory = lookup_map_.find(outpoint);
 
@@ -124,6 +125,8 @@ input_point spend_database::get(const output_point& outpoint) const
 void spend_database::store(const chain::output_point& outpoint,
     const chain::input_point& spend)
 {
+    //std::cout << "void spend_database::store(const chain::output_point& outpoint, const chain::input_point& spend)\n";
+
     const auto write = [&spend](memory_ptr data)
     {
         auto serial = make_unsafe_serializer(REMAP_ADDRESS(data));
@@ -135,8 +138,10 @@ void spend_database::store(const chain::output_point& outpoint,
 
 bool spend_database::unlink(const output_point& outpoint)
 {
+    //std::cout << "bool spend_database::unlink(const output_point& outpoint)\n";
     return lookup_map_.unlink(outpoint);
 }
+
 spend_statinfo spend_database::statinfo() const
 {
     return

@@ -35,7 +35,8 @@ using namespace bc::database;
 #define BLOCK_TABLE "block_table"
 #define BLOCK_INDEX "block_index"
 #define TRANSACTION_TABLE "transaction_table"
-#define SPEND_TABLE "spend_table"
+#define SPEND_TABLE_XXX "spend_table" //TODO: Fer
+#define UNSPENT_TABLE "unspent_table"
 #define HISTORY_TABLE "history_table"
 #define HISTORY_ROWS "history_rows"
 #define STEALTH_ROWS "stealth_rows"

@@ -30,6 +30,10 @@
 #include <bitcoin/database/databases/transaction_database.hpp>
 #include <bitcoin/database/databases/history_database.hpp>
 #include <bitcoin/database/databases/stealth_database.hpp>
+
+// #include <bitcoin/database/databases/unspent_database.hpp>
+#include <bitcoin/database/databases/unspent_database_v2.hpp>
+
 #include <bitcoin/database/define.hpp>
 #include <bitcoin/database/settings.hpp>
 #include <bitcoin/database/store.hpp>
@@ -73,7 +77,10 @@ public:
     const transaction_database& transactions() const;
 
     /// Invalid if indexes not initialized.
-    const spend_database& spends() const;
+    //const spend_database& spends() const; //TODO: Fer: eliminar Spends, reemplazar por UTXO
+
+    /// Invalid if indexes not initialized.
+    const unspent_database_v2& unspents() const;
 
     /// Invalid if indexes not initialized.
     const history_database& history() const;
@@ -108,7 +115,13 @@ protected:
 
     std::shared_ptr<block_database> blocks_;
     std::shared_ptr<transaction_database> transactions_;
-    std::shared_ptr<spend_database> spends_;
+    // std::shared_ptr<spend_database> spends_;
+
+    //unspent_database unspents;
+    unspent_database_v2 unspents_;
+    // std::unique_ptr<unspent_database_v2> unspents;
+
+
     std::shared_ptr<history_database> history_;
     std::shared_ptr<stealth_database> stealth_;
 
@@ -126,7 +139,9 @@ private:
 
     chain::block pop();
     void pop_inputs(const inputs& inputs, size_t height);
-    void pop_outputs(const outputs& outputs, size_t height);
+    // void pop_outputs(const outputs& outputs, size_t height);
+    void pop_outputs(hash_digest const& tx_hash, size_t height,
+        outputs const& outputs);
 
     std::atomic<bool> closed_;
     const settings& settings_;

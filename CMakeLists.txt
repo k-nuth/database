@@ -34,7 +34,7 @@ if (NOT ENABLE_SHARED)
   set(Boost_USE_STATIC_LIBS ON)
 endif()
 find_package(
-  Boost 1.54.0 REQUIRED
+  Boost 1.56.0 REQUIRED
   COMPONENTS unit_test_framework)
 
 # Require bitprim-core of at least version 3.0.0 and output ${bitprim_core_CPPFLAGS/LIBS/PKG}.
@@ -158,6 +158,10 @@ add_library(bitprim-database ${MODE}
   src/databases/spend_database.cpp
   src/databases/stealth_database.cpp
   src/databases/transaction_database.cpp
+  
+  # src/databases/unspent_database.cpp
+  src/databases/unspent_database_v2.cpp
+  
   src/memory/accessor.cpp
   src/memory/allocator.cpp
   src/memory/memory_map.cpp
@@ -216,7 +220,10 @@ if (WITH_TESTS)
     test/main.cpp
     test/spend_database.cpp
     test/structure.cpp
-    test/transaction_database.cpp)
+    test/transaction_database.cpp
+    # test/unspent_database.cpp
+    # test/unspent_database_v2.cpp)
+
   target_link_libraries(bitprim_database_test PUBLIC bitprim-database)
   _group_sources(bitprim_database_test "${CMAKE_CURRENT_LIST_DIR}/test")
 
@@ -372,6 +379,34 @@ if (WITH_TOOLS)
   _group_sources(tools.transaction_db "${CMAKE_CURRENT_LIST_DIR}/tools/transaction_db")
 endif()
 
+# local: tools/unspent_db/unspent_db
+#------------------------------------------------------------------------------
+# if (WITH_TOOLS)
+#   add_executable(tools.unspent_db
+#     tools/unspent_db/unspent_db.cpp)
+#   target_link_libraries(tools.unspent_db bitprim-database)
+# endif()
+
+# local: tools/build_utxo/build_utxo
+#------------------------------------------------------------------------------
+if (WITH_TOOLS)
+  add_executable(tools.build_utxo
+    tools/build_utxo/build_utxo.cpp)
+  target_link_libraries(tools.build_utxo bitprim-database)
+  _group_sources(tools.transaction_db "${CMAKE_CURRENT_LIST_DIR}/tools/build_utxo")
+endif()
+
+
+# local: tools/check_scripts/check_scripts
+#------------------------------------------------------------------------------
+if (WITH_TOOLS)
+  add_executable(tools.check_scripts
+    tools/check_scripts/check_scripts.cpp)
+  target_link_libraries(tools.check_scripts bitprim-database)
+  _group_sources(tools.transaction_db "${CMAKE_CURRENT_LIST_DIR}/tools/check_scripts")
+endif()
+
+
 # Install
 #==============================================================================
 install(TARGETS bitprim-database
@@ -392,11 +427,17 @@ set(_bitprim_headers
   bitcoin/database/databases/spend_database.hpp
   bitcoin/database/databases/stealth_database.hpp
   bitcoin/database/databases/transaction_database.hpp
+
+  # bitcoin/database/databases/unspent_database.hpp
+  bitcoin/database/databases/unspent_database_v2.hpp
+
   # include_bitcoin_database_impl_HEADERS =
   bitcoin/database/impl/hash_table_header.ipp
   bitcoin/database/impl/record_hash_table.ipp
+  bitcoin/database/impl/record_hash_table_set.ipp
   bitcoin/database/impl/record_multimap.ipp
   bitcoin/database/impl/record_row.ipp
+  bitcoin/database/impl/record_row_set.ipp
   bitcoin/database/impl/remainder.ipp
   bitcoin/database/impl/slab_hash_table.ipp
   bitcoin/database/impl/slab_row.ipp
@@ -408,6 +449,7 @@ set(_bitprim_headers
   # include_bitcoin_database_primitives_HEADERS =
   bitcoin/database/primitives/hash_table_header.hpp
   bitcoin/database/primitives/record_hash_table.hpp
+  bitcoin/database/primitives/record_hash_table_set.hpp
   bitcoin/database/primitives/record_list.hpp
   bitcoin/database/primitives/record_manager.hpp
   bitcoin/database/primitives/record_multimap.hpp
