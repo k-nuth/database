@@ -117,10 +117,11 @@ protected:
     std::shared_ptr<transaction_database> transactions_;
     // std::shared_ptr<spend_database> spends_;
 
-    //unspent_database unspents;
-    unspent_database_v2 unspents_;
-    // std::unique_ptr<unspent_database_v2> unspents;
+    // //unspent_database unspents;
+    // unspent_database_v2 unspents_;
+    // // std::unique_ptr<unspent_database_v2> unspents;
 
+    std::shared_ptr<unspent_database_v2> unspents_;
 
     std::shared_ptr<history_database> history_;
     std::shared_ptr<stealth_database> stealth_;

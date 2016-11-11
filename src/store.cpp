@@ -35,7 +35,7 @@ using namespace bc::database;
 #define BLOCK_TABLE "block_table"
 #define BLOCK_INDEX "block_index"
 #define TRANSACTION_TABLE "transaction_table"
-#define SPEND_TABLE_XXX "spend_table" //TODO: Fer
+// #define SPEND_TABLE_XXX "spend_table" //TODO: Fer
 #define UNSPENT_TABLE "unspent_table"
 #define HISTORY_TABLE "history_table"
 #define HISTORY_ROWS "history_rows"
@@ -46,15 +46,18 @@ using namespace bc::database;
 const size_t store::without_indexes = max_uint32;
 
 // static
-bool store::create(const path& file_path)
+bool store::create(const path& file_path, , bool init /*= true*/)
 {
     bc::ofstream file(file_path.string());
 
     if (file.bad())
         return false;
 
-    // Write one byte so file is nonzero size (for memory map validation).
-    file.put('x');
+    if (init) {
+        // Write one byte so file is nonzero size (for memory map validation).
+        file.put('x');
+    }
+
     return true;
 }
 
@@ -72,7 +75,8 @@ store::store(const path& prefix, bool with_indexes)
     transaction_table(prefix / TRANSACTION_TABLE),
 
     // Optional indexes.
-    spend_table(prefix / SPEND_TABLE),
+    // spend_table(prefix / SPEND_TABLE),
+    unspent_table(prefix / UNSPENT_TABLE),
     history_table(prefix / HISTORY_TABLE),
     history_rows(prefix / HISTORY_ROWS),
     stealth_rows(prefix / STEALTH_ROWS)
@@ -95,7 +99,8 @@ bool store::create() const
 
     return
         created &&
-        create(spend_table) &&
+        // create(spend_table) &&
+        create(unspent_table, false)  &&
         create(history_table) &&
         create(history_rows) &&
         create(stealth_rows);

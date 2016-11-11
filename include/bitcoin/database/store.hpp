@@ -37,7 +37,7 @@ public:
     static const size_t without_indexes;
 
     /// Create a single file with one byte of arbitrary data.
-    static bool create(const path& file_path);
+    static bool create(const path& file_path, bool init = true);
 
     // Construct.
     // ------------------------------------------------------------------------
@@ -89,7 +89,8 @@ public:
     const path transaction_table;
 
     /// Optional indexes.
-    const path spend_table;
+    //const path spend_table;
+    const path unspent_table;
     const path history_table;
     const path history_rows;
     const path stealth_rows;
