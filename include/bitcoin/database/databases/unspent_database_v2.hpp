@@ -73,7 +73,7 @@ public:
     bool create();
 
     /// Call before using the database.
-    bool start();
+    bool open();
 
     /// Call to signal a stop of current operations.
     bool stop();
@@ -92,7 +92,10 @@ public:
 
     /// Synchronise storage with disk so things are consistent.
     /// Should be done at the end of every block write.
-    void sync();
+    void synchronize();
+    void flush();
+
+    
 
     /// Return statistical info about the database.
     unspent_v2_statinfo statinfo() const;

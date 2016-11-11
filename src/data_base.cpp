@@ -49,7 +49,7 @@ data_base::data_base(const settings& settings)
         << "block [" << settings.block_table_buckets << "], "
         << "transaction [" << settings.transaction_table_buckets << "], "
         // << "spend [" << settings.spend_table_buckets << "], "
-        << "unspent [" << settings.unspent_table_buckets << "], "                       //TODO: Fer:
+        // << "unspent [" << settings.unspent_table_buckets << "], "                       //TODO: Fer:
         << "history [" << settings.history_table_buckets << "]";
 }
 
@@ -166,7 +166,7 @@ void data_base::start()
         //     settings_.spend_table_buckets, settings_.file_growth_rate,
         //     mutex_);
 
-        unspents_ = std::make_shared<unspent_database_v2>(unspent_table, UNSPENT_TABLE, mutex_);
+        unspents_ = std::make_shared<unspent_database_v2>(unspent_table, "unspent_table", mutex_);
 
         history_ = std::make_shared<history_database>(history_table,
             history_rows, settings_.history_table_buckets,
@@ -225,11 +225,11 @@ const transaction_database& data_base::transactions() const
     return *transactions_;
 }
 
-// Invalid if indexes not initialized.
-const spend_database& data_base::spends() const
-{
-    return *spends_;
-}
+// // Invalid if indexes not initialized.
+// const spend_database& data_base::spends() const
+// {
+//     return *spends_;
+// }
 
 // Invalid if indexes not initialized.
 unspent_database_v2 const& data_base::unspents() const {
@@ -518,7 +518,7 @@ block data_base::pop()
     for (auto tx = txs.rbegin(); tx != txs.rend(); ++tx)
     {
         /* bool */ transactions_->unlink(tx->hash());
-        pop_outputs(tx->outputs(), height);
+        pop_outputs(tx->hash(), tx->outputs(), height);
 
         if (!tx->is_coinbase())
             pop_inputs(tx->inputs(), height);
@@ -546,7 +546,7 @@ void data_base::pop_inputs(const input::list& inputs, size_t height)
         if (height < settings_.index_start_height)
             continue;
 
-        /* bool */ spends_->unlink(input->previous_output());
+        // /* bool */ spends_->unlink(input->previous_output());
         unspents_->store(input->previous_output());
 
         // Try to extract an address.
@@ -590,7 +590,7 @@ void data_base::pop_outputs(hash_digest const& tx_hash, size_t height,
         unspents_->remove(point);
 
         // Try to extract an address.
-        const auto address = payment_address::extract(output->script());
+        const auto address = payment_address::extract(output.script());
 
         if (address)
             /* bool */ history_->delete_last_row(address.hash());

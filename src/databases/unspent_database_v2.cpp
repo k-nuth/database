@@ -93,19 +93,14 @@ bool unspent_database_v2::create() {
 // Startup and shutdown.
 // ----------------------------------------------------------------------------
 
-bool unspent_database_v2::start() {
-    std::cout << "unspent_database_v2::start()" << "\n";
+bool unspent_database_v2::open() {
+    std::cout << "unspent_database_v2::open()" << "\n";
     std::cout << "filename_: " << filename_ << "\n";
     std::cout << "mapname_: " << mapname_ << "\n";
     
     lookup_map_.reset(new record_map(filename_, mapname_, number_buckets, filesize));
 
     return true;
-    // //std::cout << "bool unspent_database_v2::start()\n";
-    // return
-    //     lookup_file_.start() &&
-    //     lookup_header_.start() &&
-    //     lookup_manager_.start();
 }
 
 bool unspent_database_v2::stop() {
@@ -149,11 +144,19 @@ void unspent_database_v2::remove(output_point const& outpoint) {
     // BITCOIN_ASSERT(success);
 }
 
-void unspent_database_v2::sync() {
+void unspent_database_v2::flush() {
     boost::unique_lock<shared_mutex> lock(mutex_);
-    //std::cout << "void unspent_database_v2::sync()\n";
+    //std::cout << "void unspent_database_v2::flush()\n";
     lookup_map_->flush();
 }
+
+void unspent_database_v2::synchronize() {
+    boost::unique_lock<shared_mutex> lock(mutex_);
+    //std::cout << "void unspent_database_v2::synchronize()\n";
+    lookup_map_->flush();
+}
+
+
 
 //TODO Fer
 unspent_v2_statinfo unspent_database_v2::statinfo() const {
