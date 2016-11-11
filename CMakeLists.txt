@@ -174,6 +174,7 @@ add_library(bitprim-database ${MODE}
   src/primitives/slab_manager.cpp
   src/result/block_result.cpp
   src/result/transaction_result.cpp)
+
 target_include_directories(bitprim-database PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
@@ -222,7 +223,8 @@ if (WITH_TESTS)
     test/structure.cpp
     test/transaction_database.cpp
     # test/unspent_database.cpp
-    # test/unspent_database_v2.cpp)
+    # test/unspent_database_v2.cpp
+    )
 
   target_link_libraries(bitprim_database_test PUBLIC bitprim-database)
   _group_sources(bitprim_database_test "${CMAKE_CURRENT_LIST_DIR}/test")
