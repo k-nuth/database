@@ -46,3 +46,7 @@ obj
 /obj
 
 /build
+.idea/bitprim-database.iml
+.idea/misc.xml
+.idea/modules.xml
+.idea/workspace.xml
