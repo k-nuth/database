@@ -66,10 +66,10 @@ void test_block_exists(const data_base& interface,
                 input_point spend{ tx_hash, j };
                 BOOST_REQUIRE_EQUAL(spend.index(), j);
 
-                auto r0_spend = interface.spends().get(input.previous_output());
-                BOOST_REQUIRE(r0_spend.is_valid());
-                BOOST_REQUIRE(r0_spend.hash() == spend.hash());
-                BOOST_REQUIRE_EQUAL(r0_spend.index(), spend.index());
+                // auto r0_spend = interface.spends().get(input.previous_output());
+                // BOOST_REQUIRE(r0_spend.is_valid());
+                // BOOST_REQUIRE(r0_spend.hash() == spend.hash());
+                // BOOST_REQUIRE_EQUAL(r0_spend.index(), spend.index());
 
                 if (!indexed)
                     continue;
@@ -148,8 +148,9 @@ void test_block_not_exists(const data_base& interface,
             {
                 const auto& input = tx.inputs()[j];
                 input_point spend{ tx_hash, static_cast<uint32_t>(j) };
-                auto r0_spend = interface.spends().get(input.previous_output());
-                BOOST_REQUIRE(!r0_spend.is_valid());
+                
+                //auto r0_spend = interface.spends().get(input.previous_output());
+                //BOOST_REQUIRE(!r0_spend.is_valid());
 
                 if (!indexed)
                     continue;
