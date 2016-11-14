@@ -46,7 +46,7 @@ using namespace bc::database;
 const size_t store::without_indexes = max_uint32;
 
 // static
-bool store::create(const path& file_path, , bool init /*= true*/)
+bool store::create(const path& file_path, bool init /*= true*/)
 {
     bc::ofstream file(file_path.string());
 
