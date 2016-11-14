@@ -428,22 +428,22 @@ endif()
 
 # local: tools/build_utxo/build_utxo
 #------------------------------------------------------------------------------
-if (WITH_TOOLS)
-  add_executable(tools.build_utxo
-    tools/build_utxo/build_utxo.cpp)
-  target_link_libraries(tools.build_utxo bitprim-database)
-  _group_sources(tools.transaction_db "${CMAKE_CURRENT_LIST_DIR}/tools/build_utxo")
-endif()
+# if (WITH_TOOLS)
+#   add_executable(tools.build_utxo
+#     tools/build_utxo/build_utxo.cpp)
+#   target_link_libraries(tools.build_utxo bitprim-database)
+#   _group_sources(tools.transaction_db "${CMAKE_CURRENT_LIST_DIR}/tools/build_utxo")
+# endif()
 
 
-# local: tools/check_scripts/check_scripts
-#------------------------------------------------------------------------------
-if (WITH_TOOLS)
-  add_executable(tools.check_scripts
-    tools/check_scripts/check_scripts.cpp)
-  target_link_libraries(tools.check_scripts bitprim-database)
-  _group_sources(tools.transaction_db "${CMAKE_CURRENT_LIST_DIR}/tools/check_scripts")
-endif()
+# # local: tools/check_scripts/check_scripts
+# #------------------------------------------------------------------------------
+# if (WITH_TOOLS)
+#   add_executable(tools.check_scripts
+#     tools/check_scripts/check_scripts.cpp)
+#   target_link_libraries(tools.check_scripts bitprim-database)
+#   _group_sources(tools.transaction_db "${CMAKE_CURRENT_LIST_DIR}/tools/check_scripts")
+# endif()
 
 
 # Install
