@@ -42,6 +42,7 @@ public:
     uint32_t spend_table_buckets;
     uint32_t history_table_buckets;
     boost::filesystem::path directory;
+    config::endpoint replier;
 };
 
 } // namespace database
