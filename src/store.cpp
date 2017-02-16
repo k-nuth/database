@@ -34,8 +34,8 @@ using namespace bc::database;
 #define BLOCK_TABLE "block_table"
 #define BLOCK_INDEX "block_index"
 #define TRANSACTION_TABLE "transaction_table"
-// #define SPEND_TABLE_XXX "spend_table" //TODO: Fer
-#define UNSPENT_TABLE "unspent_table"
+#define SPEND_TABLE "spend_table" //TODO: Fer
+// #define UNSPENT_TABLE "unspent_table"
 #define HISTORY_TABLE "history_table"
 #define HISTORY_ROWS "history_rows"
 #define STEALTH_ROWS "stealth_rows"
@@ -75,8 +75,8 @@ store::store(const path& prefix, bool with_indexes, bool flush_each_write)
     transaction_table(prefix / TRANSACTION_TABLE),
 
     // Optional indexes.
-    // spend_table(prefix / SPEND_TABLE),
-    unspent_table(prefix / UNSPENT_TABLE),
+    spend_table(prefix / SPEND_TABLE),
+    // unspent_table(prefix / UNSPENT_TABLE),
     history_table(prefix / HISTORY_TABLE),
     history_rows(prefix / HISTORY_ROWS),
     stealth_rows(prefix / STEALTH_ROWS)
@@ -99,8 +99,8 @@ bool store::create()
 
     return
         created &&
-        // create(spend_table) &&
-        create(unspent_table, false)  &&
+        create(spend_table) &&
+        // create(unspent_table, false)  &&
         create(history_table) &&
         create(history_rows) &&
         create(stealth_rows);

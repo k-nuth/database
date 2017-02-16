@@ -31,8 +31,7 @@
 #include <bitcoin/database/databases/history_database.hpp>
 #include <bitcoin/database/databases/stealth_database.hpp>
 
-// #include <bitcoin/database/databases/unspent_database.hpp>
-#include <bitcoin/database/databases/unspent_database_v2.hpp>
+// #include <bitcoin/database/databases/unspent_database_v2.hpp>
 
 #include <bitcoin/database/define.hpp>
 #include <bitcoin/database/settings.hpp>
@@ -78,10 +77,10 @@ public:
     const transaction_database& transactions() const;
 
     /// Invalid if indexes not initialized.
-    //const spend_database& spends() const; //TODO: Fer: eliminar Spends, reemplazar por UTXO
+    const spend_database& spends() const; //TODO: Fer: eliminar Spends, reemplazar por UTXO
 
-    /// Invalid if indexes not initialized.
-    const unspent_database_v2& unspents() const;
+    // /// Invalid if indexes not initialized.
+    // const unspent_database_v2& unspents() const;
 
     /// Invalid if indexes not initialized.
     const history_database& history() const;
@@ -137,13 +136,8 @@ protected:
 
     std::shared_ptr<block_database> blocks_;
     std::shared_ptr<transaction_database> transactions_;
-    // std::shared_ptr<spend_database> spends_;
-
-    // //unspent_database unspents;
-    // unspent_database_v2 unspents_;
-    // // std::unique_ptr<unspent_database_v2> unspents;
-
-    std::shared_ptr<unspent_database_v2> unspents_;
+    std::shared_ptr<spend_database> spends_;
+    // std::shared_ptr<unspent_database_v2> unspents_;
 
     std::shared_ptr<history_database> history_;
     std::shared_ptr<stealth_database> stealth_;

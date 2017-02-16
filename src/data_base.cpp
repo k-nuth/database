@@ -61,7 +61,7 @@ data_base::data_base(const settings& settings)
         << "Buckets: "
         << "block [" << settings.block_table_buckets << "], "
         << "transaction [" << settings.transaction_table_buckets << "], "
-        // << "spend [" << settings.spend_table_buckets << "], "
+        << "spend [" << settings.spend_table_buckets << "], "
         // << "unspent [" << settings.unspent_table_buckets << "], "                       //TODO: Fer:
         << "history [" << settings.history_table_buckets << "]";
 }
@@ -237,8 +237,8 @@ void data_base::synchronize()
 {
     if (use_indexes)
     {
-        // spends_->synchronize();
-        unspents_->synchronize();
+        spends_->synchronize();
+        // unspents_->synchronize();
         history_->synchronize();
         stealth_->synchronize();
     }
@@ -260,16 +260,16 @@ const transaction_database& data_base::transactions() const
     return *transactions_;
 }
 
-// // Invalid if indexes not initialized.
-// const spend_database& data_base::spends() const
-// {
-//     return *spends_;
-// }
-
 // Invalid if indexes not initialized.
-unspent_database_v2 const& data_base::unspents() const {
-    return *unspents_;
+const spend_database& data_base::spends() const
+{
+    return *spends_;
 }
+
+// // Invalid if indexes not initialized.
+// unspent_database_v2 const& data_base::unspents() const {
+//     return *unspents_;
+// }
 
 // Invalid if indexes not initialized.
 const history_database& data_base::history() const
@@ -513,7 +513,7 @@ void data_base::push_outputs(const hash_digest& tx_hash, size_t height,
     {
         const auto& output = outputs[index];
 
-        unspents_->store(point);
+        // unspents_->store(point);
 
         // Try to extract an address.
         const auto address = output.address();
