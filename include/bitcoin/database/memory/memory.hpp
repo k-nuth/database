@@ -1,13 +1,12 @@
 /**
- * Copyright (c) 2011-2015 libbitcoin developers (see AUTHORS)
+ * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
  *
  * This file is part of libbitcoin.
  *
- * libbitcoin is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License with
- * additional permissions to the one published by the Free Software
- * Foundation, either version 3 of the License, or (at your option)
- * any later version. For more information see LICENSE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,7 +14,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #ifndef LIBBITCOIN_DATABASE_MEMORY_HPP
 #define LIBBITCOIN_DATABASE_MEMORY_HPP
@@ -50,7 +49,7 @@ public:
 #ifdef REMAP_SAFETY
     typedef memory::ptr memory_ptr;
     #define REMAP_ADDRESS(ptr) ptr->buffer()
-    #define REMAP_DOWNGRADE(ptr, data) ptr->downgrade(data)
+    #define REMAP_ASSIGN(ptr, data) ptr->assign(data)
     #define REMAP_INCREMENT(ptr, offset) ptr->increment(offset)
     #define REMAP_ACCESSOR(ptr, mutex) std::make_shared<accessor>(mutex, ptr)
     #define REMAP_ALLOCATOR(mutex) std::make_shared<allocator>(mutex)
@@ -59,7 +58,7 @@ public:
 #else
     typedef uint8_t* memory_ptr;
     #define REMAP_ADDRESS(ptr) ptr
-    #define REMAP_DOWNGRADE(ptr, data)
+    #define REMAP_ASSIGN(ptr, data)
     #define REMAP_INCREMENT(ptr, offset) ptr += (offset)
     #define REMAP_ACCESSOR(ptr, mutex)
     #define REMAP_ALLOCATOR(mutex)

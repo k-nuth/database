@@ -1,13 +1,12 @@
 /**
- * Copyright (c) 2011-2015 libbitcoin developers (see AUTHORS)
+ * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
  *
  * This file is part of libbitcoin.
  *
- * libbitcoin is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License with
- * additional permissions to the one published by the Free Software
- * Foundation, either version 3 of the License, or (at your option)
- * any later version. For more information see LICENSE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,7 +14,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <bitcoin/database/databases/history_database.hpp>
 
@@ -41,9 +40,9 @@ static constexpr auto checksum_size = sizeof(uint64_t);
 static constexpr auto value_size = flag_size + point_size + height_size +
     checksum_size;
 
-static BC_CONSTEXPR auto record_size = 
+static BC_CONSTEXPR auto record_size =
     hash_table_multimap_record_size<short_hash>();
-static BC_CONSTEXPR auto row_record_size = 
+static BC_CONSTEXPR auto row_record_size =
     hash_table_record_size<hash_digest>(value_size);
 
 // History uses a hash table index, O(1).
@@ -53,7 +52,7 @@ history_database::history_database(const path& lookup_filename,
   : initial_map_file_size_(record_hash_table_header_size(buckets) +
         minimum_records_size),
 
-    lookup_file_(lookup_filename, mutex, expansion), 
+    lookup_file_(lookup_filename, mutex, expansion),
     lookup_header_(lookup_file_, buckets),
     lookup_manager_(lookup_file_, record_hash_table_header_size(buckets),
         record_size),
@@ -126,7 +125,7 @@ void history_database::synchronize()
 }
 
 // Flush the memory maps to disk.
-bool history_database::flush()
+bool history_database::flush() const
 {
     return
         lookup_file_.flush() &&
@@ -137,33 +136,35 @@ bool history_database::flush()
 // ----------------------------------------------------------------------------
 
 void history_database::add_output(const short_hash& key,
-    const output_point& outpoint, uint32_t output_height, uint64_t value)
+    const output_point& outpoint, size_t output_height, uint64_t value)
 {
-    // TODO: use output_point serialization.
-    auto write = [&](memory_ptr data)
+    const auto output_height32 = safe_unsigned<uint32_t>(output_height);
+
+    const auto write = [&](serializer<uint8_t*>& serial)
     {
-        auto serial = make_unsafe_serializer(REMAP_ADDRESS(data));
         serial.write_byte(static_cast<uint8_t>(point_kind::output));
-        serial.write_bytes(outpoint.to_data());
-        serial.write_4_bytes_little_endian(output_height);
+        outpoint.to_data(serial);
+        serial.write_4_bytes_little_endian(output_height32);
         serial.write_8_bytes_little_endian(value);
     };
+
     rows_multimap_.add_row(key, write);
 }
 
 void history_database::add_input(const short_hash& key,
-    const output_point& inpoint, uint32_t input_height,
+    const output_point& inpoint, size_t input_height,
     const input_point& previous)
 {
-    // TODO: use input_point serialization.
-    auto write = [&](memory_ptr data)
+    const auto input_height32 = safe_unsigned<uint32_t>(input_height);
+
+    const auto write = [&](serializer<uint8_t*>& serial)
     {
-        auto serial = make_unsafe_serializer(REMAP_ADDRESS(data));
         serial.write_byte(static_cast<uint8_t>(point_kind::spend));
-        serial.write_bytes(inpoint.to_data());
-        serial.write_4_bytes_little_endian(input_height);
+        inpoint.to_data(serial);
+        serial.write_4_bytes_little_endian(input_height32);
         serial.write_8_bytes_little_endian(previous.checksum());
     };
+
     rows_multimap_.add_row(key, write);
 }
 

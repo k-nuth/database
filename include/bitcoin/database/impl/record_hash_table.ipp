@@ -1,13 +1,12 @@
 /**
- * Copyright (c) 2011-2015 libbitcoin developers (see AUTHORS)
+ * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
  *
  * This file is part of libbitcoin.
  *
- * libbitcoin is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License with
- * additional permissions to the one published by the Free Software
- * Foundation, either version 3 of the License, or (at your option)
- * any later version. For more information see LICENSE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,7 +14,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #ifndef LIBBITCOIN_DATABASE_RECORD_HASH_TABLE_IPP
 #define LIBBITCOIN_DATABASE_RECORD_HASH_TABLE_IPP
@@ -41,9 +40,11 @@ record_hash_table<KeyType>::record_hash_table(
 // be differentiated except in the order written.
 template <typename KeyType>
 void record_hash_table<KeyType>::store(const KeyType& key,
-    const write_function write)
+    write_function write)
 {
-    // Store current bucket value.
+    // Allocate and populate new unlinked record.
+    record_row<KeyType> record(manager_);
+    const auto position = record.create(key, write);
 
     // For a given key in this hash table new item creation must be atomic from
     // read of the old value to write of the new. Otherwise concurrent write of
@@ -55,13 +56,11 @@ void record_hash_table<KeyType>::store(const KeyType& key,
     // Critical Section.
     mutex_.lock();
 
-    const auto old_begin = read_bucket_value(key);
-    record_row<KeyType> item(manager_, 0);
-    const auto new_begin = item.create(key, old_begin);
-    write(item.data());
+    // Link new record.next to current first record.
+    record.link(read_bucket_value(key));
 
-    // Link record to header.
-    link(key, new_begin);
+    // Link header to new record as the new first.
+    link(key, position);
 
     mutex_.unlock();
     ///////////////////////////////////////////////////////////////////////////
@@ -69,7 +68,7 @@ void record_hash_table<KeyType>::store(const KeyType& key,
 
 // This is limited to returning the first of multiple matching key values.
 template <typename KeyType>
-const memory_ptr record_hash_table<KeyType>::find(const KeyType& key) const
+memory_ptr record_hash_table<KeyType>::find(const KeyType& key) const
 {
     // Find start item...
     auto current = read_bucket_value(key);
@@ -89,6 +88,7 @@ const memory_ptr record_hash_table<KeyType>::find(const KeyType& key) const
         // This may otherwise produce an infinite loop here.
         // It indicates that a write operation has interceded.
         // So we must return gracefully vs. looping forever.
+        // A parallel write operation cannot safely use this call.
         if (previous == current)
             return nullptr;
     }
@@ -131,8 +131,8 @@ bool record_hash_table<KeyType>::unlink(const KeyType& key)
         current = item.next_index();
 
         // This may otherwise produce an infinite loop here.
-        // It indicates that a write operation has interceded.
         // So we must return gracefully vs. looping forever.
+        // Another write should not interceded here, so this is a hard fail.
         if (previous == current)
             return false;
     }
@@ -141,8 +141,7 @@ bool record_hash_table<KeyType>::unlink(const KeyType& key)
 }
 
 template <typename KeyType>
-array_index record_hash_table<KeyType>::bucket_index(
-    const KeyType& key) const
+array_index record_hash_table<KeyType>::bucket_index(const KeyType& key) const
 {
     const auto bucket = remainder(key, header_.size());
     BITCOIN_ASSERT(bucket < header_.size());
@@ -159,8 +158,7 @@ array_index record_hash_table<KeyType>::read_bucket_value(
 }
 
 template <typename KeyType>
-void record_hash_table<KeyType>::link(const KeyType& key,
-    const array_index begin)
+void record_hash_table<KeyType>::link(const KeyType& key, array_index begin)
 {
     header_.write(bucket_index(key), begin);
 }
@@ -168,7 +166,7 @@ void record_hash_table<KeyType>::link(const KeyType& key,
 template <typename KeyType>
 template <typename ListItem>
 void record_hash_table<KeyType>::release(const ListItem& item,
-    const file_offset previous)
+    file_offset previous)
 {
     ListItem previous_item(manager_, previous);
     previous_item.write_next_index(item.next_index());

@@ -1,13 +1,12 @@
 /**
- * Copyright (c) 2011-2015 libbitcoin developers (see AUTHORS)
+ * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
  *
  * This file is part of libbitcoin.
  *
- * libbitcoin is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License with
- * additional permissions to the one published by the Free Software
- * Foundation, either version 3 of the License, or (at your option)
- * any later version. For more information see LICENSE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,7 +14,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <bitcoin/database/databases/block_database.hpp>
 
@@ -52,8 +51,8 @@ block_database::block_database(const path& map_filename,
     mutex_ptr mutex)
   : initial_map_file_size_(slab_hash_table_header_size(buckets) +
         minimum_slabs_size),
-    
-    lookup_file_(map_filename, mutex, expansion), 
+
+    lookup_file_(map_filename, mutex, expansion),
     lookup_header_(lookup_file_, buckets),
     lookup_manager_(lookup_file_, slab_hash_table_header_size(buckets)),
     lookup_map_(lookup_header_, lookup_manager_),
@@ -125,7 +124,7 @@ void block_database::synchronize()
 }
 
 // Flush the memory maps to disk.
-bool block_database::flush()
+bool block_database::flush() const
 {
     return
         lookup_file_.flush() &&
@@ -152,10 +151,10 @@ block_result block_database::get(size_t height) const
     // HACK: back up into the slab to obtain the key (optimization).
     static const auto prefix_size = slab_row<hash_digest>::prefix_size;
     const auto buffer = REMAP_ADDRESS(memory);
-    auto reader = make_unsafe_deserializer(buffer - prefix_size);
+    auto deserial = make_unsafe_deserializer(buffer - prefix_size);
     //*************************************************************************
 
-    return block_result(memory, std::move(reader.read_hash()));
+    return block_result(memory, std::move(deserial.read_hash()));
 }
 
 block_result block_database::get(const hash_digest& hash) const
@@ -171,12 +170,10 @@ void block_database::store(const block& block, size_t height)
     const auto tx_count = block.transactions().size();
 
     // Write block data.
-    const auto write = [&](memory_ptr data)
+    const auto write = [&](serializer<uint8_t*>& serial)
     {
-        auto serial = make_unsafe_serializer(REMAP_ADDRESS(data));
-
-        // WRITE THE HEADER
-        serial.write_bytes(block.header().to_data());
+        // WRITE THE BLOCK HEADER AND TX HASHES
+        block.header().to_data(serial);
         serial.write_4_bytes_little_endian(height32);
         serial.write_size_little_endian(tx_count);
 
@@ -186,7 +183,7 @@ void block_database::store(const block& block, size_t height)
 
     const auto key = block.header().hash();
     const auto size = header::satoshi_fixed_size() + sizeof(height32) +
-        variable_uint_size(tx_count) + (tx_count * hash_size);
+        message::variable_uint_size(tx_count) + (tx_count * hash_size);
 
     const auto position = lookup_map_.store(key, write, size);
 

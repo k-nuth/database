@@ -1,13 +1,12 @@
 /**
- * Copyright (c) 2011-2015 libbitcoin developers (see AUTHORS)
+ * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
  *
  * This file is part of libbitcoin.
  *
- * libbitcoin is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License with
- * additional permissions to the one published by the Free Software
- * Foundation, either version 3 of the License, or (at your option)
- * any later version. For more information see LICENSE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,7 +14,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #ifndef LIBBITCOIN_DATABASE_RECORD_MULTIMAP_IPP
 #define LIBBITCOIN_DATABASE_RECORD_MULTIMAP_IPP
@@ -80,16 +79,18 @@ void record_multimap<KeyType>::add_to_list(memory_ptr start_info,
     ///////////////////////////////////////////////////////////////////////////
 
     const auto new_begin = records_.insert(old_begin);
+    const auto memory = records_.get(new_begin);
+    const auto data = REMAP_ADDRESS(memory);
+    auto serial_record = make_unsafe_serializer(data);
+    serial_record.write_delegated(write);
 
     // The records_ and start_info remap safe pointers are in distinct files.
-    write(records_.get(new_begin));
-
-    auto serial = make_unsafe_serializer(address);
+    auto serial_link = make_unsafe_serializer(address);
 
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
     unique_lock lock(mutex_);
-    serial.template write_little_endian<array_index>(new_begin);
+    serial_link.template write_little_endian<array_index>(new_begin);
     ///////////////////////////////////////////////////////////////////////////
 }
 
@@ -135,19 +136,20 @@ template <typename KeyType>
 void record_multimap<KeyType>::create_new(const KeyType& key,
     write_function write)
 {
+    // Create a new first record for the key.
     const auto first = records_.create();
-    write(records_.get(first));
+    const auto data = REMAP_ADDRESS(records_.get(first));
+    auto serial_record = make_unsafe_serializer(data);
+    serial_record.write_delegated(write);
 
-    const auto write_start_info = [this, first](memory_ptr data)
+    const auto write_start_info = [&](serializer<uint8_t*>& serial)
     {
-        auto serial = make_unsafe_serializer(REMAP_ADDRESS(data));
-
-        // Critical Section
-        ///////////////////////////////////////////////////////////////////////////
-        unique_lock lock(mutex_);
+        //*********************************************************************
         serial.template write_little_endian<array_index>(first);
-        ///////////////////////////////////////////////////////////////////////////
+        //*********************************************************************
     };
+
+    // Make the map point to the new record.
     map_.store(key, write_start_info);
 }
 

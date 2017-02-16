@@ -1,13 +1,12 @@
 /**
- * Copyright (c) 2011-2015 libbitcoin developers (see AUTHORS)
+ * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
  *
  * This file is part of libbitcoin.
  *
- * libbitcoin is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License with
- * additional permissions to the one published by the Free Software
- * Foundation, either version 3 of the License, or (at your option)
- * any later version. For more information see LICENSE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,7 +14,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #ifndef LIBBITCOIN_DATABASE_ALLOCATOR_HPP
 #define LIBBITCOIN_DATABASE_ALLOCATOR_HPP
@@ -31,29 +30,26 @@ namespace database {
 
 #ifdef REMAP_SAFETY
 
-/// This class provides downgradable remap safe access to file-mapped memory.
+/// This class provides remap safe access to file-mapped memory.
 /// The memory size is unprotected and unmanaged.
 class BCD_API allocator
-  : public memory
+  : public memory, noncopyable
 {
 public:
     allocator(shared_mutex& mutex);
     ~allocator();
 
-    /// This class is not copyable.
-    allocator(const allocator& other) = delete;
-
     /// Get the address indicated by the pointer.
     uint8_t* buffer();
 
-    /// Increment the pointer the specified number of bytes.
+    /// Advance the pointer the specified number of bytes.
     void increment(size_t value);
 
 protected:
     friend class memory_map;
 
-    /// Set the data member and downgrade the lock.
-    void downgrade(uint8_t* data);
+    /// Set the pointer.
+    void assign(uint8_t* data);
 
 private:
     shared_mutex& mutex_;

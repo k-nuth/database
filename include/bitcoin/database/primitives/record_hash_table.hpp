@@ -1,13 +1,12 @@
 /**
- * Copyright (c) 2011-2015 libbitcoin developers (see AUTHORS)
+ * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
  *
  * This file is part of libbitcoin.
  *
- * libbitcoin is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License with
- * additional permissions to the one published by the Free Software
- * Foundation, either version 3 of the License, or (at your option)
- * any later version. For more information see LICENSE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,7 +14,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #ifndef LIBBITCOIN_DATABASE_RECORD_HASH_TABLE_HPP
 #define LIBBITCOIN_DATABASE_RECORD_HASH_TABLE_HPP
@@ -62,7 +61,7 @@ template <typename KeyType>
 class record_hash_table
 {
 public:
-    typedef std::function<void(memory_ptr)> write_function;
+    typedef serializer<uint8_t*>::functor write_function;
 
     record_hash_table(record_hash_table_header& header, record_manager& manager);
 
@@ -72,7 +71,7 @@ public:
 
     /// Find the record for a given key.
     /// Returns a null pointer if not found.
-    const memory_ptr find(const KeyType& key) const;
+    memory_ptr find(const KeyType& key) const;
 
     /// Delete a key-value pair from the hashtable by unlinking the node.
     bool unlink(const KeyType& key);
@@ -85,15 +84,15 @@ private:
     array_index read_bucket_value(const KeyType& key) const;
 
     // Link a new chain into the bucket header.
-    void link(const KeyType& key, const array_index begin);
+    void link(const KeyType& key, array_index begin);
 
     // Release node from linked chain.
     template <typename ListItem>
-    void release(const ListItem& item, const file_offset previous);
+    void release(const ListItem& item, file_offset previous);
 
     record_hash_table_header& header_;
     record_manager& manager_;
-    shared_mutex mutex_;
+    mutable shared_mutex mutex_;
 
 };
 

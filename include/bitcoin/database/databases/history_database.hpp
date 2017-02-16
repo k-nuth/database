@@ -1,13 +1,12 @@
 /**
- * Copyright (c) 2011-2015 libbitcoin developers (see AUTHORS)
+ * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
  *
  * This file is part of libbitcoin.
  *
- * libbitcoin is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License with
- * additional permissions to the one published by the Free Software
- * Foundation, either version 3 of the License, or (at your option)
- * any later version. For more information see LICENSE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,7 +14,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #ifndef LIBBITCOIN_DATABASE_HISTORY_DATABASE_HPP
 #define LIBBITCOIN_DATABASE_HISTORY_DATABASE_HPP
@@ -69,11 +68,11 @@ public:
 
     /// Add an output row to the key. If key doesn't exist it will be created.
     void add_output(const short_hash& key, const chain::output_point& outpoint,
-        uint32_t output_height, uint64_t value);
+        size_t output_height, uint64_t value);
 
     /// Add an input to the key. If key doesn't exist it will be created.
     void add_input(const short_hash& key, const chain::output_point& inpoint,
-        uint32_t input_height, const chain::input_point& previous);
+        size_t input_height, const chain::input_point& previous);
 
     /// Delete the last row that was added to key.
     bool delete_last_row(const short_hash& key);
@@ -86,7 +85,7 @@ public:
     void synchronize();
 
     /// Flush the memory maps to disk.
-    bool flush();
+    bool flush() const;
 
     /// Return statistical info about the database.
     history_statinfo statinfo() const;

@@ -1,13 +1,12 @@
 /**
- * Copyright (c) 2011-2015 libbitcoin developers (see AUTHORS)
+ * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
  *
  * This file is part of libbitcoin.
  *
- * libbitcoin is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License with
- * additional permissions to the one published by the Free Software
- * Foundation, either version 3 of the License, or (at your option)
- * any later version. For more information see LICENSE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,7 +14,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <random>
 #include <boost/functional/hash_fwd.hpp>
@@ -97,9 +96,9 @@ void create_database_file()
     {
         data_chunk value = generate_random_bytes(engine, tx_size);
         hash_digest key = bitcoin_hash(value);
-        auto write = [&value](memory_ptr data)
+        auto write = [&value](serializer<uint8_t*>& serial)
         {
-            std::copy(value.begin(), value.end(), REMAP_ADDRESS(data));
+            serial.write_forward(value);
         };
         ht.store(key, write, value.size());
     }
@@ -176,13 +175,12 @@ BOOST_AUTO_TEST_CASE(slab_hash_table__test)
     BOOST_REQUIRE(alloc.start());
 
     slab_hash_table<tiny_hash> ht(header, alloc);
-    const auto write = [](memory_ptr data)
+    const auto write = [](serializer<uint8_t*>& serial)
     {
-        const auto address = REMAP_ADDRESS(data);
-        address[0] = 110;
-        address[1] = 110;
-        address[2] = 4;
-        address[3] = 99;
+        serial.write_byte(110);
+        serial.write_byte(110);
+        serial.write_byte(4);
+        serial.write_byte(99);
     };
     ht.store(tiny_hash{ { 0xde, 0xad, 0xbe, 0xef } }, write, 8);
     const auto memory1 = ht.find(tiny_hash{ { 0xde, 0xad, 0xbe, 0xef } });
@@ -227,22 +225,20 @@ BOOST_AUTO_TEST_CASE(record_hash_table__32bit__test)
     tiny_hash key{ { 0xde, 0xad, 0xbe, 0xef } };
     tiny_hash key1{ { 0xb0, 0x0b, 0xb0, 0x0b } };
 
-    const auto write = [](memory_ptr data)
+    const auto write = [](serializer<uint8_t*>& serial)
     {
-        const auto address = REMAP_ADDRESS(data);
-        address[0] = 110;
-        address[1] = 110;
-        address[2] = 4;
-        address[3] = 88;
+        serial.write_byte(110);
+        serial.write_byte(110);
+        serial.write_byte(4);
+        serial.write_byte(88);
     };
 
-    const auto write1 = [](memory_ptr data)
+    const auto write1 = [](serializer<uint8_t*>& serial)
     {
-        const auto address = REMAP_ADDRESS(data);
-        address[0] = 99;
-        address[1] = 98;
-        address[2] = 97;
-        address[3] = 96;
+        serial.write_byte(99);
+        serial.write_byte(98);
+        serial.write_byte(97);
+        serial.write_byte(96);
     };
 
     // [e][e]
@@ -360,30 +356,28 @@ BOOST_AUTO_TEST_CASE(record_hash_table_header__64bit__test)
     little_hash key{ { 0xde, 0xad, 0xbe, 0xef, 0xde, 0xad, 0xbe, 0xef } };
     little_hash key1{ { 0xb0, 0x0b, 0xb0, 0x0b, 0xb0, 0x0b, 0xb0, 0x0b } };
 
-    const auto write = [](memory_ptr data)
+    const auto write = [](serializer<uint8_t*>& serial)
     {
-        const auto address = REMAP_ADDRESS(data);
-        address[0] = 110;
-        address[1] = 110;
-        address[2] = 4;
-        address[3] = 88;
-        address[4] = 110;
-        address[5] = 110;
-        address[6] = 4;
-        address[7] = 88;
+        serial.write_byte(110);
+        serial.write_byte(110);
+        serial.write_byte(4);
+        serial.write_byte(88);
+        serial.write_byte(110);
+        serial.write_byte(110);
+        serial.write_byte(4);
+        serial.write_byte(88);
     };
 
-    const auto write1 = [](memory_ptr data)
+    const auto write1 = [](serializer<uint8_t*>& serial)
     {
-        const auto address = REMAP_ADDRESS(data);
-        address[0] = 99;
-        address[1] = 98;
-        address[2] = 97;
-        address[3] = 96;
-        address[4] = 95;
-        address[5] = 94;
-        address[6] = 93;
-        address[7] = 92;
+        serial.write_byte(99);
+        serial.write_byte(98);
+        serial.write_byte(97);
+        serial.write_byte(96);
+        serial.write_byte(95);
+        serial.write_byte(94);
+        serial.write_byte(93);
+        serial.write_byte(92);
     };
 
     ht.store(key, write);

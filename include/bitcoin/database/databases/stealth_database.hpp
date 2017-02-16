@@ -1,13 +1,12 @@
 /**
- * Copyright (c) 2011-2015 libbitcoin developers (see AUTHORS)
+ * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
  *
  * This file is part of libbitcoin.
  *
- * libbitcoin is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License with
- * additional permissions to the one published by the Free Software
- * Foundation, either version 3 of the License, or (at your option)
- * any later version. For more information see LICENSE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,7 +14,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #ifndef LIBBITCOIN_DATABASE_STEALTH_DATABASE_HPP
 #define LIBBITCOIN_DATABASE_STEALTH_DATABASE_HPP
@@ -35,7 +34,6 @@ class BCD_API stealth_database
 {
 public:
     typedef chain::stealth_compact::list list;
-    typedef std::function<void(memory_ptr)> write_function;
     typedef boost::filesystem::path path;
     typedef std::shared_ptr<shared_mutex> mutex_ptr;
 
@@ -62,14 +60,14 @@ public:
     void store(uint32_t prefix, uint32_t height,
         const chain::stealth_compact& row);
 
-    /// Delete stealth row (not implemented.
-    bool unlink();
+    /////// Delete stealth row (not implemented).
+    ////bool unlink();
 
     /// Commit latest inserts.
     void synchronize();
 
     /// Flush the memory map to disk.
-    bool flush();
+    bool flush() const;
 
 private:
     void write_index();

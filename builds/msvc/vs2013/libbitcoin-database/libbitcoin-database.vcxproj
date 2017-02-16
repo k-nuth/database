@@ -116,6 +116,8 @@
     <ClInclude Include="..\..\..\..\include\bitcoin\database\memory\allocator.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\database\memory\memory.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\database\memory\memory_map.hpp" />
+    <ClInclude Include="..\..\..\..\include\bitcoin\database\unspent_transaction.hpp" />
+    <ClInclude Include="..\..\..\..\include\bitcoin\database\unspent_outputs.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\database\primitives\hash_table_header.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\database\primitives\record_hash_table.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\database\primitives\record_list.hpp" />
@@ -143,6 +145,8 @@
     <ClCompile Include="..\..\..\..\src\memory\allocator.cpp" />
     <ClCompile Include="..\..\..\..\src\memory\memory_map.cpp" />
     <ClCompile Include="..\..\..\..\src\mman-win32\mman.c" />
+    <ClCompile Include="..\..\..\..\src\unspent_transaction.cpp" />
+    <ClCompile Include="..\..\..\..\src\unspent_outputs.cpp" />
     <ClCompile Include="..\..\..\..\src\primitives\record_list.cpp" />
     <ClCompile Include="..\..\..\..\src\primitives\record_manager.cpp" />
     <ClCompile Include="..\..\..\..\src\primitives\record_multimap_iterable.cpp" />
@@ -165,7 +169,7 @@
     <Import Project="..\..\..\..\..\..\nuget\boost_regex-vc120.1.57.0.0\build\native\boost_regex-vc120.targets" Condition="Exists('..\..\..\..\..\..\nuget\boost_regex-vc120.1.57.0.0\build\native\boost_regex-vc120.targets')" />
     <Import Project="..\..\..\..\..\..\nuget\boost_system-vc120.1.57.0.0\build\native\boost_system-vc120.targets" Condition="Exists('..\..\..\..\..\..\nuget\boost_system-vc120.1.57.0.0\build\native\boost_system-vc120.targets')" />
     <Import Project="..\..\..\..\..\..\nuget\boost_thread-vc120.1.57.0.0\build\native\boost_thread-vc120.targets" Condition="Exists('..\..\..\..\..\..\nuget\boost_thread-vc120.1.57.0.0\build\native\boost_thread-vc120.targets')" />
-    <Import Project="..\..\..\..\..\..\nuget\secp256k1_vc120.0.1.0.13\build\native\secp256k1_vc120.targets" Condition="Exists('..\..\..\..\..\..\nuget\secp256k1_vc120.0.1.0.13\build\native\secp256k1_vc120.targets')" />
+    <Import Project="..\..\..\..\..\..\nuget\secp256k1_vc120.0.1.0.14\build\native\secp256k1_vc120.targets" Condition="Exists('..\..\..\..\..\..\nuget\secp256k1_vc120.0.1.0.14\build\native\secp256k1_vc120.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -181,6 +185,6 @@
     <Error Condition="!Exists('..\..\..\..\..\..\nuget\boost_regex-vc120.1.57.0.0\build\native\boost_regex-vc120.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\..\..\..\nuget\boost_regex-vc120.1.57.0.0\build\native\boost_regex-vc120.targets'))" />
     <Error Condition="!Exists('..\..\..\..\..\..\nuget\boost_system-vc120.1.57.0.0\build\native\boost_system-vc120.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\..\..\..\nuget\boost_system-vc120.1.57.0.0\build\native\boost_system-vc120.targets'))" />
     <Error Condition="!Exists('..\..\..\..\..\..\nuget\boost_thread-vc120.1.57.0.0\build\native\boost_thread-vc120.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\..\..\..\nuget\boost_thread-vc120.1.57.0.0\build\native\boost_thread-vc120.targets'))" />
-    <Error Condition="!Exists('..\..\..\..\..\..\nuget\secp256k1_vc120.0.1.0.13\build\native\secp256k1_vc120.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\..\..\..\nuget\secp256k1_vc120.0.1.0.13\build\native\secp256k1_vc120.targets'))" />
+    <Error Condition="!Exists('..\..\..\..\..\..\nuget\secp256k1_vc120.0.1.0.14\build\native\secp256k1_vc120.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\..\..\..\nuget\secp256k1_vc120.0.1.0.14\build\native\secp256k1_vc120.targets'))" />
   </Target>
 </Project>

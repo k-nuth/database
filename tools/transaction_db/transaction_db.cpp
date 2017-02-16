@@ -100,7 +100,7 @@ int main(int argc, char** argv)
     if (command == "initialize_new")
         store::create(map_filename);
 
-    transaction_database db(map_filename, 1000, 50);
+    transaction_database db(map_filename, 1000, 50, 0);
 
     if (command == "initialize_new")
     {
@@ -123,7 +123,7 @@ int main(int argc, char** argv)
         }
 
         db.open();
-        auto result = db.get(hash, max_size_t);
+        auto result = db.get(hash, max_size_t, true);
         if (!result)
         {
             std::cout << "Not found!" << std::endl;
@@ -166,7 +166,7 @@ int main(int argc, char** argv)
         const auto result = db.open();
         BITCOIN_ASSERT(result);
 
-        db.store(height, index, tx);
+        db.store(tx, height, index);
         db.synchronize();
     }
     else if (command == "remove")
@@ -187,7 +187,7 @@ int main(int argc, char** argv)
         const auto result = db.open();
         BITCOIN_ASSERT(result);
 
-        db.unlink(hash);
+        db.unconfirm(hash);
         db.synchronize();
     }
     else

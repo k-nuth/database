@@ -1,13 +1,12 @@
 /**
- * Copyright (c) 2011-2015 libbitcoin developers (see AUTHORS)
+ * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
  *
  * This file is part of libbitcoin.
  *
- * libbitcoin is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License with
- * additional permissions to the one published by the Free Software
- * Foundation, either version 3 of the License, or (at your option)
- * any later version. For more information see LICENSE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,7 +14,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #ifndef LIBBITCOIN_DATABASE_SLAB_HASH_TABLE_IPP
 #define LIBBITCOIN_DATABASE_SLAB_HASH_TABLE_IPP
@@ -40,9 +39,16 @@ slab_hash_table<KeyType>::slab_hash_table(slab_hash_table_header& header,
 // be differentiated except in the order written (used by bip30).
 template <typename KeyType>
 file_offset slab_hash_table<KeyType>::store(const KeyType& key,
-    write_function write, const size_t value_size)
+    write_function write, size_t value_size)
 {
     // Store current bucket value.
+
+    // TODO: separate creation from linkage, create and populate first, then
+    // link under critical section. This will remove creation from the critical
+    // section and eliminate record data read-write concurrency.
+    // TODO: protect unlink from pop concurrency when implemented.
+    slab_row<KeyType> slab(manager_);
+    const auto position = slab.create(key, write, value_size);
 
     // For a given key in this hash table new item creation must be atomic from
     // read of the old value to write of the new. Otherwise concurrent write of
@@ -54,19 +60,17 @@ file_offset slab_hash_table<KeyType>::store(const KeyType& key,
     // Critical Section.
     mutex_.lock();
 
-    const auto old_begin = read_bucket_value(key);
-    slab_row<KeyType> item(manager_, 0);
-    const auto new_begin = item.create(key, value_size, old_begin);
-    write(item.data());
+    // Link new slab.next to current first slab.
+    slab.link(read_bucket_value(key));
 
-    // Link record to header.
-    link(key, new_begin);
+    // Link header to new slab as the new first.
+    link(key, position);
 
     mutex_.unlock();
     ///////////////////////////////////////////////////////////////////////////
 
     // Return the file offset of the slab data segment.
-    return new_begin + slab_row<KeyType>::prefix_size;
+    return position + slab_row<KeyType>::prefix_size;
 }
 
 // Execute a writer against a key's buffer if the key is found.
@@ -125,6 +129,7 @@ memory_ptr slab_hash_table<KeyType>::find(const KeyType& key) const
         // This may otherwise produce an infinite loop here.
         // It indicates that a write operation has interceded.
         // So we must return gracefully vs. looping forever.
+        // A parallel write operation cannot safely use this call.
         if (previous == current)
             return nullptr;
     }
@@ -167,8 +172,8 @@ bool slab_hash_table<KeyType>::unlink(const KeyType& key)
         current = item.next_position();
 
         // This may otherwise produce an infinite loop here.
-        // It indicates that a write operation has interceded.
         // So we must return gracefully vs. looping forever.
+        // Another write should not interceded here, so this is a hard fail.
         if (previous == current)
             return false;
     }
@@ -194,8 +199,7 @@ file_offset slab_hash_table<KeyType>::read_bucket_value(
 }
 
 template <typename KeyType>
-void slab_hash_table<KeyType>::link(const KeyType& key,
-    const file_offset begin)
+void slab_hash_table<KeyType>::link(const KeyType& key, file_offset begin)
 {
     header_.write(bucket_index(key), begin);
 }
@@ -203,7 +207,7 @@ void slab_hash_table<KeyType>::link(const KeyType& key,
 template <typename KeyType>
 template <typename ListItem>
 void slab_hash_table<KeyType>::release(const ListItem& item,
-    const file_offset previous)
+    file_offset previous)
 {
     ListItem previous_item(manager_, previous);
     previous_item.write_next_position(item.next_position());

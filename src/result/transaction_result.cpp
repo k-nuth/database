@@ -1,13 +1,12 @@
 /**
- * Copyright (c) 2011-2015 libbitcoin developers (see AUTHORS)
+ * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
  *
  * This file is part of libbitcoin.
  *
- * libbitcoin is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License with
- * additional permissions to the one published by the Free Software
- * Foundation, either version 3 of the License, or (at your option)
- * any later version. For more information see LICENSE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,7 +14,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <bitcoin/database/result/transaction_result.hpp>
 
@@ -23,6 +22,7 @@
 #include <cstdint>
 #include <utility>
 #include <bitcoin/bitcoin.hpp>
+#include <bitcoin/database/databases/transaction_database.hpp>
 #include <bitcoin/database/memory/memory.hpp>
 
 namespace libbitcoin {
@@ -30,7 +30,6 @@ namespace database {
 
 using namespace bc::chain;
 
-static const auto use_wire_encoding = false;
 static constexpr size_t value_size = sizeof(uint64_t);
 static constexpr size_t height_size = sizeof(uint32_t);
 static constexpr size_t version_size = sizeof(uint32_t);
@@ -59,6 +58,11 @@ transaction_result::operator bool() const
     return slab_ != nullptr;
 }
 
+void transaction_result::reset()
+{
+    slab_.reset();
+}
+
 const hash_digest& transaction_result::hash() const
 {
     return hash_;
@@ -84,8 +88,14 @@ bool transaction_result::is_spent(size_t fork_height) const
 
     BITCOIN_ASSERT(slab_);
     const auto memory = REMAP_ADDRESS(slab_);
-    const auto tx_start = memory + height_size + position_size;
-    auto deserial = make_unsafe_deserializer(tx_start);
+    const auto position_start = memory + height_size;
+    auto deserial = make_unsafe_deserializer(position_start);
+    const auto position = deserial.read_4_bytes_little_endian();
+
+    // Cannot be spent if unconfirmed.
+    if (position == transaction_database::unconfirmed)
+        return false;
+
     deserial.skip(version_size + locktime_size);
     const auto outputs = deserial.read_size_little_endian();
     BITCOIN_ASSERT(deserial);
@@ -96,8 +106,7 @@ bool transaction_result::is_spent(size_t fork_height) const
         const auto spender_height = deserial.read_4_bytes_little_endian();
         BITCOIN_ASSERT(deserial);
 
-        // A spend from above the fork height is not considered a spend.
-        // There cannot also be a spend below the fork height, so it's unspent.
+        // A spend from above the fork height is not an actual spend.
         if (spender_height == not_spent || spender_height > fork_height)
             return false;
 
@@ -114,9 +123,9 @@ chain::output transaction_result::output(uint32_t index) const
 {
     BITCOIN_ASSERT(slab_);
     const auto memory = REMAP_ADDRESS(slab_);
-    const auto tx_start = memory + height_size + position_size;
-    auto deserial = make_unsafe_deserializer(tx_start);
-    deserial.skip(version_size + locktime_size);
+    const auto outputs_start = memory + height_size + position_size +
+        version_size + locktime_size;
+    auto deserial = make_unsafe_deserializer(outputs_start);
     const auto outputs = deserial.read_size_little_endian();
     BITCOIN_ASSERT(deserial);
 
@@ -126,15 +135,14 @@ chain::output transaction_result::output(uint32_t index) const
     // Skip outputs until the target output.
     for (uint32_t output = 0; output < index; ++output)
     {
-        deserial.skip(height_size);
-        deserial.skip(value_size);
+        deserial.skip(height_size + value_size);
         deserial.skip(deserial.read_size_little_endian());
         BITCOIN_ASSERT(deserial);
     }
 
-    // Read and return the target output.
+    // Read and return the target output (including spender height).
     chain::output out;
-    out.from_data(deserial, use_wire_encoding);
+    out.from_data(deserial, false);
     return out;
 }
 
@@ -147,7 +155,7 @@ chain::transaction transaction_result::transaction() const
 
     // READ THE TX
     chain::transaction tx;
-    tx.from_data(deserial, use_wire_encoding);
+    tx.from_data(deserial, false);
 
     // TODO: add hash param to deserialization to eliminate this construction.
     return chain::transaction(std::move(tx), hash_digest(hash_));

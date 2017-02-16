@@ -1,13 +1,12 @@
 /**
- * Copyright (c) 2011-2015 libbitcoin developers (see AUTHORS)
+ * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
  *
  * This file is part of libbitcoin.
  *
- * libbitcoin is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License with
- * additional permissions to the one published by the Free Software
- * Foundation, either version 3 of the License, or (at your option)
- * any later version. For more information see LICENSE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,7 +14,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <bitcoin/database/store.hpp>
 
@@ -64,8 +63,9 @@ bool store::create(const path& file_path, bool init /*= true*/)
 // Construct.
 // ------------------------------------------------------------------------
 
-store::store(const path& prefix, bool with_indexes)
+store::store(const path& prefix, bool with_indexes, bool flush_each_write)
   : use_indexes(with_indexes),
+    flush_each_write_(flush_each_write),
     flush_lock_(prefix / FLUSH_LOCK),
     exclusive_lock_(prefix / EXCLUSIVE_LOCK),
 
@@ -87,7 +87,7 @@ store::store(const path& prefix, bool with_indexes)
 // ------------------------------------------------------------------------
 
 // Create files.
-bool store::create() const
+bool store::create()
 {
     const auto created =
         create(block_table) &&
@@ -108,12 +108,14 @@ bool store::create() const
 
 bool store::open()
 {
-    return flush_lock_.try_lock() && exclusive_lock_.lock();
+    return exclusive_lock_.lock() && flush_lock_.try_lock() &&
+        (flush_each_write_ || flush_lock_.lock_shared());
 }
 
 bool store::close()
 {
-    return exclusive_lock_.unlock();
+    return (flush_each_write_ || flush_lock_.unlock_shared()) &&
+        exclusive_lock_.unlock();
 }
 
 store::handle store::begin_read() const
@@ -131,24 +133,24 @@ bool store::is_write_locked(handle value) const
     return sequential_lock_.is_write_locked(value);
 }
 
-bool store::begin_write(bool lock)
+bool store::begin_write() const
 {
-    return (!lock || flush_lock()) && sequential_lock_.begin_write();
+    return flush_lock() && sequential_lock_.begin_write();
 }
 
-bool store::end_write(bool unlock)
+bool store::end_write() const
 {
-    return sequential_lock_.end_write() && (!unlock || flush_unlock());
+    return sequential_lock_.end_write() && flush_unlock();
 }
 
-bool store::flush_lock()
+bool store::flush_lock() const
 {
-    return flush_lock_.lock_shared();
+    return !flush_each_write_ || flush_lock_.lock_shared();
 }
 
-bool store::flush_unlock()
+bool store::flush_unlock() const
 {
-    return flush() && flush_lock_.unlock_shared();
+    return !flush_each_write_ || (flush() && flush_lock_.unlock_shared());
 }
 
 } // namespace data_base

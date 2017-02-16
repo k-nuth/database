@@ -1,13 +1,12 @@
 /**
- * Copyright (c) 2011-2015 libbitcoin developers (see AUTHORS)
+ * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
  *
  * This file is part of libbitcoin.
  *
- * libbitcoin is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License with
- * additional permissions to the one published by the Free Software
- * Foundation, either version 3 of the License, or (at your option)
- * any later version. For more information see LICENSE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,7 +14,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
@@ -67,16 +66,16 @@ BOOST_AUTO_TEST_CASE(transaction_database__test)
     const auto h2 = tx2.hash();
 
     store::create(DIRECTORY "/transaction");
-    transaction_database db(DIRECTORY "/transaction", 1000, 50);
+    transaction_database db(DIRECTORY "/transaction", 1000, 50, 0);
     BOOST_REQUIRE(db.create());
 
-    db.store(110, 88, tx1);
-    db.store(4, 6, tx2);
+    db.store(tx1, 110, 88);
+    db.store(tx2, 4, 6);
 
-    const auto result1 = db.get(h1, max_size_t);
+    const auto result1 = db.get(h1, max_size_t, false);
     BOOST_REQUIRE(result1.transaction().hash() == h1);
 
-    const auto result2 = db.get(h2, max_size_t);
+    const auto result2 = db.get(h2, max_size_t, false);
     BOOST_REQUIRE(result2.transaction().hash() == h2);
 
     db.synchronize();

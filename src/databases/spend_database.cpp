@@ -1,13 +1,12 @@
 /**
- * Copyright (c) 2011-2015 libbitcoin developers (see AUTHORS)
+ * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
  *
  * This file is part of libbitcoin.
  *
- * libbitcoin is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License with
- * additional permissions to the one published by the Free Software
- * Foundation, either version 3 of the License, or (at your option)
- * any later version. For more information see LICENSE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,7 +14,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <bitcoin/database/databases/spend_database.hpp>
 
@@ -36,9 +35,9 @@ static BC_CONSTEXPR auto record_size = hash_table_record_size<point>(value_size)
 // Spends use a hash table index, O(1).
 spend_database::spend_database(const path& filename, size_t buckets,
     size_t expansion, mutex_ptr mutex)
-  : initial_map_file_size_(record_hash_table_header_size(buckets) + 
+  : initial_map_file_size_(record_hash_table_header_size(buckets) +
         minimum_records_size),
-  
+
     lookup_file_(filename, mutex, expansion),
     lookup_header_(lookup_file_, buckets),
     lookup_manager_(lookup_file_, record_hash_table_header_size(buckets),
@@ -98,7 +97,7 @@ void spend_database::synchronize()
 }
 
 // Flush the memory map to disk.
-bool spend_database::flush()
+bool spend_database::flush() const
 {
     return lookup_file_.flush();
 }
@@ -125,12 +124,12 @@ input_point spend_database::get(const output_point& outpoint) const
 void spend_database::store(const chain::output_point& outpoint,
     const chain::input_point& spend)
 {
+    //OLD before merge (Feb2017)
     //std::cout << "void spend_database::store(const chain::output_point& outpoint, const chain::input_point& spend)\n";
-
-    const auto write = [&spend](memory_ptr data)
+    // const auto write = [&spend](memory_ptr data)
+    const auto write = [&](serializer<uint8_t*>& serial)
     {
-        auto serial = make_unsafe_serializer(REMAP_ADDRESS(data));
-        serial.write_bytes(spend.to_data());
+        spend.to_data(serial);
     };
 
     lookup_map_.store(outpoint, write);

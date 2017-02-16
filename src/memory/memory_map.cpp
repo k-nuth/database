@@ -1,13 +1,12 @@
 /**
- * Copyright (c) 2011-2015 libbitcoin developers (see AUTHORS)
+ * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
  *
  * This file is part of libbitcoin.
  *
- * libbitcoin is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License with
- * additional permissions to the one published by the Free Software
- * Foundation, either version 3 of the License, or (at your option)
- * any later version. For more information see LICENSE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,7 +14,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <bitcoin/database/memory/memory_map.hpp>
 
@@ -37,15 +36,15 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <boost/filesystem.hpp>
 #include <bitcoin/bitcoin.hpp>
 #include <bitcoin/database/memory/accessor.hpp>
 #include <bitcoin/database/memory/allocator.hpp>
 #include <bitcoin/database/memory/memory.hpp>
 
-// memory_map is be able to support 32 bit but because the database 
+// memory_map is be able to support 32 bit but because the database
 // requires a larger file this is not validated or supported.
 static_assert(sizeof(void*) == sizeof(uint64_t), "Not a 64 bit system!");
 
@@ -63,7 +62,7 @@ size_t memory_map::file_size(int file_handle)
     if (file_handle == INVALID_HANDLE)
         return 0;
 
-    // This is required because off_t is defined as long, whcih is 32 bits in
+    // This is required because off_t is defined as long, which is 32 bits in
     // msvc and 64 bits in linux/osx, and stat contains off_t.
 #ifdef _WIN32
 #ifdef _WIN64
@@ -112,20 +111,32 @@ bool memory_map::handle_error(const std::string& context,
     return false;
 }
 
-void memory_map::log_mapping()
+void memory_map::log_mapping() const
 {
     LOG_DEBUG(LOG_DATABASE)
         << "Mapping: " << filename_ << " [" << file_size_
         << "] (" << page() << ")";
 }
 
-void memory_map::log_resizing(size_t size)
+void memory_map::log_resizing(size_t size) const
 {
     LOG_DEBUG(LOG_DATABASE)
         << "Resizing: " << filename_ << " [" << size << "]";
 }
 
-void memory_map::log_unmapped()
+void memory_map::log_flushed() const
+{
+    LOG_DEBUG(LOG_DATABASE)
+        << "Flushed: " << filename_ << " [" << logical_size_ << "]";
+}
+
+void memory_map::log_unmapping() const
+{
+    LOG_DEBUG(LOG_DATABASE)
+        << "Unmapping: " << filename_ << " [" << logical_size_ << "]";
+}
+
+void memory_map::log_unmapped() const
 {
     LOG_DEBUG(LOG_DATABASE)
         << "Unmapped: " << filename_ << " [" << logical_size_ << "]";
@@ -164,6 +175,7 @@ memory_map::~memory_map()
 // ----------------------------------------------------------------------------
 
 // Map the database file and signal start.
+// Open is not idempotent (should be called on single thread).
 bool memory_map::open()
 {
     // Critical Section (internal/unconditional)
@@ -174,7 +186,6 @@ bool memory_map::open()
     {
         mutex_.unlock_upgrade();
         //---------------------------------------------------------------------
-        // Open is not idempotent (should be called on single thread).
         return false;
     }
 
@@ -201,7 +212,7 @@ bool memory_map::open()
     return true;
 }
 
-bool memory_map::flush()
+bool memory_map::flush() const
 {
     std::string error_name;
 
@@ -229,7 +240,7 @@ bool memory_map::flush()
     if (!error_name.empty())
         return handle_error(error_name, filename_);
 
-    ////log_flushed();
+    log_flushed();
     return true;
 }
 
@@ -237,6 +248,9 @@ bool memory_map::flush()
 bool memory_map::close()
 {
     std::string error_name;
+
+    ////if (!closed_)
+    ////    log_unmapping();
 
     // Critical Section (internal/unconditional)
     ///////////////////////////////////////////////////////////////////////////
@@ -280,7 +294,7 @@ bool memory_map::closed() const
 {
     // Critical Section (internal/unconditional)
     ///////////////////////////////////////////////////////////////////////////
-    shared_lock lock(mutex_);
+    REMAP_READ(mutex_);
 
     return closed_;
     ///////////////////////////////////////////////////////////////////////////
@@ -299,7 +313,6 @@ size_t memory_map::size() const
     ///////////////////////////////////////////////////////////////////////////
 }
 
-// throws runtime_error
 memory_ptr memory_map::access()
 {
     return REMAP_ACCESSOR(data_, mutex_);
@@ -325,9 +338,16 @@ memory_ptr memory_map::reserve(size_t size)
 // the required allocation and all resizing before writing a block.
 memory_ptr memory_map::reserve(size_t size, size_t expansion)
 {
+    // Internally preventing resize during close is not possible because of
+    // cross-file integrity. So we must coalesce all threads before closing.
+
     // Critical Section (internal)
     ///////////////////////////////////////////////////////////////////////////
     const auto memory = REMAP_ALLOCATOR(mutex_);
+
+    // The store should only have been closed after all threads terminated.
+    if (closed_)
+        throw std::runtime_error("Resize failure, store already closed.");
 
     if (size > file_size_)
     {
@@ -335,16 +355,25 @@ memory_ptr memory_map::reserve(size_t size, size_t expansion)
         // Expansion is an integral number that represents a real number factor.
         const size_t target = size * ((expansion + 100.0) / 100.0);
 
+        mutex_.unlock_upgrade_and_lock();
+        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+        // All existing database pointers are invalidated by this call.
         if (!truncate_mapped(target))
         {
             handle_error("resize", filename_);
             throw std::runtime_error("Resize failure, disk space may be low.");
         }
+
+        //---------------------------------------------------------------------
+        mutex_.unlock_and_lock_upgrade();
     }
 
     logical_size_ = size;
-    REMAP_DOWNGRADE(memory, data_);
+    REMAP_ASSIGN(memory, data_);
 
+    // Always return in shared lock state.
+    // The critical section does not end until this shared pointer is freed.
     return memory;
     ///////////////////////////////////////////////////////////////////////////
 }
@@ -352,7 +381,7 @@ memory_ptr memory_map::reserve(size_t size, size_t expansion)
 // privates
 // ----------------------------------------------------------------------------
 
-size_t memory_map::page()
+size_t memory_map::page() const
 {
 #ifdef _WIN32
     SYSTEM_INFO configuration;
