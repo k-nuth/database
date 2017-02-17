@@ -183,13 +183,18 @@ endif()
 
 add_library(bitprim-database ${MODE}
     src/data_base.cpp
+    src/settings.cpp
+    src/store.cpp
+    src/unspent_outputs.cpp
+    src/unspent_transaction.cpp
     src/databases/block_database.cpp
     src/databases/history_database.cpp
     src/databases/spend_database.cpp
     src/databases/stealth_database.cpp
     src/databases/transaction_database.cpp
-#    src/databases/unspent_database.cpp
+    #src/databases/unspent_database.cpp
     src/databases/unspent_database_v2.cpp
+
     src/memory/accessor.cpp
     src/memory/allocator.cpp
     src/memory/memory_map.cpp
@@ -201,8 +206,7 @@ add_library(bitprim-database ${MODE}
     src/primitives/slab_manager.cpp
     src/result/block_result.cpp
     src/result/transaction_result.cpp
-    src/settings.cpp
-    src/store.cpp)
+)
 
 
         target_include_directories(bitprim-database PUBLIC
@@ -508,6 +512,8 @@ install(TARGETS bitprim-database
 
 set(_bitprim_headers
     bitcoin/database/data_base.hpp
+    bitcoin/database/unspent_outputs.hpp
+    bitcoin/database/unspent_transaction.hpp
     bitcoin/database/databases/block_database.hpp
     bitcoin/database/databases/history_database.hpp
     bitcoin/database/databases/spend_database.hpp
