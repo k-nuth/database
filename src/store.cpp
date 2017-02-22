@@ -45,18 +45,15 @@ using namespace bc::database;
 const size_t store::without_indexes = max_uint32;
 
 // static
-bool store::create(const path& file_path, bool init /*= true*/)
+bool store::create(const path& file_path)
 {
     bc::ofstream file(file_path.string());
 
     if (file.bad())
         return false;
 
-    if (init) {
         // Write one byte so file is nonzero size (for memory map validation).
         file.put('x');
-    }
-
     return true;
 }
 

@@ -30,7 +30,6 @@
 #include <bitcoin/database/databases/transaction_database.hpp>
 #include <bitcoin/database/databases/history_database.hpp>
 #include <bitcoin/database/databases/stealth_database.hpp>
-
 #include <bitcoin/database/define.hpp>
 #include <bitcoin/database/settings.hpp>
 #include <bitcoin/database/store.hpp>
@@ -102,7 +101,6 @@ public:
     /// Returns unspent_duplicate if existing unspent hash duplicate exists.
     code push(const chain::transaction& tx, uint32_t forks);
 
-
     /// Returns store_block_missing_parent if not linked.
     /// Returns store_block_invalid_height if height is not the current top + 1.
     code push(const chain::block& block, size_t height);
@@ -159,15 +157,11 @@ private:
 
     // chain::block pop();      //OLD before merge
     bool pop(chain::block& out_block);
-
     // void pop_inputs(const inputs& inputs, size_t height);      //OLD before merge
     bool pop_inputs(const inputs& inputs, size_t height);
-
-
     // // void pop_outputs(const outputs& outputs, size_t height);
     // void pop_outputs(hash_digest const& tx_hash, outputs const& outputs, size_t height);      //OLD before merge
     bool pop_outputs(const outputs& outputs, size_t height);
-
     code verify_insert(const chain::block& block, size_t height);
     code verify_push(const chain::block& block, size_t height);
     code verify_push(const chain::transaction& tx);
@@ -189,7 +183,6 @@ private:
         block_const_ptr_list_const_ptr incoming_blocks,
         size_t first_height, dispatcher& dispatch, result_handler handler);
     void handle_push(const code& ec, result_handler handler) const;
-
 
     std::atomic<bool> closed_;
     const settings& settings_;

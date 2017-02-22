@@ -43,7 +43,7 @@ public:
     uint32_t spend_table_buckets;
     uint32_t history_table_buckets;
     uint32_t cache_capacity;
-    config::endpoint replier;
+    //config::endpoint replier;
 };
 
 } // namespace database

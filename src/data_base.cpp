@@ -511,8 +511,7 @@ void data_base::push_outputs(const hash_digest& tx_hash, size_t height,
     for (uint32_t index = 0; index < outputs.size(); ++index)
     {
         const auto& output = outputs[index];
-        const output_point point{ tx_hash, index };
-
+        // const output_point point{ tx_hash, index };
         // unspents_->store(point);
 
         // Try to extract an address.
@@ -521,6 +520,7 @@ void data_base::push_outputs(const hash_digest& tx_hash, size_t height,
             continue;
 
         const auto value = output.value();
+        const output_point point{ tx_hash, index };
         history_->add_output(address.hash(), point, height, value);
     }
 

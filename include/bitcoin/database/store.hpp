@@ -36,7 +36,7 @@ public:
     static const size_t without_indexes;
 
     /// Create a single file with one byte of arbitrary data.
-    static bool create(const path& file_path, bool init = true);
+    static bool create(const path& file_path);
 
     // Construct.
     // ------------------------------------------------------------------------
