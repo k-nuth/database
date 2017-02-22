@@ -54,8 +54,7 @@ data_base::data_base(const settings& settings)
   : closed_(true),
     settings_(settings),
     remap_mutex_(std::make_shared<shared_mutex>()),
-    store(settings.directory, settings.index_start_height < without_indexes,
-        settings.flush_writes)
+    store(settings.directory, settings.index_start_height < without_indexes, settings.flush_writes)
 {
     LOG_DEBUG(LOG_DATABASE)
         << "Buckets: "
@@ -512,6 +511,7 @@ void data_base::push_outputs(const hash_digest& tx_hash, size_t height,
     for (uint32_t index = 0; index < outputs.size(); ++index)
     {
         const auto& output = outputs[index];
+        const output_point point{ tx_hash, index };
 
         // unspents_->store(point);
 
@@ -521,7 +521,6 @@ void data_base::push_outputs(const hash_digest& tx_hash, size_t height,
             continue;
 
         const auto value = output.value();
-        const output_point point{ tx_hash, index };
         history_->add_output(address.hash(), point, height, value);
     }
 

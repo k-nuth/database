@@ -42,9 +42,7 @@ const size_t transaction_database::unconfirmed = max_uint32;
 // Transactions uses a hash table index, O(1).
 transaction_database::transaction_database(const path& map_filename,
     size_t buckets, size_t expansion, size_t cache_capacity, mutex_ptr mutex)
-  : initial_map_file_size_(slab_hash_table_header_size(buckets) +
-        minimum_slabs_size),
-
+  : initial_map_file_size_(slab_hash_table_header_size(buckets) + minimum_slabs_size),
     lookup_file_(map_filename, mutex, expansion),
     lookup_header_(lookup_file_, buckets),
     lookup_manager_(lookup_file_, slab_hash_table_header_size(buckets)),

@@ -68,6 +68,8 @@ public:
     /// Fetch block by hash using the hashtable.
     block_result get(const hash_digest& hash) const;
 
+
+    //NOTE: This is public interface, but apparently it is not used in Blockchain
     /// Store a block in the database.
     void store(const chain::block& block, size_t height);
 

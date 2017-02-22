@@ -163,6 +163,7 @@ block_result block_database::get(const hash_digest& hash) const
     return block_result(memory, hash);
 }
 
+//WARNING!! : This is public interface, but apparently it is not used in Blockchain
 void block_database::store(const block& block, size_t height)
 {
     BITCOIN_ASSERT(height <= max_uint32);

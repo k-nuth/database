@@ -31,8 +31,6 @@
 #include <bitcoin/database/databases/history_database.hpp>
 #include <bitcoin/database/databases/stealth_database.hpp>
 
-// #include <bitcoin/database/databases/unspent_database_v2.hpp>
-
 #include <bitcoin/database/define.hpp>
 #include <bitcoin/database/settings.hpp>
 #include <bitcoin/database/store.hpp>
@@ -77,10 +75,7 @@ public:
     const transaction_database& transactions() const;
 
     /// Invalid if indexes not initialized.
-    const spend_database& spends() const; //TODO: Fer: eliminar Spends, reemplazar por UTXO
-
-    // /// Invalid if indexes not initialized.
-    // const unspent_database_v2& unspents() const;
+    const spend_database& spends() const;
 
     /// Invalid if indexes not initialized.
     const history_database& history() const;
@@ -91,9 +86,11 @@ public:
     // Synchronous writers.
     // ------------------------------------------------------------------------
 
+    // TODO: Nuevo Feb2017
     /// Create flush lock if flush_writes is true, and set sequential lock.
     bool begin_insert() const;
 
+    // TODO: Nuevo Feb2017
     /// Clear flush lock if flush_writes is true, and clear sequential lock.
     bool end_insert() const;
 
@@ -104,6 +101,7 @@ public:
     /// Add an unconfirmed tx to the store (without indexing).
     /// Returns unspent_duplicate if existing unspent hash duplicate exists.
     code push(const chain::transaction& tx, uint32_t forks);
+
 
     /// Returns store_block_missing_parent if not linked.
     /// Returns store_block_invalid_height if height is not the current top + 1.

@@ -202,7 +202,10 @@ add_library(bitprim-database ${MODE}
     src/result/block_result.cpp
     src/result/transaction_result.cpp
     src/settings.cpp
-    src/store.cpp)
+    src/store.cpp
+    src/unspent_outputs.cpp
+    src/unspent_transaction.cpp
+    )
 
 
         target_include_directories(bitprim-database PUBLIC

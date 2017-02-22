@@ -27,7 +27,6 @@ using namespace boost::filesystem;
 
 settings::settings()
   : directory("blockchain"),
-
     flush_writes(false),
     file_growth_rate(50),
     index_start_height(0),
@@ -38,8 +37,7 @@ settings::settings()
     spend_table_buckets(0),
     history_table_buckets(0),
     cache_capacity(0)
-{
-}
+{}
 
 settings::settings(config::settings context)
   : settings()
