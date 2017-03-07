@@ -90,7 +90,8 @@ bool data_base::create(const block& genesis)
     // These leave the databases open.
     auto created =
         blocks_->create() &&
-        transactions_->create();
+        transactions_->create() &&
+        transactions_unconfirmed_->create();
 
     if (use_indexes)
 
@@ -126,7 +127,8 @@ bool data_base::open()
 
     auto opened =
         blocks_->open() &&
-        transactions_->open();
+        transactions_->open() &&
+        transactions_unconfirmed_->open();
 
     if (use_indexes)
         // OLD before merging (Feb2017)
@@ -154,7 +156,8 @@ bool data_base::close()
 
     auto closed =
         blocks_->close() &&
-        transactions_->close();
+        transactions_->close() &&
+        transactions_unconfirmed_->close();
 
     if (use_indexes)
 
@@ -186,6 +189,12 @@ void data_base::start()
         settings_.transaction_table_buckets, settings_.file_growth_rate,
         settings_.cache_capacity, remap_mutex_);
 
+    //TODO: BITPRIM: FER: transaction_table_buckets and file_growth_rate
+    transactions_unconfirmed_ = std::make_shared<transaction_unconfirmed_database>(transaction_table,
+        settings_.transaction_unconfirmed_table_buckets, settings_.file_growth_rate,
+        settings_.cache_capacity, remap_mutex_);
+
+
     if (use_indexes)
     {
         // OLD before merging (Feb2017)
@@ -215,7 +224,8 @@ bool data_base::flush() const
 
     auto flushed =
         blocks_->flush() &&
-        transactions_->flush();
+        transactions_->flush() &&
+        transactions_unconfirmed_->flush();
 
     if (use_indexes)
         // OLD before merging (Feb2017)
@@ -243,6 +253,7 @@ void data_base::synchronize()
     }
 
     transactions_->synchronize();
+    transactions_unconfirmed_->synchronize();
     blocks_->synchronize();
 }
 
@@ -257,6 +268,11 @@ const block_database& data_base::blocks() const
 const transaction_database& data_base::transactions() const
 {
     return *transactions_;
+}
+
+const transaction_unconfirmed_database& data_base::transactions_unconfirmed() const
+{
+    return *transactions_unconfirmed_;
 }
 
 // Invalid if indexes not initialized.
@@ -386,7 +402,9 @@ code data_base::push(const chain::transaction& tx, uint32_t forks)
 
     // When position is unconfirmed, height is used to store validation forks.
     transactions_->store(tx, forks, transaction_database::unconfirmed);
+    transactions_unconfirmed_->store(tx); //, forks, transaction_unconfirmed_database::unconfirmed);
     transactions_->synchronize();
+    transactions_unconfirmed_->synchronize();
 
     return end_write() ? error::success : error::operation_failed;
     // End Sequential Lock and Flush Lock
@@ -437,6 +455,7 @@ bool data_base::push_transactions(const chain::block& block, size_t height,
     {
         const auto& tx = txs[position];
         transactions_->store(tx, height, position);
+        transactions_unconfirmed_->unlink_if_exists(tx.hash());
 
         if (height < settings_.index_start_height)
             continue;
@@ -459,10 +478,13 @@ bool data_base::push_heights(const chain::block& block, size_t height)
     const auto& txs = block.transactions();
 
     // Skip coinbase as it has no previous output.
-    for (auto tx = txs.begin() + 1; tx != txs.end(); ++tx)
-        for (const auto& input: tx->inputs())
-            if (!transactions_->spend(input.previous_output(), height))
+    for (auto tx = txs.begin() + 1; tx != txs.end(); ++tx) {
+        for (const auto& input: tx->inputs()) {
+            if (!transactions_->spend(input.previous_output(), height)) {
                 return false;
+            }
+        }
+    }
 
     return true;
 }
@@ -476,14 +498,6 @@ void data_base::push_inputs(const hash_digest& tx_hash, size_t height,
     {
         const auto& input = inputs[index];
         const input_point point{ tx_hash, index };
-
-        // // OLD before merging (Feb2017)
-        // /* bool */ transactions_->update(input.previous_output(), height);
-
-        // if (height < settings_.index_start_height)
-        //     continue;
-
-        // unspents_->remove(input.previous_output());
 
         spends_->store(input.previous_output(), point);
 
@@ -511,8 +525,6 @@ void data_base::push_outputs(const hash_digest& tx_hash, size_t height,
     for (uint32_t index = 0; index < outputs.size(); ++index)
     {
         const auto& output = outputs[index];
-        // const output_point point{ tx_hash, index };
-        // unspents_->store(point);
 
         // Try to extract an address.
         const auto address = output.address();
@@ -531,9 +543,7 @@ void data_base::push_outputs(const hash_digest& tx_hash, size_t height,
 void data_base::push_stealth(const hash_digest& tx_hash, size_t height,
     const output::list& outputs)
 {
-    // OLD before merging (Feb2017)
     // std::cout << "void data_base::push_stealth(const hash_digest& tx_hash, size_t height, const output::list& outputs)\n";
-    // if (height < settings_.index_start_height || outputs.empty())
     if (outputs.empty())
         return;
 
@@ -609,6 +619,8 @@ bool data_base::pop(block& out_block)
     {
         if (!transactions_->unconfirm(tx->hash()))
             return false;
+
+        transactions_unconfirmed_->store(tx);
 
         if (!pop_outputs(tx->outputs(), height))
             return false;
@@ -765,9 +777,6 @@ void data_base::handle_push_transactions(const code& ec, block_const_ptr block,
 {
     if (ec)
     {
-        // OLD before merging (Feb2017)
-        // /* bool */ transactions_->unlink(tx->hash());
-        // pop_outputs(tx->hash(), tx->outputs(), height);
         handler(ec);
         return;
     }
@@ -814,10 +823,6 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks,
 
     const auto fork = result.height();
     const auto size = top - fork;
-
-    // OLD before merging (Feb2017)
-    // // /* bool */ spends_->unlink(input->previous_output());
-    // unspents_->store(input->previous_output());
 
     // The fork is at the top of the chain, nothing to pop.
     if (size == 0)

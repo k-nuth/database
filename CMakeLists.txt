@@ -156,31 +156,6 @@ if (ENABLE_SHARED)
   set(MODE SHARED)
 endif()
 
-#add_library(bitprim-database ${MODE}
-#  src/data_base.cpp
-#  src/settings.cpp
-#  src/databases/block_database.cpp
-#  src/databases/history_database.cpp
-#  src/databases/spend_database.cpp
-#  src/databases/stealth_database.cpp
-#  src/databases/transaction_database.cpp
-#
-#  # src/databases/unspent_database.cpp
-#  src/databases/unspent_database_v2.cpp
-#
-#  src/memory/accessor.cpp
-#  src/memory/allocator.cpp
-#  src/memory/memory_map.cpp
-#  src/mman-win32/mman.c
-#  src/mman-win32/mman.h
-#  src/primitives/record_list.cpp
-#  src/primitives/record_manager.cpp
-#  src/primitives/record_multimap_iterable.cpp
-#  src/primitives/record_multimap_iterator.cpp
-#  src/primitives/slab_manager.cpp
-#  src/result/block_result.cpp
-#  src/result/transaction_result.cpp)
-
 add_library(bitprim-database ${MODE}
     src/data_base.cpp
     src/settings.cpp
@@ -192,8 +167,7 @@ add_library(bitprim-database ${MODE}
     src/databases/spend_database.cpp
     src/databases/stealth_database.cpp
     src/databases/transaction_database.cpp
-    #src/databases/unspent_database.cpp
-    # src/databases/unspent_database_v2.cpp
+    src/databases/transaction_unconfirmed_database.cpp
 
     src/memory/accessor.cpp
     src/memory/allocator.cpp
@@ -519,8 +493,7 @@ set(_bitprim_headers
     bitcoin/database/databases/spend_database.hpp
     bitcoin/database/databases/stealth_database.hpp
     bitcoin/database/databases/transaction_database.hpp
-#    bitcoin/database/databases/unspent_database.hpp
-    # bitcoin/database/databases/unspent_database_v2.hpp
+    bitcoin/database/databases/transaction_unconfirmed_database.hpp
     bitcoin/database/define.hpp
     bitcoin/database/impl/hash_table_header.ipp
     bitcoin/database/impl/record_hash_table.ipp

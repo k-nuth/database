@@ -27,6 +27,7 @@
 #include <bitcoin/database/databases/spend_database.hpp>
 #include <bitcoin/database/databases/stealth_database.hpp>
 #include <bitcoin/database/databases/transaction_database.hpp>
+#include <bitcoin/database/databases/transaction_unconfirmed_database.hpp>
 
 //// #include <bitcoin/database/databases/unspent_database.hpp>
 // #include <bitcoin/database/databases/unspent_database_v2.hpp>

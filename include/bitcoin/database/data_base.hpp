@@ -28,6 +28,7 @@
 #include <bitcoin/database/databases/block_database.hpp>
 #include <bitcoin/database/databases/spend_database.hpp>
 #include <bitcoin/database/databases/transaction_database.hpp>
+#include <bitcoin/database/databases/transaction_unconfirmed_database.hpp>
 #include <bitcoin/database/databases/history_database.hpp>
 #include <bitcoin/database/databases/stealth_database.hpp>
 #include <bitcoin/database/define.hpp>
@@ -72,6 +73,7 @@ public:
     const block_database& blocks() const;
 
     const transaction_database& transactions() const;
+    const transaction_unconfirmed_database& transactions_unconfirmed() const;
 
     /// Invalid if indexes not initialized.
     const spend_database& spends() const;
@@ -132,8 +134,8 @@ protected:
 
     std::shared_ptr<block_database> blocks_;
     std::shared_ptr<transaction_database> transactions_;
+    std::shared_ptr<transaction_unconfirmed_database> transactions_unconfirmed_;
     std::shared_ptr<spend_database> spends_;
-    // std::shared_ptr<unspent_database_v2> unspents_;
 
     std::shared_ptr<history_database> history_;
     std::shared_ptr<stealth_database> stealth_;
