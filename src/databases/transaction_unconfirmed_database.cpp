@@ -39,13 +39,12 @@ const size_t transaction_unconfirmed_database::unconfirmed = max_uint32;
 
 // Transactions uses a hash table index, O(1).
 transaction_unconfirmed_database::transaction_unconfirmed_database(const path& map_filename,
-    size_t buckets, size_t expansion, size_t cache_capacity, mutex_ptr mutex)
+    size_t buckets, size_t expansion, mutex_ptr mutex)
   : initial_map_file_size_(slab_hash_table_header_size(buckets) + minimum_slabs_size),
     lookup_file_(map_filename, mutex, expansion),
     lookup_header_(lookup_file_, buckets),
     lookup_manager_(lookup_file_, slab_hash_table_header_size(buckets)),
-    lookup_map_(lookup_header_, lookup_manager_),
-    cache_(cache_capacity)
+    lookup_map_(lookup_header_, lookup_manager_)
 {
 }
 
@@ -154,17 +153,6 @@ void transaction_unconfirmed_database::store(const chain::transaction& tx)
 
     // Create slab for the new tx instance.
     lookup_map_.store(hash, write, value_size);
-    
-    // cache_.add(tx, height, unconfirmed != unconfirmed);
-    cache_.add(tx, 0, false);
-
-    // // We report theis here because its a steady interval (block announce).
-    // if (!cache_.disabled() && unconfirmed == 0)
-    // {
-    //     LOG_DEBUG(LOG_DATABASE)
-    //         << "Output cache hit rate: " << cache_.hit_rate() << ", size: "
-    //         << cache_.size();
-    // }
 }
 
 // bool transaction_unconfirmed_database::spend(const output_point& point, size_t spender_height)

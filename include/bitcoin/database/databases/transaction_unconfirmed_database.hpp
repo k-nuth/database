@@ -49,7 +49,7 @@ public:
 
     /// Construct the database.
     transaction_unconfirmed_database(const path& map_filename, size_t buckets,
-        size_t expansion, size_t cache_capacity, mutex_ptr mutex=nullptr);
+        size_t expansion, mutex_ptr mutex=nullptr);
 
     /// Close the database (all threads must first be stopped).
     ~transaction_unconfirmed_database();
@@ -108,9 +108,6 @@ private:
     slab_hash_table_header lookup_header_;
     slab_manager lookup_manager_;
     slab_map lookup_map_;
-
-    // This is thread safe, and as a cache is mutable.
-    mutable unspent_outputs cache_;
 };
 
 } // namespace database

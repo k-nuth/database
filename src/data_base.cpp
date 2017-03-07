@@ -191,8 +191,7 @@ void data_base::start()
 
     //TODO: BITPRIM: FER: transaction_table_buckets and file_growth_rate
     transactions_unconfirmed_ = std::make_shared<transaction_unconfirmed_database>(transaction_unconfirmed_table,
-        settings_.transaction_unconfirmed_table_buckets, settings_.file_growth_rate,
-        settings_.cache_capacity, remap_mutex_);
+        settings_.transaction_unconfirmed_table_buckets, settings_.file_growth_rate, remap_mutex_);
 
 
     if (use_indexes)
