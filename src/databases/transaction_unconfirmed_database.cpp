@@ -31,10 +31,8 @@ using namespace bc::chain;
 using namespace bc::machine;
 
 static constexpr auto value_size = sizeof(uint64_t);
-static constexpr auto height_size = sizeof(uint32_t);
 static constexpr auto version_size = sizeof(uint32_t);
 static constexpr auto locktime_size = sizeof(uint32_t);
-static constexpr auto position_size = sizeof(uint32_t);
 static constexpr auto version_lock_size = version_size + locktime_size;
 
 const size_t transaction_unconfirmed_database::unconfirmed = max_uint32;

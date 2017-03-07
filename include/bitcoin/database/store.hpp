@@ -86,6 +86,7 @@ public:
     const path block_table;
     const path block_index;
     const path transaction_table;
+    const path transaction_unconfirmed_table;
 
     /// Optional indexes.
     const path spend_table;
