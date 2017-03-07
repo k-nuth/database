@@ -175,7 +175,7 @@ bool transaction_unconfirmed_database::unlink_if_exists(hash_digest const& hash)
 
 template <typename UnaryFunction>
 void transaction_unconfirmed_database::for_each(UnaryFunction f) const {
-    lookup_map_.for_each([](memory_ptr slab){
+    lookup_map_.for_each([&f](memory_ptr slab){
         if (slab != nullptr) {
             transaction_result res(slab);
             f(res.transaction());
