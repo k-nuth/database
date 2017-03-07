@@ -173,18 +173,6 @@ bool transaction_unconfirmed_database::unlink_if_exists(hash_digest const& hash)
     return unlink(hash);
 }
 
-template <typename UnaryFunction>
-void transaction_unconfirmed_database::for_each(UnaryFunction f) const {
-    lookup_map_.for_each([&f](memory_ptr slab){
-        if (slab != nullptr) {
-            transaction_result res(slab);
-            return f(res.transaction());
-        } else {
-            std::cout << "transaction_unconfirmed_database::for_each nullptr slab\n";
-        }
-        return true;
-    });
-}
 
 } // namespace database
 } // namespace libbitcoin

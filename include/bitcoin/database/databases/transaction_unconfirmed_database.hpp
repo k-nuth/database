@@ -95,9 +95,21 @@ public:
     bool unlink(hash_digest const& hash);
     bool unlink_if_exists(hash_digest const& hash);
 
-    template <typename UnaryFunction>
+//    template <typename UnaryFunction>
         //requires Domain of UnaryFunction is chain::transaction
-    void for_each(UnaryFunction f) const;
+//    void for_each(UnaryFunction f) const;
+    template <typename UnaryFunction>
+    void for_each(UnaryFunction f) const {
+        lookup_map_.for_each([&f](memory_ptr slab){
+            if (slab != nullptr) {
+                transaction_result res(slab);
+                return f(res.transaction());
+            } else {
+                std::cout << "transaction_unconfirmed_database::for_each nullptr slab\n";
+            }
+            return true;
+        });
+    }
 
 private:
     typedef slab_hash_table<hash_digest> slab_map;
