@@ -40,6 +40,7 @@ public:
     uint32_t index_start_height;
     uint32_t block_table_buckets;
     uint32_t transaction_table_buckets;
+    uint32_t transaction_unconfirmed_table_buckets;
     uint32_t spend_table_buckets;
     uint32_t history_table_buckets;
     uint32_t cache_capacity;
