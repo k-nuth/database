@@ -237,8 +237,10 @@ void slab_hash_table<KeyType>::for_each(UnaryFunction f) const {
             const slab_row<KeyType> item(manager_, current);
 
             //DO SOMETHING
-            f(item.data()); //memory_ptr
- 
+            if (!f(item.data())) { //memory_ptr
+                return;
+            }
+
             const auto previous = current;
             current = item.next_position();
 

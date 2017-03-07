@@ -178,11 +178,11 @@ void transaction_unconfirmed_database::for_each(UnaryFunction f) const {
     lookup_map_.for_each([](memory_ptr slab){
         if (slab != nullptr) {
             transaction_result res(slab);
-            f(res.transaction());
+            return f(res.transaction());
         } else {
             std::cout << "transaction_unconfirmed_database::for_each nullptr slab\n";
         }
-
+        return true;
     });
 }
 
