@@ -95,6 +95,10 @@ public:
     bool unlink(hash_digest const& hash);
     bool unlink_if_exists(hash_digest const& hash);
 
+    template <typename UnaryFunction>
+        //requires Domain of UnaryFunction is chain::transaction
+    void for_each(UnaryFunction f) const;
+
 private:
     typedef slab_hash_table<hash_digest> slab_map;
 

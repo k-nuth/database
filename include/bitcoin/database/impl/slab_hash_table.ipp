@@ -213,6 +213,50 @@ void slab_hash_table<KeyType>::release(const ListItem& item,
     previous_item.write_next_position(item.next_position());
 }
 
+template <typename KeyType>
+file_offset slab_hash_table<KeyType>::read_bucket_value_by_index(array_index index) const
+{
+    const auto value = header_.read(index);
+    static_assert(sizeof(value) == sizeof(file_offset), "Invalid size");
+    return value;
+}
+
+
+
+template <typename KeyType>
+template <typename UnaryFunction>
+void slab_hash_table<KeyType>::for_each(UnaryFunction f) const {
+    array_index index = 0;
+    while (index < header_.size()) {
+
+        // Find start item...
+        auto current = read_bucket_value_by_index(index);
+
+        // Iterate through list...
+        while (current != header_.empty) {
+            const slab_row<KeyType> item(manager_, current);
+
+            //DO SOMETHING
+            f(item.data()); //memory_ptr
+ 
+            const auto previous = current;
+            current = item.next_position();
+
+            // This may otherwise produce an infinite loop here.
+            // It indicates that a write operation has interceded.
+            // So we must return gracefully vs. looping forever.
+            // A parallel write operation cannot safely use this call.
+            if (previous == current)
+                break;
+        }
+
+        ++index;
+    }
+
+
+}
+
+
 } // namespace database
 } // namespace libbitcoin
 

@@ -74,6 +74,9 @@ public:
     /// Delete a key-value pair from the hashtable by unlinking the node.
     bool unlink(const KeyType& key);
 
+    template <typename UnaryFunction>
+    void for_each(UnaryFunction f) const;
+
 private:
 
     // What is the bucket given a hash.
@@ -88,6 +91,9 @@ private:
     // Release node from linked chain.
     template <typename ListItem>
     void release(const ListItem& item, file_offset previous);
+
+    file_offset read_bucket_value_by_index(array_index index) const;
+
 
     slab_hash_table_header& header_;
     slab_manager& manager_;

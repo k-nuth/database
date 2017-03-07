@@ -45,8 +45,7 @@ transaction_unconfirmed_database::transaction_unconfirmed_database(const path& m
     lookup_header_(lookup_file_, buckets),
     lookup_manager_(lookup_file_, slab_hash_table_header_size(buckets)),
     lookup_map_(lookup_header_, lookup_manager_)
-{
-}
+{}
 
 transaction_unconfirmed_database::~transaction_unconfirmed_database()
 {
@@ -174,8 +173,18 @@ bool transaction_unconfirmed_database::unlink_if_exists(hash_digest const& hash)
     return unlink(hash);
 }
 
+template <typename UnaryFunction>
+void transaction_unconfirmed_database::for_each(UnaryFunction f) const {
+    lookup_map_.for_each([](memory_ptr slab){
+        if (slab != nullptr) {
+            transaction_result res(slab);
+            f(res.transaction());
+        } else {
+            std::cout << "transaction_unconfirmed_database::for_each nullptr slab\n";
+        }
 
-
+    });
+}
 
 } // namespace database
 } // namespace libbitcoin
