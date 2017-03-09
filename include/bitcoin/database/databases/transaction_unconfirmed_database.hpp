@@ -103,7 +103,9 @@ public:
         lookup_map_.for_each([&f](memory_ptr slab){
             if (slab != nullptr) {
                 transaction_result res(slab);
-                return f(res.transaction());
+                auto tx = res.transaction();
+                tx.recompute_hash();
+                return f(tx);
             } else {
                 std::cout << "transaction_unconfirmed_database::for_each nullptr slab\n";
             }
