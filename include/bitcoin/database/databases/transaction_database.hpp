@@ -71,6 +71,12 @@ public:
         bool& out_coinbase, const chain::output_point& point,
         size_t fork_height, bool require_confirmed) const;
 
+    /// Get the output at the specified index within the transaction.
+    bool get_output_is_confirmed(chain::output& out_output, size_t& out_height,
+        bool& out_coinbase, bool& out_is_confirmed, const chain::output_point& point,
+        size_t fork_height, bool require_confirmed) const;
+
+
     /// Store a transaction in the database.
     void store(const chain::transaction& tx, size_t height, size_t position);
 

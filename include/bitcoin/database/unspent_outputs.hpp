@@ -68,6 +68,11 @@ public:
         const chain::output_point& point, size_t fork_height,
         bool require_confirmed) const;
 
+    bool get_is_confirmed(chain::output& out_output, size_t& out_height, bool& out_coinbase, bool& out_is_confirmed,
+        const chain::output_point& point, size_t fork_height,
+        bool require_confirmed) const;
+
+
 private:
     // A bidirection map is used for efficient output and position retrieval.
     // This produces the effect of a circular buffer tx hash table of outputs.

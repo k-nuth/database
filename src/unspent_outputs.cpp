@@ -200,5 +200,51 @@ bool unspent_outputs::get(output& out_output, size_t& out_height,
     ///////////////////////////////////////////////////////////////////////////
 }
 
+bool unspent_outputs::get_is_confirmed(output& out_output, size_t& out_height, 
+    bool& out_coinbase, bool& out_is_confirmed, const output_point& point, size_t fork_height,
+    bool require_confirmed) const
+{
+    if (disabled())
+        return false;
+
+    ++queries_;
+    const unspent_transaction key{ point };
+
+    // Critical Section
+    ///////////////////////////////////////////////////////////////////////////
+    shared_lock lock(mutex_);
+
+    // Find the unspent tx entry.
+    const auto tx = unspent_.left.find(key);
+
+    if (tx == unspent_.left.end() ||
+        (require_confirmed && !tx->first.is_confirmed()))
+        return false;
+
+    // Find the output at the specified index for the found unspent tx.
+    const auto outputs = tx->first.outputs();
+    const auto output = outputs->find(point.index());
+
+    if (output == outputs->end())
+        return false;
+
+    // Determine if the cached unspent tx is above specified fork_height.
+    // Since the hash table does not allow duplicates there are no others.
+    const auto& unspent = tx->first;
+    const auto height = unspent.height();
+
+    if (height > fork_height)
+        return false;
+
+    ++hits_;
+    out_height = height;
+    out_coinbase = unspent.is_coinbase();
+    out_output = output->second;
+    out_is_confirmed = tx->first.is_confirmed();
+    return true;
+    ///////////////////////////////////////////////////////////////////////////
+}
+
+
 } // namespace database
 } // namespace libbitcoin

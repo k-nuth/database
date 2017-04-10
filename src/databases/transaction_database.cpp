@@ -174,6 +174,29 @@ bool transaction_database::get_output(output& out_output, size_t& out_height,
     return true;
 }
 
+bool transaction_database::get_output_is_confirmed(output& out_output, size_t& out_height,
+    bool& out_coinbase, bool& out_is_confirmed, const output_point& point, size_t fork_height,
+    bool require_confirmed) const
+{
+    if (cache_.get_is_confirmed(out_output, out_height, out_coinbase, out_is_confirmed, point, fork_height,
+        require_confirmed))
+        return true;
+
+    const auto hash = point.hash();
+    const auto slab = find(hash, fork_height, require_confirmed);
+
+    // The transaction does not exist at/below fork with matching confirmation.
+    if (!slab)
+        return false;
+
+    transaction_result result (slab, hash);
+    out_height = result.height();
+    out_coinbase = result.position() == 0;
+    out_output = result.output(point.index());
+    out_is_confirmed = result.position() != unconfirmed;
+    return true;
+}
+
 void transaction_database::store(const chain::transaction& tx,
     size_t height, size_t position)
 {
