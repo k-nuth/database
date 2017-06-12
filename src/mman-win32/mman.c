@@ -1,5 +1,16 @@
 /* mman-win32 from code.google.com/p/mman-win32 (MIT License). */
 
+
+#ifdef _WIN32_WINNT
+#define _WIN32_WINNT_TEMP _WIN32_WINNT
+#undef _WIN32_WINNT
+#endif
+
+#ifndef _WIN32_WINNT
+//#define _WIN32_WINNT 0x502
+#define _WIN32_WINNT 0x0600
+#endif
+
 #include "mman.h"
 
 #ifdef _WIN32
@@ -10,7 +21,7 @@
 #include <io.h>
 
 #ifndef FILE_MAP_EXECUTE
-    #define FILE_MAP_EXECUTE 0x0020
+#define FILE_MAP_EXECUTE 0x0020
 #endif
 
 /* private functions */
@@ -35,7 +46,7 @@ static DWORD protect_page(const int prot)
     if ((prot & PROT_EXEC) != 0)
     {
         protect = ((prot & PROT_WRITE) != 0) ? PAGE_EXECUTE_READWRITE :
-            PAGE_EXECUTE_READ;
+                  PAGE_EXECUTE_READ;
     }
     else
     {
@@ -69,7 +80,7 @@ static DWORD protect_file(const int prot)
 void* mmap(void* addr, size_t len, int prot, int flags, int fildes, oft__ off)
 {
 #ifdef _MSC_VER
-#pragma warning(push)
+    #pragma warning(push)
 #pragma warning(disable: 4293)
 #endif
 
@@ -96,8 +107,8 @@ void* mmap(void* addr, size_t len, int prot, int flags, int fildes, oft__ off)
         return MAP_FAILED;
     }
 
-    const HANDLE handle = ((flags & MAP_ANONYMOUS) == 0) ? 
-        (HANDLE)_get_osfhandle(fildes) : INVALID_HANDLE_VALUE;
+    const HANDLE handle = ((flags & MAP_ANONYMOUS) == 0) ?
+                          (HANDLE)_get_osfhandle(fildes) : INVALID_HANDLE_VALUE;
 
     if ((flags & MAP_ANONYMOUS) == 0 && handle == INVALID_HANDLE_VALUE)
     {
@@ -106,7 +117,7 @@ void* mmap(void* addr, size_t len, int prot, int flags, int fildes, oft__ off)
     }
 
     const HANDLE mapping = CreateFileMapping(handle, NULL, protect, max_hi,
-        max_lo, NULL);
+                                             max_lo, NULL);
 
     if (mapping == NULL)
     {
@@ -210,7 +221,7 @@ int ftruncate(int fd, oft__ size)
     big.QuadPart = (LONGLONG)size;
 
     const HANDLE handle = (HANDLE)_get_osfhandle(fd);
-    const position = SetFilePointerEx(handle, big, NULL, FILE_BEGIN);
+    const BOOL position = SetFilePointerEx(handle, big, NULL, FILE_BEGIN);
 
     if (position == INVALID_SET_FILE_POINTER || SetEndOfFile(handle) == FALSE)
     {
@@ -235,4 +246,11 @@ int ftruncate(int fd, oft__ size)
     return 0;
 }
 
+#endif /*_MSC_VER*/
+
+
+#ifdef _WIN32_WINNT_TEMP
+#undef _WIN32_WINNT
+#define _WIN32_WINNT _WIN32_WINNT_TEMP
+#undef _WIN32_WINNT_TEMP
 #endif
