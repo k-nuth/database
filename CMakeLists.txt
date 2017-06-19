@@ -16,11 +16,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #==============================================================================
 # Implement --with-tests and declare WITH_TESTS.
 #------------------------------------------------------------------------------
-option(WITH_TESTS "Compile with unit tests." ON)
+option(WITH_TESTS "Compile with unit tests." OFF)
 
 # Implement --with-tools and declare WITH_TOOLS.
 #------------------------------------------------------------------------------
-option(WITH_TOOLS "Compile with tools." ON)
+option(WITH_TOOLS "Compile with tools." OFF)
 
 # Inherit --enable-shared and define BOOST_TEST_DYN_LINK.
 #------------------------------------------------------------------------------
@@ -182,8 +182,10 @@ add_library(bitprim-database ${MODE}
     src/result/transaction_result.cpp
   )
 
+set_property(TARGET bitprim-database PROPERTY POSITION_INDEPENDENT_CODE ON)
+  
 
-        target_include_directories(bitprim-database PUBLIC
+target_include_directories(bitprim-database PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 
