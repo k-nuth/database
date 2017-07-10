@@ -508,10 +508,8 @@ set(_bitprim_headers
         bitcoin/database/define.hpp
         bitcoin/database/impl/hash_table_header.ipp
         bitcoin/database/impl/record_hash_table.ipp
-        bitcoin/database/impl/record_hash_table_set.ipp
         bitcoin/database/impl/record_multimap.ipp
         bitcoin/database/impl/record_row.ipp
-        bitcoin/database/impl/record_row_set.ipp
         bitcoin/database/impl/remainder.ipp
         bitcoin/database/impl/slab_hash_table.ipp
         bitcoin/database/impl/slab_row.ipp
@@ -520,9 +518,7 @@ set(_bitprim_headers
         bitcoin/database/memory/memory.hpp
         bitcoin/database/memory/memory_map.hpp
         bitcoin/database/primitives/hash_table_header.hpp
-        bitcoin/database/primitives/mem_hash_set.hpp
         bitcoin/database/primitives/record_hash_table.hpp
-        bitcoin/database/primitives/record_hash_table_set.hpp
         bitcoin/database/primitives/record_list.hpp
         bitcoin/database/primitives/record_manager.hpp
         bitcoin/database/primitives/record_multimap.hpp
