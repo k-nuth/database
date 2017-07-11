@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/bitprim/bitprim-database.svg?branch=master)](https://travis-ci.org/bitprim/bitprim-database)
+[![Build Status](https://travis-ci.org/bitprim/bitprim-database.svg?branch=c-api)](https://travis-ci.org/bitprim/bitprim-database)
 
 # Bitprim Database
 
