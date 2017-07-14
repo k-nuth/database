@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/bitprim/bitprim-database.svg?branch=c-api)](https://travis-ci.org/bitprim/bitprim-database)
+[![Build Status](https://travis-ci.org/bitprim/bitprim-database.svg?branch=c-api)](https://travis-ci.org/bitprim/bitprim-database) [![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/bitprim/bitprim-database?branch=c-api&svg=true)](https://ci.appveyor.com/project/hanchon/bitprim-database?branch=c-api)
 
 # Bitprim Database
 
