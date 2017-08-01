@@ -10,7 +10,7 @@ env:
 linux: &linux
    os: linux
    sudo: required
-   language: python
+   language: cpp
    python: "3.6"
    services:
      - docker
@@ -78,38 +78,7 @@ before_script:
   - if [ -n "$GCC_VERSION" ]; then export CXX_FLAGS="${CXX_FLAGS} "; fi
   - if [ -n "$CLANG_VERSION" ]; then export CXX_FLAGS="${CXX_FLAGS} "; fi
 
-  ############################################################################
-  # Build and install local deps
-  ############################################################################
-  - cd ${DEPS_DIR}
-  - |
-    function build_project
-    {
-    cd $1
-    mkdir build
-    cd build
-    cmake .. -G "Unix Makefiles" -DCMAKE_CXX_FLAGS="${CXX_FLAGS}" ${BOOST_OPTS} -DENABLE_TESTS=OFF -DWITH_EXAMPLES=OFF -DWITH_REMOTE_DATABASE=OFF -DWITH_REMOTE_BLOCKCHAIN=OFF -DWITH_LITECOIN=OFF -DWITH_TESTS=OFF -DENABLE_MODULE_RECOVERY=ON -DWITH_TOOLS=OFF -DCMAKE_BUILD_TYPE=Debug
-    make -j4
-    sudo make install
-    cd ..
-    cd ..
-    }
-  - git clone 'https://github.com/bitprim/secp256k1' -b c-api
-  - git clone 'https://github.com/bitprim/bitprim-core' -b c-api
-  - build_project secp256k1
-  - build_project bitprim-core
-
-  ############################################################################
-  # Build this repo
-  ############################################################################
-  - cd ${TRAVIS_BUILD_DIR}
-  - mkdir build
-  - cd build
-  - cmake .. -DENABLE_TESTS=OFF -DWITH_TESTS=OFF -DWITH_TOOLS=OFF -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_CXX_FLAGS="${CXX_FLAGS}" ${BOOST_OPTS}
-
 script:
-  - make -j2
-  - sudo make install
   - cd ${TRAVIS_BUILD_DIR}
   - chmod +x .travis/run.sh
   - ./.travis/run.sh
