@@ -24,6 +24,6 @@ pip install conan_package_tools
 
 conan remote add bitprim_conan_boost https://api.bintray.com/conan/bitprim/bitprim-conan-boost
 conan remote add bitprim_core https://api.bintray.com/conan/bitprim/bitprim-core
-conan remote add https://api.bintray.com/conan/bitprim/secp256k1
+conan remote add secp256k1 https://api.bintray.com/conan/bitprim/secp256k1
 
 conan user
