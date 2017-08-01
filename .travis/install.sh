@@ -22,6 +22,7 @@ fi
 pip install conan --upgrade
 pip install conan_package_tools
 
+conan remote add bitprim_conan_boost https://api.bintray.com/conan/bitprim/bitprim-conan_boost
 conan remote add bitprim_core https://api.bintray.com/conan/bitprim/bitprim-core
 
 conan user
