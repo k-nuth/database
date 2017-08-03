@@ -11,7 +11,7 @@ class BitprimdatabaseConan(ConanFile):
     options = {"shared": [True, False]}
     default_options = "shared=False"
     generators = "cmake"
-    exports_sources = "src/*"
+    exports_sources = "src/*", "CMakeLists.txt", "cmake/*", "bitprim-databaseConfig.cmake.in", "include/*"
     package_files = "build/lbitprim-database.a"
 
     requires = (("bitprim-core/0.1@bitprim/stable"))
