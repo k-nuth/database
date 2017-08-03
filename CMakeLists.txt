@@ -1,3 +1,22 @@
+#
+# Copyright (c) 2017 Bitprim developers (see AUTHORS)
+#
+# This file is part of Bitprim.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
 cmake_minimum_required(VERSION 3.4)
 
 # bitprim-database
@@ -5,6 +24,10 @@ cmake_minimum_required(VERSION 3.4)
 project(bitprim-database
         VERSION 3.0.0
         LANGUAGES CXX C)
+
+include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+conan_basic_setup()
+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Check for baseline language coverage in the compiler for the C++11 standard.
@@ -30,27 +53,27 @@ option(ENABLE_SHARED "" OFF)
 #==============================================================================
 # Require Boost of at least version 1.56.0 and output ${boost_CPPFLAGS/LDFLAGS}.
 #------------------------------------------------------------------------------
-if (NOT ENABLE_SHARED)
-    set(Boost_USE_STATIC_LIBS ON)
-endif()
-find_package(
-        Boost 1.56.0 REQUIRED
-        COMPONENTS unit_test_framework)
+#if (NOT ENABLE_SHARED)
+#    set(Boost_USE_STATIC_LIBS ON)
+#endif()
+#find_package(
+#        Boost 1.56.0 REQUIRED
+#        COMPONENTS unit_test_framework)
 
 # Require bitprim-core of at least version 3.0.0 and output ${bitprim_core_CPPFLAGS/LIBS/PKG}.
 #------------------------------------------------------------------------------
-if (UNIX)
-  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/usr/local/lib/cmake")
-elseif (WIN32)
-  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "cmake")
-endif()
-
-if (NOT TARGET bitprim-core)
+#if (UNIX)
+#  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/usr/local/lib/cmake")
+#elseif (WIN32)
+#  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "cmake")
+#endif()
+#
+#if (NOT TARGET bitprim-core)
 #    message("hola1")
-    find_package(bitprim-core 3.0.0 REQUIRED)
+#    find_package(bitprim-core 3.0.0 REQUIRED)
 #else()
 #    message("hola2")
-endif()
+#endif()
 
 # Set flags.
 #==============================================================================
