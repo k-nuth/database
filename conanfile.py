@@ -14,7 +14,8 @@ class BitprimdatabaseConan(ConanFile):
     exports_sources = "src/*", "CMakeLists.txt", "cmake/*", "bitprim-databaseConfig.cmake.in", "include/*"
     package_files = "build/lbitprim-database.a"
 
-    requires = (("bitprim-core/0.1@bitprim/stable"))
+    requires = (("bitprim-conan-boost/1.64.0@bitprim/stable"),
+                ("bitprim-core/0.1@bitprim/stable"))
 
     def build(self):
         cmake = CMake(self)
