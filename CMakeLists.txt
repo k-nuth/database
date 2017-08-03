@@ -180,16 +180,15 @@ add_library(bitprim-database ${MODE}
 
 
 set_property(TARGET bitprim-database PROPERTY POSITION_INDEPENDENT_CODE ON)
-  
 
 target_include_directories(bitprim-database PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>)
 
-
 target_compile_definitions(bitprim-database PUBLIC -DBCD_STATIC)
 
-target_link_libraries(bitprim-database bitprim-core)
+#target_link_libraries(bitprim-database bitprim-core)
+target_link_libraries(bitprim-database PUBLIC ${CONAN_LIBS})
 
 _group_sources(bitprim-database "${CMAKE_CURRENT_LIST_DIR}")
 
@@ -203,18 +202,6 @@ endif()
 # local: test/bitprim_database_test
 #------------------------------------------------------------------------------
 if (WITH_TESTS)
-    #  add_executable(bitprim_database_test
-    #    test/block_database.cpp
-    #    test/data_base.cpp
-    #    test/hash_table.cpp
-    #    test/history_database.cpp
-    #    test/main.cpp
-    #    test/spend_database.cpp
-    #    test/structure.cpp
-    #    test/transaction_database.cpp
-    #    # test/unspent_database.cpp
-    #    # test/unspent_database_v2.cpp
-    #    )
     add_executable(bitprim_database_test
             test/block_database.cpp
             test/data_base.cpp
@@ -226,8 +213,6 @@ if (WITH_TESTS)
             test/transaction_database.cpp
             #        test/unspent_database.cpp
             )
-
-
 
     target_link_libraries(bitprim_database_test PUBLIC bitprim-database::bitprim-database)
     _group_sources(bitprim_database_test "${CMAKE_CURRENT_LIST_DIR}/test")
@@ -417,54 +402,6 @@ endif()
 install(TARGETS bitprim-database
         EXPORT bitprim-database
         ARCHIVE DESTINATION lib)
-
-#set(_bitprim_headers
-#  # include_bitcoin_HEADERS =
-#  bitcoin/database.hpp
-#  # include_bitcoin_database_HEADERS =
-#  bitcoin/database/data_base.hpp
-#  bitcoin/database/define.hpp
-#  bitcoin/database/settings.hpp
-#  bitcoin/database/version.hpp
-#  # include_bitcoin_database_databases_HEADERS =
-#  bitcoin/database/databases/block_database.hpp
-#  bitcoin/database/databases/history_database.hpp
-#  bitcoin/database/databases/spend_database.hpp
-#  bitcoin/database/databases/stealth_database.hpp
-#  bitcoin/database/databases/transaction_database.hpp
-#
-#  # bitcoin/database/databases/unspent_database.hpp
-#  bitcoin/database/databases/unspent_database_v2.hpp
-#
-#  # include_bitcoin_database_impl_HEADERS =
-#  bitcoin/database/impl/hash_table_header.ipp
-#  bitcoin/database/impl/record_hash_table.ipp
-#  bitcoin/database/impl/record_hash_table_set.ipp
-#  bitcoin/database/impl/record_multimap.ipp
-#  bitcoin/database/impl/record_row.ipp
-#  bitcoin/database/impl/record_row_set.ipp
-#  bitcoin/database/impl/remainder.ipp
-#  bitcoin/database/impl/slab_hash_table.ipp
-#  bitcoin/database/impl/slab_row.ipp
-#  # include_bitcoin_database_memory_HEADERS =
-#  bitcoin/database/memory/accessor.hpp
-#  bitcoin/database/memory/allocator.hpp
-#  bitcoin/database/memory/memory.hpp
-#  bitcoin/database/memory/memory_map.hpp
-#  # include_bitcoin_database_primitives_HEADERS =
-#  bitcoin/database/primitives/hash_table_header.hpp
-#  bitcoin/database/primitives/record_hash_table.hpp
-#  bitcoin/database/primitives/record_hash_table_set.hpp
-#  bitcoin/database/primitives/record_list.hpp
-#  bitcoin/database/primitives/record_manager.hpp
-#  bitcoin/database/primitives/record_multimap.hpp
-#  bitcoin/database/primitives/record_multimap_iterable.hpp
-#  bitcoin/database/primitives/record_multimap_iterator.hpp
-#  bitcoin/database/primitives/slab_hash_table.hpp
-#  bitcoin/database/primitives/slab_manager.hpp
-#  # include_bitcoin_database_result_HEADERS =
-#  bitcoin/database/result/block_result.hpp
-#  bitcoin/database/result/transaction_result.hpp)
 
 set(_bitprim_headers
         bitcoin/database/data_base.hpp
