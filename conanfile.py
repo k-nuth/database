@@ -5,7 +5,7 @@ class BitprimdatabaseConan(ConanFile):
     name = "bitprim-database"
     version = "0.1"
     license = "http://www.boost.org/users/license.html"
-    url = "https://github.com/bitprim/bitprim-node/tree/conan-build/conanfile.py"
+    url = "https://github.com/bitprim/bitprim-database/tree/conan-build/conanfile.py"
     description = "Bitcoin High Performance Blockchain Database"
     settings = "os", "compiler", "build_type", "arch"
     options = {"shared": [True, False]}
@@ -20,11 +20,17 @@ class BitprimdatabaseConan(ConanFile):
 
     def build(self):
         cmake = CMake(self)
+        cmake.definitions["CMAKE_VERBOSE_MAKEFILE"] = "ON"
         cmake.configure(source_dir=self.conanfile_directory)
         cmake.build()
 
+    def imports(self):
+        self.copy("*.h", "", "include")
+
     def package(self):
         self.copy("*.h", dst="include", src="include")
+        self.copy("*.hpp", dst="include", src="include")
+        self.copy("*.ipp", dst="include", src="include")
         self.copy("*.lib", dst="lib", keep_path=False)
         self.copy("*.dll", dst="bin", keep_path=False)
         self.copy("*.dylib*", dst="lib", keep_path=False)
