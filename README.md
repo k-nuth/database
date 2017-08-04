@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/bitprim/bitprim-database.svg?branch=c-api)](https://travis-ci.org/bitprim/bitprim-database) [![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/bitprim/bitprim-database?branch=c-api&svg=true)](https://ci.appveyor.com/project/hanchon/bitprim-database?branch=c-api)
+[![Build Status](https://travis-ci.org/bitprim/bitprim-database.svg?branch=conan-build)](https://travis-ci.org/bitprim/bitprim-database) [![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/bitprim/bitprim-database?branch=conan-build&svg=true)](https://ci.appveyor.com/project/bitprim/bitprim-database?branch=conan-build)
 
 # Bitprim Database
 
