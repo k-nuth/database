@@ -24,3 +24,5 @@ bitprim-database is now installed in `/usr/local/`.
 **About Bitprim Database**
 
 Bitprim Database is a custom database build directly on the operating system's [memory-mapped file](https://en.wikipedia.org/wiki/Memory-mapped_file) system. All primary tables and indexes are built on in-memory hash tables, resulting in constant-time lookups. The database uses [sequence locking](https://en.wikipedia.org/wiki/Seqlock) to avoid writer starvation while never blocking the reader. This is ideal for a high performance blockchain server as reads are significantly more frequent than writes and yet writes must proceed wtihout delay. The [bitprim-blockchain](https://github.com/bitprim/bitprim-blockchain) library uses the database as its blockchain store.
+
+[badge.Gitter]: https://img.shields.io/badge/gitter-join%20chat-blue.svg
