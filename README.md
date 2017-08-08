@@ -1,4 +1,4 @@
-# Bitprim Database
+# Bitprim Database <a target="_blank" href="https://gitter.im/bitprim/Lobby">![Gitter Chat][badge.Gitter]</a>
 
 *Bitcoin High Performance Blockchain Database*
 
