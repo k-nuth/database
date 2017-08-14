@@ -39,7 +39,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #==============================================================================
 # Implement --with-tests and declare WITH_TESTS.
 #------------------------------------------------------------------------------
-option(WITH_TESTS "Compile with unit tests." ON)
+option(WITH_TESTS "Compile with unit tests." OFF)
 
 # Implement --with-tools and declare WITH_TOOLS.
 #------------------------------------------------------------------------------
