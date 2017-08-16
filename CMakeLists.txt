@@ -185,7 +185,7 @@ target_include_directories(bitprim-database PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>)
 
-target_compile_definitions(bitprim-database PUBLIC -DBCD_STATIC)
+target_compile_definitions(bitprim-database PUBLIC -DBCD_STATIC -DBC_STATIC)
 
 #target_link_libraries(bitprim-database bitprim-core)
 target_link_libraries(bitprim-database PUBLIC ${CONAN_LIBS})
