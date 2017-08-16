@@ -215,6 +215,9 @@ if (WITH_TESTS)
             )
 
     target_link_libraries(bitprim_database_test PUBLIC bitprim-database)
+    if(MINGW)
+      target_link_libraries(bitprim_database_test ws2_32)
+    endif()
     _group_sources(bitprim_database_test "${CMAKE_CURRENT_LIST_DIR}/test")
 
     _add_tests(bitprim_database_test
