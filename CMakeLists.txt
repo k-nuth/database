@@ -216,7 +216,7 @@ if (WITH_TESTS)
 
     if(MINGW)
       #target_link_libraries(bitprim_database_test PUBLIC bitprim-database ws2_32)
-      target_link_libraries(bitprim_database_test PUBLIC bitprim-database wsock32)
+      target_link_libraries(bitprim_database_test PUBLIC bitprim-database wsock32 ws2_32)
     else()
       target_link_libraries(bitprim_database_test PUBLIC bitprim-database)
     endif()
