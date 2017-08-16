@@ -214,9 +214,10 @@ if (WITH_TESTS)
             #        test/unspent_database.cpp
             )
 
-    target_link_libraries(bitprim_database_test PUBLIC bitprim-database)
     if(MINGW)
-      target_link_libraries(bitprim_database_test ws2_32)
+      target_link_libraries(bitprim_database_test PUBLIC bitprim-database ws2_32)
+    else
+      target_link_libraries(bitprim_database_test PUBLIC bitprim-database)
     endif()
     _group_sources(bitprim_database_test "${CMAKE_CURRENT_LIST_DIR}/test")
 
