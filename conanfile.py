@@ -51,7 +51,7 @@ class BitprimDatabaseConan(ConanFile):
 
 
     generators = "cmake"
-    exports_sources = "src/*", "CMakeLists.txt", "cmake/*", "bitprim-databaseConfig.cmake.in", "include/*", "test/*"
+    exports_sources = "src/*", "CMakeLists.txt", "cmake/*", "bitprim-databaseConfig.cmake.in", "include/*", "test/*", "tools/*"
     package_files = "build/lbitprim-database.a"
     build_policy = "missing"
 
