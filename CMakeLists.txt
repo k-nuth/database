@@ -37,6 +37,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Process options.
 #==============================================================================
+
+# Implement --use-conan
+#------------------------------------------------------------------------------
+option(USE_CONAN "Use Conan Build Tool." OFF)
+
+# Inherit --enable-shared and define BOOST_TEST_DYN_LINK.
+#------------------------------------------------------------------------------
+option(ENABLE_SHARED "" OFF)
+
+# Implement POSITION_INDEPENDENT_CODE
+#------------------------------------------------------------------------------
+option(ENABLE_POSITION_INDEPENDENT_CODE "Enable POSITION_INDEPENDENT_CODE property" ON)
+
+
 # Implement --with-tests and declare WITH_TESTS.
 #------------------------------------------------------------------------------
 option(WITH_TESTS "Compile with unit tests." ON)
@@ -45,35 +59,37 @@ option(WITH_TESTS "Compile with unit tests." ON)
 #------------------------------------------------------------------------------
 option(WITH_TOOLS "Compile with tools." OFF)
 
-# Inherit --enable-shared and define BOOST_TEST_DYN_LINK.
-#------------------------------------------------------------------------------
-option(ENABLE_SHARED "" OFF)
 
 # Check dependencies.
 #==============================================================================
+
 # Require Boost of at least version 1.56.0 and output ${boost_CPPFLAGS/LDFLAGS}.
 #------------------------------------------------------------------------------
-#if (NOT ENABLE_SHARED)
+# if (NOT ENABLE_SHARED)
 #    set(Boost_USE_STATIC_LIBS ON)
-#endif()
+# endif()
+
 #find_package(
 #        Boost 1.56.0 REQUIRED
 #        COMPONENTS unit_test_framework)
 
-# Require bitprim-core of at least version 3.0.0 and output ${bitprim_core_CPPFLAGS/LIBS/PKG}.
-#------------------------------------------------------------------------------
+
+
+if (NOT USE_CONAN)
+        # Require bitprim-core of at least version 3.0.0 and output ${bitprim_core_CPPFLAGS/LIBS/PKG}.
+        #------------------------------------------------------------------------------
+        if (NOT TARGET bitprim-core)
+                find_package(bitprim-core 3.0.0 REQUIRED)
+        endif()
+endif()
+
 #if (UNIX)
 #  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/usr/local/lib/cmake")
 #elseif (WIN32)
 #  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "cmake")
 #endif()
-#
-#if (NOT TARGET bitprim-core)
-#    message("hola1")
-#    find_package(bitprim-core 3.0.0 REQUIRED)
-#else()
-#    message("hola2")
-#endif()
+
+
 
 # Set flags.
 #==============================================================================
@@ -187,8 +203,12 @@ target_include_directories(bitprim-database PUBLIC
 
 target_compile_definitions(bitprim-database PUBLIC -DBCD_STATIC -DBC_STATIC)
 
-#target_link_libraries(bitprim-database bitprim-core)
-target_link_libraries(bitprim-database PUBLIC ${CONAN_LIBS})
+if (NOT USE_CONAN)
+        target_link_libraries(bitprim-database bitprim-core)
+else()
+        target_link_libraries(bitprim-database PUBLIC ${CONAN_LIBS})
+endif()
+
 
 _group_sources(bitprim-database "${CMAKE_CURRENT_LIST_DIR}")
 
@@ -214,12 +234,12 @@ if (WITH_TESTS)
             #        test/unspent_database.cpp
             )
 
-    if(MINGW)
-      #target_link_libraries(bitprim_database_test PUBLIC bitprim-database ws2_32)
+    if (MINGW)
       target_link_libraries(bitprim_database_test PUBLIC bitprim-database ws2_32 wsock32)
     else()
       target_link_libraries(bitprim_database_test PUBLIC bitprim-database)
     endif()
+
     _group_sources(bitprim_database_test "${CMAKE_CURRENT_LIST_DIR}/test")
 
     _add_tests(bitprim_database_test
