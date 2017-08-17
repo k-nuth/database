@@ -205,9 +205,8 @@ target_compile_definitions(bitprim-database PUBLIC -DBCD_STATIC -DBC_STATIC)
 
 if (NOT USE_CONAN)
         target_link_libraries(bitprim-database bitprim-core)
-else()
-        target_link_libraries(bitprim-database PUBLIC ${CONAN_LIBS})
 endif()
+target_link_libraries(bitprim-database PUBLIC ${CONAN_LIBS})
 
 
 _group_sources(bitprim-database "${CMAKE_CURRENT_LIST_DIR}")
