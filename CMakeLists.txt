@@ -200,7 +200,10 @@ add_library(bitprim-database ${MODE}
         )
 
 
-set_property(TARGET bitprim-database PROPERTY POSITION_INDEPENDENT_CODE ON)
+if (ENABLE_POSITION_INDEPENDENT_CODE)
+    set_property(TARGET bitprim-database PROPERTY POSITION_INDEPENDENT_CODE ON)
+endif(ENABLE_POSITION_INDEPENDENT_CODE)
+
 
 target_include_directories(bitprim-database PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
