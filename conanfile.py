@@ -44,12 +44,6 @@ class BitprimDatabaseConan(ConanFile):
         "with_tests=True", \
         "with_tools=True"
 
-# option(USE_CONAN "Use Conan Build Tool." OFF)
-# option(ENABLE_SHARED "" OFF)
-# option(WITH_TESTS "Compile with unit tests." ON)
-# option(WITH_TOOLS "Compile with tools." OFF)
-
-
     generators = "cmake"
     exports_sources = "src/*", "CMakeLists.txt", "cmake/*", "bitprim-databaseConfig.cmake.in", "include/*", "test/*", "tools/*"
     package_files = "build/lbitprim-database.a"
