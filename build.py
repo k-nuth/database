@@ -10,8 +10,8 @@ if __name__ == "__main__":
     filtered_builds = []
     for settings, options, env_vars, build_requires in builder.builds:
         if settings["build_type"] == "Release" \
-                and options["bitprim-database:shared"] == False
-                and (not "compiler.runtime" in settings or not settings["compiler.runtime"] == "MD"):
+                and not options["bitprim-database:shared"] \
+                and ("compiler.runtime" not in settings or not settings["compiler.runtime"] == "MD"):
             filtered_builds.append([settings, options, env_vars, build_requires])
 
     builder.builds = filtered_builds
