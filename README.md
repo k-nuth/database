@@ -19,7 +19,7 @@ $ sudo make install
 $ sudo ldconfig
 ```
 
-bitprim-database is now installed in `/usr/local/`.
+bitprim-database will now be installed in `/usr/local/`.
 
 **About Bitprim Database**
 
