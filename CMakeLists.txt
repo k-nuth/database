@@ -218,6 +218,11 @@ if (NOT USE_CONAN)
 endif()
 target_link_libraries(bitprim-database PUBLIC ${CONAN_LIBS})
 
+if (USE_CONAN)
+    if (MINGW)
+        target_link_libraries(bitprim-database PUBLIC ws2_32 wsock32)
+    endif()
+endif()
 
 _group_sources(bitprim-database "${CMAKE_CURRENT_LIST_DIR}")
 
@@ -242,12 +247,7 @@ if (WITH_TESTS)
             test/transaction_database.cpp
             #        test/unspent_database.cpp
             )
-
-    if (MINGW)
-      target_link_libraries(bitprim_database_test PUBLIC bitprim-database ws2_32 wsock32)
-    else()
-      target_link_libraries(bitprim_database_test PUBLIC bitprim-database)
-    endif()
+    target_link_libraries(bitprim_database_test PUBLIC bitprim-database)
 
     _group_sources(bitprim_database_test "${CMAKE_CURRENT_LIST_DIR}/test")
 
