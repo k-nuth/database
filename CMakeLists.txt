@@ -81,6 +81,26 @@ endif()
 # Check dependencies.
 #==============================================================================
 #------------------------------------------------------------------------------
+if (NO_CONAN_AT_ALL)
+  # Require Boost of at least version 1.56.0 and output ${boost_CPPFLAGS/LDFLAGS}.
+  #------------------------------------------------------------------------------
+  if (NOT ENABLE_SHARED)
+    set(Boost_USE_STATIC_LIBS ON)
+  endif()
+
+  if (MSVC)
+    find_package(
+      Boost 1.56.0 REQUIRED
+      COMPONENTS atomic chrono date_time filesystem iostreams locale log log_setup program_options regex system thread unit_test_framework
+    )
+  else()
+    find_package(
+      Boost 1.56.0 REQUIRED
+      COMPONENTS chrono date_time filesystem iostreams locale log program_options regex system thread unit_test_framework
+    )
+  endif()
+endif()
+
 if (NOT USE_CONAN)
     # Require bitprim-core of at least version 3.0.0 and output ${bitprim_core_CPPFLAGS/LIBS/PKG}.
     #------------------------------------------------------------------------------
