@@ -27,14 +27,6 @@ project(bitprim-database
 
 add_definitions(-D_GLIBCXX_USE_CXX11_ABI=1) #TODO(fernando): temporary workaround
 
-if(EXISTS ${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-    include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-    conan_basic_setup()
-else()
-    message(WARNING "The file conanbuildinfo.cmake doesn't exist, you have to run conan install first")
-endif()
-
-
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Check for baseline language coverage in the compiler for the C++11 standard.
@@ -48,6 +40,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Implement --use-conan
 #------------------------------------------------------------------------------
 option(USE_CONAN "Use Conan Build Tool." OFF)
+option(NO_CONAN_AT_ALL "Conan totally disabled." OFF)
+
+if (NO_CONAN_AT_ALL)
+  set(USE_CONAN OFF)
+endif()
 
 # Inherit --enable-shared and define BOOST_TEST_DYN_LINK.
 #------------------------------------------------------------------------------
@@ -67,27 +64,29 @@ option(WITH_TESTS "Compile with unit tests." ON)
 option(WITH_TOOLS "Compile with tools." OFF)
 
 
+# Conan infrastructure
+#==============================================================================
+# Only if enabled
+#------------------------------------------------------------------------------
+if (NOT NO_CONAN_AT_ALL)
+  if(EXISTS ${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+      include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+      conan_basic_setup()
+  else()
+      message(WARNING "The file conanbuildinfo.cmake doesn't exist, you have to run conan install first")
+  endif()
+endif()
+
+
 # Check dependencies.
 #==============================================================================
-
-# Require Boost of at least version 1.56.0 and output ${boost_CPPFLAGS/LDFLAGS}.
 #------------------------------------------------------------------------------
-# if (NOT ENABLE_SHARED)
-#    set(Boost_USE_STATIC_LIBS ON)
-# endif()
-
-#find_package(
-#        Boost 1.56.0 REQUIRED
-#        COMPONENTS unit_test_framework)
-
-
-
 if (NOT USE_CONAN)
-        # Require bitprim-core of at least version 3.0.0 and output ${bitprim_core_CPPFLAGS/LIBS/PKG}.
-        #------------------------------------------------------------------------------
-        if (NOT TARGET bitprim-core)
-                find_package(bitprim-core 3.0.0 REQUIRED)
-        endif()
+    # Require bitprim-core of at least version 3.0.0 and output ${bitprim_core_CPPFLAGS/LIBS/PKG}.
+    #------------------------------------------------------------------------------
+    if (NOT TARGET bitprim-core)
+            find_package(bitprim-core 3.0.0 REQUIRED)
+    endif()
 endif()
 
 #if (UNIX)
@@ -95,7 +94,6 @@ endif()
 #elseif (WIN32)
 #  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "cmake")
 #endif()
-
 
 
 # Set flags.
@@ -213,14 +211,15 @@ target_include_directories(bitprim-database PUBLIC
 
 target_compile_definitions(bitprim-database PUBLIC -DBCD_STATIC -DBC_STATIC)
 
-if (NOT USE_CONAN)
-        target_link_libraries(bitprim-database bitprim-core)
+if (NOT NO_CONAN_AT_ALL)
+  target_link_libraries(bitprim-database PUBLIC ${CONAN_LIBS})
+else()
+  target_link_libraries(bitprim-database bitprim-core)
 endif()
-target_link_libraries(bitprim-database PUBLIC ${CONAN_LIBS})
 
 if (USE_CONAN)
     if (MINGW)
-        target_link_libraries(bitprim-database PUBLIC ws2_32 wsock32)
+        target_link_libraries(bitprim-database PUBLIC ws2_32 wsock32) #TODO(fernando): manage with Conan
     endif()
 endif()
 
