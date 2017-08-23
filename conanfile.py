@@ -37,12 +37,14 @@ class BitprimDatabaseConan(ConanFile):
                "fPIC": [True, False],
                "with_tests": [True, False],
                "with_tools": [True, False],
+               "use_cpp11_abi": [True, False]
     }
 
     default_options = "shared=False", \
         "fPIC=True", \
         "with_tests=True", \
-        "with_tools=True"
+        "with_tools=True", \
+        "use_cpp11_abi=True"
 
     generators = "cmake"
     exports_sources = "src/*", "CMakeLists.txt", "cmake/*", "bitprim-databaseConfig.cmake.in", "include/*", "test/*", "tools/*"
@@ -60,6 +62,7 @@ class BitprimDatabaseConan(ConanFile):
         cmake.definitions["CMAKE_VERBOSE_MAKEFILE"] = "ON"
         cmake.definitions["ENABLE_SHARED"] = option_on_off(self.options.shared)
         cmake.definitions["ENABLE_POSITION_INDEPENDENT_CODE"] = option_on_off(self.options.fPIC)
+        cmake.definitions["USE_CPP11_ABI"] = option_on_off(self.options.use_cpp11_abi)
         cmake.definitions["WITH_TESTS"] = option_on_off(self.options.with_tests)
         cmake.definitions["WITH_TOOLS"] = option_on_off(self.options.with_tools)
 
