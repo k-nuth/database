@@ -2,9 +2,9 @@
 
 *Bitcoin High Performance Blockchain Database*
 
-| **master(linux/osx)** | **conan-build-win(linux/osx)**   | **master(windows)**   | **conan-build-win(windows)** |
+| **master(linux/osx)** | **dev(linux/osx)**   | **master(windows)**   | **dev(windows)** |
 |:------:|:-:|:-:|:-:|
-| [![Build Status](https://travis-ci.org/bitprim/bitprim-database.svg)](https://travis-ci.org/bitprim/bitprim-database)       | [![Build StatusB](https://travis-ci.org/bitprim/bitprim-database.svg?branch=conan-build-win)](https://travis-ci.org/bitprim/bitprim-database?branch=conan-build-win)  | [![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/bitprim/bitprim-database?svg=true)](https://ci.appveyor.com/project/bitprim/bitprim-database)  | [![Appveyor StatusB](https://ci.appveyor.com/api/projects/status/github/bitprim/bitprim-database?branch=conan-build-win&svg=true)](https://ci.appveyor.com/project/bitprim/bitprim-database?branch=conan-build-win)  |
+| [![Build Status](https://travis-ci.org/bitprim/bitprim-database.svg)](https://travis-ci.org/bitprim/bitprim-database)       | [![Build StatusB](https://travis-ci.org/bitprim/bitprim-database.svg?branch=dev)](https://travis-ci.org/bitprim/bitprim-database?branch=dev)  | [![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/bitprim/bitprim-database?svg=true)](https://ci.appveyor.com/project/bitprim/bitprim-database)  | [![Appveyor StatusB](https://ci.appveyor.com/api/projects/status/github/bitprim/bitprim-database?branch=dev&svg=true)](https://ci.appveyor.com/project/bitprim/bitprim-database?branch=dev)  |
 
 Make sure you have installed [bitprim-core](https://github.com/bitprim/bitprim-core) beforehand according to its build instructions.
 
