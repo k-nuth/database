@@ -239,11 +239,21 @@ target_include_directories(bitprim-database PUBLIC
 
 target_compile_definitions(bitprim-database PUBLIC -DBCD_STATIC -DBC_STATIC)
 
-if (NOT NO_CONAN_AT_ALL)
-  target_link_libraries(bitprim-database PUBLIC ${CONAN_LIBS})
-else()
-  target_link_libraries(bitprim-database bitprim-core)
+# if (NOT NO_CONAN_AT_ALL)
+#   target_link_libraries(bitprim-database PUBLIC ${CONAN_LIBS})
+# else()
+#   target_link_libraries(bitprim-database bitprim-core)
+# endif()
+
+
+if (NOT USE_CONAN)
+    target_link_libraries(bitprim-database PUBLIC bitprim-core)
 endif()
+
+if (NOT NO_CONAN_AT_ALL)
+    target_link_libraries(bitprim-database PUBLIC ${CONAN_LIBS})
+endif()
+
 
 if (USE_CONAN)
     if (MINGW)
