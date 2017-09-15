@@ -24,7 +24,7 @@ def option_on_off(option):
 
 class BitprimDatabaseConan(ConanFile):
     name = "bitprim-database"
-    version = "0.1"
+    version = "0.2"
     license = "http://www.boost.org/users/license.html"
     url = "https://github.com/bitprim/bitprim-database/tree/conan-build/conanfile.py"
     description = "Bitcoin High Performance Blockchain Database"
@@ -52,7 +52,7 @@ class BitprimDatabaseConan(ConanFile):
     build_policy = "missing"
 
     requires = (("bitprim-conan-boost/1.64.0@bitprim/stable"),
-                ("bitprim-core/0.1@bitprim/testing"))
+                ("bitprim-core/0.2@bitprim/testing"))
 
     def build(self):
         cmake = CMake(self)
