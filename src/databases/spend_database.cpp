@@ -29,6 +29,7 @@ namespace database {
 
 using namespace bc::chain;
 
+// The spend database keys off of output point and has input point value.
 static constexpr auto value_size = std::tuple_size<point>::value;
 static BC_CONSTEXPR auto record_size = hash_table_record_size<point>(value_size);
 
@@ -107,18 +108,17 @@ bool spend_database::flush() const
 
 input_point spend_database::get(const output_point& outpoint) const
 {
-    //std::cout << "spend spend_database::get(const output_point& outpoint) const\n";
-    input_point point;
-    const auto memory = lookup_map_.find(outpoint);
+    input_point spend;
+    const auto slab = lookup_map_.find(outpoint);
 
-    if (!memory)
-        return point;
+    if (!slab)
+        return spend;
 
     // The order of properties in this serialization was changed in v3.
     // Previously it was { index, hash }, which was inconsistent with wire.
-    auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(memory));
-    point.from_data(deserial);
-    return point;
+    auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab));
+    spend.from_data(deserial, false);
+    return spend;
 }
 
 void spend_database::store(const chain::output_point& outpoint,
@@ -129,7 +129,7 @@ void spend_database::store(const chain::output_point& outpoint,
     // const auto write = [&spend](memory_ptr data)
     const auto write = [&](serializer<uint8_t*>& serial)
     {
-        spend.to_data(serial);
+        spend.to_data(serial, false);
     };
 
     lookup_map_.store(outpoint, write);

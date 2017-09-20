@@ -30,26 +30,37 @@ namespace database {
 
 using namespace bc::chain;
 
-static constexpr size_t value_size = sizeof(uint64_t);
-static constexpr size_t height_size = sizeof(uint32_t);
-static constexpr size_t version_size = sizeof(uint32_t);
-static constexpr size_t locktime_size = sizeof(uint32_t);
-static constexpr size_t position_size = sizeof(uint32_t);
+static constexpr auto value_size = sizeof(uint64_t);
+static constexpr auto height_size = sizeof(uint32_t);
+static constexpr auto position_size = sizeof(uint16_t);
+static constexpr auto median_time_past_size = sizeof(uint32_t);
+static constexpr auto metadata_size = height_size + position_size +
+    median_time_past_size;
+
+transaction_result::transaction_result()
+  : transaction_result(nullptr)
+{
+}
 
 transaction_result::transaction_result(const memory_ptr slab)
-  : slab_(slab), hash_(null_hash)
+  : slab_(slab), height_(0), median_time_past_(0), position_(0),
+    hash_(null_hash)
 {
 }
 
 transaction_result::transaction_result(const memory_ptr slab,
-    hash_digest&& hash)
-  : slab_(slab), hash_(std::move(hash))
+    hash_digest&& hash, uint32_t height, uint32_t median_time_past,
+    uint16_t position)
+  : slab_(slab), height_(height), median_time_past_(median_time_past),
+    position_(position), hash_(std::move(hash))
 {
 }
 
 transaction_result::transaction_result(const memory_ptr slab,
-    const hash_digest& hash)
-  : slab_(slab), hash_(hash)
+    const hash_digest& hash, uint32_t height, uint32_t median_time_past,
+    uint16_t position)
+  : slab_(slab), height_(height), median_time_past_(median_time_past),
+    position_(position), hash_(hash)
 {
 }
 
@@ -68,35 +79,37 @@ const hash_digest& transaction_result::hash() const
     return hash_;
 }
 
+// Height is unguarded and will be inconsistent during write.
 size_t transaction_result::height() const
 {
     BITCOIN_ASSERT(slab_);
-    const auto memory = REMAP_ADDRESS(slab_);
-    return from_little_endian_unsafe<uint32_t>(memory);
+    return height_;
 }
 
+// Position is unguarded and will be inconsistent during write.
 size_t transaction_result::position() const
 {
     BITCOIN_ASSERT(slab_);
-    const auto memory = REMAP_ADDRESS(slab_);
-    return from_little_endian_unsafe<uint32_t>(memory + height_size);
+    return position_;
 }
 
+// Median time past is unguarded and will be inconsistent during write.
+uint32_t transaction_result::median_time_past() const
+{
+    BITCOIN_ASSERT(slab_);
+    return median_time_past_;
+}
+
+// Spentness is unguarded and will be inconsistent during write.
 bool transaction_result::is_spent(size_t fork_height) const
 {
-    static const auto not_spent = output::validation::not_spent;
-
-    BITCOIN_ASSERT(slab_);
-    const auto memory = REMAP_ADDRESS(slab_);
-    const auto position_start = memory + height_size;
-    auto deserial = make_unsafe_deserializer(position_start);
-    const auto position = deserial.read_4_bytes_little_endian();
-
     // Cannot be spent if unconfirmed.
-    if (position == transaction_database::unconfirmed)
+    if (position_ == transaction_database::unconfirmed)
         return false;
 
-    deserial.skip(version_size + locktime_size);
+    BITCOIN_ASSERT(slab_);
+    const auto tx_start = REMAP_ADDRESS(slab_) + metadata_size;
+    auto deserial = make_unsafe_deserializer(tx_start);
     const auto outputs = deserial.read_size_little_endian();
     BITCOIN_ASSERT(deserial);
 
@@ -107,7 +120,8 @@ bool transaction_result::is_spent(size_t fork_height) const
         BITCOIN_ASSERT(deserial);
 
         // A spend from above the fork height is not an actual spend.
-        if (spender_height == not_spent || spender_height > fork_height)
+        if (spender_height == output::validation::not_spent ||
+            spender_height > fork_height)
             return false;
 
         deserial.skip(value_size);
@@ -118,14 +132,13 @@ bool transaction_result::is_spent(size_t fork_height) const
     return true;
 }
 
+// spender_heights are unguarded and will be inconsistent during write.
 // If index is out of range returns default/invalid output (.value not_found).
 chain::output transaction_result::output(uint32_t index) const
 {
     BITCOIN_ASSERT(slab_);
-    const auto memory = REMAP_ADDRESS(slab_);
-    const auto outputs_start = memory + height_size + position_size +
-        version_size + locktime_size;
-    auto deserial = make_unsafe_deserializer(outputs_start);
+    const auto tx_start = REMAP_ADDRESS(slab_) + metadata_size;
+    auto deserial = make_unsafe_deserializer(tx_start);
     const auto outputs = deserial.read_size_little_endian();
     BITCOIN_ASSERT(deserial);
 
@@ -146,11 +159,25 @@ chain::output transaction_result::output(uint32_t index) const
     return out;
 }
 
+// median_time_past added in v3.3
+// ----------------------------------------------------------------------------
+// [ height:4 ]
+// [ position:2 ]
+// [ median_time_past:4 ]
+// ----------------------------------------------------------------------------
+// [ output_count:varint ]
+// [ [ spender_height:4 ][ value:8 ][ script:varint ]... ]
+// [ input_count:varint ]
+// [ [ hash:4 ][ index:2 ][ script:varint ][ sequence:4 ]... ]
+// [ locktime:varint ]
+// [ version:varint ]
+// ----------------------------------------------------------------------------
+
+// spender_heights are unguarded and will be inconsistent during write.
 chain::transaction transaction_result::transaction() const
 {
     BITCOIN_ASSERT(slab_);
-    const auto memory = REMAP_ADDRESS(slab_);
-    const auto tx_start = memory + height_size + position_size;
+    const auto tx_start = REMAP_ADDRESS(slab_) + metadata_size;
     auto deserial = make_unsafe_deserializer(tx_start);
 
     // READ THE TX
