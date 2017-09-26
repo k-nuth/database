@@ -31,11 +31,14 @@ using namespace bc::chain;
 using namespace bc::machine;
 
 static constexpr auto value_size = sizeof(uint64_t);
-static constexpr auto version_size = sizeof(uint32_t);
-static constexpr auto locktime_size = sizeof(uint32_t);
-static constexpr auto version_lock_size = version_size + locktime_size;
+static constexpr auto height_size = sizeof(uint32_t);
+static constexpr auto position_size = sizeof(uint16_t);
+static constexpr auto median_time_past_size = sizeof(uint32_t);
+static constexpr auto spender_height_value_size = height_size + value_size;
+static constexpr auto metadata_size = height_size + position_size +
+    median_time_past_size;
 
-const size_t transaction_unconfirmed_database::unconfirmed = max_uint32;
+const size_t transaction_unconfirmed_database::unconfirmed = max_uint16;
 
 // Transactions uses a hash table index, O(1).
 transaction_unconfirmed_database::transaction_unconfirmed_database(const path& map_filename,
@@ -120,6 +123,7 @@ memory_ptr transaction_unconfirmed_database::find(const hash_digest& hash) const
     //*************************************************************************
     auto slab = lookup_map_.find(hash);
     return slab;
+
 }
 
 transaction_result transaction_unconfirmed_database::get(const hash_digest& hash) const
@@ -127,31 +131,53 @@ transaction_result transaction_unconfirmed_database::get(const hash_digest& hash
     // Limit search to confirmed transactions at or below the fork height.
     // Caller should set fork height to max_size_t for unconfirmed search.
     const auto slab = find(hash);
+    if (slab)
+    {
+        ///////////////////////////////////////////////////////////////////////
+        metadata_mutex_.lock_shared();
+        auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab));
+        const auto height = deserial.read_4_bytes_little_endian();
+        const auto position = deserial.read_2_bytes_little_endian();
+        const auto median_time_past = deserial.read_4_bytes_little_endian();
+        metadata_mutex_.unlock_shared();
+        ///////////////////////////////////////////////////////////////////////
 
-    // Returns an invalid result if not found.
-    return transaction_result(slab, hash);
+        return transaction_result(slab, hash, height, median_time_past,
+            position);
+    }
+
+    return{};
 }
 
 void transaction_unconfirmed_database::store(const chain::transaction& tx)
 {
+    uint32_t median_time_past = 0;
+
     const auto hash = tx.hash();
 
     // Unconfirmed txs: position is unconfirmed and height is validation forks.
     const auto write = [&](serializer<uint8_t*>& serial)
     {
-        serial.write_4_bytes_little_endian(static_cast<size_t>(0));
-        serial.write_4_bytes_little_endian(static_cast<size_t>(unconfirmed));
+        ///////////////////////////////////////////////////////////////////////
+        // Critical Section
+        metadata_mutex_.lock();
+        serial.write_4_bytes_little_endian(static_cast<uint32_t>(0));
+        serial.write_2_bytes_little_endian(static_cast<uint16_t>(unconfirmed));
+        serial.write_4_bytes_little_endian(median_time_past);
+        metadata_mutex_.unlock();
+        ///////////////////////////////////////////////////////////////////////
 
         // WRITE THE TX
         tx.to_data(serial, false);
     };
 
+
     const auto tx_size = tx.serialized_size(false);
-    BITCOIN_ASSERT(tx_size <= max_size_t - version_lock_size);
-    const auto value_size = version_lock_size + static_cast<size_t>(tx_size);
+    BITCOIN_ASSERT(tx_size <= max_size_t - metadata_size);
+    const auto total_size = metadata_size + static_cast<size_t>(tx_size);
 
     // Create slab for the new tx instance.
-    lookup_map_.store(hash, write, value_size);
+    lookup_map_.store(hash, write, total_size);
 }
 
 // bool transaction_unconfirmed_database::spend(const output_point& point, size_t spender_height)

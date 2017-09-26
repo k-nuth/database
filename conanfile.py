@@ -24,7 +24,7 @@ def option_on_off(option):
 
 class BitprimDatabaseConan(ConanFile):
     name = "bitprim-database"
-    version = "0.1"
+    version = "0.2"
     license = "http://www.boost.org/users/license.html"
     url = "https://github.com/bitprim/bitprim-database/tree/conan-build/conanfile.py"
     description = "Bitcoin High Performance Blockchain Database"
@@ -37,14 +37,14 @@ class BitprimDatabaseConan(ConanFile):
                "fPIC": [True, False],
                "with_tests": [True, False],
                "with_tools": [True, False],
-               "use_cpp11_abi": [True, False]
+               "not_use_cpp11_abi": [True, False]
     }
 
     default_options = "shared=False", \
         "fPIC=True", \
         "with_tests=True", \
         "with_tools=True", \
-        "use_cpp11_abi=True"
+        "not_use_cpp11_abi=False"
 
     generators = "cmake"
     exports_sources = "src/*", "CMakeLists.txt", "cmake/*", "bitprim-databaseConfig.cmake.in", "include/*", "test/*", "tools/*"
@@ -52,7 +52,7 @@ class BitprimDatabaseConan(ConanFile):
     build_policy = "missing"
 
     requires = (("bitprim-conan-boost/1.64.0@bitprim/stable"),
-                ("bitprim-core/0.1@bitprim/stable"))
+                ("bitprim-core/0.2@bitprim/testing"))
 
     def build(self):
         cmake = CMake(self)
@@ -62,15 +62,24 @@ class BitprimDatabaseConan(ConanFile):
         cmake.definitions["CMAKE_VERBOSE_MAKEFILE"] = "ON"
         cmake.definitions["ENABLE_SHARED"] = option_on_off(self.options.shared)
         cmake.definitions["ENABLE_POSITION_INDEPENDENT_CODE"] = option_on_off(self.options.fPIC)
-        cmake.definitions["USE_CPP11_ABI"] = option_on_off(self.options.use_cpp11_abi)
+
+        # cmake.definitions["NOT_USE_CPP11_ABI"] = option_on_off(self.options.not_use_cpp11_abi)
+
         cmake.definitions["WITH_TESTS"] = option_on_off(self.options.with_tests)
         cmake.definitions["WITH_TOOLS"] = option_on_off(self.options.with_tools)
 
+        # if self.settings.compiler == "gcc":
+        #     if float(str(self.settings.compiler.version)) >= 5:
+        #         cmake.definitions["_GLIBCXX_USE_CXX11_ABI"] = "1"
+        #     else:
+        #         cmake.definitions["_GLIBCXX_USE_CXX11_ABI"] = "0"
+
         if self.settings.compiler == "gcc":
             if float(str(self.settings.compiler.version)) >= 5:
-                cmake.definitions["_GLIBCXX_USE_CXX11_ABI"] = "1"
+                cmake.definitions["NOT_USE_CPP11_ABI"] = option_on_off(False)
             else:
-                cmake.definitions["_GLIBCXX_USE_CXX11_ABI"] = "0"
+                cmake.definitions["NOT_USE_CPP11_ABI"] = option_on_off(True)
+
 
         cmake.configure(source_dir=self.conanfile_directory)
         cmake.build()
