@@ -126,6 +126,8 @@ private:
     slab_hash_table_header lookup_header_;
     slab_manager lookup_manager_;
     slab_map lookup_map_;
+
+    mutable shared_mutex metadata_mutex_;
 };
 
 } // namespace database
