@@ -118,19 +118,33 @@ bool data_base::create(const block& genesis)
 // May be called after stop and/or after close in order to reopen.
 bool data_base::open()
 {
+
+    printf("data_base::open() - 1\n");
+
     ///////////////////////////////////////////////////////////////////////////
     // Lock exclusive file access and conditionally the global flush lock.
-    if (!store::open())
+    if (!store::open()) {
+        printf("data_base::open() - 2\n");
+        
         return false;
+    }
 
+    printf("data_base::open() - 3\n");
+    
     start();
 
+    printf("data_base::open() - 4\n");
+    
     auto opened =
         blocks_->open() &&
         transactions_->open() &&
         transactions_unconfirmed_->open();
 
-    if (use_indexes)
+    printf("data_base::open() - 5\n");
+        
+    if (use_indexes) {
+        printf("data_base::open() - 6\n");
+        
         // OLD before merging (Feb2017)
     
         // opened &=
@@ -141,6 +155,9 @@ bool data_base::open()
             history_->open() &&
             stealth_->open();
 
+    }
+    printf("data_base::open() - 7\n");
+    
     closed_ = false;
     return opened;
 }

@@ -50,3 +50,5 @@ obj
 cmake-build-debug/
 
 CMakeSettings.json
+
+.vscode/
