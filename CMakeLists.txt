@@ -71,6 +71,10 @@ option(WITH_TESTS "Compile with unit tests." ON)
 option(WITH_TOOLS "Compile with tools." OFF)
 
 
+set(BITPRIM_BUILD_NUMBER "-" CACHE STRING "Specify the Bitprim Build Number.")
+# message(${BITPRIM_BUILD_NUMBER})
+
+
 # Conan infrastructure
 #==============================================================================
 # Only if enabled
@@ -235,6 +239,9 @@ endif(ENABLE_POSITION_INDEPENDENT_CODE)
 target_include_directories(bitprim-database PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>)
+
+
+target_compile_definitions(bitprim-database PUBLIC -DBITPRIM_BUILD_NUMBER="\\"${BITPRIM_BUILD_NUMBER}\\"")
 
 target_compile_definitions(bitprim-database PUBLIC -DBCD_STATIC -DBC_STATIC)
 
