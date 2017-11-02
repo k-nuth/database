@@ -29,4 +29,9 @@
 #define BITPRIM_DATABASE_VERSION "v0.0.0"
 #endif
 
+namespace libbitcoin { namespace database {
+char const* version();
+}} /*namespace libbitcoin::database*/
+ 
+
 #endif
