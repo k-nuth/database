@@ -210,6 +210,7 @@ add_library(bitprim-database ${MODE}
         src/store.cpp
         src/unspent_outputs.cpp
         src/unspent_transaction.cpp
+        src/version.cpp
         src/databases/block_database.cpp
         src/databases/history_database.cpp
         src/databases/spend_database.cpp
