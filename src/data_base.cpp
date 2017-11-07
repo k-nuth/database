@@ -120,8 +120,9 @@ bool data_base::open()
 {
     ///////////////////////////////////////////////////////////////////////////
     // Lock exclusive file access and conditionally the global flush lock.
-    if (!store::open())
+    if (!store::open()) {
         return false;
+    }
 
     start();
 
@@ -130,7 +131,7 @@ bool data_base::open()
         transactions_->open() &&
         transactions_unconfirmed_->open();
 
-    if (use_indexes)
+    if (use_indexes) {
         // OLD before merging (Feb2017)
     
         // opened &=
@@ -141,6 +142,7 @@ bool data_base::open()
             history_->open() &&
             stealth_->open();
 
+    }
     closed_ = false;
     return opened;
 }
