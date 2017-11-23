@@ -227,7 +227,7 @@ history_compact::list history_database::get(const short_hash& key,
     return result;
 }
 
-std::set<hash_digest> history_database::get_txns(const short_hash& key, size_t limit,
+std::vector<hash_digest> history_database::get_txns(const short_hash& key, size_t limit,
                                               size_t from_height) const
 {
 
@@ -238,19 +238,25 @@ std::set<hash_digest> history_database::get_txns(const short_hash& key, size_t l
         return deserial.read_hash();
     };
 
-    std::set<hash_digest> result;
+    std::set<hash_digest> temp;
+    std::vector<hash_digest> result;
     const auto start = rows_multimap_.lookup(key);
     const auto records = record_multimap_iterable(rows_list_, start);
 
     for (const auto & index: records)
     {
         // Stop once we reach the limit (if specified).
-        if (limit > 0 && result.size() >= limit)
+        if (limit > 0 && temp.size() >= limit)
             break;
         // This obtains a remap safe address pointer against the rows file.
         const auto record = rows_list_.get(index);
         const auto address = REMAP_ADDRESS(record);
-        result.insert(read_hash(address));
+        // Avoid inserting the same tx
+        const auto & pair = temp.insert(read_hash(address));
+        if (pair.second){
+            // Add valid txns to the result vector
+            result.push_back(*pair.first);
+        }
     }
     return result;
 }

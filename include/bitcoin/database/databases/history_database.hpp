@@ -82,7 +82,7 @@ public:
         size_t from_height) const;
 
     /// Get the txns associated with the address hash.
-    std::set<hash_digest> get_txns(const short_hash& key, size_t limit,
+    std::vector<hash_digest> get_txns(const short_hash& key, size_t limit,
                                      size_t from_height) const;
 
     /// Commit latest inserts.
