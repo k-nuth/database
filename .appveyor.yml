@@ -60,3 +60,4 @@ test_script:
   - echo %BITPRIM_BUILD_NUMBER%
 
   - python build.py
+
