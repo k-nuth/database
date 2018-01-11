@@ -52,8 +52,8 @@ bool store::create(const path& file_path)
     if (file.bad())
         return false;
 
-        // Write one byte so file is nonzero size (for memory map validation).
-        file.put('x');
+    // Write one byte so file is nonzero size (for memory map validation).
+    file.put('x');
     return true;
 }
 
