@@ -25,6 +25,7 @@
 #include <memory>
 #include <utility>
 #include <boost/filesystem.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <bitcoin/bitcoin.hpp>
 #include <bitcoin/database/define.hpp>
 #include <bitcoin/database/settings.hpp>
@@ -33,11 +34,12 @@
 namespace libbitcoin {
 namespace database {
 
-using namespace std::placeholders;
-using namespace boost::filesystem;
 using namespace bc::chain;
 using namespace bc::config;
 using namespace bc::wallet;
+using namespace boost::adaptors;
+using namespace boost::filesystem;
+using namespace std::placeholders;
 
 #define NAME "data_base"
 
@@ -515,17 +517,31 @@ void data_base::push_inputs(const hash_digest& tx_hash, size_t height,
     for (uint32_t index = 0; index < inputs.size(); ++index)
     {
         const auto& input = inputs[index];
-        const input_point point{ tx_hash, index };
+        const input_point inpoint{ tx_hash, index };
+        const auto& prevout = input.previous_output();
 
-        spends_->store(input.previous_output(), point);
+        spends_->store(prevout, inpoint);
 
-        // TODO: use a vector result to extract sign_multisig.
-        const auto address = input.address();
-        if (!address)
-            continue;
+        if (prevout.validation.cache.is_valid())
+        {
+            // This results in a complete and unambiguous history for the
+            // address since standard outputs contain unambiguous address data.
+            const auto& address = prevout.validation.cache.address();
 
-        const auto& previous = input.previous_output();
-        history_->add_input(address.hash(), point, height, previous);
+            if (address)
+                history_->add_input(address.hash(), inpoint, height, prevout);
+        }
+        else
+        {
+            // For any p2pk spend this creates no record (insufficient data).
+            // For any p2kh spend this runs the risk of misrepresenting a p2sh
+            // spend as p2kh, as they are ambiguous (so the spend not indexed).
+            // These are tradeoffs when no prevout is cached (checkpoint sync).
+            const auto& address = input.address();
+
+            if (address)
+                history_->add_input(address.hash(), inpoint, height, prevout);
+        }
     }
 
     //std::cout << "FER - void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const input::list& inputs) - END\n";
@@ -535,27 +551,18 @@ void data_base::push_inputs(const hash_digest& tx_hash, size_t height,
 void data_base::push_outputs(const hash_digest& tx_hash, size_t height,
     const output::list& outputs)
 {
-    // OLD before merging (Feb2017)
-    //std::cout << "FER - void data_base::push_outputs(const hash_digest& tx_hash, size_t height, const output::list& outputs)\n";
-    // if (height < settings_.index_start_height)
-    //     return;
-
     for (uint32_t index = 0; index < outputs.size(); ++index)
     {
         const auto& output = outputs[index];
 
         // TODO: use a vector result to extract pay_multisig.
         const auto address = output.address();
-        if (!address)
-            continue;
 
-        const auto value = output.value();
-        const output_point point{ tx_hash, index };
-        history_->add_output(address.hash(), point, height, value);
+        // Standard outputs contain unambiguous address data.
+        if (address)
+            history_->add_output(address.hash(), { tx_hash, index },
+                height, output.value());
     }
-
-    //std::cout << "FER - void data_base::push_outputs(const hash_digest& tx_hash, size_t height, const output::list& outputs) - END\n";
-
 }
 
 void data_base::push_stealth(const hash_digest& tx_hash, size_t height,
@@ -635,17 +642,18 @@ bool data_base::pop(block& out_block)
 
     // Loop txs backwards, the reverse of how they were added.
     // Remove txs, then outputs, then inputs (also reverse order).
-    for (auto tx = transactions.rbegin(); tx != transactions.rend(); ++tx)
+    // Loops txs backwards even though they may have been added asynchronously.
+    for (const auto& tx: reverse(transactions))
     {
-        if (!transactions_->unconfirm(tx->hash()))
+        if (!transactions_->unconfirm(tx.hash()))
             return false;
 
-        transactions_unconfirmed_->store(*tx);
+        transactions_unconfirmed_->store(tx);
 
-        if (!pop_outputs(tx->outputs(), height))
+        if (!pop_outputs(tx.outputs(), height))
             return false;
 
-        if (!tx->is_coinbase() && !pop_inputs(tx->inputs(), height))
+        if (!tx.is_coinbase() && !pop_inputs(tx.inputs(), height))
             return false;
     }
 
@@ -666,9 +674,9 @@ bool data_base::pop(block& out_block)
 bool data_base::pop_inputs(const input::list& inputs, size_t height)
 {
     // Loop in reverse.
-    for (auto input = inputs.rbegin(); input != inputs.rend(); ++input)
+    for (const auto& input: reverse(inputs))
     {
-        if (!transactions_->unspend(input->previous_output()))
+        if (!transactions_->unspend(input.previous_output()))
             return false;
 
         if (height < settings_.index_start_height)
@@ -677,12 +685,14 @@ bool data_base::pop_inputs(const input::list& inputs, size_t height)
         // All spends are confirmed.
         // This can fail if index start has been changed between restarts.
         // So ignore the error here and succeeed even if not found.
-        /* bool */ spends_->unlink(input->previous_output());
+        /* bool */ spends_->unlink(input.previous_output());
 
         // Try to extract an address.
-        const auto address = payment_address::extract(input->script());
+        const auto address = payment_address::extract(input.script());
 
         // All history entries are confirmed.
+        // Given asynchronous updates, this is not required to remove the
+        // matching entry but instead the correct count of entries.
         if (address)
         {
             // This can fail if index start has been changed between restarts.
@@ -701,12 +711,14 @@ bool data_base::pop_outputs(const output::list& outputs, size_t height)
         return true;
 
     // Loop in reverse.
-    for (auto output = outputs.rbegin(); output != outputs.rend(); ++output)
+    for (const auto output: reverse(outputs))
     {
         // Try to extract an address.
-        const auto address = payment_address::extract(output->script());
+        const auto address = payment_address::extract(output.script());
 
         // All history entries are confirmed.
+        // Given asynchronous updates, this is not required to remove the
+        // matching entry but instead the correct count of entries.
         if (address)
         {
             // This can fail if index start has been changed between restarts.

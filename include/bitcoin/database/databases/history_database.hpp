@@ -110,7 +110,6 @@ private:
     /// List of history rows.
     memory_map rows_file_;
     record_manager rows_manager_;
-    record_list rows_list_;
     record_multiple_map rows_multimap_;
 };
 
