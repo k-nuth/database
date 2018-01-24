@@ -168,11 +168,11 @@ void transaction_unconfirmed_database::store(const chain::transaction& tx)
         ///////////////////////////////////////////////////////////////////////
 
         // WRITE THE TX
-        tx.to_data(serial, false);
+        tx.to_data(serial, false, true);
     };
 
 
-    const auto tx_size = tx.serialized_size(false);
+    const auto tx_size = tx.serialized_size(false, true);
     BITCOIN_ASSERT(tx_size <= max_size_t - metadata_size);
     const auto total_size = metadata_size + static_cast<size_t>(tx_size);
 
