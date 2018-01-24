@@ -56,7 +56,7 @@ class BitprimDatabaseConan(ConanFile):
     package_files = "build/lbitprim-database.a"
     build_policy = "missing"
 
-    requires = (("bitprim-conan-boost/1.64.0@bitprim/stable"),
+    requires = (("bitprim-conan-boost/1.66.0@bitprim/stable"),
                 ("bitprim-core/0.7@bitprim/testing"))
 
     def build(self):
