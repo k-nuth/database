@@ -174,7 +174,7 @@ chain::output transaction_result::output(uint32_t index) const
 // ----------------------------------------------------------------------------
 
 // spender_heights are unguarded and will be inconsistent during write.
-chain::transaction transaction_result::transaction() const
+chain::transaction transaction_result::transaction(bool unconfirmed) const
 {
     BITCOIN_ASSERT(slab_);
     const auto tx_start = REMAP_ADDRESS(slab_) + metadata_size;
@@ -182,7 +182,7 @@ chain::transaction transaction_result::transaction() const
 
     // READ THE TX
     chain::transaction tx;
-    tx.from_data(deserial, false);
+    tx.from_data(deserial, false, unconfirmed);
 
     // TODO: add hash param to deserialization to eliminate this construction.
     return chain::transaction(std::move(tx), hash_digest(hash_));

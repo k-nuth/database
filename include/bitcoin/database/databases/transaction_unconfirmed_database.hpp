@@ -103,7 +103,7 @@ public:
         lookup_map_.for_each([&f](memory_ptr slab){
             if (slab != nullptr) {
                 transaction_result res(slab);
-                auto tx = res.transaction();
+                auto tx = res.transaction(true);
                 tx.recompute_hash();
                 return f(tx);
             } else {
