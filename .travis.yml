@@ -49,9 +49,6 @@ matrix:
         env: PUSH_TO_REPOS=true
    
       - <<: *linux
-        env: PUSH_TO_REPOS=true
-
-      - <<: *linux
         env: CONAN_GCC_VERSIONS=4.9 CONAN_DOCKER_IMAGE=lasote/conangcc49
 
       - <<: *linux
