@@ -36,20 +36,20 @@ class BitprimDatabaseConan(ConanFile):
 
     options = {"shared": [True, False],
                "fPIC": [True, False],
+               "with_tests": [True, False],
+               "with_tools": [True, False],
     }
-    # "with_tests": [True, False],
-    # "with_tools": [True, False],
     # "not_use_cpp11_abi": [True, False]
 
     default_options = "shared=False", \
-        "fPIC=True"
+        "fPIC=True", \
+        "with_tests=False", \
+        "with_tools=False"
 
-    # "with_tests=True", \
-    # "with_tools=True", \
     # "not_use_cpp11_abi=False"
 
-    with_tests = False
-    with_tools = False
+    # with_tests = False
+    # with_tools = False
 
     generators = "cmake"
     exports_sources = "src/*", "CMakeLists.txt", "cmake/*", "bitprim-databaseConfig.cmake.in", "include/*", "test/*", "tools/*"
@@ -58,6 +58,10 @@ class BitprimDatabaseConan(ConanFile):
 
     requires = (("bitprim-conan-boost/1.66.0@bitprim/stable"),
                 ("bitprim-core/0.7@bitprim/testing"))
+
+    def package_id(self):
+        self.info.options.with_tests = "ANY"
+        self.info.options.with_tools = "ANY"
 
     def build(self):
         cmake = CMake(self)
@@ -69,11 +73,11 @@ class BitprimDatabaseConan(ConanFile):
         cmake.definitions["ENABLE_POSITION_INDEPENDENT_CODE"] = option_on_off(self.options.fPIC)
 
         # cmake.definitions["NOT_USE_CPP11_ABI"] = option_on_off(self.options.not_use_cpp11_abi)
-        # cmake.definitions["WITH_TESTS"] = option_on_off(self.options.with_tests)
-        # cmake.definitions["WITH_TOOLS"] = option_on_off(self.options.with_tools)
+        cmake.definitions["WITH_TESTS"] = option_on_off(self.options.with_tests)
+        cmake.definitions["WITH_TOOLS"] = option_on_off(self.options.with_tools)
 
-        cmake.definitions["WITH_TESTS"] = option_on_off(self.with_tests)
-        cmake.definitions["WITH_TOOLS"] = option_on_off(self.with_tools)
+        # cmake.definitions["WITH_TESTS"] = option_on_off(self.with_tests)
+        # cmake.definitions["WITH_TOOLS"] = option_on_off(self.with_tools)
 
         if self.settings.compiler == "gcc":
             if float(str(self.settings.compiler.version)) >= 5:
