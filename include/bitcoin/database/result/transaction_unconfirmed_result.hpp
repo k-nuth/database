@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBBITCOIN_DATABASE_TRANSACTION_RESULT_HPP
-#define LIBBITCOIN_DATABASE_TRANSACTION_RESULT_HPP
+#ifndef LIBBITCOIN_DATABASE_TRANSACTION_UNCONFIRMED_RESULT_HPP
+#define LIBBITCOIN_DATABASE_TRANSACTION_UNCONFIRMED_RESULT_HPP
 
 #include <cstddef>
 #include <cstdint>
@@ -29,15 +29,15 @@ namespace libbitcoin {
 namespace database {
 
 /// Deferred read transaction result.
-class BCD_API transaction_result
+class BCD_API transaction_unconfirmed_result
 {
 public:
-    transaction_result();
-    transaction_result(const memory_ptr slab);
-    transaction_result(const memory_ptr slab, hash_digest&& hash,
-        uint32_t height, uint32_t median_time_past, uint16_t position);
-    transaction_result(const memory_ptr slab, const hash_digest& hash,
-        uint32_t height, uint32_t median_time_past, uint16_t position);
+    transaction_unconfirmed_result();
+    transaction_unconfirmed_result(const memory_ptr slab);
+    transaction_unconfirmed_result(const memory_ptr slab, hash_digest&& hash,
+        uint32_t arrival_time);
+    transaction_unconfirmed_result(const memory_ptr slab, const hash_digest& hash,
+        uint32_t arrival_time);
 
     /// True if this transaction result is valid (found).
     operator bool() const;
@@ -48,17 +48,8 @@ public:
     /// The transaction hash (from cache).
     const hash_digest& hash() const;
 
-    /// The height of the block which includes the transaction.
-    size_t height() const;
-
-    /// The ordinal position of the transaction within its block.
-    size_t position() const;
-
-    /// The median time past of the block which includes the transaction.
-    uint32_t median_time_past() const;
-
-    /// True if all transaction outputs are spent at or below fork_height.
-    bool is_spent(size_t fork_height) const;
+    /// The time when the transaction arrive
+    uint32_t arrival_time() const;
 
     /// The output at the specified index within this transaction.
     chain::output output(uint32_t index) const;
@@ -68,9 +59,7 @@ public:
 
 private:
     memory_ptr slab_;
-    const uint32_t height_;
-    const uint32_t median_time_past_;
-    const uint16_t position_;
+    const uint32_t arrival_time_;
     const hash_digest hash_;
 };
 
