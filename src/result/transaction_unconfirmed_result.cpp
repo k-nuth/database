@@ -16,13 +16,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <bitcoin/database/result/transaction_result.hpp>
+#include <bitcoin/database/result/transaction_unconfirmed_result.hpp>
 
 #include <cstddef>
 #include <cstdint>
 #include <utility>
 #include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/databases/transaction_database.hpp>
+#include <bitcoin/database/databases/transaction_unconfirmed_database.hpp>
 #include <bitcoin/database/memory/memory.hpp>
 
 namespace libbitcoin {
@@ -31,110 +31,57 @@ namespace database {
 using namespace bc::chain;
 
 static constexpr auto value_size = sizeof(uint64_t);
-static constexpr auto height_size = sizeof(uint32_t);
-static constexpr auto position_size = sizeof(uint16_t);
-static constexpr auto median_time_past_size = sizeof(uint32_t);
-static constexpr auto metadata_size = height_size + position_size +
-    median_time_past_size;
+static constexpr auto arrival_time_size = sizeof(uint32_t);
+static constexpr auto metadata_size = arrival_time_size;
 
-transaction_result::transaction_result()
-  : transaction_result(nullptr)
+transaction_unconfirmed_result::transaction_unconfirmed_result()
+  : transaction_unconfirmed_result(nullptr)
 {
 }
 
-transaction_result::transaction_result(const memory_ptr slab)
-  : slab_(slab), height_(0), median_time_past_(0), position_(0),
-    hash_(null_hash)
+transaction_unconfirmed_result::transaction_unconfirmed_result(const memory_ptr slab)
+  : slab_(slab), arrival_time_(0), hash_(null_hash)
 {
 }
 
-transaction_result::transaction_result(const memory_ptr slab,
-    hash_digest&& hash, uint32_t height, uint32_t median_time_past,
-    uint16_t position)
-  : slab_(slab), height_(height), median_time_past_(median_time_past),
-    position_(position), hash_(std::move(hash))
+transaction_unconfirmed_result::transaction_unconfirmed_result(const memory_ptr slab,
+    hash_digest&& hash, uint32_t arrival_time)
+  : slab_(slab), arrival_time_(arrival_time), hash_(std::move(hash))
 {
 }
 
-transaction_result::transaction_result(const memory_ptr slab,
-    const hash_digest& hash, uint32_t height, uint32_t median_time_past,
-    uint16_t position)
-  : slab_(slab), height_(height), median_time_past_(median_time_past),
-    position_(position), hash_(hash)
+transaction_unconfirmed_result::transaction_unconfirmed_result(const memory_ptr slab,
+    const hash_digest& hash, uint32_t arrival_time)
+  : slab_(slab), arrival_time_(arrival_time), hash_(hash)
 {
 }
 
-transaction_result::operator bool() const
+transaction_unconfirmed_result::operator bool() const
 {
     return slab_ != nullptr;
 }
 
-void transaction_result::reset()
+void transaction_unconfirmed_result::reset()
 {
     slab_.reset();
 }
 
-const hash_digest& transaction_result::hash() const
+const hash_digest& transaction_unconfirmed_result::hash() const
 {
     return hash_;
 }
 
 // Height is unguarded and will be inconsistent during write.
-size_t transaction_result::height() const
+uint32_t transaction_unconfirmed_result::arrival_time() const
 {
     BITCOIN_ASSERT(slab_);
-    return height_;
+    return arrival_time_;
 }
 
-// Position is unguarded and will be inconsistent during write.
-size_t transaction_result::position() const
-{
-    BITCOIN_ASSERT(slab_);
-    return position_;
-}
-
-// Median time past is unguarded and will be inconsistent during write.
-uint32_t transaction_result::median_time_past() const
-{
-    BITCOIN_ASSERT(slab_);
-    return median_time_past_;
-}
-
-// Spentness is unguarded and will be inconsistent during write.
-bool transaction_result::is_spent(size_t fork_height) const
-{
-    // Cannot be spent if unconfirmed.
-    if (position_ == transaction_database::unconfirmed)
-        return false;
-
-    BITCOIN_ASSERT(slab_);
-    const auto tx_start = REMAP_ADDRESS(slab_) + metadata_size;
-    auto deserial = make_unsafe_deserializer(tx_start);
-    const auto outputs = deserial.read_size_little_endian();
-    BITCOIN_ASSERT(deserial);
-
-    // Search all outputs for an unspent indication.
-    for (uint32_t output = 0; output < outputs; ++output)
-    {
-        const auto spender_height = deserial.read_4_bytes_little_endian();
-        BITCOIN_ASSERT(deserial);
-
-        // A spend from above the fork height is not an actual spend.
-        if (spender_height == output::validation::not_spent ||
-            spender_height > fork_height)
-            return false;
-
-        deserial.skip(value_size);
-        deserial.skip(deserial.read_size_little_endian());
-        BITCOIN_ASSERT(deserial);
-    }
-
-    return true;
-}
 
 // spender_heights are unguarded and will be inconsistent during write.
 // If index is out of range returns default/invalid output (.value not_found).
-chain::output transaction_result::output(uint32_t index) const
+chain::output transaction_unconfirmed_result::output(uint32_t index) const
 {
     BITCOIN_ASSERT(slab_);
     const auto tx_start = REMAP_ADDRESS(slab_) + metadata_size;
@@ -148,7 +95,7 @@ chain::output transaction_result::output(uint32_t index) const
     // Skip outputs until the target output.
     for (uint32_t output = 0; output < index; ++output)
     {
-        deserial.skip(height_size + value_size);
+        deserial.skip(arrival_time_size + value_size);
         deserial.skip(deserial.read_size_little_endian());
         BITCOIN_ASSERT(deserial);
     }
@@ -174,7 +121,7 @@ chain::output transaction_result::output(uint32_t index) const
 // ----------------------------------------------------------------------------
 
 // spender_heights are unguarded and will be inconsistent during write.
-chain::transaction transaction_result::transaction() const
+chain::transaction transaction_unconfirmed_result::transaction() const
 {
     BITCOIN_ASSERT(slab_);
     const auto tx_start = REMAP_ADDRESS(slab_) + metadata_size;
@@ -182,7 +129,7 @@ chain::transaction transaction_result::transaction() const
 
     // READ THE TX
     chain::transaction tx;
-    tx.from_data(deserial, false);
+    tx.from_data(deserial, false, true);
 
     // TODO: add hash param to deserialization to eliminate this construction.
     return chain::transaction(std::move(tx), hash_digest(hash_));
