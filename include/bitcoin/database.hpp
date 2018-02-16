@@ -47,5 +47,6 @@
 #include <bitcoin/database/primitives/slab_manager.hpp>
 #include <bitcoin/database/result/block_result.hpp>
 #include <bitcoin/database/result/transaction_result.hpp>
+#include <bitcoin/database/result/transaction_unconfirmed_result.hpp>
 
 #endif
