@@ -25,7 +25,7 @@
 #include <bitcoin/bitcoin.hpp>
 #include <bitcoin/database/define.hpp>
 #include <bitcoin/database/memory/memory_map.hpp>
-#include <bitcoin/database/result/transaction_result.hpp>
+#include <bitcoin/database/result/transaction_unconfirmed_result.hpp>
 #include <bitcoin/database/primitives/slab_hash_table.hpp>
 #include <bitcoin/database/primitives/slab_manager.hpp>
 #include <bitcoin/database/unspent_outputs.hpp>
@@ -64,27 +64,11 @@ public:
     bool close();
 
     /// Fetch transaction by its hash, at or below the specified block height.
-    transaction_result get(const hash_digest& hash) const;
-
-    /// Get the output at the specified index within the transaction.
-    // bool get_output(chain::output& out_output, size_t& out_height,
-    //     bool& out_coinbase, const chain::output_point& point,
-    //     size_t fork_height, bool require_confirmed) const;
+    transaction_unconfirmed_result get(const hash_digest& hash) const;
 
     /// Store a transaction in the database.
     void store(const chain::transaction& tx);
 
-    // /// Update the spender height of the output in the tx store.
-    // bool spend(const chain::output_point& point, size_t spender_height);
-
-    // /// Update the spender height of the output in the tx store.
-    // bool unspend(const chain::output_point& point);
-
-    // /// Promote an unconfirmed tx (not including its indexes).
-    // bool confirm(const hash_digest& hash, size_t height, size_t position);
-
-    // /// Demote the transaction (not including its indexes).
-    // bool unconfirm(const hash_digest& hash);
 
     /// Commit latest inserts.
     void synchronize();
@@ -102,10 +86,23 @@ public:
     void for_each(UnaryFunction f) const {
         lookup_map_.for_each([&f](memory_ptr slab){
             if (slab != nullptr) {
-                transaction_result res(slab);
+                transaction_unconfirmed_result res(slab);
                 auto tx = res.transaction();
                 tx.recompute_hash();
                 return f(tx);
+            } else {
+                std::cout << "transaction_unconfirmed_database::for_each nullptr slab\n";
+            }
+            return true;
+        });
+    }
+
+    template <typename UnaryFunction>
+    void for_each_result(UnaryFunction f) const {
+        lookup_map_.for_each([&f](memory_ptr slab){
+            if (slab != nullptr) {
+                transaction_unconfirmed_result res(slab);
+                return f(res);
             } else {
                 std::cout << "transaction_unconfirmed_database::for_each nullptr slab\n";
             }

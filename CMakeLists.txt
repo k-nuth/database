@@ -22,17 +22,8 @@ cmake_minimum_required(VERSION 3.4)
 # bitprim-database
 #==============================================================================
 project(bitprim-database
-        VERSION 0.6.0
+        VERSION 0.7.0
         LANGUAGES CXX C)
-
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    if (NOT NOT_USE_CPP11_ABI)
-        add_definitions(-D_GLIBCXX_USE_CXX11_ABI=1)
-    else()
-        add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
-    endif()
-    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wno-macro-redefined")
-endif()
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -61,7 +52,6 @@ option(ENABLE_SHARED "" OFF)
 #------------------------------------------------------------------------------
 option(ENABLE_POSITION_INDEPENDENT_CODE "Enable POSITION_INDEPENDENT_CODE property" ON)
 
-
 # Implement --with-tests and declare WITH_TESTS.
 #------------------------------------------------------------------------------
 option(WITH_TESTS "Compile with unit tests." ON)
@@ -77,16 +67,12 @@ set(BITPRIM_BUILD_NUMBER "-" CACHE STRING "Specify the Bitprim Build Number.")
 
 # Conan infrastructure
 #==============================================================================
-# Only if enabled
-#------------------------------------------------------------------------------
-if (NOT NO_CONAN_AT_ALL)
-  if(EXISTS ${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-      include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-      conan_basic_setup()
-  else()
-      message(WARNING "The file conanbuildinfo.cmake doesn't exist, you have to run conan install first")
-  endif()
+if (EXISTS ${CMAKE_SOURCE_DIR}/bitprimbuildinfo.cmake)
+    include(${CMAKE_SOURCE_DIR}/bitprimbuildinfo.cmake)
+else()
+    message( STATUS "bitprimbuildinfo doent exists")
 endif()
+
 
 
 # Check dependencies.
@@ -113,10 +99,10 @@ if (NO_CONAN_AT_ALL)
 endif()
 
 if (NOT USE_CONAN)
-    # Require bitprim-core of at least version 0.6.0 and output ${bitprim_core_CPPFLAGS/LIBS/PKG}.
+    # Require bitprim-core of at least version 0.7.0 and output ${bitprim_core_CPPFLAGS/LIBS/PKG}.
     #------------------------------------------------------------------------------
     if (NOT TARGET bitprim-core)
-            find_package(bitprim-core 0.6.0 REQUIRED)
+            find_package(bitprim-core 0.7.0 REQUIRED)
     endif()
 endif()
 
@@ -229,6 +215,7 @@ add_library(bitprim-database ${MODE}
         src/primitives/slab_manager.cpp
         src/result/block_result.cpp
         src/result/transaction_result.cpp
+        src/result/transaction_unconfirmed_result.cpp
         )
 
 
@@ -262,11 +249,11 @@ if (NOT NO_CONAN_AT_ALL)
 endif()
 
 
-if (USE_CONAN)
+# if (USE_CONAN)
     if (MINGW)
         target_link_libraries(bitprim-database PUBLIC ws2_32 wsock32) #TODO(fernando): manage with Conan
     endif()
-endif()
+# endif()
 
 _group_sources(bitprim-database "${CMAKE_CURRENT_LIST_DIR}")
 
@@ -514,6 +501,7 @@ set(_bitprim_headers
         bitcoin/database/primitives/slab_manager.hpp
         bitcoin/database/result/block_result.hpp
         bitcoin/database/result/transaction_result.hpp
+        bitcoin/database/result/transaction_unconfirmed_result.hpp
         bitcoin/database/settings.hpp
         bitcoin/database/store.hpp
         bitcoin/database/version.hpp

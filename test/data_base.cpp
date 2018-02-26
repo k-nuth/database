@@ -319,6 +319,7 @@ BOOST_AUTO_TEST_CASE(data_base__pushpop__test)
     settings.transaction_table_buckets = 42;
     settings.spend_table_buckets = 42;
     settings.history_table_buckets = 42;
+    settings.transaction_unconfirmed_table_buckets = 42;
 
     // If index_height is set to anything other than 0 or max it can cause
     // false negatives since it excludes entries below the specified height.

@@ -31,12 +31,8 @@ using namespace bc::chain;
 using namespace bc::machine;
 
 static constexpr auto value_size = sizeof(uint64_t);
-static constexpr auto height_size = sizeof(uint32_t);
-static constexpr auto position_size = sizeof(uint16_t);
-static constexpr auto median_time_past_size = sizeof(uint32_t);
-static constexpr auto spender_height_value_size = height_size + value_size;
-static constexpr auto metadata_size = height_size + position_size +
-    median_time_past_size;
+static constexpr auto arrival_time_size = sizeof(uint32_t);
+static constexpr auto metadata_size = arrival_time_size;
 
 const size_t transaction_unconfirmed_database::unconfirmed = max_uint16;
 
@@ -126,7 +122,7 @@ memory_ptr transaction_unconfirmed_database::find(const hash_digest& hash) const
 
 }
 
-transaction_result transaction_unconfirmed_database::get(const hash_digest& hash) const
+transaction_unconfirmed_result transaction_unconfirmed_database::get(const hash_digest& hash) const
 {
     // Limit search to confirmed transactions at or below the fork height.
     // Caller should set fork height to max_size_t for unconfirmed search.
@@ -136,22 +132,24 @@ transaction_result transaction_unconfirmed_database::get(const hash_digest& hash
         ///////////////////////////////////////////////////////////////////////
         metadata_mutex_.lock_shared();
         auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab));
-        const auto height = deserial.read_4_bytes_little_endian();
-        const auto position = deserial.read_2_bytes_little_endian();
-        const auto median_time_past = deserial.read_4_bytes_little_endian();
+        const auto arrival_time = deserial.read_4_bytes_little_endian();
         metadata_mutex_.unlock_shared();
         ///////////////////////////////////////////////////////////////////////
 
-        return transaction_result(slab, hash, height, median_time_past,
-            position);
+        return transaction_unconfirmed_result(slab, hash, arrival_time);
     }
 
     return{};
 }
 
+uint32_t get_clock_now() {
+    auto const now = std::chrono::high_resolution_clock::now();
+    return static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
+}
+
 void transaction_unconfirmed_database::store(const chain::transaction& tx)
 {
-    uint32_t median_time_past = 0;
+    uint32_t arrival_time = get_clock_now();
 
     const auto hash = tx.hash();
 
@@ -161,18 +159,16 @@ void transaction_unconfirmed_database::store(const chain::transaction& tx)
         ///////////////////////////////////////////////////////////////////////
         // Critical Section
         metadata_mutex_.lock();
-        serial.write_4_bytes_little_endian(static_cast<uint32_t>(0));
-        serial.write_2_bytes_little_endian(static_cast<uint16_t>(unconfirmed));
-        serial.write_4_bytes_little_endian(median_time_past);
+        serial.write_4_bytes_little_endian(static_cast<uint32_t>(arrival_time));
         metadata_mutex_.unlock();
         ///////////////////////////////////////////////////////////////////////
 
         // WRITE THE TX
-        tx.to_data(serial, false);
+        tx.to_data(serial, false, true);
     };
 
 
-    const auto tx_size = tx.serialized_size(false);
+    const auto tx_size = tx.serialized_size(false, true);
     BITCOIN_ASSERT(tx_size <= max_size_t - metadata_size);
     const auto total_size = metadata_size + static_cast<size_t>(tx_size);
 
