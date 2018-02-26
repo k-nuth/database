@@ -98,6 +98,7 @@ class BitprimDatabaseConan(ConanFile):
         
         cmake.definitions["ENABLE_SHARED"] = option_on_off(self.is_shared)
         cmake.definitions["ENABLE_POSITION_INDEPENDENT_CODE"] = option_on_off(self.fPIC_enabled)
+
         cmake.definitions["WITH_TESTS"] = option_on_off(self.options.with_tests)
         cmake.definitions["WITH_TOOLS"] = option_on_off(self.options.with_tools)
 
