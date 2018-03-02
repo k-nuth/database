@@ -25,7 +25,7 @@ def option_on_off(option):
 
 class BitprimDatabaseConan(ConanFile):
     name = "bitprim-database"
-    version = "0.7"
+    version = "0.8"
     license = "http://www.boost.org/users/license.html"
     url = "https://github.com/bitprim/bitprim-database/tree/conan-build/conanfile.py"
     description = "Bitcoin High Performance Blockchain Database"
