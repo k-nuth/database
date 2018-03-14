@@ -19,17 +19,41 @@
 
 import os
 from conans import ConanFile, CMake
+from conans import __version__ as conan_version
+from conans.model.version import Version
 
 def option_on_off(option):
     return "ON" if option else "OFF"
 
+
+def get_content(file_name):
+    # print(os.path.dirname(os.path.abspath(__file__)))
+    # print(os.getcwd())
+    # with open(path, 'r') as f:
+    #     return f.read()
+    file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), file_name)
+    with open(file_path, 'r') as f:
+        return f.read()
+
+def get_version():
+    return get_content('conan_version')
+
+def get_channel():
+    return get_content('conan_channel')
+
+def get_conan_req_version():
+    return get_content('conan_req_version')
+
 class BitprimDatabaseConan(ConanFile):
     name = "bitprim-database"
-    version = "0.8"
+    version = get_version()
     license = "http://www.boost.org/users/license.html"
     url = "https://github.com/bitprim/bitprim-database/tree/conan-build/conanfile.py"
     description = "Bitcoin High Performance Blockchain Database"
     settings = "os", "compiler", "build_type", "arch"
+
+    if conan_version < Version(get_conan_req_version()):
+        raise Exception ("Conan version should be greater or equal than %s" % (get_conan_req_version(), ))
 
     options = {"shared": [True, False],
                "fPIC": [True, False],
@@ -42,14 +66,14 @@ class BitprimDatabaseConan(ConanFile):
         "with_tests=False", \
         "with_tools=False"
 
-
     generators = "cmake"
+    exports = "conan_channel", "conan_version", "conan_req_version"
     exports_sources = "src/*", "CMakeLists.txt", "cmake/*", "bitprim-databaseConfig.cmake.in", "bitprimbuildinfo.cmake", "include/*", "test/*", "tools/*"
     package_files = "build/lbitprim-database.a"
     build_policy = "missing"
 
     requires = (("boost/1.66.0@bitprim/stable"),
-                ("bitprim-core/0.8@bitprim/testing"))
+                ("bitprim-core/0.8@bitprim/%s" % get_channel()))
 
     @property
     def msvc_mt_build(self):
@@ -71,7 +95,7 @@ class BitprimDatabaseConan(ConanFile):
 
 
     def config_options(self):
-        self.output.info('def config_options(self):')
+        # self.output.info('def config_options(self):')
         if self.settings.compiler == "Visual Studio":
             self.options.remove("fPIC")
 
