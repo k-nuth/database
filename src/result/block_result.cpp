@@ -37,13 +37,15 @@ static constexpr size_t bits_size = sizeof(uint32_t);
 static constexpr size_t nonce_size = sizeof(uint32_t);
 static constexpr size_t median_time_past_size = sizeof(uint32_t);
 static constexpr size_t height_size = sizeof(uint32_t);
+static constexpr size_t serialized_size_size = sizeof(uint64_t);
 
 static constexpr auto version_offset = 0u;
 static constexpr auto time_offset = version_size + previous_size + merkle_size;
 static constexpr auto bits_offset = time_offset + time_size;
 static constexpr auto height_offset = bits_offset + bits_size + nonce_size +
     median_time_past_size;
-static constexpr auto count_offset = height_offset + height_size;
+static constexpr auto serialized_size_offset = height_offset + height_size;
+static constexpr auto count_offset = serialized_size_offset + serialized_size_size;
 
 block_result::block_result()
   : block_result(nullptr)
@@ -158,6 +160,14 @@ hash_list block_result::transaction_hashes() const
         hashes.push_back(deserial.read_hash());
 
     return hashes;
+}
+
+uint64_t block_result::serialized_size() const
+{
+    BITCOIN_ASSERT(slab_);
+    const auto memory = REMAP_ADDRESS(slab_);
+    auto deserial = make_unsafe_deserializer(memory + serialized_size_offset);
+    return deserial.read_8_bytes_little_endian();
 }
 
 } // namespace database

@@ -71,6 +71,8 @@ public:
     /// An ordered set of all transaction hashes in the block.
     hash_list transaction_hashes() const;
 
+    uint64_t serialized_size() const;
+
 private:
     memory_ptr slab_;
     const uint32_t height_;
