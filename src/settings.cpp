@@ -43,10 +43,8 @@ settings::settings()
 settings::settings(config::settings context)
   : settings()
 {
-    switch (context)
-    {
-        case config::settings::mainnet:
-        {
+    switch (context) {
+        case config::settings::mainnet: {
             block_table_buckets = 650000;
             transaction_table_buckets = 110000000;
             transaction_unconfirmed_table_buckets = 10000;
@@ -54,9 +52,7 @@ settings::settings(config::settings context)
             history_table_buckets = 107000000;
             break;
         }
-
-        case config::settings::testnet:
-        {
+        case config::settings::testnet: {
             // TODO: optimize for testnet.
             block_table_buckets = 650000;
             transaction_table_buckets = 110000000;
@@ -65,11 +61,8 @@ settings::settings(config::settings context)
             history_table_buckets = 107000000;
             break;
         }
-
         default:
-        case config::settings::none:
-        {
-        }
+        case config::settings::none: {}
     }
 }
 
