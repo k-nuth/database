@@ -242,7 +242,7 @@ bool data_base::flush() const
             stealth_->flush();
 
     // Just for the log.
-    code ec(flushed ? error::success : error::operation_failed);
+    code ec(flushed ? error::success : error::operation_failed_0);
 
     LOG_DEBUG(LOG_DATABASE)
         << "Write flushed to disk: " << ec.message();
@@ -387,7 +387,7 @@ code data_base::insert(const chain::block& block, size_t height)
 
     if (!push_transactions(block, height, median_time_past) ||
         !push_heights(block, height))
-        return error::operation_failed;
+        return error::operation_failed_1;
 
     blocks_->store(block, height);
     synchronize();
@@ -410,7 +410,7 @@ code data_base::push(const chain::transaction& tx, uint32_t forks)
     // Begin Flush Lock and Sequential Lock
     //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
     if (!begin_write())
-        return error::operation_failed;
+        return error::operation_failed_2;
 
     // When position is unconfirmed, height is used to store validation forks.
     // PREMERGE
@@ -421,7 +421,7 @@ code data_base::push(const chain::transaction& tx, uint32_t forks)
     transactions_->synchronize();
     transactions_unconfirmed_->synchronize();
 
-    return end_write() ? error::success : error::operation_failed;
+    return end_write() ? error::success : error::operation_failed_3;
     // End Sequential Lock and Flush Lock
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     ///////////////////////////////////////////////////////////////////////////
@@ -443,18 +443,18 @@ code data_base::push(const block& block, size_t height)
     // Begin Flush Lock and Sequential Lock
     //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
     if (!begin_write())
-        return error::operation_failed;
+        return error::operation_failed_4;
 
     const auto median_time_past = block.header().validation.median_time_past;
 
     if (!push_transactions(block, height, median_time_past) ||
         !push_heights(block, height))
-        return error::operation_failed;
+        return error::operation_failed_5;
 
     blocks_->store(block, height);
     synchronize();
 
-    return end_write() ? error::success : error::operation_failed;
+    return end_write() ? error::success : error::operation_failed_6;
     // End Sequential Lock and Flush Lock
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     ///////////////////////////////////////////////////////////////////////////
@@ -810,7 +810,7 @@ void data_base::do_push_transactions(block_const_ptr block, size_t height,
 {
     const auto result = push_transactions(*block, height, median_time_past,
         bucket, buckets);
-    handler(result ? error::success : error::operation_failed);
+    handler(result ? error::success : error::operation_failed_7);
 }
 
 void data_base::handle_push_transactions(const code& ec, block_const_ptr block,
@@ -824,7 +824,7 @@ void data_base::handle_push_transactions(const code& ec, block_const_ptr block,
 
     if (!push_heights(*block, height))
     {
-        handler(error::operation_failed);
+        handler(error::operation_failed_8);
         return;
     }
 
@@ -846,19 +846,15 @@ void data_base::handle_push_transactions(const code& ec, block_const_ptr block,
 void data_base::pop_above(block_const_ptr_list_ptr out_blocks,
     const hash_digest& fork_hash, dispatcher&, result_handler handler)
 {
-    // OLD before merging (Feb2017)
-    //std::cout << "FER -- void data_base::pop_inputs(const input::list& inputs, size_t height)\n";
-    // static const auto not_spent = output::validation::not_spent;
-
     size_t top;
     out_blocks->clear();
 
     const auto result = blocks_->get(fork_hash);
 
     // The fork point does not exist or failed to get it or the top, fail.
-    if (!result || !blocks_->top(top))
-    {
-        handler(error::operation_failed);
+    if (!result || !blocks_->top(top)) {
+        //**--**
+        handler(error::operation_failed_9);
         return;
     }
 
@@ -883,7 +879,8 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks,
         // TODO: parallelize pop of transactions within each block.
         if (!pop(next))
         {
-            handler(error::operation_failed);
+            //**--**
+            handler(error::operation_failed_10);
             return;
         }
 
@@ -912,11 +909,12 @@ void data_base::reorganize(const checkpoint& fork_point,
     ///////////////////////////////////////////////////////////////////////////
     write_mutex_.lock();
 
+    //**--**
     // Begin Flush Lock and Sequential Lock
     //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
     if (!begin_write())
     {
-        pop_handler(error::operation_failed);
+        pop_handler(error::operation_failed_11);
         return;
     }
 
@@ -954,7 +952,7 @@ void data_base::handle_push(const code& ec, result_handler handler) const
         return;
     }
 
-    handler(end_write() ? error::success : error::operation_failed);
+    handler(end_write() ? error::success : error::operation_failed_12);
     // End Sequential Lock and Flush Lock
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 }
