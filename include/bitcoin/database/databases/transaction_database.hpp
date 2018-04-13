@@ -101,7 +101,7 @@ public:
     /// Flush the memory map to disk.
     bool flush() const;
 
-private:
+// private:
     typedef slab_hash_table<hash_digest> slab_map;
 
     memory_ptr find(const hash_digest& hash, size_t maximum_height,

@@ -22,7 +22,7 @@ cmake_minimum_required(VERSION 3.4)
 # bitprim-database
 #==============================================================================
 project(bitprim-database
-        VERSION 0.9.0
+        VERSION 0.9.1
         LANGUAGES CXX C)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -59,6 +59,23 @@ option(WITH_TESTS "Compile with unit tests." ON)
 # Implement --with-tools and declare WITH_TOOLS.
 #------------------------------------------------------------------------------
 option(WITH_TOOLS "Compile with tools." OFF)
+
+
+
+set(CURRENCY "BCH" CACHE STRING "Specify the Cryptocurrency (BCH|BTC|LTC).")
+
+if (${CURRENCY} STREQUAL "BCH")
+  add_definitions(-DBITPRIM_CURRENCY_BCH)
+elseif (${CURRENCY} STREQUAL "BTC")
+  add_definitions(-DBITPRIM_CURRENCY_BTC)
+elseif (${CURRENCY} STREQUAL "LTC")
+  add_definitions(-DBITPRIM_CURRENCY_LTC)
+else()
+  message(FATAL_ERROR "Invalid Cryptocurrency: ${CURRENCY}")
+endif()
+
+message(STATUS "Bitprim: Cryptocurrency: ${CURRENCY}")
+
 
 
 set(BITPRIM_BUILD_NUMBER "-" CACHE STRING "Specify the Bitprim Build Number.")
@@ -99,10 +116,10 @@ if (NO_CONAN_AT_ALL)
 endif()
 
 if (NOT USE_CONAN)
-    # Require bitprim-core of at least version 0.9.0 and output ${bitprim_core_CPPFLAGS/LIBS/PKG}.
+    # Require bitprim-core of at least version 0.9.1 and output ${bitprim_core_CPPFLAGS/LIBS/PKG}.
     #------------------------------------------------------------------------------
     if (NOT TARGET bitprim-core)
-            find_package(bitprim-core 0.9.0 REQUIRED)
+            find_package(bitprim-core 0.9.1 REQUIRED)
     endif()
 endif()
 

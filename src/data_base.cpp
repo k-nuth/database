@@ -468,13 +468,51 @@ bool data_base::push_transactions(const chain::block& block, size_t height,
     const auto& txs = block.transactions();
     const auto count = txs.size();
 
-    for (auto position = bucket; position < count;
-        position = ceiling_add(position, buckets))
-    {
+    hash_digest tx_hash_1;
+    bool res1 = decode_hash(tx_hash_1, "674c2d60360fbf63d5641eb6f0080f81a45598b0107a0a46b2af51db74bf36ac");
+
+    hash_digest tx_hash_2; //madre
+    bool res2 = decode_hash(tx_hash_2, "042879d48f081abd8ab4ba263065254903c75333cf5274f4919c6d210f9d343d");
+
+    LOG_DEBUG(LOG_DATABASE) << "data_base::push_transactions - res1" << res1;
+    LOG_DEBUG(LOG_DATABASE) << "data_base::push_transactions - res2" << res2;
+
+    for (auto position = bucket; position < count; position = ceiling_add(position, buckets)) {
         const auto& tx = txs[position];
+
+        //Esto deberia pasar despues
+        if (tx.hash() == tx_hash_1) {
+            LOG_DEBUG(LOG_DATABASE) << "data_base::push_transactions - trying to store transaction: " << encode_hash(tx_hash_1);
+            LOG_DEBUG(LOG_DATABASE) << "data_base::push_transactions - finding dependent transaction: " << encode_hash(tx_hash_2);
+
+            const auto slab = transactions_->find(tx_hash_2, height, true);
+
+            if (slab == nullptr) {
+                LOG_DEBUG(LOG_DATABASE) << "data_base::push_transactions - slab NOT found for transaction: " << encode_hash(tx_hash_2);
+            } else {
+                LOG_DEBUG(LOG_DATABASE) << "data_base::push_transactions - slab found for transaction: " << encode_hash(tx_hash_2);
+            }
+        }
+
+
         // OLD PREMERFE
         // transactions_->store(tx, height, position);
         transactions_->store(tx, height, median_time_past, position);
+
+        //Esto deberia pasar primero
+        if (tx.hash() == tx_hash_2) {
+            LOG_DEBUG(LOG_DATABASE) << "data_base::push_transactions - stored transaction: " << encode_hash(tx_hash_2);
+
+            const auto slab = transactions_->find(tx_hash_2, height, true);
+
+            if (slab == nullptr) {
+                LOG_DEBUG(LOG_DATABASE) << "data_base::push_transactions - slab NOT found for transaction: " << encode_hash(tx_hash_2);
+            } else {
+                LOG_DEBUG(LOG_DATABASE) << "data_base::push_transactions - slab found for transaction: " << encode_hash(tx_hash_2);
+            }
+        }
+
+
         transactions_unconfirmed_->unlink_if_exists(tx.hash());
 
         if (height < settings_.index_start_height)

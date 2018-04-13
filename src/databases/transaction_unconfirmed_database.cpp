@@ -34,7 +34,11 @@ static constexpr auto value_size = sizeof(uint64_t);
 static constexpr auto arrival_time_size = sizeof(uint32_t);
 static constexpr auto metadata_size = arrival_time_size;
 
+#ifdef BITPRIM_CURRENCY_BCH
+const size_t transaction_unconfirmed_database::unconfirmed = max_uint32;
+#else 
 const size_t transaction_unconfirmed_database::unconfirmed = max_uint16;
+#endif    
 
 // Transactions uses a hash table index, O(1).
 transaction_unconfirmed_database::transaction_unconfirmed_database(const path& map_filename,
