@@ -41,17 +41,15 @@ const size_t transaction_unconfirmed_database::unconfirmed = max_uint16;
 #endif    
 
 // Transactions uses a hash table index, O(1).
-transaction_unconfirmed_database::transaction_unconfirmed_database(const path& map_filename,
-    size_t buckets, size_t expansion, mutex_ptr mutex)
-  : initial_map_file_size_(slab_hash_table_header_size(buckets) + minimum_slabs_size),
-    lookup_file_(map_filename, mutex, expansion),
-    lookup_header_(lookup_file_, buckets),
-    lookup_manager_(lookup_file_, slab_hash_table_header_size(buckets)),
-    lookup_map_(lookup_header_, lookup_manager_)
+transaction_unconfirmed_database::transaction_unconfirmed_database(const path& map_filename, size_t buckets, size_t expansion, mutex_ptr mutex)
+    : initial_map_file_size_(slab_hash_table_header_size(buckets) + minimum_slabs_size)
+    , lookup_file_(map_filename, mutex, expansion)
+    , lookup_header_(lookup_file_, buckets)
+    , lookup_manager_(lookup_file_, slab_hash_table_header_size(buckets))
+    , lookup_map_(lookup_header_, lookup_manager_)
 {}
 
-transaction_unconfirmed_database::~transaction_unconfirmed_database()
-{
+transaction_unconfirmed_database::~transaction_unconfirmed_database() {
     close();
 }
 
@@ -59,8 +57,7 @@ transaction_unconfirmed_database::~transaction_unconfirmed_database()
 // ----------------------------------------------------------------------------
 
 // Initialize files and start.
-bool transaction_unconfirmed_database::create()
-{
+bool transaction_unconfirmed_database::create() {
     // Resize and create require an opened file.
     if (!lookup_file_.open())
         return false;
@@ -82,8 +79,7 @@ bool transaction_unconfirmed_database::create()
 // ----------------------------------------------------------------------------
 
 // Start files and primitives.
-bool transaction_unconfirmed_database::open()
-{
+bool transaction_unconfirmed_database::open() {
     return
         lookup_file_.open() &&
         lookup_header_.start() &&
@@ -91,28 +87,24 @@ bool transaction_unconfirmed_database::open()
 }
 
 // Close files.
-bool transaction_unconfirmed_database::close()
-{
+bool transaction_unconfirmed_database::close() {
     return lookup_file_.close();
 }
 
 // Commit latest inserts.
-void transaction_unconfirmed_database::synchronize()
-{
+void transaction_unconfirmed_database::synchronize() {
     lookup_manager_.sync();
 }
 
 // Flush the memory map to disk.
-bool transaction_unconfirmed_database::flush() const
-{
+bool transaction_unconfirmed_database::flush() const {
     return lookup_file_.flush();
 }
 
 // Queries.
 // ----------------------------------------------------------------------------
 
-memory_ptr transaction_unconfirmed_database::find(const hash_digest& hash) const
-{
+memory_ptr transaction_unconfirmed_database::find(const hash_digest& hash) const {
     //*************************************************************************
     // CONSENSUS: This simplified implementation does not allow the possibility
     // of a matching tx hash above the fork height or the existence of both
@@ -126,13 +118,11 @@ memory_ptr transaction_unconfirmed_database::find(const hash_digest& hash) const
 
 }
 
-transaction_unconfirmed_result transaction_unconfirmed_database::get(const hash_digest& hash) const
-{
+transaction_unconfirmed_result transaction_unconfirmed_database::get(const hash_digest& hash) const {
     // Limit search to confirmed transactions at or below the fork height.
     // Caller should set fork height to max_size_t for unconfirmed search.
     const auto slab = find(hash);
-    if (slab)
-    {
+    if (slab) {
         ///////////////////////////////////////////////////////////////////////
         metadata_mutex_.lock_shared();
         auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab));
@@ -151,15 +141,13 @@ uint32_t get_clock_now() {
     return static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
 }
 
-void transaction_unconfirmed_database::store(const chain::transaction& tx)
-{
+void transaction_unconfirmed_database::store(const chain::transaction& tx) {
     uint32_t arrival_time = get_clock_now();
 
     const auto hash = tx.hash();
 
     // Unconfirmed txs: position is unconfirmed and height is validation forks.
-    const auto write = [&](serializer<uint8_t*>& serial)
-    {
+    const auto write = [&](serializer<uint8_t*>& serial) {
         ///////////////////////////////////////////////////////////////////////
         // Critical Section
         metadata_mutex_.lock();
@@ -199,6 +187,4 @@ bool transaction_unconfirmed_database::unlink_if_exists(hash_digest const& hash)
     return unlink(hash);
 }
 
-
-} // namespace database
-} // namespace libbitcoin
+}} // namespace libbitcoin::database

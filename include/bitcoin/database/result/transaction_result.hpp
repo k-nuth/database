@@ -28,16 +28,20 @@
 namespace libbitcoin {
 namespace database {
 
+#ifdef BITPRIM_CURRENCY_BCH
+using position_t = uint32_t;
+#else 
+using position_t = uint16_t;
+#endif    
+
+
 /// Deferred read transaction result.
-class BCD_API transaction_result
-{
+class BCD_API transaction_result {
 public:
     transaction_result();
     transaction_result(const memory_ptr slab);
-    transaction_result(const memory_ptr slab, hash_digest&& hash,
-        uint32_t height, uint32_t median_time_past, uint16_t position);
-    transaction_result(const memory_ptr slab, const hash_digest& hash,
-        uint32_t height, uint32_t median_time_past, uint16_t position);
+    transaction_result(const memory_ptr slab, hash_digest&& hash, uint32_t height, uint32_t median_time_past, position_t position);
+    transaction_result(const memory_ptr slab, const hash_digest& hash, uint32_t height, uint32_t median_time_past, position_t position);
 
     /// True if this transaction result is valid (found).
     operator bool() const;
@@ -70,7 +74,7 @@ private:
     memory_ptr slab_;
     const uint32_t height_;
     const uint32_t median_time_past_;
-    const uint16_t position_;
+    const position_t position_;
     const hash_digest hash_;
 };
 
