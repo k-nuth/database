@@ -29,6 +29,7 @@
 #include <bitcoin/database/primitives/slab_hash_table.hpp>
 #include <bitcoin/database/primitives/slab_manager.hpp>
 #include <bitcoin/database/unspent_outputs.hpp>
+#include <bitcoin/bitcoin/chainv2/transaction.hpp>
 
 namespace libbitcoin {
 namespace database {
@@ -67,10 +68,9 @@ public:
     transaction_result get(const hash_digest& hash, size_t fork_height, bool require_confirmed) const;
 
     /// Get the output at the specified index within the transaction.
-    bool get_output(chain::output& out_output, size_t& out_height,
-        uint32_t& out_median_time_past, bool& out_coinbase,
-        const chain::output_point& point, size_t fork_height,
-        bool require_confirmed) const;
+    bool get_output(chain::output& out_output, size_t& out_height, uint32_t& out_median_time_past, bool& out_coinbase, const chain::output_point& point, size_t fork_height, bool require_confirmed) const;
+    bool get_output(chainv2::output& out_output, size_t& out_height, uint32_t& out_median_time_past, bool& out_coinbase, const chainv2::output_point& point, size_t fork_height, bool require_confirmed) const;
+
 
     /// Get the output at the specified index within the transaction.
     bool get_output_is_confirmed(chain::output& out_output, size_t& out_height,

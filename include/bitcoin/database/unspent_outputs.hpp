@@ -28,6 +28,7 @@
 #include <bitcoin/bitcoin.hpp>
 #include <bitcoin/database/define.hpp>
 #include <bitcoin/database/unspent_transaction.hpp>
+// #include <bitcoin/bitcoin/chainv2/transaction.hpp>
 
 namespace libbitcoin {
 namespace database {
@@ -64,10 +65,8 @@ public:
     void remove(const chain::output_point& point);
 
     /// Determine if the output is unspent (otherwise fall back to the store).
-    bool get(chain::output& out_output, size_t& out_height,
-        uint32_t& out_median_time_past, bool& out_coinbase,
-        const chain::output_point& point, size_t fork_height,
-        bool require_confirmed) const;
+    bool get(chain::output& out_output, size_t& out_height, uint32_t& out_median_time_past, bool& out_coinbase, const chain::output_point& point, size_t fork_height, bool require_confirmed) const;
+    // bool get(chainv2::output& out_output, size_t& out_height, uint32_t& out_median_time_past, bool& out_coinbase, const chainv2::output_point& point, size_t fork_height, bool require_confirmed) const;
 
     bool get_is_confirmed(chain::output& out_output, size_t& out_height, bool& out_coinbase, bool& out_is_confirmed,
         const chain::output_point& point, size_t fork_height,
@@ -77,9 +76,7 @@ public:
 private:
     // A bidirection map is used for efficient output and position retrieval.
     // This produces the effect of a circular buffer tx hash table of outputs.
-    typedef boost::bimaps::bimap<
-        boost::bimaps::unordered_set_of<unspent_transaction>,
-        boost::bimaps::set_of<uint32_t>> unspent_transactions;
+    typedef boost::bimaps::bimap<boost::bimaps::unordered_set_of<unspent_transaction>, boost::bimaps::set_of<uint32_t>> unspent_transactions;
 
     // These are thread safe.
     const size_t capacity_;

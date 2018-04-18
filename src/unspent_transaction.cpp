@@ -26,7 +26,7 @@
 namespace libbitcoin {
 namespace database {
 
-using namespace bc::chain;
+// using namespace bc::chain;
 
 unspent_transaction::unspent_transaction(unspent_transaction&& other)
   : height_(other.height_),
@@ -58,10 +58,15 @@ unspent_transaction::unspent_transaction(const hash_digest& hash)
 {
 }
 
-unspent_transaction::unspent_transaction(const output_point& point)
+unspent_transaction::unspent_transaction(const chain::output_point& point)
   : unspent_transaction(point.hash())
 {
 }
+
+// unspent_transaction::unspent_transaction(const chainv2::output_point& point)
+//   : unspent_transaction(point.hash())
+// {
+// }
 
 unspent_transaction::unspent_transaction(const chain::transaction& tx,
     size_t height, uint32_t median_time_past, bool confirmed)

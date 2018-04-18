@@ -26,7 +26,7 @@
 
 namespace libbitcoin { namespace database {
 
-using namespace bc::chain;
+// using namespace bc::chain;
 using namespace bc::machine;
 
 static constexpr auto value_size = sizeof(uint64_t);
@@ -180,20 +180,15 @@ transaction_result transaction_database::get(const hash_digest& hash,
     return{};
 }
 
-bool transaction_database::get_output(output& out_output, size_t& out_height,
-    uint32_t& out_median_time_past, bool& out_coinbase,
-    const output_point& point, size_t fork_height,
-    bool require_confirmed) const
-{
-    if (cache_.get(out_output, out_height, out_median_time_past, out_coinbase,
-        point, fork_height, require_confirmed))
+bool transaction_database::get_output(chain::output& out_output, size_t& out_height, uint32_t& out_median_time_past, bool& out_coinbase, const chain::output_point& point, size_t fork_height, bool require_confirmed) const {
+    if (cache_.get(out_output, out_height, out_median_time_past, out_coinbase, point, fork_height, require_confirmed)) {
         return true;
+    }
 
     // The transaction does not exist at/below fork with matching confirmation.
     const auto slab = find(point.hash(), fork_height, require_confirmed);
 
-    if (slab)
-    {
+    if (slab) {
         ///////////////////////////////////////////////////////////////////////
         metadata_mutex_.lock_shared();
         auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab));
@@ -212,8 +207,58 @@ bool transaction_database::get_output(output& out_output, size_t& out_height,
     return false;
 }
 
-bool transaction_database::get_output_is_confirmed(output& out_output, size_t& out_height,
-    bool& out_coinbase, bool& out_is_confirmed, const output_point& point, size_t fork_height,
+bool transaction_database::get_output(chainv2::output& out_output, size_t& out_height, uint32_t& out_median_time_past, bool& out_coinbase, const chainv2::output_point& point, size_t fork_height, bool require_confirmed) const {
+    
+    chain::output_point point_v1(point.hash(), point.index());
+
+    chain::output out_output_v1;
+    if (get_output(out_output_v1, out_height, out_median_time_past, out_coinbase, point_v1, fork_height, require_confirmed)) {
+        out_output.set_script(chainv2::script(out_output_v1.script().operations()));
+        out_output.set_value(out_output_v1.value());
+        out_output.validation.spender_height = out_output_v1.validation.spender_height;
+        return true;
+    }
+    return false;
+
+
+    // if (cache_.get(out_output_v1, out_height, out_median_time_past, out_coinbase, point, fork_height, require_confirmed)) {
+    //     out_output.set_script(out_output_v1.script());
+    //     out_output.set_value(out_output_v1.value());
+    //     out_output.validation = out_output_v1.validation;
+
+    //     return true;
+    // }
+
+    // // The transaction does not exist at/below fork with matching confirmation.
+    // const auto slab = find(point.hash(), fork_height, require_confirmed);
+
+    // if (slab) {
+    //     ///////////////////////////////////////////////////////////////////////
+    //     metadata_mutex_.lock_shared();
+    //     auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab));
+    //     out_height = deserial.read_4_bytes_little_endian();
+    //     out_coinbase = deserial.read_2_bytes_little_endian() == 0;
+    //     out_median_time_past = deserial.read_4_bytes_little_endian();
+    //     metadata_mutex_.unlock_shared();
+    //     ///////////////////////////////////////////////////////////////////////
+
+    //     // Result is used only to parse the output.
+    //     transaction_result result(slab, point.hash(), 0, 0, 0);
+        
+    //     // out_output = result.output(point.index());
+    //     out_output_v1 = result.output(point.index());
+    //     out_output.set_script(out_output_v1.script());
+    //     out_output.set_value(out_output_v1.value());
+    //     out_output.validation = out_output_v1.validation;
+
+    //     return true;
+    // }
+
+    // return false;
+}
+
+bool transaction_database::get_output_is_confirmed(chain::output& out_output, size_t& out_height,
+    bool& out_coinbase, bool& out_is_confirmed, const chain::output_point& point, size_t fork_height,
     bool require_confirmed) const
 {
     if (cache_.get_is_confirmed(out_output, out_height, out_coinbase, out_is_confirmed, point, fork_height,
@@ -324,11 +369,11 @@ void transaction_database::store(const chain::transaction& tx,
     }
 }
 
-bool transaction_database::spend(const output_point& point,
+bool transaction_database::spend(const chain::output_point& point,
     size_t spender_height)
 {
     // If unspent we could restore the spend to the cache, but not worth it.
-    if (spender_height != output::validation::not_spent)
+    if (spender_height != chain::output::validation::not_spent)
         cache_.remove(point);
 
     // Limit search to confirmed transactions at or below the spender height,
@@ -363,9 +408,9 @@ bool transaction_database::spend(const output_point& point,
     return true;
 }
 
-bool transaction_database::unspend(const output_point& point)
+bool transaction_database::unspend(const chain::output_point& point)
 {
-    return spend(point, output::validation::not_spent);
+    return spend(point, chain::output::validation::not_spent);
 }
 
 bool transaction_database::confirm(const hash_digest& hash, size_t height, uint32_t median_time_past, size_t position) {

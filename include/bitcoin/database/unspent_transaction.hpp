@@ -26,6 +26,7 @@
 #include <boost/functional/hash_fwd.hpp>
 #include <bitcoin/bitcoin.hpp>
 #include <bitcoin/database/define.hpp>
+// #include <bitcoin/bitcoin/chainv2/transaction.hpp>
 
 namespace libbitcoin {
 namespace database {
@@ -44,8 +45,8 @@ public:
     /// Constructors.
     explicit unspent_transaction(const hash_digest& hash);
     explicit unspent_transaction(const chain::output_point& point);
-    explicit unspent_transaction(const chain::transaction& tx, size_t height,
-        uint32_t median_time_past, bool confirmed);
+    // explicit unspent_transaction(const chainv2::output_point& point);
+    explicit unspent_transaction(const chain::transaction& tx, size_t height, uint32_t median_time_past, bool confirmed);
 
     /// Properties.
     size_t height() const;
