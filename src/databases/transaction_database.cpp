@@ -203,28 +203,28 @@ transaction_result transaction_database::get(const hash_digest& hash,
 
 bool transaction_database::get_output(chain::output& out_output, size_t& out_height, uint32_t& out_median_time_past, bool& out_coinbase, const chain::output_point& point, size_t fork_height, bool require_confirmed) const {
     
-    std::cout << "transaction_database::get_output - 1" << std::endl;
+    // std::cout << "transaction_database::get_output - 1" << std::endl;
     if (cache_.get(out_output, out_height, out_median_time_past, out_coinbase, point, fork_height, require_confirmed)) {
-        std::cout << "transaction_database::get_output - 2" << std::endl;
+        // std::cout << "transaction_database::get_output - 2" << std::endl;
         return true;
     }
 
-    std::cout << "transaction_database::get_output - 3" << std::endl;
+    // std::cout << "transaction_database::get_output - 3" << std::endl;
 
     // The transaction does not exist at/below fork with matching confirmation.
     const auto slab = find(point.hash(), fork_height, require_confirmed);
 
-    std::cout << "transaction_database::get_output - 4" << std::endl;
+    // std::cout << "transaction_database::get_output - 4" << std::endl;
 
     if (slab) {
-        std::cout << "transaction_database::get_output - 5" << std::endl;
+        // std::cout << "transaction_database::get_output - 5" << std::endl;
 
         ///////////////////////////////////////////////////////////////////////
         metadata_mutex_.lock_shared();
         auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab));
         out_height = deserial.read_4_bytes_little_endian();
 
-        std::cout << "transaction_database::get_output - 6" << std::endl;
+        // std::cout << "transaction_database::get_output - 6" << std::endl;
 
 
         //TODO(fernando): temporary code, remove it
@@ -235,12 +235,12 @@ bool transaction_database::get_output(chain::output& out_output, size_t& out_hei
 //         out_coinbase = deserial.read_2_bytes_little_endian() == 0;
 // #endif    
 
-        std::cout << "transaction_database::get_output - 7" << std::endl;
+        // std::cout << "transaction_database::get_output - 7" << std::endl;
 
 
         out_median_time_past = deserial.read_4_bytes_little_endian();
 
-        std::cout << "transaction_database::get_output - 8" << std::endl;
+        // std::cout << "transaction_database::get_output - 8" << std::endl;
 
         metadata_mutex_.unlock_shared();
         ///////////////////////////////////////////////////////////////////////
@@ -248,15 +248,15 @@ bool transaction_database::get_output(chain::output& out_output, size_t& out_hei
         // Result is used only to parse the output.
         transaction_result result(slab, point.hash(), 0, 0, 0);
 
-        std::cout << "transaction_database::get_output - 9" << std::endl;
+        // std::cout << "transaction_database::get_output - 9" << std::endl;
 
         out_output = result.output(point.index());
 
-        std::cout << "transaction_database::get_output - 10" << std::endl;
+        // std::cout << "transaction_database::get_output - 10" << std::endl;
 
         return true;
     }
-    std::cout << "transaction_database::get_output - 11" << std::endl;
+    // std::cout << "transaction_database::get_output - 11" << std::endl;
 
     return false;
 }
