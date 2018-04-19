@@ -146,11 +146,13 @@ memory_ptr transaction_database::find(const hash_digest& hash,
     metadata_mutex_.lock_shared();
     const auto height = deserial.read_4_bytes_little_endian();
 
-#ifdef BITPRIM_CURRENCY_BCH
-    const auto position = deserial.read_4_bytes_little_endian();
-#else 
+    //TODO(fernando): temporary code, remove it
     const auto position = deserial.read_2_bytes_little_endian();
-#endif    
+// #ifdef BITPRIM_CURRENCY_BCH
+//     const auto position = deserial.read_4_bytes_little_endian();
+// #else 
+//     const auto position = deserial.read_2_bytes_little_endian();
+// #endif    
     
     ////const auto median_time_past = deserial.read_4_bytes_little_endian();
     metadata_mutex_.unlock_shared();
@@ -175,11 +177,13 @@ transaction_result transaction_database::get(const hash_digest& hash,
         auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab));
         const auto height = deserial.read_4_bytes_little_endian();
 
-#ifdef BITPRIM_CURRENCY_BCH
-        const auto position = deserial.read_4_bytes_little_endian();
-#else 
+        //TODO(fernando): temporary code, remove it
         const auto position = deserial.read_2_bytes_little_endian();
-#endif    
+// #ifdef BITPRIM_CURRENCY_BCH
+//         const auto position = deserial.read_4_bytes_little_endian();
+// #else 
+//         const auto position = deserial.read_2_bytes_little_endian();
+// #endif    
         
         const auto median_time_past = deserial.read_4_bytes_little_endian();
         metadata_mutex_.unlock_shared();
@@ -205,12 +209,14 @@ bool transaction_database::get_output(chain::output& out_output, size_t& out_hei
         metadata_mutex_.lock_shared();
         auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab));
         out_height = deserial.read_4_bytes_little_endian();
-        
-#ifdef BITPRIM_CURRENCY_BCH
-        out_coinbase = deserial.read_4_bytes_little_endian() == 0;
-#else 
+
+        //TODO(fernando): temporary code, remove it
         out_coinbase = deserial.read_2_bytes_little_endian() == 0;
-#endif    
+// #ifdef BITPRIM_CURRENCY_BCH
+//         out_coinbase = deserial.read_4_bytes_little_endian() == 0;
+// #else 
+//         out_coinbase = deserial.read_2_bytes_little_endian() == 0;
+// #endif    
         out_median_time_past = deserial.read_4_bytes_little_endian();
         metadata_mutex_.unlock_shared();
         ///////////////////////////////////////////////////////////////////////
@@ -257,11 +263,13 @@ bool transaction_database::get_output_is_confirmed(chain::output& out_output, si
     auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab));
     out_height = deserial.read_4_bytes_little_endian();
 
-#ifdef BITPRIM_CURRENCY_BCH
-    out_coinbase = deserial.read_4_bytes_little_endian() == 0;
-#else 
+    //TODO(fernando): temporary code, remove it
     out_coinbase = deserial.read_2_bytes_little_endian() == 0;
-#endif    
+// #ifdef BITPRIM_CURRENCY_BCH
+//     out_coinbase = deserial.read_4_bytes_little_endian() == 0;
+// #else 
+//     out_coinbase = deserial.read_2_bytes_little_endian() == 0;
+// #endif    
     
     // out_median_time_past is not a parameter
     // out_median_time_past = deserial.read_4_bytes_little_endian();
