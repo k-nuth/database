@@ -578,7 +578,29 @@ void data_base::push_inputs(const hash_digest& tx_hash, size_t height,
             const auto& address = input.address();
 
             if (address)
+            {
                 history_->add_input(address.hash(), inpoint, height, prevout);
+            } 
+            else 
+            {   //During an IBD with checkpoints some previous output info is missing.
+                //We can recover it by accessing the database
+                chain::output prev_output;
+                size_t output_height;
+                uint32_t output_median_time_past;
+                bool output_is_coinbase;
+                if(transactions_->get_output(prev_output, output_height, 
+                    output_median_time_past, output_is_coinbase, prevout, 
+                    MAX_UINT64, false))
+                {
+                    const auto& address_output = prev_output.address();
+
+                    if (address_output)
+                    {
+                        history_->add_input(address_output.hash(), inpoint, height, prevout);
+                    }
+                }
+          
+            }
         }
     }
 
