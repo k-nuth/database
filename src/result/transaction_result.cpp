@@ -33,12 +33,7 @@ using namespace bc::chain;
 static constexpr auto value_size = sizeof(uint64_t);
 static constexpr auto height_size = sizeof(uint32_t);
 
-// #ifdef BITPRIM_CURRENCY_BCH
-// static constexpr auto position_size = sizeof(uint32_t);
-// #else 
-// static constexpr auto position_size = sizeof(uint16_t);
-// #endif    
-
+//TODO(fernando): temporary code, remove it
 static constexpr auto position_size = sizeof(position_t);
 
 static constexpr auto median_time_past_size = sizeof(uint32_t);

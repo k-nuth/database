@@ -32,21 +32,26 @@ using namespace bc::machine;
 static constexpr auto value_size = sizeof(uint64_t);
 static constexpr auto height_size = sizeof(uint32_t);
 
-#ifdef BITPRIM_CURRENCY_BCH
-static constexpr auto position_size = sizeof(uint32_t);
-#else 
+//TODO(fernando): temporary code, remove it
 static constexpr auto position_size = sizeof(uint16_t);
-#endif    
+// #ifdef BITPRIM_CURRENCY_BCH
+// static constexpr auto position_size = sizeof(uint32_t);
+// #else 
+// static constexpr auto position_size = sizeof(uint16_t);
+// #endif    
 
 static constexpr auto median_time_past_size = sizeof(uint32_t);
 static constexpr auto spender_height_value_size = height_size + value_size;
 static constexpr auto metadata_size = height_size + position_size + median_time_past_size;
 
-#ifdef BITPRIM_CURRENCY_BCH
-const size_t transaction_database::unconfirmed = max_uint32;
-#else 
+
+//TODO(fernando): temporary code, remove it
 const size_t transaction_database::unconfirmed = max_uint16;
-#endif
+// #ifdef BITPRIM_CURRENCY_BCH
+// const size_t transaction_database::unconfirmed = max_uint32;
+// #else 
+// const size_t transaction_database::unconfirmed = max_uint16;
+// #endif
 
 // Transactions uses a hash table index, O(1).
 transaction_database::transaction_database(const path& map_filename,
@@ -345,11 +350,13 @@ void transaction_database::store(const chain::transaction& tx,
     // Create the transaction.
     BITCOIN_ASSERT(height <= max_uint32);
 
-#ifdef BITPRIM_CURRENCY_BCH
-    BITCOIN_ASSERT(position <= max_uint32);
-#else 
+    //TODO(fernando): temporary code, remove it
     BITCOIN_ASSERT(position <= max_uint16);
-#endif    
+// #ifdef BITPRIM_CURRENCY_BCH
+//     BITCOIN_ASSERT(position <= max_uint32);
+// #else 
+//     BITCOIN_ASSERT(position <= max_uint16);
+// #endif    
 
     // Unconfirmed txs: position is unconfirmed and height is validation forks.
     const auto write = [&](serializer<uint8_t*>& serial)
@@ -359,11 +366,13 @@ void transaction_database::store(const chain::transaction& tx,
         metadata_mutex_.lock();
         serial.write_4_bytes_little_endian(static_cast<uint32_t>(height));
         
-#ifdef BITPRIM_CURRENCY_BCH
-        serial.write_4_bytes_little_endian(static_cast<uint32_t>(position));
-#else 
+        //TODO(fernando): temporary code, remove it
         serial.write_2_bytes_little_endian(static_cast<uint16_t>(position));
-#endif    
+// #ifdef BITPRIM_CURRENCY_BCH
+//         serial.write_4_bytes_little_endian(static_cast<uint32_t>(position));
+// #else 
+//         serial.write_2_bytes_little_endian(static_cast<uint16_t>(position));
+// #endif    
 
         serial.write_4_bytes_little_endian(median_time_past);
         metadata_mutex_.unlock();
@@ -442,13 +451,13 @@ bool transaction_database::confirm(const hash_digest& hash, size_t height, uint3
         return false;
 
     BITCOIN_ASSERT(height <= max_uint32);
-
-
-#ifdef BITPRIM_CURRENCY_BCH
-    BITCOIN_ASSERT(position <= max_uint32);
-#else 
+    //TODO(fernando): temporary code, remove it
     BITCOIN_ASSERT(position <= max_uint16);
-#endif    
+// #ifdef BITPRIM_CURRENCY_BCH
+//     BITCOIN_ASSERT(position <= max_uint32);
+// #else 
+//     BITCOIN_ASSERT(position <= max_uint16);
+// #endif    
 
     auto serial = make_unsafe_serializer(REMAP_ADDRESS(slab));
 
@@ -457,11 +466,13 @@ bool transaction_database::confirm(const hash_digest& hash, size_t height, uint3
     metadata_mutex_.lock();
     serial.write_4_bytes_little_endian(static_cast<uint32_t>(height));
     
-#ifdef BITPRIM_CURRENCY_BCH
-    serial.write_4_bytes_little_endian(static_cast<uint32_t>(position));
-#else 
+    //TODO(fernando): temporary code, remove it
     serial.write_2_bytes_little_endian(static_cast<uint16_t>(position));
-#endif    
+// #ifdef BITPRIM_CURRENCY_BCH
+//     serial.write_4_bytes_little_endian(static_cast<uint32_t>(position));
+// #else 
+//     serial.write_2_bytes_little_endian(static_cast<uint16_t>(position));
+// #endif    
 
     serial.write_4_bytes_little_endian(median_time_past);
     metadata_mutex_.unlock();
