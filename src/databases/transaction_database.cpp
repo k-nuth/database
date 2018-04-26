@@ -24,21 +24,29 @@
 #include <bitcoin/database/memory/memory.hpp>
 #include <bitcoin/database/result/transaction_result.hpp>
 
-namespace libbitcoin {
-namespace database {
+namespace libbitcoin { namespace database {
 
 using namespace bc::chain;
 using namespace bc::machine;
 
 static constexpr auto value_size = sizeof(uint64_t);
 static constexpr auto height_size = sizeof(uint32_t);
+
+#ifdef BITPRIM_CURRENCY_BCH
+static constexpr auto position_size = sizeof(uint32_t);
+#else 
 static constexpr auto position_size = sizeof(uint16_t);
+#endif    
+
 static constexpr auto median_time_past_size = sizeof(uint32_t);
 static constexpr auto spender_height_value_size = height_size + value_size;
-static constexpr auto metadata_size = height_size + position_size +
-    median_time_past_size;
+static constexpr auto metadata_size = height_size + position_size + median_time_past_size;
 
+#ifdef BITPRIM_CURRENCY_BCH
+const size_t transaction_database::unconfirmed = max_uint32;
+#else 
 const size_t transaction_database::unconfirmed = max_uint16;
+#endif
 
 // Transactions uses a hash table index, O(1).
 transaction_database::transaction_database(const path& map_filename,
@@ -137,7 +145,12 @@ memory_ptr transaction_database::find(const hash_digest& hash,
     // Critical Section
     metadata_mutex_.lock_shared();
     const auto height = deserial.read_4_bytes_little_endian();
+#ifdef BITPRIM_CURRENCY_BCH
+    const auto position = deserial.read_4_bytes_little_endian();
+#else
     const auto position = deserial.read_2_bytes_little_endian();
+#endif
+
     ////const auto median_time_past = deserial.read_4_bytes_little_endian();
     metadata_mutex_.unlock_shared();
     ///////////////////////////////////////////////////////////////////////////
@@ -160,7 +173,12 @@ transaction_result transaction_database::get(const hash_digest& hash,
         metadata_mutex_.lock_shared();
         auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab));
         const auto height = deserial.read_4_bytes_little_endian();
+#ifdef BITPRIM_CURRENCY_BCH
+        const auto position = deserial.read_4_bytes_little_endian();
+#else
         const auto position = deserial.read_2_bytes_little_endian();
+#endif
+
         const auto median_time_past = deserial.read_4_bytes_little_endian();
         metadata_mutex_.unlock_shared();
         ///////////////////////////////////////////////////////////////////////
@@ -190,7 +208,11 @@ bool transaction_database::get_output(output& out_output, size_t& out_height,
         metadata_mutex_.lock_shared();
         auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab));
         out_height = deserial.read_4_bytes_little_endian();
+#ifdef BITPRIM_CURRENCY_BCH
+        out_coinbase = deserial.read_4_bytes_little_endian() == 0;
+#else
         out_coinbase = deserial.read_2_bytes_little_endian() == 0;
+#endif
         out_median_time_past = deserial.read_4_bytes_little_endian();
         metadata_mutex_.unlock_shared();
         ///////////////////////////////////////////////////////////////////////
@@ -222,7 +244,11 @@ bool transaction_database::get_output_is_confirmed(output& out_output, size_t& o
     metadata_mutex_.lock_shared();
     auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab));
     out_height = deserial.read_4_bytes_little_endian();
+#ifdef BITPRIM_CURRENCY_BCH
+    out_coinbase = deserial.read_4_bytes_little_endian() == 0;
+#else
     out_coinbase = deserial.read_2_bytes_little_endian() == 0;
+#endif
     // out_median_time_past is not a parameter
     // out_median_time_past = deserial.read_4_bytes_little_endian();
     metadata_mutex_.unlock_shared();
@@ -270,7 +296,12 @@ void transaction_database::store(const chain::transaction& tx,
 
     // Create the transaction.
     BITCOIN_ASSERT(height <= max_uint32);
+
+#ifdef BITPRIM_CURRENCY_BCH
+    BITCOIN_ASSERT(position <= max_uint32);
+#else 
     BITCOIN_ASSERT(position <= max_uint16);
+#endif    
 
     // Unconfirmed txs: position is unconfirmed and height is validation forks.
     const auto write = [&](serializer<uint8_t*>& serial)
@@ -279,7 +310,13 @@ void transaction_database::store(const chain::transaction& tx,
         // Critical Section
         metadata_mutex_.lock();
         serial.write_4_bytes_little_endian(static_cast<uint32_t>(height));
+        
+#ifdef BITPRIM_CURRENCY_BCH
+        serial.write_4_bytes_little_endian(static_cast<uint32_t>(position));
+#else 
         serial.write_2_bytes_little_endian(static_cast<uint16_t>(position));
+#endif    
+
         serial.write_4_bytes_little_endian(median_time_past);
         metadata_mutex_.unlock();
         ///////////////////////////////////////////////////////////////////////
@@ -349,9 +386,7 @@ bool transaction_database::unspend(const output_point& point)
     return spend(point, output::validation::not_spent);
 }
 
-bool transaction_database::confirm(const hash_digest& hash, size_t height,
-    uint32_t median_time_past, size_t position)
-{
+bool transaction_database::confirm(const hash_digest& hash, size_t height, uint32_t median_time_past, size_t position) {
     const auto slab = find(hash, height, false);
 
     // The transaction does not exist at or below the height.
@@ -359,22 +394,34 @@ bool transaction_database::confirm(const hash_digest& hash, size_t height,
         return false;
 
     BITCOIN_ASSERT(height <= max_uint32);
+
+
+#ifdef BITPRIM_CURRENCY_BCH
+    BITCOIN_ASSERT(position <= max_uint32);
+#else 
     BITCOIN_ASSERT(position <= max_uint16);
+#endif    
+
     auto serial = make_unsafe_serializer(REMAP_ADDRESS(slab));
 
     ///////////////////////////////////////////////////////////////////////////
     // Critical Section
     metadata_mutex_.lock();
     serial.write_4_bytes_little_endian(static_cast<uint32_t>(height));
+    
+#ifdef BITPRIM_CURRENCY_BCH
+    serial.write_4_bytes_little_endian(static_cast<uint32_t>(position));
+#else 
     serial.write_2_bytes_little_endian(static_cast<uint16_t>(position));
+#endif    
+
     serial.write_4_bytes_little_endian(median_time_past);
     metadata_mutex_.unlock();
     ///////////////////////////////////////////////////////////////////////////
     return true;
 }
 
-bool transaction_database::unconfirm(const hash_digest& hash)
-{
+bool transaction_database::unconfirm(const hash_digest& hash) {
     // The transaction was verified under an unknown chain state, so we set the
     // verification forks to unverified. This will compel re-validation of the
     // unconfirmed transaction before acceptance into mempool/template queries.

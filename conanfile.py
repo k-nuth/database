@@ -59,12 +59,14 @@ class BitprimDatabaseConan(ConanFile):
                "fPIC": [True, False],
                "with_tests": [True, False],
                "with_tools": [True, False],
+               "currency": ['BCH', 'BTC', 'LTC'],
     }
 
     default_options = "shared=False", \
         "fPIC=True", \
         "with_tests=False", \
-        "with_tools=False"
+        "with_tools=False", \
+        "currency=BCH"
 
     generators = "cmake"
     exports = "conan_channel", "conan_version", "conan_req_version"
@@ -73,7 +75,7 @@ class BitprimDatabaseConan(ConanFile):
     build_policy = "missing"
 
     requires = (("boost/1.66.0@bitprim/stable"),
-                ("bitprim-core/0.9@bitprim/%s" % get_channel()))
+                ("bitprim-core/0.9.1@bitprim/%s" % get_channel()))
 
     @property
     def msvc_mt_build(self):
@@ -125,6 +127,9 @@ class BitprimDatabaseConan(ConanFile):
 
         cmake.definitions["WITH_TESTS"] = option_on_off(self.options.with_tests)
         cmake.definitions["WITH_TOOLS"] = option_on_off(self.options.with_tools)
+
+        cmake.definitions["CURRENCY"] = self.options.currency
+
 
         if self.settings.compiler != "Visual Studio":
             # cmake.definitions["CONAN_CXX_FLAGS"] += " -Wno-deprecated-declarations"
