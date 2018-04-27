@@ -124,9 +124,6 @@ input_point spend_database::get(const output_point& outpoint) const
 void spend_database::store(const chain::output_point& outpoint,
     const chain::input_point& spend)
 {
-    //OLD before merge (Feb2017)
-    //std::cout << "void spend_database::store(const chain::output_point& outpoint, const chain::input_point& spend)\n";
-    // const auto write = [&spend](memory_ptr data)
     const auto write = [&](serializer<uint8_t*>& serial)
     {
         spend.to_data(serial, false);

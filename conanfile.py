@@ -25,12 +25,7 @@ from conans.model.version import Version
 def option_on_off(option):
     return "ON" if option else "OFF"
 
-
 def get_content(file_name):
-    # print(os.path.dirname(os.path.abspath(__file__)))
-    # print(os.getcwd())
-    # with open(path, 'r') as f:
-    #     return f.read()
     file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), file_name)
     with open(file_path, 'r') as f:
         return f.read()
@@ -60,13 +55,15 @@ class BitprimDatabaseConan(ConanFile):
                "with_tests": [True, False],
                "with_tools": [True, False],
                "currency": ['BCH', 'BTC', 'LTC'],
+               "mode": ['fullnode', 'miner', 'explorer'],
     }
 
     default_options = "shared=False", \
         "fPIC=True", \
         "with_tests=False", \
         "with_tools=False", \
-        "currency=BCH"
+        "currency=BCH", \
+        "mode=fullnode"
 
     generators = "cmake"
     exports = "conan_channel", "conan_version", "conan_req_version"
@@ -129,6 +126,7 @@ class BitprimDatabaseConan(ConanFile):
         cmake.definitions["WITH_TOOLS"] = option_on_off(self.options.with_tools)
 
         cmake.definitions["CURRENCY"] = self.options.currency
+        cmake.definitions["MODE"] = self.options.mode
 
 
         if self.settings.compiler != "Visual Studio":

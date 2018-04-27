@@ -62,6 +62,7 @@ option(WITH_TOOLS "Compile with tools." OFF)
 
 
 
+#------------------------------------------------------------------------------
 set(CURRENCY "BCH" CACHE STRING "Specify the Cryptocurrency (BCH|BTC|LTC).")
 
 if (${CURRENCY} STREQUAL "BCH")
@@ -76,8 +77,23 @@ endif()
 
 message(STATUS "Bitprim: Cryptocurrency: ${CURRENCY}")
 
+#------------------------------------------------------------------------------
+set(MODE "fullnode" CACHE STRING "Specify the DB Mode (fullnode|miner|explorer).")
+
+if (${MODE} STREQUAL "fullnode")
+  add_definitions(-DBITPRIM_MODE_FULLNODE)
+elseif (${MODE} STREQUAL "miner")
+  add_definitions(-DBITPRIM_MODE_MINER)
+elseif (${MODE} STREQUAL "explorer")
+  add_definitions(-DBITPRIM_MODE_EXPLORER)
+else()
+  message(FATAL_ERROR "Invalid Mode: ${MODE}")
+endif()
+
+message(STATUS "Bitprim: Mode: ${MODE}")
 
 
+#------------------------------------------------------------------------------
 set(BITPRIM_BUILD_NUMBER "-" CACHE STRING "Specify the Bitprim Build Number.")
 # message(${BITPRIM_BUILD_NUMBER})
 
@@ -214,6 +230,7 @@ add_library(bitprim-database ${MODE}
         src/unspent_outputs.cpp
         src/unspent_transaction.cpp
         src/version.cpp
+        
         src/databases/block_database.cpp
         src/databases/history_database.cpp
         src/databases/spend_database.cpp

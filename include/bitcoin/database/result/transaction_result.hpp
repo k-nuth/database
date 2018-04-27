@@ -28,13 +28,13 @@
 namespace libbitcoin {
 namespace database {
 
-//TODO(fernando): temporary code, remove it
-using position_t = uint16_t;
-// #ifdef BITPRIM_CURRENCY_BCH
-// using position_t = uint32_t;
-// #else 
+// //TODO(fernando): temporary code, remove it
 // using position_t = uint16_t;
-// #endif    
+#ifdef BITPRIM_CURRENCY_BCH
+using position_t = uint32_t;
+#else 
+using position_t = uint16_t;
+#endif    
 
 
 /// Deferred read transaction result.
