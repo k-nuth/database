@@ -173,7 +173,7 @@ chain::transaction transaction_result::transaction(bool witness) const
 
     // READ THE TX
     chain::transaction tx;
-    tx.from_data(deserial, false);
+    tx.from_data(deserial, wire = false);
 
     // TODO: optimize so that witness reads are skipped.
     if (!witness)
