@@ -132,7 +132,7 @@ chain::transaction transaction_unconfirmed_result::transaction(bool witness) con
 
     // READ THE TX
     chain::transaction tx;
-    tx.from_data(deserial, wire = false, unconfirmed = true);
+    tx.from_data(deserial, false, witness,true);
     if (!witness)
         tx.strip_witness();
 

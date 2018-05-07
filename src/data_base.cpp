@@ -556,7 +556,7 @@ void data_base::push_inputs(const hash_digest& tx_hash, size_t height,
                     output_median_time_past, output_is_coinbase, prevout, 
                     MAX_UINT64, false))
                 {
-                    for (const auto& address: prev_output.validation.cache.addresses())
+                    for (const auto& address: prev_output.addresses())
                         history_->add_input(address.hash(), inpoint, height, prevout);
                 }
           
