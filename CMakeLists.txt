@@ -37,7 +37,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Implement --use-conan
 #------------------------------------------------------------------------------
-option(USE_CONAN "Use Conan Build Tool." ON)
+option(USE_CONAN "Use Conan Build Tool." OFF)
 option(NO_CONAN_AT_ALL "Conan totally disabled." OFF)
 
 if (NO_CONAN_AT_ALL)
