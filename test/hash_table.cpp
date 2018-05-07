@@ -225,7 +225,7 @@ BOOST_AUTO_TEST_CASE(slab_hash_table__test)
 ////    tiny_hash key{ { 0xde, 0xad, 0xbe, 0xef } };
 ////    tiny_hash key1{ { 0xb0, 0x0b, 0xb0, 0x0b } };
 ////
-////    const auto write = [](byte_serializer& serial)
+////    const auto write = [](serializer<uint8_t*>& serial)
 ////    {
 ////        serial.write_byte(110);
 ////        serial.write_byte(110);
@@ -233,7 +233,7 @@ BOOST_AUTO_TEST_CASE(slab_hash_table__test)
 ////        serial.write_byte(88);
 ////    };
 ////
-////    const auto write1 = [](byte_serializer& serial)
+////    const auto write1 = [](serializer<uint8_t*>& serial)
 ////    {
 ////        serial.write_byte(99);
 ////        serial.write_byte(98);
@@ -325,7 +325,6 @@ BOOST_AUTO_TEST_CASE(slab_hash_table__test)
 ////    tiny_hash invalid{ { 0x00, 0x01, 0x02, 0x03 } };
 ////    BOOST_REQUIRE(!ht.unlink(invalid));
 ////}
-////
 ////BOOST_AUTO_TEST_CASE(record_hash_table__64bit__test)
 ////{
 ////    BC_CONSTEXPR size_t record_buckets = 2;
@@ -356,7 +355,7 @@ BOOST_AUTO_TEST_CASE(slab_hash_table__test)
 ////    little_hash key{ { 0xde, 0xad, 0xbe, 0xef, 0xde, 0xad, 0xbe, 0xef } };
 ////    little_hash key1{ { 0xb0, 0x0b, 0xb0, 0x0b, 0xb0, 0x0b, 0xb0, 0x0b } };
 ////
-////    const auto write = [](byte_serializer& serial)
+////    const auto write = [](serializer<uint8_t*>& serial)
 ////    {
 ////        serial.write_byte(110);
 ////        serial.write_byte(110);
@@ -368,7 +367,7 @@ BOOST_AUTO_TEST_CASE(slab_hash_table__test)
 ////        serial.write_byte(88);
 ////    };
 ////
-////    const auto write1 = [](byte_serializer& serial)
+////    const auto write1 = [](serializer<uint8_t*>& serial)
 ////    {
 ////        serial.write_byte(99);
 ////        serial.write_byte(98);

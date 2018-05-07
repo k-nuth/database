@@ -25,11 +25,12 @@
 
 namespace libbitcoin {
 namespace database {
-
+    
 record_multimap_iterable::record_multimap_iterable(
     const record_manager& manager, array_index begin)
   : begin_(begin), manager_(manager)
 {
+    return record_multimap_iterator(manager_, record_list::empty);
 }
 
 record_multimap_iterator record_multimap_iterable::begin() const
