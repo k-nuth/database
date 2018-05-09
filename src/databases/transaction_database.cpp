@@ -322,6 +322,7 @@ void transaction_database::store(const chain::transaction& tx,
         ///////////////////////////////////////////////////////////////////////
 
         // WRITE THE TX
+        //TODO WITNESS
         tx.to_data(serial, false);
     };
 
