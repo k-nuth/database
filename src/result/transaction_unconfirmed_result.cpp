@@ -131,8 +131,9 @@ chain::transaction transaction_unconfirmed_result::transaction(bool witness) con
     auto deserial = make_unsafe_deserializer(tx_start);
 
     // READ THE TX
+    //TODO WITNESS
     chain::transaction tx;
-    tx.from_data(deserial, false, witness,true);
+    tx.from_data(deserial, false, false, true);
     if (!witness)
         tx.strip_witness();
 

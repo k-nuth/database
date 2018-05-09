@@ -172,8 +172,9 @@ chain::transaction transaction_result::transaction(bool witness) const
     auto deserial = make_unsafe_deserializer(tx_start);
 
     // READ THE TX
+    //TODO WITNESS
     chain::transaction tx;
-    tx.from_data(deserial, false, witness, false);
+    tx.from_data(deserial, false, false, false);
 
     // TODO: optimize so that witness reads are skipped.
     if (!witness)
