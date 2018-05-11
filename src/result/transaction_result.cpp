@@ -166,6 +166,9 @@ chain::transaction transaction_result::transaction(bool witness) const
 {
 #ifdef BITPRIM_CURRENCY_BCH
     witness = false;
+    bool from_data_witness = false;
+#else 
+    bool from_data_witness = true;
 #endif
     BITCOIN_ASSERT(slab_);
     const auto tx_start = REMAP_ADDRESS(slab_) + metadata_size;
@@ -174,7 +177,7 @@ chain::transaction transaction_result::transaction(bool witness) const
     // READ THE TX
     //TODO WITNESS
     chain::transaction tx;
-    tx.from_data(deserial, false, false, false);
+    tx.from_data(deserial, false, from_data_witness, false);
 
     // TODO: optimize so that witness reads are skipped.
     if (!witness)

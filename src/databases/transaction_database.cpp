@@ -322,11 +322,20 @@ void transaction_database::store(const chain::transaction& tx,
         ///////////////////////////////////////////////////////////////////////
 
         // WRITE THE TX
-        //TODO WITNESS
-        tx.to_data(serial, false);
-    };
+#ifdef BITPRIM_CURRENCY_BCH
+        bool witness = false;
+#else
+        bool witness = true;
+#endif
 
-    const auto tx_size = tx.serialized_size(false);
+        tx.to_data(serial, false, witness, false);
+    };
+#ifdef BITPRIM_CURRENCY_BCH
+        bool witness = false;
+#else
+        bool witness = true;
+#endif
+    const auto tx_size = tx.serialized_size(false, witness);
     BITCOIN_ASSERT(tx_size <= max_size_t - metadata_size);
     const auto total_size = metadata_size + static_cast<size_t>(tx_size);
 
