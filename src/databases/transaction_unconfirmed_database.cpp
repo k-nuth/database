@@ -143,7 +143,11 @@ uint32_t get_clock_now() {
 
 void transaction_unconfirmed_database::store(const chain::transaction& tx) {
     uint32_t arrival_time = get_clock_now();
-
+#ifdef BITPRIM_CURRENCY_BCH
+        bool witness = false;
+#else
+        bool witness = true;
+#endif
     const auto hash = tx.hash();
 
     // Unconfirmed txs: position is unconfirmed and height is validation forks.
@@ -157,11 +161,11 @@ void transaction_unconfirmed_database::store(const chain::transaction& tx) {
 
         // WRITE THE TX
         //TODO WITNESS
-        tx.to_data(serial, false, false, true);
+        tx.to_data(serial, false, witness, true);
     };
 
 
-    const auto tx_size = tx.serialized_size(false, false, true);
+    const auto tx_size = tx.serialized_size(false, witness, true);
     BITCOIN_ASSERT(tx_size <= max_size_t - metadata_size);
     const auto total_size = metadata_size + static_cast<size_t>(tx_size);
 
