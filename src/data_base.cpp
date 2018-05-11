@@ -666,7 +666,8 @@ bool data_base::pop(block& out_block)
         if (!transactions_->unconfirm(tx.hash()))
             return false;
 
-        transactions_unconfirmed_->store(tx);
+        if(!tx.is_coinbase())
+            transactions_unconfirmed_->store(tx);
 
         if (!pop_outputs(tx.outputs(), height))
             return false;
