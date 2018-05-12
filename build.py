@@ -105,7 +105,14 @@ if __name__ == "__main__":
             if os.getenv('BITPRIM_RUN_TESTS', 'false') == 'true':
                 options["%s:with_tests" % name] = "True"
 
-            filtered_builds.append([settings, options, env_vars, build_requires])
+            opts_bch = copy.deepcopy(options)
+            opts_btc = copy.deepcopy(options)
+
+            opts_bch["*:currency"] = "BCH"
+            opts_btc["*:currency"] = "BTC"
+
+            filtered_builds.append([settings, opts_bch, env_vars, build_requires])
+            filtered_builds.append([settings, opts_btc, env_vars, build_requires])
 
     builder.builds = filtered_builds
     builder.run()
