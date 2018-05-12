@@ -111,4 +111,3 @@ BOOST_AUTO_TEST_CASE(record_list__test)
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-

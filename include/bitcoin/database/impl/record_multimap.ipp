@@ -19,7 +19,6 @@
 #ifndef LIBBITCOIN_DATABASE_RECORD_MULTIMAP_IPP
 #define LIBBITCOIN_DATABASE_RECORD_MULTIMAP_IPP
 
-#include <string>
 #include <bitcoin/database/memory/memory.hpp>
 #include <bitcoin/database/primitives/record_list.hpp>
 
