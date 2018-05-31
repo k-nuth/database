@@ -55,7 +55,7 @@ public:
     chain::output output(uint32_t index) const;
 
     /// The transaction.
-    chain::transaction transaction() const;
+    chain::transaction transaction(bool witness=true) const;
 
 private:
     memory_ptr slab_;

@@ -121,15 +121,24 @@ chain::output transaction_unconfirmed_result::output(uint32_t index) const
 // ----------------------------------------------------------------------------
 
 // spender_heights are unguarded and will be inconsistent during write.
-chain::transaction transaction_unconfirmed_result::transaction() const
+chain::transaction transaction_unconfirmed_result::transaction(bool witness) const
 {
+#ifdef BITPRIM_CURRENCY_BCH
+    witness = false;
+    bool from_data_witness = false;
+#else
+    bool from_data_witness = true;
+#endif
     BITCOIN_ASSERT(slab_);
     const auto tx_start = REMAP_ADDRESS(slab_) + metadata_size;
     auto deserial = make_unsafe_deserializer(tx_start);
 
     // READ THE TX
+    //TODO WITNESS
     chain::transaction tx;
-    tx.from_data(deserial, false, true);
+    tx.from_data(deserial, false, from_data_witness, true);
+    if (!witness)
+        tx.strip_witness();
 
     // TODO: add hash param to deserialization to eliminate this construction.
     return chain::transaction(std::move(tx), hash_digest(hash_));
