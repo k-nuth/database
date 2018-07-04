@@ -22,8 +22,9 @@ cmake_minimum_required(VERSION 3.4)
 # bitprim-database
 #==============================================================================
 project(bitprim-database
-        VERSION 0.11.0
+        VERSION 0
         LANGUAGES CXX C)
+#        VERSION 0.11.0
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -61,6 +62,15 @@ option(WITH_TESTS "Compile with unit tests." ON)
 option(WITH_TOOLS "Compile with tools." OFF)
 
 
+set(BITPRIM_PROJECT_VERSION "-" CACHE STRING "Specify the Bitprim Project Version.")
+# message(${BITPRIM_PROJECT_VERSION})
+
+
+set(MICROARCHITECTURE "x86_64" CACHE STRING "Specify the Cryptocurrency (x86_64|...).")
+message( STATUS "Bitprim: Compiling for ${MICROARCHITECTURE}")
+# add_definitions(-DBITPRIM_MICROARCHITECTURE=${MICROARCHITECTURE})
+# add_definitions(-DBITPRIM_MICROARCHITECTURE_STR="${MICROARCHITECTURE}")
+
 
 set(CURRENCY "BCH" CACHE STRING "Specify the Cryptocurrency (BCH|BTC|LTC).")
 
@@ -77,15 +87,10 @@ endif()
 message(STATUS "Bitprim: Cryptocurrency: ${CURRENCY}")
 
 
-
-set(BITPRIM_BUILD_NUMBER "-" CACHE STRING "Specify the Bitprim Build Number.")
-# message(${BITPRIM_BUILD_NUMBER})
-
-
 # Conan infrastructure
 #==============================================================================
-if (EXISTS ${CMAKE_SOURCE_DIR}/bitprimbuildinfo.cmake)
-    include(${CMAKE_SOURCE_DIR}/bitprimbuildinfo.cmake)
+if(EXISTS ${CMAKE_SOURCE_DIR}/ci_utils/cmake/bitprimbuildinfo.cmake)
+    include(${CMAKE_SOURCE_DIR}/ci_utils/cmake/bitprimbuildinfo.cmake)
 else()
     message( STATUS "bitprimbuildinfo doent exists")
 endif()
@@ -116,18 +121,12 @@ if (NO_CONAN_AT_ALL)
 endif()
 
 if (NOT USE_CONAN)
-    # Require bitprim-core of at least version 0.11.0 and output ${bitprim_core_CPPFLAGS/LIBS/PKG}.
+    # Require bitprim-core of at least version 0 and output ${bitprim_core_CPPFLAGS/LIBS/PKG}.
     #------------------------------------------------------------------------------
     if (NOT TARGET bitprim-core)
-            find_package(bitprim-core 0.11.0 REQUIRED)
+            find_package(bitprim-core 0 REQUIRED)
     endif()
 endif()
-
-#if (UNIX)
-#  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/usr/local/lib/cmake")
-#elseif (WIN32)
-#  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "cmake")
-#endif()
 
 
 # Set flags.
@@ -136,31 +135,32 @@ include(CheckCXXCompilerFlag)
 
 # Including common functions
 #------------------------------------------------------------------------------
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/ci_utils/cmake)
+
 include(BitprimTools)
 
 
 # Warn on all stuff.
 #------------------------------------------------------------------------------
 if (NOT MSVC)
-    _add_c_compile_flag(-Wall _has_all_warning_flag)
+  _add_c_compile_flag(-Wall _has_all_warning_flag)
 else()
-    _add_c_compile_flag(-W4 _has_all_warning_flag)
-    add_definitions(-D_SCL_SECURE_NO_WARNINGS)
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+  _add_c_compile_flag(-W4 _has_all_warning_flag)
+  add_definitions(-D_SCL_SECURE_NO_WARNINGS)
+  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
 
 # Warn on extra stuff.
 #------------------------------------------------------------------------------
 if (NOT MSVC)
-    _add_c_compile_flag(-Wextra _has_extra_warning_flag)
+  _add_c_compile_flag(-Wextra _has_extra_warning_flag)
 endif()
 
 # Be really annoying.
 #------------------------------------------------------------------------------
 _add_c_compile_flag(-Wpedantic _has_pedantic_warning_flag)
 if (_has_pedantic_warning_flag)
-    _add_c_compile_flag(-pedantic _has_pedantic_flag)
+  _add_c_compile_flag(-pedantic _has_pedantic_flag)
 endif()
 
 # Conform to style.
@@ -194,7 +194,7 @@ _add_cxx_compile_flag(-fvisibility-inlines-hidden _has_visibility_inlines_hidden
 # Target Windows Vista. Enabled in msvc only.
 #------------------------------------------------------------------------------
 if (MSVC) # OR MINGW)
-    add_definitions(-D_WIN32_WINNT=0x0600)
+  add_definitions(-D_WIN32_WINNT=0x0600)
 endif()
 
 # Build
@@ -246,9 +246,11 @@ target_include_directories(bitprim-database PUBLIC
         $<INSTALL_INTERFACE:include>)
 
 
-target_compile_definitions(bitprim-database PUBLIC -DBITPRIM_BUILD_NUMBER="\\"${BITPRIM_BUILD_NUMBER}\\"")
+target_compile_definitions(bitprim-database PUBLIC -DBITPRIM_PROJECT_VERSION="\\"${BITPRIM_PROJECT_VERSION}\\"") #TODO(fernando): manage with Conan????
 
-target_compile_definitions(bitprim-database PUBLIC -DBCD_STATIC -DBC_STATIC)
+if (NOT ENABLE_SHARED)
+    target_compile_definitions(bitprim-database PUBLIC -DBCD_STATIC -DBC_STATIC)
+endif()
 
 # if (NOT NO_CONAN_AT_ALL)
 #   target_link_libraries(bitprim-database PUBLIC ${CONAN_LIBS})

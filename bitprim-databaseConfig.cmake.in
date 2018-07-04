@@ -9,4 +9,4 @@ set(BITPRIM_DATABASE_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
 include("${BITPRIM_DATABASE_CMAKE_DIR}/bitprim-databaseTargets.cmake")
 set(BITPRIM_DATABASE_LIBRARIES bitprim-database)
 
-find_package(bitprim-core 0.11.0 REQUIRED)
+find_package(bitprim-core 0 REQUIRED)
