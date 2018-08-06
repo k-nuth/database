@@ -315,11 +315,13 @@ size_t memory_map::size() const
     ///////////////////////////////////////////////////////////////////////////
 }
 
+
 memory_ptr memory_map::access()
 {
     return REMAP_ACCESSOR(data_, mutex_);
 }
 
+#ifndef BITPRIM_READ_ONLY
 // throws runtime_error
 memory_ptr memory_map::resize(size_t size)
 {
@@ -379,6 +381,8 @@ memory_ptr memory_map::reserve(size_t size, size_t expansion)
     return memory;
     ///////////////////////////////////////////////////////////////////////////
 }
+#endif // BITPRIM_READ_ONLY
+
 
 // privates
 // ----------------------------------------------------------------------------
@@ -433,6 +437,7 @@ bool memory_map::remap(size_t size)
 #endif
 }
 
+#ifndef BITPRIM_READ_ONLY
 bool memory_map::truncate(size_t size)
 {
     return ftruncate(file_handle_, size) != FAIL;
@@ -461,6 +466,7 @@ bool memory_map::truncate_mapped(size_t size)
 #endif
     ///////////////////////////////////////////////////////////////////////////
 }
+#endif // BITPRIM_READ_ONLY
 
 bool memory_map::validate(size_t size)
 {

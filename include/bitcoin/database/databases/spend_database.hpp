@@ -55,8 +55,10 @@ public:
     /// Close the database (all threads must first be stopped).
     ~spend_database();
 
+#ifndef BITPRIM_READ_ONLY
     /// Initialize a new spend database.
     bool create();
+#endif // BITPRIM_READ_ONLY
 
     /// Call before using the database.
     bool open();
@@ -67,6 +69,7 @@ public:
     /// Get inpoint that spent the given outpoint.
     chain::input_point get(const chain::output_point& outpoint) const;
 
+#ifndef BITPRIM_READ_ONLY
     /// Store a spend in the database.
     void store(const chain::output_point& outpoint,
         const chain::input_point& spend);
@@ -76,6 +79,7 @@ public:
 
     /// Commit latest inserts.
     void synchronize();
+#endif // BITPRIM_READ_ONLY
 
     /// Flush the memory map to disk.
     bool flush() const;

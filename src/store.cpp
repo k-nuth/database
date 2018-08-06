@@ -44,6 +44,7 @@ using namespace bc::database;
 // and size_t is used to align with the database height domain.
 const size_t store::without_indexes = max_uint32;
 
+#ifndef BITPRIM_READ_ONLY
 // static
 bool store::create(const path& file_path)
 {
@@ -56,33 +57,36 @@ bool store::create(const path& file_path)
     file.put('x');
     return true;
 }
+#endif // BITPRIM_READ_ONLY
 
 // Construct.
 // ------------------------------------------------------------------------
 
 store::store(const path& prefix, bool with_indexes, bool flush_each_write)
-  : use_indexes(with_indexes),
-    flush_each_write_(flush_each_write),
-    flush_lock_(prefix / FLUSH_LOCK),
-    exclusive_lock_(prefix / EXCLUSIVE_LOCK),
+    : use_indexes(with_indexes)
+    , flush_each_write_(flush_each_write)
+#ifndef BITPRIM_READ_ONLY
+    , flush_lock_(prefix / FLUSH_LOCK)
+    , exclusive_lock_(prefix / EXCLUSIVE_LOCK)
+#endif // BITPRIM_READ_ONLY
 
     // Content store.
-    block_table(prefix / BLOCK_TABLE),
-    block_index(prefix / BLOCK_INDEX),
-    transaction_table(prefix / TRANSACTION_TABLE),
-    transaction_unconfirmed_table(prefix / TRANSACTION_UNCONFIRMED_TABLE),
+    , block_table(prefix / BLOCK_TABLE)
+    , block_index(prefix / BLOCK_INDEX)
+    , transaction_table(prefix / TRANSACTION_TABLE)
+    , transaction_unconfirmed_table(prefix / TRANSACTION_UNCONFIRMED_TABLE)
 
     // Optional indexes.
-    spend_table(prefix / SPEND_TABLE),
-    history_table(prefix / HISTORY_TABLE),
-    history_rows(prefix / HISTORY_ROWS),
-    stealth_rows(prefix / STEALTH_ROWS)
-{
-}
+    , spend_table(prefix / SPEND_TABLE)
+    , history_table(prefix / HISTORY_TABLE)
+    , history_rows(prefix / HISTORY_ROWS)
+    , stealth_rows(prefix / STEALTH_ROWS)
+{}
 
 // Open and close.
 // ------------------------------------------------------------------------
 
+#ifndef BITPRIM_READ_ONLY
 // Create files.
 bool store::create()
 {
@@ -103,18 +107,29 @@ bool store::create()
         create(history_rows) &&
         create(stealth_rows);
 }
+#endif // BITPRIM_READ_ONLY
 
 bool store::open()
 {
+#ifndef BITPRIM_READ_ONLY
     return exclusive_lock_.lock() && flush_lock_.try_lock() &&
         (flush_each_write_ || flush_lock_.lock_shared());
+#else
+    return true;
+#endif // BITPRIM_READ_ONLY
 }
 
 bool store::close()
 {
+#ifndef BITPRIM_READ_ONLY
     return (flush_each_write_ || flush_lock_.unlock_shared()) &&
         exclusive_lock_.unlock();
+#else
+    return true;
+#endif // BITPRIM_READ_ONLY
 }
+
+#ifndef BITPRIM_READ_ONLY
 
 store::handle store::begin_read() const
 {
@@ -150,6 +165,7 @@ bool store::flush_unlock() const
 {
     return !flush_each_write_ || (flush() && flush_lock_.unlock_shared());
 }
+#endif // BITPRIM_READ_ONLY
 
 } // namespace data_base
 } // namespace libbitcoin

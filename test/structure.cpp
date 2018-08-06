@@ -46,6 +46,7 @@ public:
 
 BOOST_FIXTURE_TEST_SUITE(structure_tests, structure_directory_setup_fixture)
 
+#ifndef BITPRIM_READ_ONLY
 BOOST_AUTO_TEST_CASE(hash_table_header__test)
 {
     store::create(DIRECTORY "/hash_table_header");
@@ -104,6 +105,8 @@ BOOST_AUTO_TEST_CASE(record_manager__test)
     BOOST_REQUIRE(file.size() >= 2 * 10 + 4);
     recs.sync();
 }
+#endif // BITPRIM_READ_ONLY
+
 
 BOOST_AUTO_TEST_CASE(record_list__test)
 {

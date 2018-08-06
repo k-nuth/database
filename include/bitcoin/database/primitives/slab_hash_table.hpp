@@ -59,6 +59,7 @@ public:
 
     slab_hash_table(slab_hash_table_header& header, slab_manager& manager);
 
+#ifndef BITPRIM_READ_ONLY
     /// Execute a write. value_size is the required size of the buffer.
     /// Returns the file offset of the new value.
     file_offset store(const KeyType& key, write_function write,
@@ -67,12 +68,15 @@ public:
     /// Execute a writer against a key's buffer if the key is found.
     /// Returns the file offset of the found value (or zero).
     file_offset update(const KeyType& key, write_function write);
+#endif // BITPRIM_READ_ONLY
 
     /// Find the slab for a given key. Returns a null pointer if not found.
     memory_ptr find(const KeyType& key) const;
 
+#ifndef BITPRIM_READ_ONLY
     /// Delete a key-value pair from the hashtable by unlinking the node.
     bool unlink(const KeyType& key);
+#endif // BITPRIM_READ_ONLY
 
     template <typename UnaryFunction>
     void for_each(UnaryFunction f) const;
@@ -85,8 +89,10 @@ private:
     // What is the slab start position for a chain.
     file_offset read_bucket_value(const KeyType& key) const;
 
+#ifndef BITPRIM_READ_ONLY
     // Link a new chain into the bucket header.
     void link(const KeyType& key, file_offset begin);
+#endif // BITPRIM_READ_ONLY
 
     file_offset read_bucket_value_by_index(array_index index) const;
 

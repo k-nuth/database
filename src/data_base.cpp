@@ -75,6 +75,7 @@ data_base::~data_base()
 // Open and close.
 // ----------------------------------------------------------------------------
 
+#ifndef BITPRIM_READ_ONLY
 // Throws if there is insufficient disk space, not idempotent.
 bool data_base::create(const block& genesis)
 {
@@ -115,6 +116,7 @@ bool data_base::create(const block& genesis)
     closed_ = false;
     return true;
 }
+#endif // BITPRIM_READ_ONLY
 
 // Must be called before performing queries, not idempotent.
 // May be called after stop and/or after close in order to reopen.
@@ -250,6 +252,8 @@ bool data_base::flush() const
     return flushed;
 }
 
+#ifndef BITPRIM_READ_ONLY
+
 // protected
 void data_base::synchronize()
 {
@@ -265,6 +269,7 @@ void data_base::synchronize()
     transactions_unconfirmed_->synchronize();
     blocks_->synchronize();
 }
+#endif // BITPRIM_READ_ONLY
 
 // Readers.
 // ----------------------------------------------------------------------------
@@ -356,6 +361,7 @@ code data_base::verify_push(const transaction& tx)
         error::success;
 }
 
+#ifndef BITPRIM_READ_ONLY
 bool data_base::begin_insert() const
 {
     // Critical Section
@@ -957,6 +963,7 @@ void data_base::handle_push(const code& ec, result_handler handler) const
     // End Sequential Lock and Flush Lock
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 }
+#endif // BITPRIM_READ_ONLY
 
 } // namespace data_base
 } // namespace libbitcoin

@@ -55,8 +55,10 @@ public:
     // Open and close.
     // ------------------------------------------------------------------------
 
+#ifndef BITPRIM_READ_ONLY
     /// Create and open all databases.
     bool create(const chain::block& genesis);
+#endif //BITPRIM_READ_ONLY
 
     /// Open all databases.
     bool open() override;
@@ -87,14 +89,13 @@ public:
     // Synchronous writers.
     // ------------------------------------------------------------------------
 
-    // TODO: Nuevo Feb2017
     /// Create flush lock if flush_writes is true, and set sequential lock.
     bool begin_insert() const;
 
-    // TODO: Nuevo Feb2017
     /// Clear flush lock if flush_writes is true, and clear sequential lock.
     bool end_insert() const;
 
+#ifndef BITPRIM_READ_ONLY
     /// Store a block in the database.
     /// Returns store_block_duplicate if a block already exists at height.
     code insert(const chain::block& block, size_t height);
@@ -115,12 +116,17 @@ public:
         block_const_ptr_list_const_ptr incoming_blocks,
         block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch,
         result_handler handler);
+#endif // BITPRIM_READ_ONLY
 
 protected:
     void start();
+#ifndef BITPRIM_READ_ONLY
     void synchronize();
+#endif // BITPRIM_READ_ONLY
+
     bool flush() const override;
 
+#ifndef BITPRIM_READ_ONLY
     // Sets error if first_height is not the current top + 1 or not linked.
     void push_all(block_const_ptr_list_const_ptr in_blocks,
         size_t first_height, dispatcher& dispatch, result_handler handler);
@@ -131,6 +137,8 @@ protected:
     void pop_above(block_const_ptr_list_ptr out_blocks,
         const hash_digest& fork_hash, dispatcher& dispatch,
         result_handler handler);
+#endif // BITPRIM_READ_ONLY
+
 
     std::shared_ptr<block_database> blocks_;
     std::shared_ptr<transaction_database> transactions_;
@@ -147,6 +155,7 @@ private:
     // Synchronous writers.
     // ------------------------------------------------------------------------
 
+#ifndef BITPRIM_READ_ONLY
     bool push_transactions(const chain::block& block, size_t height,
         uint32_t median_time_past, size_t bucket=0, size_t buckets=1);
     bool push_heights(const chain::block& block, size_t height);
@@ -164,6 +173,9 @@ private:
     // // void pop_outputs(const outputs& outputs, size_t height);
     // void pop_outputs(hash_digest const& tx_hash, outputs const& outputs, size_t height);      //OLD before merge
     bool pop_outputs(const outputs& outputs, size_t height);
+#endif // BITPRIM_READ_ONLY
+
+
     code verify_insert(const chain::block& block, size_t height);
     code verify_push(const chain::block& block, size_t height);
     code verify_push(const chain::transaction& tx);
@@ -171,6 +183,7 @@ private:
     // Asynchronous writers.
     // ------------------------------------------------------------------------
 
+#ifndef BITPRIM_READ_ONLY
     void push_next(const code& ec, block_const_ptr_list_const_ptr blocks,
         size_t index, size_t height, dispatcher& dispatch,
         result_handler handler);
@@ -187,6 +200,7 @@ private:
         block_const_ptr_list_const_ptr incoming_blocks,
         size_t first_height, dispatcher& dispatch, result_handler handler);
     void handle_push(const code& ec, result_handler handler) const;
+#endif // BITPRIM_READ_ONLY
 
     std::atomic<bool> closed_;
     const settings& settings_;

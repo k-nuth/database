@@ -55,6 +55,7 @@ spend_database::~spend_database()
 // Create.
 // ----------------------------------------------------------------------------
 
+#ifndef BITPRIM_READ_ONLY
 // Initialize files and start.
 bool spend_database::create()
 {
@@ -74,6 +75,7 @@ bool spend_database::create()
         lookup_header_.start() &&
         lookup_manager_.start();
 }
+#endif // BITPRIM_READ_ONLY
 
 // Startup and shutdown.
 // ----------------------------------------------------------------------------
@@ -91,11 +93,13 @@ bool spend_database::close()
     return lookup_file_.close();
 }
 
+#ifndef BITPRIM_READ_ONLY
 // Commit latest inserts.
 void spend_database::synchronize()
 {
     lookup_manager_.sync();
 }
+#endif // BITPRIM_READ_ONLY
 
 // Flush the memory map to disk.
 bool spend_database::flush() const
@@ -121,6 +125,7 @@ input_point spend_database::get(const output_point& outpoint) const
     return spend;
 }
 
+#ifndef BITPRIM_READ_ONLY
 void spend_database::store(const chain::output_point& outpoint,
     const chain::input_point& spend)
 {
@@ -135,6 +140,7 @@ void spend_database::store(const chain::output_point& outpoint,
     lookup_map_.store(outpoint, write);
 }
 
+
 bool spend_database::unlink(const output_point& outpoint)
 {
     // Spends are optional so do not assume present (otherwise will segfault).
@@ -146,6 +152,7 @@ bool spend_database::unlink(const output_point& outpoint)
     memory = nullptr;
     return lookup_map_.unlink(outpoint);
 }
+#endif //BITPRIM_READ_ONLY
 
 spend_statinfo spend_database::statinfo() const
 {

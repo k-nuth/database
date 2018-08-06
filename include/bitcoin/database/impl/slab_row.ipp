@@ -85,6 +85,7 @@ slab_row<KeyType>::slab_row(slab_manager& manager, file_offset position)
     static_assert(position_size == 8, "Invalid file_offset size.");
 }
 
+#ifndef BITPRIM_READ_ONLY
 template <typename KeyType>
 file_offset slab_row<KeyType>::create(const KeyType& key, write_function write,
     size_t value_size)
@@ -125,6 +126,7 @@ void slab_row<KeyType>::link(file_offset next)
     serial.template write_little_endian<file_offset>(next);
     //*************************************************************************
 }
+#endif // BITPRIM_READ_ONLY
 
 template <typename KeyType>
 bool slab_row<KeyType>::compare(const KeyType& key) const
@@ -163,6 +165,7 @@ file_offset slab_row<KeyType>::next_position() const
     //*************************************************************************
 }
 
+#ifndef BITPRIM_READ_ONLY
 template <typename KeyType>
 void slab_row<KeyType>::write_next_position(file_offset next)
 {
@@ -173,6 +176,7 @@ void slab_row<KeyType>::write_next_position(file_offset next)
     serial.template write_little_endian<file_offset>(next);
     //*************************************************************************
 }
+#endif // BITPRIM_READ_ONLY
 
 template <typename KeyType>
 memory_ptr slab_row<KeyType>::raw_data(file_offset offset) const

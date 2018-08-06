@@ -72,6 +72,7 @@ block_database::~block_database()
 // Create.
 // ----------------------------------------------------------------------------
 
+#ifndef BITPRIM_READ_ONLY
 // Initialize files and open.
 bool block_database::create()
 {
@@ -95,6 +96,7 @@ bool block_database::create()
         lookup_manager_.start() &&
         index_manager_.start();
 }
+#endif // BITPRIM_READ_ONLY
 
 // Startup and shutdown.
 // ----------------------------------------------------------------------------
@@ -118,12 +120,14 @@ bool block_database::close()
         index_file_.close();
 }
 
+#ifndef BITPRIM_READ_ONLY
 // Update logical file sizes.
 void block_database::synchronize()
 {
     lookup_manager_.sync();
     index_manager_.sync();
 }
+#endif // BITPRIM_READ_ONLY
 
 // Flush the memory maps to disk.
 bool block_database::flush() const
@@ -132,6 +136,7 @@ bool block_database::flush() const
         lookup_file_.flush() &&
         index_file_.flush();
 }
+
 
 // Queries.
 // ----------------------------------------------------------------------------
@@ -179,6 +184,7 @@ block_result block_database::get(const hash_digest& hash) const
     return{};
 }
 
+#ifndef BITPRIM_READ_ONLY
 //WARNING!! : This is public interface, but apparently it is not used in Blockchain
 void block_database::store(const block& block, size_t height)
 {
@@ -216,6 +222,7 @@ void block_database::store(const block& block, size_t height)
     // Write position to index.
     write_position(position, height32);
 }
+#endif // BITPRIM_READ_ONLY
 
 bool block_database::gaps(heights& out_gaps) const
 {
@@ -228,6 +235,7 @@ bool block_database::gaps(heights& out_gaps) const
     return true;
 }
 
+#ifndef BITPRIM_READ_ONLY
 bool block_database::unlink(size_t from_height)
 {
     if (index_manager_.count() > from_height)
@@ -249,6 +257,7 @@ void block_database::zeroize(array_index first, array_index count)
         serial.write_8_bytes_little_endian(empty);
     }
 }
+
 
 void block_database::write_position(file_offset position, array_index height)
 {
@@ -281,6 +290,7 @@ void block_database::write_position(file_offset position, array_index height)
     mutex_.unlock();
     ///////////////////////////////////////////////////////////////////////////
 }
+#endif // BITPRIM_READ_ONLY
 
 file_offset block_database::read_position(array_index height) const
 {

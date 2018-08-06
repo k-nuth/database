@@ -45,8 +45,10 @@ public:
 
     hash_table_header(memory_map& file, IndexType buckets);
 
+#ifndef BITPRIM_READ_ONLY
     /// Allocate the hash table and populate with empty values.
     bool create();
+#endif // BITPRIM_READ_ONLY    
 
     /// Must be called before use. Loads the size from the file.
     bool start();
@@ -54,8 +56,10 @@ public:
     /// Read item's value.
     ValueType read(IndexType index) const;
 
+#ifndef BITPRIM_READ_ONLY
     /// Write value to item.
     void write(IndexType index, ValueType value);
+#endif // BITPRIM_READ_ONLY    
 
     /// The hash table size (bucket count).
     IndexType size() const;

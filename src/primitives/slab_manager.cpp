@@ -51,6 +51,7 @@ slab_manager::slab_manager(memory_map& file, file_offset header_size)
 {
 }
 
+#ifndef BITPRIM_READ_ONLY
 bool slab_manager::create()
 {
     // Critical Section
@@ -68,6 +69,7 @@ bool slab_manager::create()
     return true;
     ///////////////////////////////////////////////////////////////////////////
 }
+#endif // BITPRIM_READ_ONLY
 
 bool slab_manager::start()
 {
@@ -83,6 +85,7 @@ bool slab_manager::start()
     ///////////////////////////////////////////////////////////////////////////
 }
 
+#ifndef BITPRIM_READ_ONLY
 void slab_manager::sync() const
 {
     // Critical Section
@@ -92,6 +95,7 @@ void slab_manager::sync() const
     write_size();
     ///////////////////////////////////////////////////////////////////////////
 }
+#endif // BITPRIM_READ_ONLY
 
 // protected
 file_offset slab_manager::payload_size() const
@@ -104,6 +108,7 @@ file_offset slab_manager::payload_size() const
     ///////////////////////////////////////////////////////////////////////////
 }
 
+#ifndef BITPRIM_READ_ONLY
 // Return is offset by header but not size storage (embedded in data files).
 // The file is thread safe, the critical section is to protect payload_size_.
 file_offset slab_manager::new_slab(size_t size)
@@ -122,6 +127,8 @@ file_offset slab_manager::new_slab(size_t size)
     return next_slab_position;
     ///////////////////////////////////////////////////////////////////////////
 }
+#endif // BITPRIM_READ_ONLY
+
 
 // Position is offset by header but not size storage (embedded in data files).
 const memory_ptr slab_manager::get(file_offset position) const
@@ -149,6 +156,7 @@ void slab_manager::read_size()
         payload_size_address);
 }
 
+#ifndef BITPRIM_READ_ONLY
 // Write the size value to the first 64 bits of the file after the header.
 void slab_manager::write_size() const
 {
@@ -160,6 +168,8 @@ void slab_manager::write_size() const
     auto serial = make_unsafe_serializer(payload_size_address);
     serial.write_little_endian(payload_size_);
 }
+#endif // BITPRIM_READ_ONLY
+
 
 } // namespace database
 } // namespace libbitcoin

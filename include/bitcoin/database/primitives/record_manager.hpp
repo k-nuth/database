@@ -46,23 +46,29 @@ public:
     record_manager(memory_map& file, file_offset header_size,
         size_t record_size);
 
+#ifndef BITPRIM_READ_ONLY
     /// Create record manager.
     bool create();
+#endif // BITPRIM_READ_ONLY    
 
     /// Prepare manager for usage.
     bool start();
 
+#ifndef BITPRIM_READ_ONLY
     /// Synchronise to disk.
     void sync();
+#endif // BITPRIM_READ_ONLY
 
     /// The number of records in this container.
     array_index count() const;
 
+#ifndef BITPRIM_READ_ONLY
     /// Change the number of records of this container (truncation).
     void set_count(const array_index value);
 
     /// Allocate records and return first logical index, sync() after writing.
     array_index new_records(size_t count);
+#endif // BITPRIM_READ_ONLY
 
     /// Return memory object for the record at the specified index.
     const memory_ptr get(array_index record) const;
@@ -78,8 +84,10 @@ private:
     // Read the count of the records from the file.
     void read_count();
 
+#ifndef BITPRIM_READ_ONLY
     // Write the count of the records from the file.
     void write_count();
+#endif // BITPRIM_READ_ONLY    
 
     // This class is thread and remap safe.
     memory_map& file_;

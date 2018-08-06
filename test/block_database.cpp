@@ -55,6 +55,7 @@ public:
 
 BOOST_FIXTURE_TEST_SUITE(database_tests, block_database_directory_setup_fixture)
 
+#ifndef BITPRIM_READ_ONLY
 BOOST_AUTO_TEST_CASE(block_database__test)
 {
     auto block0 = block::genesis_mainnet();
@@ -128,6 +129,7 @@ BOOST_AUTO_TEST_CASE(block_database__test)
     store::create(DIRECTORY "/block_lookup");
     store::create(DIRECTORY "/block_rows");
     block_database db(DIRECTORY "/block_lookup", DIRECTORY "/block_rows", 1000, 50);
+
     BOOST_REQUIRE(db.create());
 
     size_t height;
@@ -216,5 +218,6 @@ BOOST_AUTO_TEST_CASE(block_database__test)
         db.synchronize();
     }
 }
+#endif // BITPRIM_READ_ONLY    
 
 BOOST_AUTO_TEST_SUITE_END()

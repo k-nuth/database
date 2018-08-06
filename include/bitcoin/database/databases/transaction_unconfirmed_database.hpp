@@ -54,8 +54,10 @@ public:
     /// Close the database (all threads must first be stopped).
     ~transaction_unconfirmed_database();
 
+#ifndef BITPRIM_READ_ONLY
     /// Initialize a new transaction database.
     bool create();
+#endif // BITPRIM_READ_ONLY
 
     /// Call before using the database.
     bool open();
@@ -66,18 +68,21 @@ public:
     /// Fetch transaction by its hash, at or below the specified block height.
     transaction_unconfirmed_result get(const hash_digest& hash) const;
 
+
+#ifndef BITPRIM_READ_ONLY
     /// Store a transaction in the database.
     void store(const chain::transaction& tx);
-
 
     /// Commit latest inserts.
     void synchronize();
 
+    bool unlink(hash_digest const& hash);
+    bool unlink_if_exists(hash_digest const& hash);
+#endif // BITPRIM_READ_ONLY
+
     /// Flush the memory map to disk.
     bool flush() const;
 
-    bool unlink(hash_digest const& hash);
-    bool unlink_if_exists(hash_digest const& hash);
 
 //    template <typename UnaryFunction>
         //requires Domain of UnaryFunction is chain::transaction

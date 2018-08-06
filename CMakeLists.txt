@@ -71,6 +71,16 @@ message( STATUS "Bitprim: Compiling for ${MICROARCHITECTURE}")
 # add_definitions(-DBITPRIM_MICROARCHITECTURE_STR="${MICROARCHITECTURE}")
 
 
+# Implement --read-only and declare READ_ONLY.
+#------------------------------------------------------------------------------
+option(READ_ONLY "Read-only blockchain." OFF)
+if (READ_ONLY)
+  message(STATUS "Bitprim: Read-only database")
+  add_definitions(-DBITPRIM_READ_ONLY)
+else()
+message(STATUS "Bitprim: Writable database")
+endif()
+
 set(CURRENCY "BCH" CACHE STRING "Specify the Cryptocurrency (BCH|BTC|LTC).")
 
 if (${CURRENCY} STREQUAL "BCH")
@@ -285,26 +295,52 @@ endif()
 # local: test/bitprim_database_test
 #------------------------------------------------------------------------------
 if (WITH_TESTS)
+
+    set(bitprim_database_test_sources
+        test/block_database.cpp
+        test/data_base.cpp
+        test/hash_table.cpp
+        test/history_database.cpp
+        test/main.cpp
+        test/spend_database.cpp
+        test/structure.cpp
+        test/transaction_database.cpp
+        #        test/unspent_database.cpp
+
+    )
+
+    # if (NOT READ_ONLY)
+    #     set(bitprim_database_test_sources 
+    #         ${bitprim_database_test_sources}         
+    #     )
+    # endif()
+
+
     add_executable(bitprim_database_test
-            test/block_database.cpp
-            test/data_base.cpp
-            test/hash_table.cpp
-            test/history_database.cpp
-            test/main.cpp
-            test/spend_database.cpp
-            test/structure.cpp
-            test/transaction_database.cpp
-            #        test/unspent_database.cpp
-            )
+        ${bitprim_database_test_sources}
+    )
+
     target_link_libraries(bitprim_database_test PUBLIC bitprim-database)
 
     _group_sources(bitprim_database_test "${CMAKE_CURRENT_LIST_DIR}/test")
 
+    # _add_tests(bitprim_database_test
+    #         database_tests
+    #         hash_table_tests
+    #         structure_tests
+    #         data_base_tests)
+
+    if (NOT READ_ONLY)
+        _add_tests(bitprim_database_test
+                database_tests
+                hash_table_tests
+                data_base_tests)
+    endif()
+
     _add_tests(bitprim_database_test
-            database_tests
-            hash_table_tests
             structure_tests
-            data_base_tests)
+    )
+
 endif()
 
 # Tools

@@ -42,17 +42,21 @@ class BCD_API slab_manager
 public:
     slab_manager(memory_map& file, file_offset header_size);
 
+#ifndef BITPRIM_READ_ONLY
     /// Create slab manager.
     bool create();
+#endif // BITPRIM_READ_ONLY    
 
     /// Prepare manager for use.
     bool start();
 
+#ifndef BITPRIM_READ_ONLY
     /// Synchronise the payload size to disk.
     void sync() const;
 
     /// Allocate a slab and return its position, sync() after writing.
     file_offset new_slab(size_t size);
+#endif // BITPRIM_READ_ONLY
 
     /// Return memory object for the slab at the specified position.
     const memory_ptr get(file_offset position) const;
@@ -67,8 +71,10 @@ private:
     // Read the size of the data from the file.
     void read_size();
 
+#ifndef BITPRIM_READ_ONLY
     // Write the size of the data from the file.
     void write_size() const;
+#endif // BITPRIM_READ_ONLY
 
     // This class is thread and remap safe.
     memory_map& file_;

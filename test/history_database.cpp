@@ -47,6 +47,7 @@ public:
 
 BOOST_FIXTURE_TEST_SUITE(database_tests, history_database_directory_setup_fixture)
 
+#ifndef BITPRIM_READ_ONLY
 BOOST_AUTO_TEST_CASE(history_database__test)
 {
     const short_hash key1 = base16_literal("a006500b7ddfd568e2b036c65a4f4d6aaa0cbd9b");
@@ -89,7 +90,9 @@ BOOST_AUTO_TEST_CASE(history_database__test)
     store::create(DIRECTORY "/lookup");
     store::create(DIRECTORY "/rows");
     history_database db(DIRECTORY "/lookup", DIRECTORY "/rows", 1000, 50);
+
     BOOST_REQUIRE(db.create());
+
     db.add_output(key1, out11, out_h11, value11);
     db.add_output(key1, out12, out_h12, value12);
     db.add_output(key1, out13, out_h13, value13);
@@ -195,6 +198,7 @@ BOOST_AUTO_TEST_CASE(history_database__test)
 
     db.synchronize();
 }
+#endif // BITPRIM_READ_ONLY    
 
 BOOST_AUTO_TEST_SUITE_END()
 

@@ -37,6 +37,7 @@ record_hash_table<KeyType>::record_hash_table(
         record_row<KeyType>::empty);
 }
 
+#ifndef BITPRIM_READ_ONLY
 // This is not limited to storing unique key values. If duplicate keyed values
 // are store then retrieval and unlinking will fail as these multiples cannot
 // be differentiated except in the order written.
@@ -91,6 +92,7 @@ void record_hash_table<KeyType>::update(const KeyType& key,
         ///////////////////////////////////////////////////////////////////////
     }
 }
+#endif // BITPRIM_READ_ONLY
 
 // This is limited to returning the first of multiple matching key values.
 template <typename KeyType>
@@ -118,6 +120,7 @@ memory_ptr record_hash_table<KeyType>::find(const KeyType& key) const
     return nullptr;
 }
 
+#ifndef BITPRIM_READ_ONLY
 // This is limited to unlinking the first of multiple matching key values.
 template <typename KeyType>
 bool record_hash_table<KeyType>::unlink(const KeyType& key)
@@ -176,6 +179,7 @@ bool record_hash_table<KeyType>::unlink(const KeyType& key)
 
     return false;
 }
+#endif // BITPRIM_READ_ONLY
 
 template <typename KeyType>
 array_index record_hash_table<KeyType>::bucket_index(const KeyType& key) const
@@ -194,11 +198,13 @@ array_index record_hash_table<KeyType>::read_bucket_value(
     return value;
 }
 
+#ifndef BITPRIM_READ_ONLY
 template <typename KeyType>
 void record_hash_table<KeyType>::link(const KeyType& key, array_index begin)
 {
     header_.write(bucket_index(key), begin);
 }
+#endif // BITPRIM_READ_ONLY
 
 } // namespace database
 } // namespace libbitcoin

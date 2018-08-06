@@ -30,6 +30,7 @@ record_list::record_list(record_manager& manager, array_index index)
 {
 }
 
+#ifndef BITPRIM_READ_ONLY
 array_index record_list::create(write_function write)
 {
     BITCOIN_ASSERT(index_ == empty);
@@ -62,6 +63,8 @@ void record_list::link(array_index next)
     serial.template write_little_endian<array_index>(next);
     //*************************************************************************
 }
+#endif // BITPRIM_READ_ONLY
+
 memory_ptr record_list::data() const
 {
     // Get value pointer.

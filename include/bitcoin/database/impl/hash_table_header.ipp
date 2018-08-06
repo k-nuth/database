@@ -48,6 +48,7 @@ hash_table_header<IndexType, ValueType>::hash_table_header(memory_map& file,
         "Hash table header requires unsigned type.");
 }
 
+#ifndef BITPRIM_READ_ONLY
 template <typename IndexType, typename ValueType>
 bool hash_table_header<IndexType, ValueType>::create()
 {
@@ -74,6 +75,7 @@ bool hash_table_header<IndexType, ValueType>::create()
     ////    serial.write_little_endian(empty);
     return true;
 }
+#endif // BITPRIM_READ_ONLY
 
 // If false header file indicates incorrect size.
 template <typename IndexType, typename ValueType>
@@ -113,6 +115,7 @@ ValueType hash_table_header<IndexType, ValueType>::read(IndexType index) const
     ///////////////////////////////////////////////////////////////////////////
 }
 
+#ifndef BITPRIM_READ_ONLY
 template <typename IndexType, typename ValueType>
 void hash_table_header<IndexType, ValueType>::write(IndexType index,
     ValueType value)
@@ -131,6 +134,7 @@ void hash_table_header<IndexType, ValueType>::write(IndexType index,
     serial.template write_little_endian<ValueType>(value);
     ///////////////////////////////////////////////////////////////////////////
 }
+#endif // BITPRIM_READ_ONLY
 
 template <typename IndexType, typename ValueType>
 IndexType hash_table_header<IndexType, ValueType>::size() const

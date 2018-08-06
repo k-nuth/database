@@ -47,6 +47,8 @@ public:
 
 BOOST_FIXTURE_TEST_SUITE(database_tests, spend_database_directory_setup_fixture)
 
+#ifndef BITPRIM_READ_ONLY
+
 BOOST_AUTO_TEST_CASE(spend_database__test)
 {
     chain::output_point key1{ hash_literal("4129e76f363f9742bc98dd3d40c99c9066e4d53b8e10e5097bd6f7b5059d7c53"), 110 };
@@ -61,7 +63,10 @@ BOOST_AUTO_TEST_CASE(spend_database__test)
 
     store::create(DIRECTORY "/spend");
     spend_database db(DIRECTORY "/spend", 1000, 50);
+
     BOOST_REQUIRE(db.create());
+
+
 
     db.store(key1, value1);
     db.store(key2, value2);
@@ -100,5 +105,7 @@ BOOST_AUTO_TEST_CASE(spend_database__test)
     BOOST_REQUIRE_EQUAL(spend4.index(), value4.index());
     db.synchronize();
 }
+#endif // BITPRIM_READ_ONLY
+
 
 BOOST_AUTO_TEST_SUITE_END()

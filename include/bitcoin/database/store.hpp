@@ -35,8 +35,10 @@ public:
 
     static const size_t without_indexes;
 
+#ifndef BITPRIM_READ_ONLY
     /// Create a single file with one byte of arbitrary data.
     static bool create(const path& file_path);
+#endif // BITPRIM_READ_ONLY
 
     // Construct.
     // ------------------------------------------------------------------------
@@ -46,8 +48,10 @@ public:
     // Open and close.
     // ------------------------------------------------------------------------
 
+#ifndef BITPRIM_READ_ONLY
     /// Create database files.
     virtual bool create();
+#endif // BITPRIM_READ_ONLY
 
     /// Acquire exclusive access.
     virtual bool open();
@@ -58,6 +62,7 @@ public:
     // Write with flush detection.
     // ------------------------------------------------------------------------
 
+#ifndef BITPRIM_READ_ONLY
     /// Start a read sequence and obtain its handle.
     handle begin_read() const;
 
@@ -78,6 +83,7 @@ public:
 
     /// Optionally end flush lock scope.
     bool flush_unlock() const;
+#endif // BITPRIM_READ_ONLY
 
     // File names.
     // ------------------------------------------------------------------------
@@ -96,15 +102,19 @@ public:
     const path stealth_rows;
 
 protected:
+// #ifndef BITPRIM_READ_ONLY
     virtual bool flush() const = 0;
+// #endif // BITPRIM_READ_ONLY
 
     const bool use_indexes;
 
 private:
     const bool flush_each_write_;
+#ifndef BITPRIM_READ_ONLY
     mutable bc::flush_lock flush_lock_;
     mutable interprocess_lock exclusive_lock_;
     mutable sequential_lock sequential_lock_;
+#endif // BITPRIM_READ_ONLY 
 };
 
 } // namespace database

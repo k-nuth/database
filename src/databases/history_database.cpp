@@ -72,6 +72,7 @@ history_database::~history_database()
 // Create.
 // ----------------------------------------------------------------------------
 
+#ifndef BITPRIM_READ_ONLY
 // Initialize files and start.
 bool history_database::create()
 {
@@ -95,6 +96,7 @@ bool history_database::create()
         lookup_manager_.start() &&
         rows_manager_.start();
 }
+#endif // BITPRIM_READ_ONLY
 
 // Startup and shutdown.
 // ----------------------------------------------------------------------------
@@ -116,12 +118,14 @@ bool history_database::close()
         rows_file_.close();
 }
 
+#ifndef BITPRIM_READ_ONLY
 // Commit latest inserts.
 void history_database::synchronize()
 {
     lookup_manager_.sync();
     rows_manager_.sync();
 }
+#endif // BITPRIM_READ_ONLY
 
 // Flush the memory maps to disk.
 bool history_database::flush() const
@@ -134,6 +138,7 @@ bool history_database::flush() const
 // Queries.
 // ----------------------------------------------------------------------------
 
+#ifndef BITPRIM_READ_ONLY
 void history_database::add_output(const short_hash& key,
     const output_point& outpoint, size_t output_height, uint64_t value)
 {
@@ -172,6 +177,7 @@ bool history_database::delete_last_row(const short_hash& key)
 {
     return rows_multimap_.unlink(key);
 }
+#endif // BITPRIM_READ_ONLY
 
 history_compact::list history_database::get(const short_hash& key,
     size_t limit, size_t from_height) const

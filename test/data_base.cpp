@@ -260,6 +260,7 @@ BOOST_FIXTURE_TEST_SUITE(data_base_tests, data_base_setup_fixture)
 "6c5b1629ecf97fff95d7a4bbdac87cc26099ada28066c6ff1eb9191223cd897194a08d0c272" \
 "6c5747f1db49e8cf90e75dc3e3550ae9b30086f3cd5aaac00000000"
 
+#ifndef BITPRIM_READ_ONLY
 class data_base_accessor
   : public data_base
 {
@@ -405,5 +406,6 @@ BOOST_AUTO_TEST_CASE(data_base__pushpop__test)
 
     std::cout << "end push/pop test" << std::endl;
 }
+#endif // BITPRIM_READ_ONLY
 
 BOOST_AUTO_TEST_SUITE_END()

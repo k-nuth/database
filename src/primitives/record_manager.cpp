@@ -53,6 +53,7 @@ record_manager::record_manager(memory_map& file, file_offset header_size,
 {
 }
 
+#ifndef BITPRIM_READ_ONLY
 bool record_manager::create()
 {
     // Critical Section
@@ -70,6 +71,7 @@ bool record_manager::create()
     return true;
     ///////////////////////////////////////////////////////////////////////////
 }
+#endif // BITPRIM_READ_ONLY
 
 bool record_manager::start()
 {
@@ -85,6 +87,7 @@ bool record_manager::start()
     ///////////////////////////////////////////////////////////////////////////
 }
 
+#ifndef BITPRIM_READ_ONLY
 void record_manager::sync()
 {
     // Critical Section
@@ -94,6 +97,7 @@ void record_manager::sync()
     write_count();
     ///////////////////////////////////////////////////////////////////////////
 }
+#endif // BITPRIM_READ_ONLY
 
 array_index record_manager::count() const
 {
@@ -105,6 +109,7 @@ array_index record_manager::count() const
     ///////////////////////////////////////////////////////////////////////////
 }
 
+#ifndef BITPRIM_READ_ONLY
 void record_manager::set_count(const array_index value)
 {
     // Critical Section
@@ -136,6 +141,8 @@ array_index record_manager::new_records(size_t count)
     return next_record_index;
     ///////////////////////////////////////////////////////////////////////////
 }
+#endif // BITPRIM_READ_ONLY
+
 
 const memory_ptr record_manager::get(array_index record) const
 {
@@ -162,6 +169,7 @@ void record_manager::read_count()
     record_count_ = from_little_endian_unsafe<array_index>(count_address);
 }
 
+#ifndef BITPRIM_READ_ONLY
 // Write the count value to the first 32 bits of the file after the header.
 void record_manager::write_count()
 {
@@ -173,6 +181,8 @@ void record_manager::write_count()
     auto serial = make_unsafe_serializer(payload_size_address);
     serial.write_little_endian(record_count_);
 }
+#endif // BITPRIM_READ_ONLY
+
 
 array_index record_manager::position_to_record(file_offset position) const
 {

@@ -83,6 +83,7 @@ record_row<KeyType>::record_row(record_manager& manager, array_index index)
 {
 }
 
+#ifndef BITPRIM_READ_ONLY
 template <typename KeyType>
 array_index record_row<KeyType>::create(const KeyType& key,
     write_function write)
@@ -122,6 +123,8 @@ void record_row<KeyType>::link(array_index next)
     serial.template write_little_endian<array_index>(next);
     //*************************************************************************
 }
+#endif // BITPRIM_READ_ONLY
+
 
 template <typename KeyType>
 bool record_row<KeyType>::compare(const KeyType& key) const
@@ -161,6 +164,7 @@ array_index record_row<KeyType>::next_index() const
     //*************************************************************************
 }
 
+#ifndef BITPRIM_READ_ONLY
 template <typename KeyType>
 void record_row<KeyType>::write_next_index(array_index next)
 {
@@ -171,6 +175,8 @@ void record_row<KeyType>::write_next_index(array_index next)
     serial.template write_little_endian<array_index>(next);
     //*************************************************************************
 }
+#endif // BITPRIM_READ_ONLY
+
 
 template <typename KeyType>
 memory_ptr record_row<KeyType>::raw_data(file_offset offset) const

@@ -57,8 +57,10 @@ public:
     /// Close the database (all threads must first be stopped).
     ~history_database();
 
+#ifndef BITPRIM_READ_ONLY
     /// Initialize a new history database.
     bool create();
+#endif // BITPRIM_READ_ONLY    
 
     /// Call before using the database.
     bool open();
@@ -66,6 +68,7 @@ public:
     /// Call to unload the memory map.
     bool close();
 
+#ifndef BITPRIM_READ_ONLY
     /// Add an output row to the key. If key doesn't exist it will be created.
     void add_output(const short_hash& key, const chain::output_point& outpoint,
         size_t output_height, uint64_t value);
@@ -76,6 +79,7 @@ public:
 
     /// Delete the last row that was added to key.
     bool delete_last_row(const short_hash& key);
+#endif // BITPRIM_READ_ONLY
 
     /// Get the output and input points associated with the address hash.
     chain::history_compact::list get(const short_hash& key, size_t limit,
@@ -85,8 +89,10 @@ public:
     std::vector<hash_digest> get_txns(const short_hash& key, size_t limit,
                                      size_t from_height) const;
 
+#ifndef BITPRIM_READ_ONLY
     /// Commit latest inserts.
     void synchronize();
+#endif // BITPRIM_READ_ONLY
 
     /// Flush the memory maps to disk.
     bool flush() const;

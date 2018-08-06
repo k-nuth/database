@@ -56,6 +56,7 @@ transaction_unconfirmed_database::~transaction_unconfirmed_database() {
 // Create.
 // ----------------------------------------------------------------------------
 
+#ifndef BITPRIM_READ_ONLY
 // Initialize files and start.
 bool transaction_unconfirmed_database::create() {
     // Resize and create require an opened file.
@@ -74,6 +75,7 @@ bool transaction_unconfirmed_database::create() {
         lookup_header_.start() &&
         lookup_manager_.start();
 }
+#endif // BITPRIM_READ_ONLY
 
 // Startup and shutdown.
 // ----------------------------------------------------------------------------
@@ -91,10 +93,12 @@ bool transaction_unconfirmed_database::close() {
     return lookup_file_.close();
 }
 
+#ifndef BITPRIM_READ_ONLY
 // Commit latest inserts.
 void transaction_unconfirmed_database::synchronize() {
     lookup_manager_.sync();
 }
+#endif // BITPRIM_READ_ONLY
 
 // Flush the memory map to disk.
 bool transaction_unconfirmed_database::flush() const {
@@ -141,6 +145,7 @@ uint32_t get_clock_now() {
     return static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
 }
 
+#ifndef BITPRIM_READ_ONLY
 void transaction_unconfirmed_database::store(const chain::transaction& tx) {
     uint32_t arrival_time = get_clock_now();
 #ifdef BITPRIM_CURRENCY_BCH
@@ -191,5 +196,6 @@ bool transaction_unconfirmed_database::unlink_if_exists(hash_digest const& hash)
     memory = nullptr;
     return unlink(hash);
 }
+#endif // BITPRIM_READ_ONLY
 
 }} // namespace libbitcoin::database

@@ -65,19 +65,23 @@ public:
 
     record_hash_table(record_hash_table_header& header, record_manager& manager);
 
+#ifndef BITPRIM_READ_ONLY
     /// Execute a write. The provided write() function must write the correct
     /// number of bytes (record_size - key_size - sizeof(array_index)).
     void store(const KeyType& key, write_function write);
 
     /// Execute a writer against a key's buffer if the key is found.
     void update(const KeyType& key, write_function write);
+#endif // BITPRIM_READ_ONLY
 
     /// Find the record for a given key.
     /// Returns a null pointer if not found.
     memory_ptr find(const KeyType& key) const;
 
+#ifndef BITPRIM_READ_ONLY
     /// Delete a key-value pair from the hashtable by unlinking the node.
     bool unlink(const KeyType& key);
+#endif // BITPRIM_READ_ONLY
 
 private:
     // What is the bucket given a hash.
@@ -86,8 +90,10 @@ private:
     // What is the record start index for a chain.
     array_index read_bucket_value(const KeyType& key) const;
 
+#ifndef BITPRIM_READ_ONLY
     // Link a new chain into the bucket header.
     void link(const KeyType& key, array_index begin);
+#endif // BITPRIM_READ_ONLY
 
     record_hash_table_header& header_;
     record_manager& manager_;

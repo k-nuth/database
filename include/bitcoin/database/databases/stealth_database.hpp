@@ -44,8 +44,10 @@ public:
     /// Close the database (all threads must first be stopped).
     ~stealth_database();
 
+#ifndef BITPRIM_READ_ONLY
     /// Initialize a new stealth database.
     bool create();
+#endif // BITPRIM_READ_ONLY
 
     /// Call before using the database.
     bool open();
@@ -56,6 +58,7 @@ public:
     /// Linearly scan all entries, discarding those after from_height.
     list scan(const binary& filter, size_t from_height) const;
 
+#ifndef BITPRIM_READ_ONLY
     /// Add a stealth row to the database.
     void store(uint32_t prefix, uint32_t height,
         const chain::stealth_compact& row);
@@ -65,12 +68,15 @@ public:
 
     /// Commit latest inserts.
     void synchronize();
+#endif // BITPRIM_READ_ONLY
 
     /// Flush the memory map to disk.
     bool flush() const;
 
 private:
+#ifndef BITPRIM_READ_ONLY
     void write_index();
+#endif // BITPRIM_READ_ONLY    
     array_index read_index(size_t from_height) const;
 
     // Row entries containing stealth tx data.

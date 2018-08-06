@@ -35,6 +35,7 @@ slab_hash_table<KeyType>::slab_hash_table(slab_hash_table_header& header,
     BITCOIN_ASSERT(slab_hash_table_header::empty == slab_row<KeyType>::empty);
 }
 
+#ifndef BITPRIM_READ_ONLY
 // This is not limited to storing unique key values. If duplicate keyed values
 // are store then retrieval and unlinking will fail as these multiples cannot
 // be differentiated except in the order written (used by bip30).
@@ -95,6 +96,7 @@ file_offset slab_hash_table<KeyType>::update(const KeyType& key,
 
     return 0;
 }
+#endif // BITPRIM_READ_ONLY
 
 // This is limited to returning the first of multiple matching key values.
 template <typename KeyType>
@@ -122,6 +124,7 @@ memory_ptr slab_hash_table<KeyType>::find(const KeyType& key) const
     return nullptr;
 }
 
+#ifndef BITPRIM_READ_ONLY
 // This is limited to unlinking the first of multiple matching key values.
 template <typename KeyType>
 bool slab_hash_table<KeyType>::unlink(const KeyType& key)
@@ -180,6 +183,8 @@ bool slab_hash_table<KeyType>::unlink(const KeyType& key)
 
     return false;
 }
+#endif // BITPRIM_READ_ONLY
+
 
 template <typename KeyType>
 array_index slab_hash_table<KeyType>::bucket_index(const KeyType& key) const
@@ -198,11 +203,13 @@ file_offset slab_hash_table<KeyType>::read_bucket_value(
     return value;
 }
 
+#ifndef BITPRIM_READ_ONLY
 template <typename KeyType>
 void slab_hash_table<KeyType>::link(const KeyType& key, file_offset begin)
 {
     header_.write(bucket_index(key), begin);
 }
+#endif // BITPRIM_READ_ONLY
 
 template <typename KeyType>
 file_offset slab_hash_table<KeyType>::read_bucket_value_by_index(array_index index) const

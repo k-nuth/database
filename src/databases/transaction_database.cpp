@@ -68,6 +68,7 @@ transaction_database::~transaction_database()
 // Create.
 // ----------------------------------------------------------------------------
 
+#ifndef BITPRIM_READ_ONLY
 // Initialize files and start.
 bool transaction_database::create()
 {
@@ -87,6 +88,7 @@ bool transaction_database::create()
         lookup_header_.start() &&
         lookup_manager_.start();
 }
+#endif // BITPRIM_READ_ONLY
 
 // Startup and shutdown.
 // ----------------------------------------------------------------------------
@@ -106,11 +108,13 @@ bool transaction_database::close()
     return lookup_file_.close();
 }
 
+#ifndef BITPRIM_READ_ONLY
 // Commit latest inserts.
 void transaction_database::synchronize()
 {
     lookup_manager_.sync();
 }
+#endif // BITPRIM_READ_ONLY
 
 // Flush the memory map to disk.
 bool transaction_database::flush() const
@@ -273,6 +277,7 @@ bool transaction_database::get_output_is_confirmed(output& out_output, size_t& o
 // [ version:varint ]
 // ----------------------------------------------------------------------------
 
+#ifndef BITPRIM_READ_ONLY
 void transaction_database::store(const chain::transaction& tx,
     size_t height, uint32_t median_time_past, size_t position)
 {
@@ -437,6 +442,7 @@ bool transaction_database::unconfirm(const hash_digest& hash) {
     // unconfirmed transaction before acceptance into mempool/template queries.
     return confirm(hash, rule_fork::unverified, 0, unconfirmed);
 }
+#endif // BITPRIM_READ_ONLY
 
 } // namespace database
 } // namespace libbitcoin

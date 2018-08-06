@@ -32,6 +32,7 @@ record_multimap<KeyType>::record_multimap(record_hash_table_type& map,
 {
 }
 
+#ifndef BITPRIM_READ_ONLY
 template <typename KeyType>
 void record_multimap<KeyType>::store(const KeyType& key,
     write_function write)
@@ -71,6 +72,7 @@ void record_multimap<KeyType>::store(const KeyType& key,
     }
     ///////////////////////////////////////////////////////////////////////////
 }
+#endif // BITPRIM_READ_ONLY
 
 template <typename KeyType>
 array_index record_multimap<KeyType>::find(const KeyType& key) const
@@ -97,6 +99,7 @@ memory_ptr record_multimap<KeyType>::get(array_index index) const
     return record.data();
 }
 
+#ifndef BITPRIM_READ_ONLY
 // Unlink is not safe for concurrent write.
 template <typename KeyType>
 bool record_multimap<KeyType>::unlink(const KeyType& key)
@@ -125,6 +128,7 @@ bool record_multimap<KeyType>::unlink(const KeyType& key)
 
     return true;
 }
+#endif // BITPRIM_READ_ONLY
 
 } // namespace database
 } // namespace libbitcoin

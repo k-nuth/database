@@ -47,6 +47,7 @@ public:
 
 BOOST_FIXTURE_TEST_SUITE(database_tests, transaction_database_directory_setup_fixture)
 
+#ifndef BITPRIM_READ_ONLY
 BOOST_AUTO_TEST_CASE(transaction_database__test)
 {
     data_chunk wire_tx1;
@@ -67,6 +68,8 @@ BOOST_AUTO_TEST_CASE(transaction_database__test)
 
     store::create(DIRECTORY "/transaction");
     transaction_database db(DIRECTORY "/transaction", 1000, 50, 0);
+
+
     BOOST_REQUIRE(db.create());
 
     db.store(tx1, 110, 0, 88);
@@ -80,5 +83,7 @@ BOOST_AUTO_TEST_CASE(transaction_database__test)
 
     db.synchronize();
 }
+#endif // BITPRIM_READ_ONLY
+
 
 BOOST_AUTO_TEST_SUITE_END()

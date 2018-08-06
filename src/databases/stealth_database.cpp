@@ -58,6 +58,7 @@ stealth_database::~stealth_database()
 // Create.
 // ----------------------------------------------------------------------------
 
+#ifndef BITPRIM_READ_ONLY
 // Initialize files and start.
 bool stealth_database::create()
 {
@@ -74,6 +75,7 @@ bool stealth_database::create()
     // Should not call start after create, already started.
     return rows_manager_.start();
 }
+#endif // BITPRIM_READ_ONLY
 
 // Startup and shutdown.
 // ----------------------------------------------------------------------------
@@ -90,11 +92,13 @@ bool stealth_database::close()
     return rows_file_.close();
 }
 
+#ifndef BITPRIM_READ_ONLY
 // Commit latest inserts.
 void stealth_database::synchronize()
 {
     rows_manager_.sync();
 }
+#endif // BITPRIM_READ_ONLY
 
 // Flush the memory map to disk.
 bool stealth_database::flush() const
@@ -144,6 +148,7 @@ stealth_compact::list stealth_database::scan(const binary& filter,
     return result;
 }
 
+#ifndef BITPRIM_READ_ONLY
 // TODO: add serialization to stealth_compact.
 void stealth_database::store(uint32_t prefix, uint32_t height,
     const stealth_compact& row)
@@ -171,6 +176,7 @@ void stealth_database::store(uint32_t prefix, uint32_t height,
 ////    // TODO: mark as deleted (not implemented).
 ////    return false;
 ////}
+#endif // BITPRIM_READ_ONLY
 
 } // namespace database
 } // namespace libbitcoin

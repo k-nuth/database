@@ -70,10 +70,13 @@ public:
     bool closed() const;
 
     size_t size() const;
+
     memory_ptr access();
+#ifndef BITPRIM_READ_ONLY
     memory_ptr resize(size_t size);
     memory_ptr reserve(size_t size);
     memory_ptr reserve(size_t size, size_t growth_ratio);
+#endif // BITPRIM_READ_ONLY
 
 private:
     static size_t file_size(int file_handle);
@@ -82,11 +85,14 @@ private:
         const boost::filesystem::path& filename);
 
     size_t page() const;
+
     bool unmap();
     bool map(size_t size);
     bool remap(size_t size);
+#ifndef BITPRIM_READ_ONLY
     bool truncate(size_t size);
     bool truncate_mapped(size_t size);
+#endif // BITPRIM_READ_ONLY
     bool validate(size_t size);
 
     void log_mapping() const;

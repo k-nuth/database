@@ -60,8 +60,10 @@ public:
 
     record_multimap(record_hash_table_type& map, record_manager& manager);
 
+#ifndef BITPRIM_READ_ONLY
     /// Add a new row for a key.
     void store(const KeyType& key, write_function write);
+#endif // BITPRIM_READ_ONLY
 
     /// Lookup a key, returning a traversable index.
     array_index find(const KeyType& key) const;
@@ -69,8 +71,10 @@ public:
     /// Get a remap safe address pointer to the indexed data.
     memory_ptr get(array_index index) const;
 
+#ifndef BITPRIM_READ_ONLY
     /// Delete the last row that was added for the key.
     bool unlink(const KeyType& key);
+#endif // BITPRIM_READ_ONLY
 
 private:
     record_hash_table_type& map_;

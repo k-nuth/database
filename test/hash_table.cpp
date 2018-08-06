@@ -69,6 +69,7 @@ data_chunk generate_random_bytes(std::default_random_engine& engine,
     return result;
 }
 
+#ifndef BITPRIM_READ_ONLY
 void create_database_file()
 {
     BC_CONSTEXPR size_t header_size = slab_hash_table_header_size(buckets);
@@ -105,6 +106,7 @@ void create_database_file()
 
     alloc.sync();
 }
+#endif // BITPRIM_READ_ONLY
 
 class hash_table_directory_setup_fixture
 {
@@ -125,6 +127,7 @@ public:
 
 BOOST_FIXTURE_TEST_SUITE(hash_table_tests, hash_table_directory_setup_fixture)
 
+#ifndef BITPRIM_READ_ONLY
 BOOST_AUTO_TEST_CASE(slab_hash_table__write_read__test)
 {
     // Create the data file to be read below.
@@ -195,6 +198,7 @@ BOOST_AUTO_TEST_CASE(slab_hash_table__test)
     const auto slab2 = REMAP_ADDRESS(memory1);
     BOOST_REQUIRE(slab2);
 }
+#endif // BITPRIM_READ_ONLY
 
 ////BOOST_AUTO_TEST_CASE(record_hash_table__32bit__test)
 ////{

@@ -50,8 +50,10 @@ public:
     /// Close the database (all threads must first be stopped).
     ~block_database();
 
+#ifndef BITPRIM_READ_ONLY
     /// Initialize a new transaction database.
     bool create();
+#endif // BITPRIM_READ_ONLY
 
     /// Call before using the database.
     bool open();
@@ -69,18 +71,21 @@ public:
     block_result get(const hash_digest& hash) const;
 
 
-    //NOTE: This is public interface, but apparently it is not used in Blockchain
+#ifndef BITPRIM_READ_ONLY
     /// Store a block in the database.
     void store(const chain::block& block, size_t height);
+#endif // BITPRIM_READ_ONLY
 
     /// The list of heights representing all chain gaps.
     bool gaps(heights& out_gaps) const;
 
+#ifndef BITPRIM_READ_ONLY
     /// Unlink all blocks upwards from (and including) from_height.
     bool unlink(size_t from_height);
 
     /// Commit latest inserts.
     void synchronize();
+#endif // BITPRIM_READ_ONLY
 
     /// Flush the memory maps to disk.
     bool flush() const;

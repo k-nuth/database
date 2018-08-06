@@ -54,8 +54,10 @@ public:
     /// Close the database (all threads must first be stopped).
     ~transaction_database();
 
+#ifndef BITPRIM_READ_ONLY
     /// Initialize a new transaction database.
     bool create();
+#endif // BITPRIM_READ_ONLY
 
     /// Call before using the database.
     bool open();
@@ -78,6 +80,7 @@ public:
         size_t fork_height, bool require_confirmed) const;
 
 
+#ifndef BITPRIM_READ_ONLY
     /// Store a transaction in the database.
     void store(const chain::transaction& tx, size_t height,
         uint32_t median_time_past, size_t position);
@@ -97,6 +100,7 @@ public:
 
     /// Commit latest inserts.
     void synchronize();
+#endif // BITPRIM_READ_ONLY
 
     /// Flush the memory map to disk.
     bool flush() const;
