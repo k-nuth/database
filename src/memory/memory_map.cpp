@@ -87,12 +87,18 @@ size_t memory_map::file_size(int file_handle)
 int memory_map::open_file(const path& filename)
 {
 #ifdef _WIN32
-    int handle = _wopen(filename.wstring().c_str(),
-        (O_RDWR | _O_BINARY | _O_RANDOM), (_S_IREAD | _S_IWRITE));
+#ifndef BITPRIM_READ_ONLY
+    int handle = _wopen(filename.wstring().c_str(), (O_RDWR | _O_BINARY | _O_RANDOM), (_S_IREAD | _S_IWRITE));
 #else
-    int handle = ::open(filename.string().c_str(),
-        (O_RDWR), (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
-#endif
+    int handle = _wopen(filename.wstring().c_str(), (O_RDONLY | _O_BINARY | _O_RANDOM), (_S_IREAD));
+#endif // BITPRIM_READ_ONLY
+#else
+#ifndef BITPRIM_READ_ONLY
+    int handle = ::open(filename.string().c_str(), (O_RDWR), (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
+#else
+    int handle = ::open(filename.string().c_str(), (O_RDONLY), (S_IRUSR | S_IRGRP | S_IROTH));
+#endif // BITPRIM_READ_ONLY
+#endif // _WIN32
     return handle;
 }
 
@@ -419,8 +425,11 @@ bool memory_map::map(size_t size)
     if (size == 0)
         return false;
 
-    data_ = reinterpret_cast<uint8_t*>(mmap(0, size, PROT_READ | PROT_WRITE,
-        MAP_SHARED, file_handle_, 0));
+#ifndef BITPRIM_READ_ONLY
+    data_ = reinterpret_cast<uint8_t*>(mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, file_handle_, 0));
+#else
+    data_ = reinterpret_cast<uint8_t*>(mmap(0, size, PROT_READ, MAP_SHARED, file_handle_, 0));
+#endif // BITPRIM_READ_ONLY
 
     return validate(size);
 }
