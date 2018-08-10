@@ -565,14 +565,9 @@ void data_base::push_inputs(const hash_digest& tx_hash, size_t height,
                     for (const auto& address: prev_output.addresses())
                         history_->add_input(address.hash(), inpoint, height, prevout);
                 }
-          
-
             }
         }
     }
-
-    //std::cout << "FER - void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const input::list& inputs) - END\n";
-
 }
 
 void data_base::push_outputs(const hash_digest& tx_hash, size_t height,

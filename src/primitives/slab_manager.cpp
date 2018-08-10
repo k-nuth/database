@@ -133,7 +133,7 @@ file_offset slab_manager::new_slab(size_t size)
 // Position is offset by header but not size storage (embedded in data files).
 const memory_ptr slab_manager::get(file_offset position) const
 {
-#ifndef BITPRIM_READ_ONLY    
+#ifndef BITPRIM_READ_ONLY
     // Ensure requested position is within the file.
     // We avoid a runtime error here to optimize out the payload_size lock.
     BITCOIN_ASSERT_MSG(position < payload_size(), "Read past end of file.");
