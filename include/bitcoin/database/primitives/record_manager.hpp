@@ -95,7 +95,9 @@ private:
 
     // Payload size is protected by mutex.
     array_index record_count_;
+#ifndef BITPRIM_READ_ONLY
     mutable shared_mutex mutex_;
+#endif // BITPRIM_READ_ONLY
 
     // Records are fixed size.
     const size_t record_size_;

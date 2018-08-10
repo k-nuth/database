@@ -75,9 +75,11 @@ bool record_manager::create()
 
 bool record_manager::start()
 {
+#ifndef BITPRIM_READ_ONLY
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
     ALLOCATE_WRITE(mutex_);
+#endif // BITPRIM_READ_ONLY
 
     read_count();
     const auto minimum = header_size_ + record_to_position(record_count_);
@@ -101,12 +103,22 @@ void record_manager::sync()
 
 array_index record_manager::count() const
 {
+#ifndef BITPRIM_READ_ONLY
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
     ALLOCATE_READ(mutex_);
-
     return record_count_;
     ///////////////////////////////////////////////////////////////////////////
+#else
+    // read_count();
+
+    BITCOIN_ASSERT(header_size_ + sizeof(array_index) <= file_.size());
+
+    // The accessor must remain in scope until the end of the block.
+    const auto memory = file_.access();
+    const auto count_address = REMAP_ADDRESS(memory) + header_size_;
+    return from_little_endian_unsafe<array_index>(count_address);
+#endif // BITPRIM_READ_ONLY
 }
 
 #ifndef BITPRIM_READ_ONLY
