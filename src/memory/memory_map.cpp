@@ -87,22 +87,22 @@ size_t memory_map::file_size(int file_handle)
 int memory_map::open_file(const path& filename)
 {
 #ifdef _WIN32
-// #ifndef BITPRIM_READ_ONLY
-//     int handle = _wopen(filename.wstring().c_str(), (O_RDWR | _O_BINARY | _O_RANDOM), (_S_IREAD | _S_IWRITE));
-// #else
-//     // int handle = _wopen(filename.wstring().c_str(), (O_RDONLY | _O_BINARY | _O_RANDOM), (_S_IREAD));
-//     int handle = _wopen(filename.wstring().c_str(), (O_RDONLY | _O_BINARY | _O_RANDOM), (_S_IREAD | _S_IWRITE));
-// #endif // BITPRIM_READ_ONLY
+#ifndef BITPRIM_READ_ONLY
     int handle = _wopen(filename.wstring().c_str(), (O_RDWR | _O_BINARY | _O_RANDOM), (_S_IREAD | _S_IWRITE));
 #else
-    int handle = ::open(filename.string().c_str(), (O_RDWR), (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
+    int handle = _wopen(filename.wstring().c_str(), (O_RDONLY | _O_BINARY | _O_RANDOM), (_S_IREAD));
+    // int handle = _wopen(filename.wstring().c_str(), (O_RDONLY | _O_BINARY | _O_RANDOM), (_S_IREAD | _S_IWRITE));
+#endif // BITPRIM_READ_ONLY
+    // int handle = _wopen(filename.wstring().c_str(), (O_RDWR | _O_BINARY | _O_RANDOM), (_S_IREAD | _S_IWRITE));
+#else
+    // int handle = ::open(filename.string().c_str(), (O_RDWR), (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
 
-// #ifndef BITPRIM_READ_ONLY
-//     int handle = ::open(filename.string().c_str(), (O_RDWR), (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
-// #else
-//     // int handle = ::open(filename.string().c_str(), (O_RDONLY), (S_IRUSR | S_IRGRP | S_IROTH));
-//     int handle = ::open(filename.string().c_str(), (O_RDONLY), (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
-// #endif // BITPRIM_READ_ONLY
+#ifndef BITPRIM_READ_ONLY
+    int handle = ::open(filename.string().c_str(), (O_RDWR), (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
+#else
+    int handle = ::open(filename.string().c_str(), (O_RDONLY), (S_IRUSR | S_IRGRP | S_IROTH));
+    // int handle = ::open(filename.string().c_str(), (O_RDONLY), (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
+#endif // BITPRIM_READ_ONLY
 #endif // _WIN32
     return handle;
 }
