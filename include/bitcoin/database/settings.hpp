@@ -44,7 +44,11 @@ public:
     uint32_t spend_table_buckets;
     uint32_t history_table_buckets;
     uint32_t cache_capacity;
+
+#if defined(WITH_REMOTE_DATABASE)    
     config::endpoint replier;
+#endif //defined(WITH_REMOTE_DATABASE)        
+
 };
 
 } // namespace database
