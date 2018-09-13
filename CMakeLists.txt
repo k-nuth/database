@@ -71,6 +71,16 @@ message( STATUS "Bitprim: Compiling for ${MICROARCHITECTURE}")
 # add_definitions(-DBITPRIM_MICROARCHITECTURE_STR="${MICROARCHITECTURE}")
 
 
+# Implement --with-mining and declare WITH_MEASUREMENTS.
+#------------------------------------------------------------------------------
+option(WITH_MEASUREMENTS "Measurements enabled." OFF)
+if (WITH_MEASUREMENTS)
+  message(STATUS "Bitprim: MEASUREMENTS enabled")
+  add_definitions(-DWITH_MEASUREMENTS)
+endif()
+
+
+
 set(CURRENCY "BCH" CACHE STRING "Specify the Cryptocurrency (BCH|BTC|LTC).")
 
 if (${CURRENCY} STREQUAL "BCH")

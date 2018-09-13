@@ -40,7 +40,9 @@ class BitprimDatabaseConan(BitprimConanFile):
                "currency": ['BCH', 'BTC', 'LTC'],
                "microarchitecture": "ANY", #["x86_64", "haswell", "ivybridge", "sandybridge", "bulldozer", ...]
                "fix_march": [True, False],
-               "verbose": [True, False]
+               "verbose": [True, False],
+               "measurements": [True, False],
+               "use_domain": [True, False]
     }
 
     default_options = "shared=False", \
@@ -50,7 +52,10 @@ class BitprimDatabaseConan(BitprimConanFile):
         "currency=BCH", \
         "microarchitecture=_DUMMY_",  \
         "fix_march=False", \
-        "verbose=False"
+        "verbose=False", \
+        "measurements=False", \
+        "use_domain=False"
+
 
     generators = "cmake"
     exports = "conan_*", "ci_utils/*"
@@ -61,8 +66,11 @@ class BitprimDatabaseConan(BitprimConanFile):
 
     def requirements(self):
         self.requires("boost/1.66.0@bitprim/stable")
-        self.requires("bitprim-core/0.X@%s/%s" % (self.user, self.channel))
-        # self.bitprim_requires(["bitprim-core/0.X@%s/%s"])
+
+        if self.options.use_domain:
+            self.requires("bitprim-domain/0.X@%s/%s" % (self.user, self.channel))
+        else:
+            self.requires("bitprim-core/0.X@%s/%s" % (self.user, self.channel))
 
     def config_options(self):
         if self.settings.arch != "x86_64":
@@ -85,8 +93,10 @@ class BitprimDatabaseConan(BitprimConanFile):
             march_conan_manip(self)
             self.options["*"].microarchitecture = self.options.microarchitecture
 
+        self.options["*"].measurements = self.options.measurements
         self.options["*"].currency = self.options.currency
         self.output.info("Compiling for currency: %s" % (self.options.currency,))
+        self.output.info("Compiling with measurements: %s" % (self.options.measurements,))
 
     def package_id(self):
         self.info.options.with_tests = "ANY"
@@ -111,6 +121,7 @@ class BitprimDatabaseConan(BitprimConanFile):
         cmake.definitions["WITH_TOOLS"] = option_on_off(self.options.with_tools)
 
         cmake.definitions["CURRENCY"] = self.options.currency
+        cmake.definitions["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
 
         if self.settings.compiler != "Visual Studio":
             # cmake.definitions["CONAN_CXX_FLAGS"] += " -Wno-deprecated-declarations"
