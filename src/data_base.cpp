@@ -53,18 +53,20 @@ using namespace std::placeholders;
 // ----------------------------------------------------------------------------
 
 data_base::data_base(const settings& settings)
-  : closed_(true),
-    settings_(settings),
-    remap_mutex_(std::make_shared<shared_mutex>()),
-    store(settings.directory, settings.index_start_height < without_indexes, settings.flush_writes)
+    : closed_(true)
+    , settings_(settings)
+    , remap_mutex_(std::make_shared<shared_mutex>())
+    , store(settings.directory, settings.index_start_height < without_indexes, settings.flush_writes)
 {
     LOG_DEBUG(LOG_DATABASE)
         << "Buckets: "
         << "block [" << settings.block_table_buckets << "], "
         << "transaction [" << settings.transaction_table_buckets << "], "
+#ifdef BITPRIM_DB_SPENDS
         << "spend [" << settings.spend_table_buckets << "], "
-        // << "unspent [" << settings.unspent_table_buckets << "], "                       //TODO: Fer:
-        << "history [" << settings.history_table_buckets << "]";
+#endif // BITPRIM_DB_SPENDS
+        << "history [" << settings.history_table_buckets << "]"
+        ;
 }
 
 data_base::~data_base()
@@ -90,22 +92,24 @@ bool data_base::create(const block& genesis)
     start();
 
     // These leave the databases open.
-    auto created =
-        blocks_->create() &&
-        transactions_->create() &&
-        transactions_unconfirmed_->create();
+    auto created = blocks_->create() 
+                && transactions_->create() 
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+                && transactions_unconfirmed_->create()
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+                ;
 
-    if (use_indexes)
-
-        // OLD before merging (Feb2017)
-        // created &=
-        //     // spends_->create() &&
-        //     unspents_->create() &&
-
-        created = created &&
-            spends_->create() &&
-            history_->create() &&
-            stealth_->create();
+    if (use_indexes) {
+        created = created 
+#ifdef BITPRIM_DB_SPENDS
+                && spends_->create() 
+#endif // BITPRIM_DB_SPENDS
+                && history_->create() 
+#ifdef BITPRIM_DB_STEALTH                
+                && stealth_->create()
+#endif // BITPRIM_DB_STEALTH                
+                ;
+    }
 
     if (!created)
         return false;
@@ -128,23 +132,25 @@ bool data_base::open()
 
     start();
 
-    auto opened =
-        blocks_->open() &&
-        transactions_->open() &&
-        transactions_unconfirmed_->open();
+    auto opened = blocks_->open() 
+                && transactions_->open() 
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+                && transactions_unconfirmed_->open()
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+                ;
 
     if (use_indexes) {
-        // OLD before merging (Feb2017)
-    
-        // opened &=
-        //     // spends_->open() &&
-        //     unspents_->open() &&
-        opened = opened &&
-            spends_->open() &&
-            history_->open() &&
-            stealth_->open();
-
+        opened = opened 
+#ifdef BITPRIM_DB_SPENDS
+                && spends_->open()
+#endif // BITPRIM_DB_SPENDS
+                && history_->open() 
+#ifdef BITPRIM_DB_STEALTH                
+                && stealth_->open()
+#endif // BITPRIM_DB_STEALTH                
+                ;
     }
+
     closed_ = false;
     return opened;
 }
@@ -158,22 +164,24 @@ bool data_base::close()
 
     closed_ = true;
 
-    auto closed =
-        blocks_->close() &&
-        transactions_->close() &&
-        transactions_unconfirmed_->close();
+    auto closed = blocks_->close() 
+                && transactions_->close() 
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+                && transactions_unconfirmed_->close()
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+                ;
 
-    if (use_indexes)
-
-        // OLD before merging (Feb2017)
-        // closed &=
-        //     // spends_->close() &&
-        //     unspents_->close() &&
-
-        closed = closed &&
-            spends_->close() &&
-            history_->close() &&
-            stealth_->close();
+    if (use_indexes) {
+        closed = closed 
+#ifdef BITPRIM_DB_SPENDS
+                && spends_->close()
+#endif // BITPRIM_DB_SPENDS
+                && history_->close() 
+#ifdef BITPRIM_DB_STEALTH                
+                && stealth_->close()
+#endif // BITPRIM_DB_STEALTH                
+                ;
+    }
 
     return closed && store::close();
     // Unlock exclusive file access and conditionally the global flush lock.
@@ -193,25 +201,30 @@ void data_base::start()
         settings_.transaction_table_buckets, settings_.file_growth_rate,
         settings_.cache_capacity, remap_mutex_);
 
+
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     //TODO: BITPRIM: FER: transaction_table_buckets and file_growth_rate
     transactions_unconfirmed_ = std::make_shared<transaction_unconfirmed_database>(transaction_unconfirmed_table,
         settings_.transaction_unconfirmed_table_buckets, settings_.file_growth_rate, remap_mutex_);
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
 
+    if (use_indexes) {
 
-    if (use_indexes)
-    {
-        // OLD before merging (Feb2017)
-        // unspents_ = std::make_shared<unspent_database_v2>(unspent_table, "unspent_table", mutex_);
+#ifdef BITPRIM_DB_SPENDS
         spends_ = std::make_shared<spend_database>(spend_table,
             settings_.spend_table_buckets, settings_.file_growth_rate,
             remap_mutex_);
+#endif // BITPRIM_DB_SPENDS
 
         history_ = std::make_shared<history_database>(history_table,
             history_rows, settings_.history_table_buckets,
             settings_.file_growth_rate, remap_mutex_);
 
+#ifdef BITPRIM_DB_STEALTH
         stealth_ = std::make_shared<stealth_database>(stealth_rows,
             settings_.file_growth_rate, remap_mutex_);
+#endif // BITPRIM_DB_STEALTH
+
     }
 }
 
@@ -225,21 +238,24 @@ bool data_base::flush() const
     ////if (closed_)
     ////    return true;
 
-    auto flushed =
-        blocks_->flush() &&
-        transactions_->flush() &&
-        transactions_unconfirmed_->flush();
+    auto flushed = blocks_->flush() 
+                && transactions_->flush() 
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+                && transactions_unconfirmed_->flush()
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+                ;
 
-    if (use_indexes)
-        // OLD before merging (Feb2017)
-        // flushed &=
-        //     // spends_->flush() &&
-        //     unspents_->flush() &&
-
-        flushed = flushed &&
-            spends_->flush() &&
-            history_->flush() &&
-            stealth_->flush();
+    if (use_indexes) {
+        flushed = flushed 
+#ifdef BITPRIM_DB_SPENDS
+                && spends_->flush() 
+#endif // BITPRIM_DB_SPENDS
+                && history_->flush() 
+#ifdef BITPRIM_DB_STEALTH                
+                && stealth_->flush()
+#endif // BITPRIM_DB_STEALTH                
+                ;
+    }
 
     // Just for the log.
     code ec(flushed ? error::success : error::operation_failed_0);
@@ -253,16 +269,24 @@ bool data_base::flush() const
 // protected
 void data_base::synchronize()
 {
-    if (use_indexes)
-    {
+    if (use_indexes) {
+#ifdef BITPRIM_DB_SPENDS
         spends_->synchronize();
-        // unspents_->synchronize();
+#endif // BITPRIM_DB_SPENDS
+
         history_->synchronize();
+
+#ifdef BITPRIM_DB_STEALTH                
         stealth_->synchronize();
+#endif // BITPRIM_DB_STEALTH                
     }
 
     transactions_->synchronize();
+
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     transactions_unconfirmed_->synchronize();
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+
     blocks_->synchronize();
 }
 
@@ -279,21 +303,20 @@ const transaction_database& data_base::transactions() const
     return *transactions_;
 }
 
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
 const transaction_unconfirmed_database& data_base::transactions_unconfirmed() const
 {
     return *transactions_unconfirmed_;
 }
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
 
+#ifdef BITPRIM_DB_SPENDS
 // Invalid if indexes not initialized.
 const spend_database& data_base::spends() const
 {
     return *spends_;
 }
-
-// // Invalid if indexes not initialized.
-// unspent_database_v2 const& data_base::unspents() const {
-//     return *unspents_;
-// }
+#endif // BITPRIM_DB_SPENDS
 
 // Invalid if indexes not initialized.
 const history_database& data_base::history() const
@@ -301,11 +324,13 @@ const history_database& data_base::history() const
     return *history_;
 }
 
+#ifdef BITPRIM_DB_STEALTH
 // Invalid if indexes not initialized.
 const stealth_database& data_base::stealth() const
 {
     return *stealth_;
 }
+#endif // BITPRIM_DB_STEALTH
 
 // Synchronous writers.
 // ----------------------------------------------------------------------------
@@ -413,13 +438,17 @@ code data_base::push(const chain::transaction& tx, uint32_t forks)
         return error::operation_failed_2;
 
     // When position is unconfirmed, height is used to store validation forks.
-    // PREMERGE
-    // transactions_->store(tx, forks, transaction_database::unconfirmed);
     transactions_->store(tx, forks, 0, transaction_database::unconfirmed);
+
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     transactions_unconfirmed_->store(tx); //, forks, transaction_unconfirmed_database::unconfirmed);
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
 
     transactions_->synchronize();
+
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     transactions_unconfirmed_->synchronize();
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
 
     return end_write() ? error::success : error::operation_failed_3;
     // End Sequential Lock and Flush Lock
@@ -474,7 +503,10 @@ bool data_base::push_transactions(const chain::block& block, size_t height,
         // transactions_->store(tx, height, position);
         transactions_->store(tx, height, median_time_past, position);
 
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
         transactions_unconfirmed_->unlink_if_exists(tx.hash());
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+
 
         if (height < settings_.index_start_height)
             continue;
@@ -485,7 +517,9 @@ bool data_base::push_transactions(const chain::block& block, size_t height,
             push_inputs(tx_hash, height, tx.inputs());
 
         push_outputs(tx_hash, height, tx.outputs());
+#ifdef BITPRIM_DB_STEALTH
         push_stealth(tx_hash, height, tx.outputs());
+#endif // BITPRIM_DB_STEALTH        
     }
 
     return true;
@@ -519,48 +553,42 @@ void data_base::push_inputs(const hash_digest& tx_hash, size_t height,
         const input_point inpoint{ tx_hash, index };
         const auto& prevout = input.previous_output();
 
+#ifdef BITPRIM_DB_SPENDS
         spends_->store(prevout, inpoint);
+#endif // BITPRIM_DB_SPENDS
 
-        if (prevout.validation.cache.is_valid())
-        {
+
+        if (prevout.validation.cache.is_valid()) {
             // This results in a complete and unambiguous history for the
             // address since standard outputs contain unambiguous address data.
             for (const auto& address: prevout.validation.cache.addresses())
                 history_->add_input(address.hash(), inpoint, height, prevout);
-        }
-        else
-        {
+        } else {
             // For any p2pk spend this creates no record (insufficient data).
             // For any p2kh spend this creates the ambiguous p2sh address,
             // which significantly expands the size of the history store.
             // These are tradeoffs when no prevout is cached (checkpoint sync).
             bool valid = true;
-            for (const auto& address: input.addresses()){
+            for (const auto& address: input.addresses()) {
                 if(!address) 
                     valid = false;
             }
             
-            if(valid)
-            {
+            if (valid) {
                 for (const auto& address: input.addresses())
                     history_->add_input(address.hash(), inpoint, height, prevout);
-            } else 
-            {
+            } else {
                 //During an IBD with checkpoints some previous output info is missing.
                 //We can recover it by accessing the database
                 chain::output prev_output;
                 size_t output_height;
                 uint32_t output_median_time_past;
                 bool output_is_coinbase;
-                if(transactions_->get_output(prev_output, output_height, 
-                    output_median_time_past, output_is_coinbase, prevout, 
-                    MAX_UINT64, false))
-                {
+
+                if (transactions_->get_output(prev_output, output_height, output_median_time_past, output_is_coinbase, prevout, MAX_UINT64, false)) {
                     for (const auto& address: prev_output.addresses())
                         history_->add_input(address.hash(), inpoint, height, prevout);
                 }
-          
-
             }
         }
     }
@@ -584,10 +612,10 @@ void data_base::push_outputs(const hash_digest& tx_hash, size_t height,
     }
 }
 
-void data_base::push_stealth(const hash_digest& tx_hash, size_t height,
+#ifdef BITPRIM_DB_STEALTH
+void data_basest hash_digest& tx_hash, size_t height,
     const output::list& outputs)
 {
-    // std::cout << "void data_base::push_stealth(const hash_digest& tx_hash, size_t height, const output::list& outputs)\n";
     if (outputs.empty())
         return;
 
@@ -622,10 +650,8 @@ void data_base::push_stealth(const hash_digest& tx_hash, size_t height,
 
         stealth_->store(prefix, height, row);
     }
-
-    // std::cout << "void data_base::push_stealth(const hash_digest& tx_hash, size_t height, const output::list& outputs) - END\n";
-
 }
+#endif // BITPRIM_DB_STEALTH
 
 // A false return implies store corruption.
 bool data_base::pop(block& out_block)
@@ -666,8 +692,11 @@ bool data_base::pop(block& out_block)
         if (!transactions_->unconfirm(tx.hash()))
             return false;
 
-        if(!tx.is_coinbase())
+        if (!tx.is_coinbase()) {
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
             transactions_unconfirmed_->store(tx);
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+        }
 
         if (!pop_outputs(tx.outputs(), height))
             return false;
@@ -701,10 +730,13 @@ bool data_base::pop_inputs(const input::list& inputs, size_t height)
         if (height < settings_.index_start_height)
             continue;
 
+#ifdef BITPRIM_DB_SPENDS
         // All spends are confirmed.
         // This can fail if index start has been changed between restarts.
         // So ignore the error here and succeeed even if not found.
         /* bool */ spends_->unlink(input.previous_output());
+#endif // BITPRIM_DB_SPENDS
+
 
         // Delete can fail if index start has been changed between restarts.
         for (const auto& address: input.addresses())

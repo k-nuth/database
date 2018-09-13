@@ -16,6 +16,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifdef BITPRIM_DB_STEALTH
+
 #include <bitcoin/database/databases/stealth_database.hpp>
 
 #include <cstddef>
@@ -174,3 +176,5 @@ void stealth_database::store(uint32_t prefix, uint32_t height,
 
 } // namespace database
 } // namespace libbitcoin
+
+#endif // BITPRIM_DB_STEALTH

@@ -24,10 +24,20 @@
 #include <bitcoin/database/version.hpp>
 #include <bitcoin/database/databases/block_database.hpp>
 #include <bitcoin/database/databases/history_database.hpp>
+
+#ifdef BITPRIM_DB_SPENDS
 #include <bitcoin/database/databases/spend_database.hpp>
+#endif // BITPRIM_DB_SPENDS
+
+#ifdef BITPRIM_DB_STEALTH
 #include <bitcoin/database/databases/stealth_database.hpp>
+#endif // BITPRIM_DB_STEALTH
+
 #include <bitcoin/database/databases/transaction_database.hpp>
+
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
 #include <bitcoin/database/databases/transaction_unconfirmed_database.hpp>
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
 
 //// #include <bitcoin/database/databases/unspent_database.hpp>
 // #include <bitcoin/database/databases/unspent_database_v2.hpp>
@@ -47,6 +57,10 @@
 #include <bitcoin/database/primitives/slab_manager.hpp>
 #include <bitcoin/database/result/block_result.hpp>
 #include <bitcoin/database/result/transaction_result.hpp>
+
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
 #include <bitcoin/database/result/transaction_unconfirmed_result.hpp>
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+
 
 #endif

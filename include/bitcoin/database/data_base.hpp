@@ -26,11 +26,23 @@
 #include <bitcoin/bitcoin.hpp>
 #include <bitcoin/database/define.hpp>
 #include <bitcoin/database/databases/block_database.hpp>
+
+#ifdef BITPRIM_DB_SPENDS
 #include <bitcoin/database/databases/spend_database.hpp>
+#endif // BITPRIM_DB_SPENDS
+
 #include <bitcoin/database/databases/transaction_database.hpp>
+
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
 #include <bitcoin/database/databases/transaction_unconfirmed_database.hpp>
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+
 #include <bitcoin/database/databases/history_database.hpp>
+
+#ifdef BITPRIM_DB_STEALTH
 #include <bitcoin/database/databases/stealth_database.hpp>
+#endif // BITPRIM_DB_STEALTH
+
 #include <bitcoin/database/define.hpp>
 #include <bitcoin/database/settings.hpp>
 #include <bitcoin/database/store.hpp>
@@ -71,18 +83,24 @@ public:
     // ------------------------------------------------------------------------
 
     const block_database& blocks() const;
-
     const transaction_database& transactions() const;
-    const transaction_unconfirmed_database& transactions_unconfirmed() const;
 
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+    const transaction_unconfirmed_database& transactions_unconfirmed() const;
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+
+#ifdef BITPRIM_DB_SPENDS
     /// Invalid if indexes not initialized.
     const spend_database& spends() const;
+#endif // BITPRIM_DB_SPENDS
 
     /// Invalid if indexes not initialized.
     const history_database& history() const;
 
+#ifdef BITPRIM_DB_STEALTH
     /// Invalid if indexes not initialized.
     const stealth_database& stealth() const;
+#endif // BITPRIM_DB_STEALTH
 
     // Synchronous writers.
     // ------------------------------------------------------------------------
@@ -134,11 +152,22 @@ protected:
 
     std::shared_ptr<block_database> blocks_;
     std::shared_ptr<transaction_database> transactions_;
+
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     std::shared_ptr<transaction_unconfirmed_database> transactions_unconfirmed_;
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+
+
+#ifdef BITPRIM_DB_SPENDS
     std::shared_ptr<spend_database> spends_;
+#endif // BITPRIM_DB_SPENDS
 
     std::shared_ptr<history_database> history_;
+
+#ifdef BITPRIM_DB_STEALTH
     std::shared_ptr<stealth_database> stealth_;
+#endif // BITPRIM_DB_STEALTH
+
 
 private:
     typedef chain::input::list inputs;
@@ -154,8 +183,12 @@ private:
         const inputs& inputs);
     void push_outputs(const hash_digest& tx_hash, size_t height,
         const outputs& outputs);
+
+#ifdef BITPRIM_DB_STEALTH
     void push_stealth(const hash_digest& tx_hash, size_t height,
         const outputs& outputs);
+#endif // BITPRIM_DB_STEALTH
+
 
     // chain::block pop();      //OLD before merge
     bool pop(chain::block& out_block);

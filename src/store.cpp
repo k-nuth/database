@@ -34,11 +34,23 @@ using namespace bc::database;
 #define BLOCK_TABLE "block_table"
 #define BLOCK_INDEX "block_index"
 #define TRANSACTION_TABLE "transaction_table"
+
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
 #define TRANSACTION_UNCONFIRMED_TABLE "transaction_unconfirmed_table"
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
+
+#ifdef BITPRIM_DB_SPENDS
 #define SPEND_TABLE "spend_table"
+#endif // BITPRIM_DB_SPENDS
+
 #define HISTORY_TABLE "history_table"
 #define HISTORY_ROWS "history_rows"
+
+#ifdef BITPRIM_DB_STEALTH
 #define STEALTH_ROWS "stealth_rows"
+#endif // BITPRIM_DB_STEALTH        
+
+
 
 // The threashold max_uint32 is used to align with fixed-width config settings,
 // and size_t is used to align with the database height domain.
@@ -61,24 +73,32 @@ bool store::create(const path& file_path)
 // ------------------------------------------------------------------------
 
 store::store(const path& prefix, bool with_indexes, bool flush_each_write)
-  : use_indexes(with_indexes),
-    flush_each_write_(flush_each_write),
-    flush_lock_(prefix / FLUSH_LOCK),
-    exclusive_lock_(prefix / EXCLUSIVE_LOCK),
+    : use_indexes(with_indexes)
+    , flush_each_write_(flush_each_write)
+    , flush_lock_(prefix / FLUSH_LOCK)
+    , exclusive_lock_(prefix / EXCLUSIVE_LOCK)
 
     // Content store.
-    block_table(prefix / BLOCK_TABLE),
-    block_index(prefix / BLOCK_INDEX),
-    transaction_table(prefix / TRANSACTION_TABLE),
-    transaction_unconfirmed_table(prefix / TRANSACTION_UNCONFIRMED_TABLE),
+    , block_table(prefix / BLOCK_TABLE)
+    , block_index(prefix / BLOCK_INDEX)
+    , transaction_table(prefix / TRANSACTION_TABLE)
+
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+    , transaction_unconfirmed_table(prefix / TRANSACTION_UNCONFIRMED_TABLE)
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
 
     // Optional indexes.
-    spend_table(prefix / SPEND_TABLE),
-    history_table(prefix / HISTORY_TABLE),
-    history_rows(prefix / HISTORY_ROWS),
-    stealth_rows(prefix / STEALTH_ROWS)
-{
-}
+
+#ifdef BITPRIM_DB_SPENDS
+    , spend_table(prefix / SPEND_TABLE)
+#endif // BITPRIM_DB_SPENDS
+
+    , history_table(prefix / HISTORY_TABLE)
+    , history_rows(prefix / HISTORY_ROWS)
+#ifdef BITPRIM_DB_STEALTH
+    , stealth_rows(prefix / STEALTH_ROWS)
+#endif // BITPRIM_DB_STEALTH        
+{}
 
 // Open and close.
 // ------------------------------------------------------------------------
@@ -86,22 +106,29 @@ store::store(const path& prefix, bool with_indexes, bool flush_each_write)
 // Create files.
 bool store::create()
 {
-    const auto created =
-        create(block_table) &&
-        create(block_index) &&
-        create(transaction_table) &&
-        create(transaction_unconfirmed_table);
+    const auto created = create(block_table) 
+                        && create(block_index) 
+                        && create(transaction_table) 
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+                        && create(transaction_unconfirmed_table)
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
+                        ;
 
-    if (!use_indexes)
+    if ( ! use_indexes) {
         return created;
+    }
 
     return
-        created &&
-        create(spend_table) &&
-        // create(unspent_table, false)  &&
-        create(history_table) &&
-        create(history_rows) &&
-        create(stealth_rows);
+        created 
+#ifdef BITPRIM_DB_SPENDS
+            && create(spend_table) 
+#endif // BITPRIM_DB_SPENDS
+            && create(history_table)
+            && create(history_rows) 
+#ifdef BITPRIM_DB_STEALTH
+            && create(stealth_rows)
+#endif // BITPRIM_DB_STEALTH        
+            ;
 }
 
 bool store::open()

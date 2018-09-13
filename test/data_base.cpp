@@ -321,9 +321,17 @@ BOOST_AUTO_TEST_CASE(data_base__pushpop__test)
     settings.index_start_height = 0;
     settings.block_table_buckets = 42;
     settings.transaction_table_buckets = 42;
+
+#ifdef BITPRIM_DB_SPENDS
     settings.spend_table_buckets = 42;
+#endif // BITPRIM_DB_SPENDS
+
     settings.history_table_buckets = 42;
+
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     settings.transaction_unconfirmed_table_buckets = 42;
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
+     
 
     // If index_height is set to anything other than 0 or max it can cause
     // false negatives since it excludes entries below the specified height.

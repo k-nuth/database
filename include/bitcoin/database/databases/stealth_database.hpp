@@ -19,6 +19,8 @@
 #ifndef LIBBITCOIN_DATABASE_STEALTH_DATABASE_HPP
 #define LIBBITCOIN_DATABASE_STEALTH_DATABASE_HPP
 
+#ifdef BITPRIM_DB_STEALTH
+
 #include <cstdint>
 #include <memory>
 #include <boost/filesystem.hpp>
@@ -80,5 +82,7 @@ private:
 
 } // namespace database
 } // namespace libbitcoin
+
+#endif // BITPRIM_DB_STEALTH
 
 #endif

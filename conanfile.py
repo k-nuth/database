@@ -42,7 +42,13 @@ class BitprimDatabaseConan(BitprimConanFile):
                "fix_march": [True, False],
                "verbose": [True, False],
                "measurements": [True, False],
-               "use_domain": [True, False]
+               "use_domain": [True, False],
+               "db_transaction_unconfirmed": [True, False],
+               "db_spends": [True, False],
+               "db_history": [True, False],
+               "db_stealth": [True, False],
+               "db_unspent_libbitcoin": [True, False],
+               "db_new": [True, False],
     }
 
     default_options = "shared=False", \
@@ -54,8 +60,13 @@ class BitprimDatabaseConan(BitprimConanFile):
         "fix_march=False", \
         "verbose=False", \
         "measurements=False", \
-        "use_domain=False"
-
+        "use_domain=False", \
+        "db_transaction_unconfirmed=True", \
+        "db_spends=True", \
+        "db_history=True", \
+        "db_stealth=True", \
+        "db_unspent_libbitcoin=True", \
+        "db_new=False"
 
     generators = "cmake"
     exports = "conan_*", "ci_utils/*"
@@ -122,6 +133,13 @@ class BitprimDatabaseConan(BitprimConanFile):
 
         cmake.definitions["CURRENCY"] = self.options.currency
         cmake.definitions["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
+
+        cmake.definitions["DB_TRANSACTION_UNCONFIRMED"] = option_on_off(self.options.db_transaction_unconfirmed)
+        cmake.definitions["DB_SPENDS"] = option_on_off(self.options.db_spends)
+        cmake.definitions["DB_HISTORY"] = option_on_off(self.options.db_history)
+        cmake.definitions["DB_STEALTH"] = option_on_off(self.options.db_stealth)
+        cmake.definitions["DB_UNSPENT_LIBBITCOIN"] = option_on_off(self.options.db_unspent_libbitcoin)
+        cmake.definitions["DB_NEW"] = option_on_off(self.options.db_new)
 
         if self.settings.compiler != "Visual Studio":
             # cmake.definitions["CONAN_CXX_FLAGS"] += " -Wno-deprecated-declarations"

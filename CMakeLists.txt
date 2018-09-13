@@ -80,7 +80,66 @@ if (WITH_MEASUREMENTS)
 endif()
 
 
+# Implement and declare DB_TRANSACTION_UNCONFIRMED.
+#------------------------------------------------------------------------------
+option(DB_TRANSACTION_UNCONFIRMED "DB Transactions Unconfirmed enabled." OFF)
+if (DB_TRANSACTION_UNCONFIRMED)
+  message(STATUS "Bitprim: DB Transactions Unconfirmed enabled")
+  add_definitions(-DBITPRIM_DB_TRANSACTION_UNCONFIRMED)
+endif()
 
+# Implement and declare DB_SPENDS.
+#------------------------------------------------------------------------------
+option(DB_SPENDS "DB Spends enabled." OFF)
+if (DB_SPENDS)
+  message(STATUS "Bitprim: DB Spends enabled")
+  add_definitions(-DBITPRIM_DB_SPENDS)
+endif()
+
+# Implement and declare DB_HISTORY.
+#------------------------------------------------------------------------------
+option(DB_HISTORY "DB History enabled." OFF)
+if (DB_HISTORY)
+  message(STATUS "Bitprim: DB History enabled")
+  add_definitions(-DBITPRIM_DB_HISTORY)
+endif()
+
+# Implement and declare DB_STEALTH.
+#------------------------------------------------------------------------------
+option(DB_STEALTH "DB Stealth enabled." OFF)
+if (DB_STEALTH)
+  message(STATUS "Bitprim: DB Stealth enabled")
+  add_definitions(-DBITPRIM_DB_STEALTH)
+endif()
+
+# Implement and declare DB_UNSPENT_LIBBITCOIN.
+#------------------------------------------------------------------------------
+option(DB_UNSPENT_LIBBITCOIN "DB Unspent Libbitcoin enabled." OFF)
+if (DB_UNSPENT_LIBBITCOIN)
+  message(STATUS "Bitprim: DB Unspent Libbitcoin enabled")
+  add_definitions(-DBITPRIM_DB_UNSPENT_LIBBITCOIN)
+endif()
+
+# Implement and declare DB_NEW.
+#------------------------------------------------------------------------------
+option(DB_NEW "DB New enabled." OFF)
+if (DB_NEW)
+  message(STATUS "Bitprim: DB New enabled")
+  add_definitions(-DBITPRIM_DB_NEW)
+endif()
+
+
+# Implement --JUST_BITPRIM_SOURCES for linting.
+#------------------------------------------------------------------------------
+option(JUST_BITPRIM_SOURCES "Just Bitprim source code to be linted." OFF)
+if (JUST_BITPRIM_SOURCES)
+  message(STATUS "Bitprim: Just Bitprim source code to be linted: enabled")
+endif()
+
+
+
+
+#------------------------------------------------------------------------------
 set(CURRENCY "BCH" CACHE STRING "Specify the Cryptocurrency (BCH|BTC|LTC).")
 
 if (${CURRENCY} STREQUAL "BCH")
@@ -216,34 +275,127 @@ if (ENABLE_SHARED)
     set(MODE SHARED)
 endif()
 
-add_library(bitprim-database ${MODE}
-        src/data_base.cpp
-        src/settings.cpp
-        src/store.cpp
-        src/unspent_outputs.cpp
-        src/unspent_transaction.cpp
-        src/version.cpp
-        src/databases/block_database.cpp
-        src/databases/history_database.cpp
-        src/databases/spend_database.cpp
-        src/databases/stealth_database.cpp
-        src/databases/transaction_database.cpp
-        src/databases/transaction_unconfirmed_database.cpp
+set(bitprim_database_sources_just_libbitcoin
+    src/data_base.cpp
+    src/settings.cpp
+    src/store.cpp
+    src/version.cpp
 
-        src/memory/accessor.cpp
-        src/memory/allocator.cpp
-        src/memory/memory_map.cpp
-        src/mman-win32/mman.c
-        src/primitives/record_list.cpp
-        src/primitives/record_manager.cpp
-        src/primitives/record_multimap_iterable.cpp
-        src/primitives/record_multimap_iterator.cpp
-        src/primitives/slab_manager.cpp
-        src/result/block_result.cpp
-        src/result/transaction_result.cpp
+    src/memory/accessor.cpp
+    src/memory/allocator.cpp
+    src/memory/memory_map.cpp
+    src/mman-win32/mman.c
+    src/primitives/record_list.cpp
+    src/primitives/record_manager.cpp
+    src/primitives/record_multimap_iterable.cpp
+    src/primitives/record_multimap_iterator.cpp
+    src/primitives/slab_manager.cpp
+)
+
+if (DB_TRANSACTION_UNCONFIRMED)
+    set(bitprim_database_sources_just_libbitcoin 
+        ${bitprim_database_sources_just_libbitcoin}
+        src/databases/transaction_unconfirmed_database.cpp
         src/result/transaction_unconfirmed_result.cpp
         )
+endif()
 
+if (DB_SPENDS)
+    set(bitprim_database_sources_just_libbitcoin 
+        ${bitprim_database_sources_just_libbitcoin}
+        src/databases/spend_database.cpp
+    )
+endif()
+
+if (DB_HISTORY)
+    set(bitprim_database_sources_just_libbitcoin 
+        ${bitprim_database_sources_just_libbitcoin}
+        src/databases/history_database.cpp
+    )
+endif()
+
+if (DB_STEALTH)
+    set(bitprim_database_sources_just_libbitcoin 
+        ${bitprim_database_sources_just_libbitcoin}
+        src/databases/stealth_database.cpp
+    )
+endif()
+
+if (DB_UNSPENT_LIBBITCOIN)
+    set(bitprim_database_sources_just_libbitcoin 
+        ${bitprim_database_sources_just_libbitcoin}
+        src/unspent_outputs.cpp
+        src/unspent_transaction.cpp
+    )
+endif()
+
+if (DB_NEW)
+    set(bitprim_database_sources_just_libbitcoin 
+        ${bitprim_database_sources_just_libbitcoin}
+    )
+else()
+    set(bitprim_database_sources_just_libbitcoin 
+        ${bitprim_database_sources_just_libbitcoin}
+            src/databases/block_database.cpp
+            src/databases/transaction_database.cpp
+            src/result/block_result.cpp
+            src/result/transaction_result.cpp
+        )
+endif()
+
+
+
+
+
+
+
+
+set(bitprim_database_sources_just_bitprim
+)
+
+if (NOT JUST_BITPRIM_SOURCES)
+  set(bitprim_database_sources 
+    ${bitprim_database_sources_just_libbitcoin}
+  )
+endif()
+
+set(bitprim_database_sources 
+  ${bitprim_database_sources}   
+  ${bitprim_database_sources_just_bitprim}         
+)
+
+add_library(bitprim-database ${MODE} ${bitprim_database_sources})
+
+
+
+# add_library(bitprim-database ${MODE}
+#     src/data_base.cpp
+#     src/settings.cpp
+#     src/store.cpp
+#     src/unspent_outputs.cpp
+#     src/unspent_transaction.cpp
+#     src/version.cpp
+
+#     src/databases/block_database.cpp
+#     src/databases/history_database.cpp
+#     src/databases/spend_database.cpp
+#     src/databases/stealth_database.cpp
+#     src/databases/transaction_database.cpp
+#     src/databases/transaction_unconfirmed_database.cpp
+
+#     src/memory/accessor.cpp
+#     src/memory/allocator.cpp
+#     src/memory/memory_map.cpp
+#     src/mman-win32/mman.c
+#     src/primitives/record_list.cpp
+#     src/primitives/record_manager.cpp
+#     src/primitives/record_multimap_iterable.cpp
+#     src/primitives/record_multimap_iterator.cpp
+#     src/primitives/slab_manager.cpp
+#     src/result/block_result.cpp
+#     src/result/transaction_result.cpp
+#     src/result/transaction_unconfirmed_result.cpp
+# )
 
 if (ENABLE_POSITION_INDEPENDENT_CODE)
     set_property(TARGET bitprim-database PROPERTY POSITION_INDEPENDENT_CODE ON)

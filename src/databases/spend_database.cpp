@@ -16,7 +16,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifdef BITPRIM_DB_SPENDS
+
 #include <bitcoin/database/databases/spend_database.hpp>
+
 
 #include <algorithm>
 #include <cstddef>
@@ -158,3 +161,5 @@ spend_statinfo spend_database::statinfo() const
 
 } // namespace database
 } // namespace libbitcoin
+
+#endif // BITPRIM_DB_SPENDS

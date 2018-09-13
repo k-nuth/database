@@ -86,14 +86,23 @@ public:
     const path block_table;
     const path block_index;
     const path transaction_table;
+
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     const path transaction_unconfirmed_table;
+#endif // BITPRIM_DB_STEALTH        
 
     /// Optional indexes.
+#ifdef BITPRIM_DB_SPENDS
     const path spend_table;
-    // const path unspent_table;
+#endif // BITPRIM_DB_SPENDS
+
     const path history_table;
     const path history_rows;
+
+#ifdef BITPRIM_DB_STEALTH
     const path stealth_rows;
+#endif // BITPRIM_DB_STEALTH
+
 
 protected:
     virtual bool flush() const = 0;

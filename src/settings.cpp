@@ -26,18 +26,24 @@ namespace database {
 using namespace boost::filesystem;
 
 settings::settings()
-  : directory("blockchain"),
-    flush_writes(false),
-    file_growth_rate(50),
-    index_start_height(0),
+    : directory("blockchain")
+    , flush_writes(false)
+    , file_growth_rate(50)
+    , index_start_height(0)
 
     // Hash table sizes (must be configured).
-    block_table_buckets(0),
-    transaction_table_buckets(0),
-    transaction_unconfirmed_table_buckets(0),
-    spend_table_buckets(0),
-    history_table_buckets(0),
-    cache_capacity(0)
+    , block_table_buckets(0)
+    , transaction_table_buckets(0)
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+    , transaction_unconfirmed_table_buckets(0)
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
+
+#ifdef BITPRIM_DB_SPENDS
+    , spend_table_buckets(0)
+#endif // BITPRIM_DB_SPENDS
+
+    , history_table_buckets(0)
+    , cache_capacity(0)
 {}
 
 settings::settings(config::settings context)
@@ -47,8 +53,14 @@ settings::settings(config::settings context)
         case config::settings::mainnet: {
             block_table_buckets = 650000;
             transaction_table_buckets = 110000000;
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
             transaction_unconfirmed_table_buckets = 10000;
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
+
+#ifdef BITPRIM_DB_SPENDS
             spend_table_buckets = 250000000;
+#endif // BITPRIM_DB_SPENDS
+
             history_table_buckets = 107000000;
             break;
         }
@@ -56,8 +68,14 @@ settings::settings(config::settings context)
             // TODO: optimize for testnet.
             block_table_buckets = 650000;
             transaction_table_buckets = 110000000;
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
             transaction_unconfirmed_table_buckets = 10000;
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
+
+#ifdef BITPRIM_DB_SPENDS
             spend_table_buckets = 250000000;
+#endif // BITPRIM_DB_SPENDS
+
             history_table_buckets = 107000000;
             break;
         }
