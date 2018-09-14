@@ -31,9 +31,12 @@ using namespace bc::database;
 // Database file names.
 #define FLUSH_LOCK "flush_lock"
 #define EXCLUSIVE_LOCK "exclusive_lock"
+
+#ifdef BITPRIM_DB_LEGACY
 #define BLOCK_TABLE "block_table"
 #define BLOCK_INDEX "block_index"
 #define TRANSACTION_TABLE "transaction_table"
+#endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
 #define TRANSACTION_UNCONFIRMED_TABLE "transaction_unconfirmed_table"
@@ -43,8 +46,10 @@ using namespace bc::database;
 #define SPEND_TABLE "spend_table"
 #endif // BITPRIM_DB_SPENDS
 
+#ifdef BITPRIM_DB_HISTORY
 #define HISTORY_TABLE "history_table"
 #define HISTORY_ROWS "history_rows"
+#endif // BITPRIM_DB_HISTORY    
 
 #ifdef BITPRIM_DB_STEALTH
 #define STEALTH_ROWS "stealth_rows"
@@ -79,9 +84,11 @@ store::store(const path& prefix, bool with_indexes, bool flush_each_write)
     , exclusive_lock_(prefix / EXCLUSIVE_LOCK)
 
     // Content store.
+#ifdef BITPRIM_DB_LEGACY
     , block_table(prefix / BLOCK_TABLE)
     , block_index(prefix / BLOCK_INDEX)
     , transaction_table(prefix / TRANSACTION_TABLE)
+#endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     , transaction_unconfirmed_table(prefix / TRANSACTION_UNCONFIRMED_TABLE)
@@ -93,8 +100,11 @@ store::store(const path& prefix, bool with_indexes, bool flush_each_write)
     , spend_table(prefix / SPEND_TABLE)
 #endif // BITPRIM_DB_SPENDS
 
+#ifdef BITPRIM_DB_HISTORY
     , history_table(prefix / HISTORY_TABLE)
     , history_rows(prefix / HISTORY_ROWS)
+#endif // BITPRIM_DB_HISTORY    
+
 #ifdef BITPRIM_DB_STEALTH
     , stealth_rows(prefix / STEALTH_ROWS)
 #endif // BITPRIM_DB_STEALTH        
@@ -106,9 +116,13 @@ store::store(const path& prefix, bool with_indexes, bool flush_each_write)
 // Create files.
 bool store::create()
 {
-    const auto created = create(block_table) 
+    const auto created = true
+#ifdef BITPRIM_DB_LEGACY
+                        && create(block_table) 
                         && create(block_index) 
                         && create(transaction_table) 
+#endif // BITPRIM_DB_LEGACY
+
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
                         && create(transaction_unconfirmed_table)
 #endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
@@ -123,8 +137,12 @@ bool store::create()
 #ifdef BITPRIM_DB_SPENDS
             && create(spend_table) 
 #endif // BITPRIM_DB_SPENDS
+
+#ifdef BITPRIM_DB_HISTORY
             && create(history_table)
             && create(history_rows) 
+#endif // BITPRIM_DB_HISTORY    
+
 #ifdef BITPRIM_DB_STEALTH
             && create(stealth_rows)
 #endif // BITPRIM_DB_STEALTH        

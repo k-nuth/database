@@ -83,9 +83,11 @@ public:
     // ------------------------------------------------------------------------
 
     /// Content store.
+#ifdef BITPRIM_DB_LEGACY
     const path block_table;
     const path block_index;
     const path transaction_table;
+#endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     const path transaction_unconfirmed_table;
@@ -96,13 +98,14 @@ public:
     const path spend_table;
 #endif // BITPRIM_DB_SPENDS
 
+#ifdef BITPRIM_DB_HISTORY
     const path history_table;
     const path history_rows;
+#endif // BITPRIM_DB_HISTORY
 
 #ifdef BITPRIM_DB_STEALTH
     const path stealth_rows;
 #endif // BITPRIM_DB_STEALTH
-
 
 protected:
     virtual bool flush() const = 0;

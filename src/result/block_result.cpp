@@ -16,6 +16,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifdef BITPRIM_DB_LEGACY
 #include <bitcoin/database/result/block_result.hpp>
 
 #include <cstdint>
@@ -172,3 +173,5 @@ uint64_t block_result::serialized_size() const
 
 } // namespace database
 } // namespace libbitcoin
+
+#endif // BITPRIM_DB_LEGACY

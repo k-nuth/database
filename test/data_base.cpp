@@ -83,7 +83,7 @@ void test_block_exists(const data_base& interface, size_t height,
                 ////const auto& prevout = input.previous_output();
                 ////const auto address = prevout.validation.cache.addresses();
 
-                for (const auto& address: addresses)
+                for (auto const& address : addresses)
                 {
                     auto history = history_store.get(address.hash(), 0, 0);
                     auto found = false;
@@ -112,7 +112,7 @@ void test_block_exists(const data_base& interface, size_t height,
             output_point outpoint{ tx_hash, static_cast<uint32_t>(j) };
             const auto addresses = output.addresses();
 
-            for (const auto& address: addresses)
+            for (auto const& address : addresses)
             {
                 auto history = history_store.get(address.hash(), 0, 0);
                 auto found = false;
@@ -164,7 +164,7 @@ void test_block_not_exists(const data_base& interface, const block& block0,
                 ////const auto& prevout = input.previous_output();
                 ////const auto address = prevout.validation.cache.addresses();
 
-                for (const auto& address: addresses)
+                for (auto const& address : addresses)
                 {
                     auto history = history_store.get(address.hash(), 0, 0);
                     auto found = false;
@@ -192,7 +192,7 @@ void test_block_not_exists(const data_base& interface, const block& block0,
             output_point outpoint{ tx_hash, static_cast<uint32_t>(j) };
             const auto addresses = output.addresses();
 
-            for (const auto& address: addresses)
+            for (auto const& address : addresses)
             {
                 auto history = history_store.get(address.hash(), 0, 0);
                 auto found = false;
@@ -319,14 +319,19 @@ BOOST_AUTO_TEST_CASE(data_base__pushpop__test)
     settings.flush_writes = false;
     settings.file_growth_rate = 42;
     settings.index_start_height = 0;
+
+#ifdef BITPRIM_DB_LEGACY
     settings.block_table_buckets = 42;
     settings.transaction_table_buckets = 42;
+#endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_SPENDS
     settings.spend_table_buckets = 42;
 #endif // BITPRIM_DB_SPENDS
 
+#ifdef BITPRIM_DB_HISTORY
     settings.history_table_buckets = 42;
+#endif // BITPRIM_DB_HISTORY
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     settings.transaction_unconfirmed_table_buckets = 42;

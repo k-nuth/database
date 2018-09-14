@@ -120,6 +120,14 @@ if (DB_UNSPENT_LIBBITCOIN)
   add_definitions(-DBITPRIM_DB_UNSPENT_LIBBITCOIN)
 endif()
 
+# Implement and declare DB_LEGACY.
+#------------------------------------------------------------------------------
+option(DB_LEGACY "DB Legacy enabled." OFF)
+if (DB_LEGACY)
+  message(STATUS "Bitprim: DB Legacy enabled")
+  add_definitions(-DBITPRIM_DB_LEGACY)
+endif()
+
 # Implement and declare DB_NEW.
 #------------------------------------------------------------------------------
 option(DB_NEW "DB New enabled." OFF)
@@ -329,11 +337,7 @@ if (DB_UNSPENT_LIBBITCOIN)
     )
 endif()
 
-if (DB_NEW)
-    set(bitprim_database_sources_just_libbitcoin 
-        ${bitprim_database_sources_just_libbitcoin}
-    )
-else()
+if (DB_LEGACY)
     set(bitprim_database_sources_just_libbitcoin 
         ${bitprim_database_sources_just_libbitcoin}
             src/databases/block_database.cpp
@@ -341,6 +345,12 @@ else()
             src/result/block_result.cpp
             src/result/transaction_result.cpp
         )
+endif()
+
+if (DB_NEW)
+    set(bitprim_database_sources_just_libbitcoin 
+        ${bitprim_database_sources_just_libbitcoin}
+    )
 endif()
 
 

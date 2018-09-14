@@ -18,6 +18,8 @@
  */
 #include <bitcoin/database/databases/history_database.hpp>
 
+#ifdef BITPRIM_DB_HISTORY
+
 #include <cstdint>
 #include <cstddef>
 #include <bitcoin/bitcoin.hpp>
@@ -272,3 +274,5 @@ history_statinfo history_database::statinfo() const
 
 } // namespace database
 } // namespace libbitcoin
+
+#endif // BITPRIM_DB_HISTORY

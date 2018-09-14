@@ -16,8 +16,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBBITCOIN_DATABASE_BLOCK_DATABASE_HPP
-#define LIBBITCOIN_DATABASE_BLOCK_DATABASE_HPP
+#ifndef LIBBITCOIN_DATABASE_BLOCK_DATABASE_HPP_
+#define LIBBITCOIN_DATABASE_BLOCK_DATABASE_HPP_
+
+#ifdef BITPRIM_DB_LEGACY
 
 #include <cstddef>
 #include <memory>
@@ -28,6 +30,7 @@
 #include <bitcoin/database/primitives/record_manager.hpp>
 #include <bitcoin/database/primitives/slab_hash_table.hpp>
 #include <bitcoin/database/result/block_result.hpp>
+
 
 namespace libbitcoin {
 namespace database {
@@ -124,4 +127,7 @@ private:
 } // namespace database
 } // namespace libbitcoin
 
-#endif
+#endif // BITPRIM_DB_LEGACY
+
+#endif // LIBBITCOIN_DATABASE_BLOCK_DATABASE_HPP_
+

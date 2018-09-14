@@ -48,6 +48,7 @@ class BitprimDatabaseConan(BitprimConanFile):
                "db_history": [True, False],
                "db_stealth": [True, False],
                "db_unspent_libbitcoin": [True, False],
+               "db_legacy": [True, False],
                "db_new": [True, False],
     }
 
@@ -66,6 +67,7 @@ class BitprimDatabaseConan(BitprimConanFile):
         "db_history=True", \
         "db_stealth=True", \
         "db_unspent_libbitcoin=True", \
+        "db_legacy=True", \
         "db_new=False"
 
     generators = "cmake"
@@ -139,7 +141,9 @@ class BitprimDatabaseConan(BitprimConanFile):
         cmake.definitions["DB_HISTORY"] = option_on_off(self.options.db_history)
         cmake.definitions["DB_STEALTH"] = option_on_off(self.options.db_stealth)
         cmake.definitions["DB_UNSPENT_LIBBITCOIN"] = option_on_off(self.options.db_unspent_libbitcoin)
+        cmake.definitions["DB_LEGACY"] = option_on_off(self.options.db_legacy)
         cmake.definitions["DB_NEW"] = option_on_off(self.options.db_new)
+
 
         if self.settings.compiler != "Visual Studio":
             # cmake.definitions["CONAN_CXX_FLAGS"] += " -Wno-deprecated-declarations"

@@ -32,8 +32,10 @@ settings::settings()
     , index_start_height(0)
 
     // Hash table sizes (must be configured).
+#ifdef BITPRIM_DB_LEGACY
     , block_table_buckets(0)
     , transaction_table_buckets(0)
+#endif // BITPRIM_DB_LEGACY
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     , transaction_unconfirmed_table_buckets(0)
 #endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
@@ -42,8 +44,13 @@ settings::settings()
     , spend_table_buckets(0)
 #endif // BITPRIM_DB_SPENDS
 
+#ifdef BITPRIM_DB_HISTORY
     , history_table_buckets(0)
+#endif // BITPRIM_DB_HISTORY    
+
+// #ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
     , cache_capacity(0)
+// #endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
 {}
 
 settings::settings(config::settings context)
@@ -51,8 +58,11 @@ settings::settings(config::settings context)
 {
     switch (context) {
         case config::settings::mainnet: {
+#ifdef BITPRIM_DB_LEGACY
             block_table_buckets = 650000;
             transaction_table_buckets = 110000000;
+#endif // BITPRIM_DB_LEGACY
+
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
             transaction_unconfirmed_table_buckets = 10000;
 #endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
@@ -61,13 +71,18 @@ settings::settings(config::settings context)
             spend_table_buckets = 250000000;
 #endif // BITPRIM_DB_SPENDS
 
+#ifdef BITPRIM_DB_HISTORY
             history_table_buckets = 107000000;
+#endif // BITPRIM_DB_HISTORY    
             break;
         }
         case config::settings::testnet: {
             // TODO: optimize for testnet.
+#ifdef BITPRIM_DB_LEGACY
             block_table_buckets = 650000;
             transaction_table_buckets = 110000000;
+#endif // BITPRIM_DB_LEGACY
+
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
             transaction_unconfirmed_table_buckets = 10000;
 #endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
@@ -76,7 +91,10 @@ settings::settings(config::settings context)
             spend_table_buckets = 250000000;
 #endif // BITPRIM_DB_SPENDS
 
+#ifdef BITPRIM_DB_HISTORY
             history_table_buckets = 107000000;
+#endif // BITPRIM_DB_HISTORY    
+
             break;
         }
         default:

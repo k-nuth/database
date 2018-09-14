@@ -16,6 +16,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifdef BITPRIM_DB_LEGACY
+
 #include <bitcoin/database/databases/transaction_database.hpp>
 
 #include <cstddef>
@@ -49,19 +51,18 @@ const size_t transaction_database::unconfirmed = max_uint16;
 #endif
 
 // Transactions uses a hash table index, O(1).
-transaction_database::transaction_database(const path& map_filename,
-    size_t buckets, size_t expansion, size_t cache_capacity, mutex_ptr mutex)
-  : initial_map_file_size_(slab_hash_table_header_size(buckets) + minimum_slabs_size),
-    lookup_file_(map_filename, mutex, expansion),
-    lookup_header_(lookup_file_, buckets),
-    lookup_manager_(lookup_file_, slab_hash_table_header_size(buckets)),
-    lookup_map_(lookup_header_, lookup_manager_),
-    cache_(cache_capacity)
-{
-}
+transaction_database::transaction_database(const path& map_filename, size_t buckets, size_t expansion, size_t cache_capacity, mutex_ptr mutex)
+    : initial_map_file_size_(slab_hash_table_header_size(buckets) + minimum_slabs_size)
+    , lookup_file_(map_filename, mutex, expansion)
+    , lookup_header_(lookup_file_, buckets)
+    , lookup_manager_(lookup_file_, slab_hash_table_header_size(buckets))
+    , lookup_map_(lookup_header_, lookup_manager_)
+#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
+    , cache_(cache_capacity)
+#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
+{}
 
-transaction_database::~transaction_database()
-{
+transaction_database::~transaction_database() {
     close();
 }
 
@@ -195,9 +196,11 @@ bool transaction_database::get_output(output& out_output, size_t& out_height,
     const output_point& point, size_t fork_height,
     bool require_confirmed) const
 {
-    if (cache_.get(out_output, out_height, out_median_time_past, out_coinbase,
-        point, fork_height, require_confirmed))
+#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
+    if (cache_.get(out_output, out_height, out_median_time_past, out_coinbase, point, fork_height, require_confirmed)) {
         return true;
+    }
+#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
 
     // The transaction does not exist at/below fork with matching confirmation.
     const auto slab = find(point.hash(), fork_height, require_confirmed);
@@ -230,9 +233,12 @@ bool transaction_database::get_output_is_confirmed(output& out_output, size_t& o
     bool& out_coinbase, bool& out_is_confirmed, const output_point& point, size_t fork_height,
     bool require_confirmed) const
 {
-    if (cache_.get_is_confirmed(out_output, out_height, out_coinbase, out_is_confirmed, point, fork_height,
-        require_confirmed))
+
+#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
+    if (cache_.get_is_confirmed(out_output, out_height, out_coinbase, out_is_confirmed, point, fork_height, require_confirmed)) {
         return true;
+    }
+#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
 
     const auto hash = point.hash();
     const auto slab = find(hash, fork_height, require_confirmed);
@@ -281,11 +287,11 @@ void transaction_database::store(const chain::transaction& tx,
     // If is block tx previously identified as pooled then update the tx.
     // If confirm returns false the tx did not exist so create the tx.
     // A false pooled flag saves the cost of predictable confirm failure.
-    if (position != unconfirmed && position != 0 && tx.validation.pooled)
-    {
-        if (confirm(hash, height, median_time_past, position))
-        {
+    if (position != unconfirmed && position != 0 && tx.validation.pooled) {
+        if (confirm(hash, height, median_time_past, position)) {
+#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
             cache_.add(tx, height, median_time_past, true);
+#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
             return;
         }
 
@@ -341,23 +347,29 @@ void transaction_database::store(const chain::transaction& tx,
 
     // Create slab for the new tx instance.
     lookup_map_.store(hash, write, total_size);
+
+#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
     cache_.add(tx, height, median_time_past, position != unconfirmed);
 
     // We report this here because its a steady interval (block announce).
-    if (!cache_.disabled() && position == 0)
-    {
+    if ( ! cache_.disabled() && position == 0) {
         LOG_DEBUG(LOG_DATABASE)
             << "Output cache hit rate: " << cache_.hit_rate() << ", size: "
             << cache_.size();
     }
+#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
 }
 
 bool transaction_database::spend(const output_point& point,
     size_t spender_height)
 {
+#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
     // If unspent we could restore the spend to the cache, but not worth it.
-    if (spender_height != output::validation::not_spent)
+    if (spender_height != output::validation::not_spent) {
         cache_.remove(point);
+    }
+#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
+
 
     // Limit search to confirmed transactions at or below the spender height,
     // since a spender cannot spend above its own height.
@@ -440,3 +452,5 @@ bool transaction_database::unconfirm(const hash_digest& hash) {
 
 } // namespace database
 } // namespace libbitcoin
+
+#endif // BITPRIM_DB_LEGACY

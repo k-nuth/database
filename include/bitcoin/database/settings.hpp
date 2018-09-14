@@ -38,8 +38,11 @@ public:
     bool flush_writes;
     uint16_t file_growth_rate;
     uint32_t index_start_height;
+
+#ifdef BITPRIM_DB_LEGACY
     uint32_t block_table_buckets;
     uint32_t transaction_table_buckets;
+#endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     uint32_t transaction_unconfirmed_table_buckets;
@@ -49,8 +52,13 @@ public:
     uint32_t spend_table_buckets;
 #endif // BITPRIM_DB_SPENDS
 
+#ifdef BITPRIM_DB_HISTORY
     uint32_t history_table_buckets;
+#endif // BITPRIM_DB_HISTORY
+
+// #ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
     uint32_t cache_capacity;
+// #endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
 
 #if defined(WITH_REMOTE_DATABASE)    
     config::endpoint replier;
