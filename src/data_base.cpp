@@ -566,10 +566,12 @@ bool data_base::push_transactions(const chain::block& block, size_t height,
 
         const auto tx_hash = tx.hash();
 
-        if (position != 0)
+        if (position != 0) {
             push_inputs(tx_hash, height, tx.inputs());
+        }
 
         push_outputs(tx_hash, height, tx.outputs());
+
 #ifdef BITPRIM_DB_STEALTH
         push_stealth(tx_hash, height, tx.outputs());
 #endif // BITPRIM_DB_STEALTH        
@@ -670,7 +672,7 @@ void data_base::push_outputs(const hash_digest& tx_hash, size_t height, const ou
 }
 
 #ifdef BITPRIM_DB_STEALTH
-void data_basest hash_digest& tx_hash, size_t height,
+void data_base::push_stealth(hash_digest const& tx_hash, size_t height,
     const output::list& outputs)
 {
     if (outputs.empty())

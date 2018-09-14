@@ -415,8 +415,7 @@ bool memory_map::map(size_t size)
     if (size == 0)
         return false;
 
-    data_ = reinterpret_cast<uint8_t*>(mmap(0, size, PROT_READ | PROT_WRITE,
-        MAP_SHARED, file_handle_, 0));
+    data_ = reinterpret_cast<uint8_t*>(mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, file_handle_, 0));
 
     return validate(size);
 }

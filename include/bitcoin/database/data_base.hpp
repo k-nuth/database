@@ -189,26 +189,18 @@ private:
     // Synchronous writers.
     // ------------------------------------------------------------------------
 
-    bool push_transactions(const chain::block& block, size_t height,
-        uint32_t median_time_past, size_t bucket=0, size_t buckets=1);
+    bool push_transactions(const chain::block& block, size_t height, uint32_t median_time_past, size_t bucket=0, size_t buckets=1);
     bool push_heights(const chain::block& block, size_t height);
-    void push_inputs(const hash_digest& tx_hash, size_t height,
-        const inputs& inputs);
-    void push_outputs(const hash_digest& tx_hash, size_t height,
-        const outputs& outputs);
+    void push_inputs(const hash_digest& tx_hash, size_t height, const inputs& inputs);
+    void push_outputs(const hash_digest& tx_hash, size_t height, const outputs& outputs);
 
 #ifdef BITPRIM_DB_STEALTH
-    void push_stealth(const hash_digest& tx_hash, size_t height,
-        const outputs& outputs);
+    void push_stealth(hash_digest const& tx_hash, size_t height, const outputs& outputs);
 #endif // BITPRIM_DB_STEALTH
 
 
-    // chain::block pop();      //OLD before merge
     bool pop(chain::block& out_block);
-    // void pop_inputs(const inputs& inputs, size_t height);      //OLD before merge
     bool pop_inputs(const inputs& inputs, size_t height);
-    // // void pop_outputs(const outputs& outputs, size_t height);
-    // void pop_outputs(hash_digest const& tx_hash, outputs const& outputs, size_t height);      //OLD before merge
     bool pop_outputs(const outputs& outputs, size_t height);
     code verify_insert(const chain::block& block, size_t height);
     code verify_push(const chain::block& block, size_t height);
