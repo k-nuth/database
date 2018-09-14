@@ -16,6 +16,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
+
 #include <bitcoin/database/unspent_transaction.hpp>
 
 #include <cstddef>
@@ -143,3 +145,5 @@ unspent_transaction& unspent_transaction::operator=(
 
 } // namespace database
 } // namespace libbitcoin
+
+#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN

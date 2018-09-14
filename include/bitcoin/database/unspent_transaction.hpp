@@ -16,8 +16,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBBITCOIN_DATABASE_UNSPENT_TRANSACTION_HPP
-#define LIBBITCOIN_DATABASE_UNSPENT_TRANSACTION_HPP
+#ifndef LIBBITCOIN_DATABASE_UNSPENT_TRANSACTION_HPP_
+#define LIBBITCOIN_DATABASE_UNSPENT_TRANSACTION_HPP_
+
+#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
 
 #include <cstddef>
 #include <cstdint>
@@ -97,4 +99,6 @@ struct hash<bc::database::unspent_transaction>
 
 } // namespace boost
 
-#endif
+#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
+
+#endif // LIBBITCOIN_DATABASE_UNSPENT_TRANSACTION_HPP_
