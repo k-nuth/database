@@ -30,10 +30,12 @@ using namespace bc::wallet;
 using namespace boost::system;
 using namespace boost::filesystem;
 
-void test_block_exists(const data_base& interface, size_t height,
-    const block& block0, bool indexed)
-{
+#ifdef BITPRIM_DB_LEGACY
+void test_block_exists(const data_base& interface, size_t height, const block& block0, bool indexed) {
+#ifdef BITPRIM_DB_HISTORY
     const auto& history_store = interface.history();
+#endif // BITPRIM_DB_HISTORY
+
     const auto block_hash = block0.hash();
     auto r0 = interface.blocks().get(height);
     auto r0_byhash = interface.blocks().get(block_hash);
@@ -83,6 +85,7 @@ void test_block_exists(const data_base& interface, size_t height,
                 ////const auto& prevout = input.previous_output();
                 ////const auto address = prevout.validation.cache.addresses();
 
+#ifdef BITPRIM_DB_HISTORY
                 for (auto const& address : addresses)
                 {
                     auto history = history_store.get(address.hash(), 0, 0);
@@ -100,6 +103,7 @@ void test_block_exists(const data_base& interface, size_t height,
 
                     BOOST_REQUIRE(found);
                 }
+#endif BITPRIM_DB_HISTORY                
             }
         }
 
@@ -112,6 +116,7 @@ void test_block_exists(const data_base& interface, size_t height,
             output_point outpoint{ tx_hash, static_cast<uint32_t>(j) };
             const auto addresses = output.addresses();
 
+#ifdef BITPRIM_DB_HISTORY
             for (auto const& address : addresses)
             {
                 auto history = history_store.get(address.hash(), 0, 0);
@@ -132,14 +137,19 @@ void test_block_exists(const data_base& interface, size_t height,
 
                 BOOST_REQUIRE(found);
             }
+#endif // BITPRIM_DB_HISTORY
+
         }
     }
 }
 
+
 void test_block_not_exists(const data_base& interface, const block& block0,
     bool indexed)
 {
+#ifdef BITPRIM_DB_HISTORY
     const auto& history_store = interface.history();
+#endif // BITPRIM_DB_HISTORY
 
     ////const auto r0_byhash = interface.blocks().get(block0.hash());
     ////BOOST_REQUIRE(!r0_byhash);
@@ -211,6 +221,7 @@ void test_block_not_exists(const data_base& interface, const block& block0,
         }
     }
 }
+#endif // BITPRIM_DB_LEGACY
 
 block read_block(const std::string hex)
 {
@@ -309,6 +320,7 @@ static code pop_above_result(data_base_accessor& instance,
     return promise.get_future().get();
 }
 
+#ifdef BITPRIM_DB_LEGACY
 BOOST_AUTO_TEST_CASE(data_base__pushpop__test)
 {
     std::cout << "begin data_base push/pop test" << std::endl;
@@ -418,5 +430,6 @@ BOOST_AUTO_TEST_CASE(data_base__pushpop__test)
 
     std::cout << "end push/pop test" << std::endl;
 }
+#endif // BITPRIM_DB_LEGACY
 
 BOOST_AUTO_TEST_SUITE_END()

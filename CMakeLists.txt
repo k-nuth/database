@@ -473,10 +473,17 @@ if (WITH_TESTS)
     _group_sources(bitprim_database_test "${CMAKE_CURRENT_LIST_DIR}/test")
 
     _add_tests(bitprim_database_test
-            database_tests
             hash_table_tests
             structure_tests
-            data_base_tests)
+    )
+
+    if (DB_LEGACY)
+        _add_tests(bitprim_database_test
+                database_tests
+                data_base_tests
+        )
+    endif()
+          
 endif()
 
 # Tools
