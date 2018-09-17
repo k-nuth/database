@@ -350,6 +350,7 @@ endif()
 if (DB_NEW)
     set(bitprim_database_sources_just_libbitcoin 
         ${bitprim_database_sources_just_libbitcoin}
+        src/databases/utxo_database.cpp
     )
 endif()
 
@@ -438,6 +439,8 @@ if (NOT NO_CONAN_AT_ALL)
     target_link_libraries(bitprim-database PUBLIC ${CONAN_LIBS})
 endif()
 
+
+target_link_libraries(bitprim-database PUBLIC /home/fernando/lmdb-LMDB_0.9.22/libraries/liblmdb/liblmdb.a)
 
 # if (USE_CONAN)
     if (MINGW)

@@ -83,16 +83,16 @@ data_base::~data_base()
 // ----------------------------------------------------------------------------
 
 // Throws if there is insufficient disk space, not idempotent.
-bool data_base::create(const block& genesis)
-{
+bool data_base::create(const block& genesis) {
     ///////////////////////////////////////////////////////////////////////////
     // Lock exclusive file access.
     if (!store::open())
         return false;
 
     // Create files.
-    if (!store::create())
+    if ( ! store::create()) {
         return false;
+    }
 
     start();
 
@@ -102,6 +102,10 @@ bool data_base::create(const block& genesis)
                 && blocks_->create() 
                 && transactions_->create() 
 #endif // BITPRIM_DB_LEGACY
+
+#ifdef BITPRIM_DB_NEW
+                && utxo_db_->create() 
+#endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
                 && transactions_unconfirmed_->create()
@@ -122,19 +126,19 @@ bool data_base::create(const block& genesis)
                 ;
     }
 
-    if (!created)
+    if ( ! created) {
         return false;
+    }
 
     // Store the first block.
-    push(genesis, 0);
+    push(genesis, 0);   //TODO(fernando): save the Genesis in the UTXO Set
     closed_ = false;
     return true;
 }
 
 // Must be called before performing queries, not idempotent.
 // May be called after stop and/or after close in order to reopen.
-bool data_base::open()
-{
+bool data_base::open() {
     ///////////////////////////////////////////////////////////////////////////
     // Lock exclusive file access and conditionally the global flush lock.
     if (!store::open()) {
@@ -186,6 +190,10 @@ bool data_base::close()
                 && blocks_->close() 
                 && transactions_->close() 
 #endif // BITPRIM_DB_LEGACY
+
+#ifdef BITPRIM_DB_NEW
+                && utxo_db_->close() 
+#endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
                 && transactions_unconfirmed_->close()
@@ -254,8 +262,7 @@ void data_base::start() {
 }
 
 // protected
-bool data_base::flush() const
-{
+bool data_base::flush() const {
     // Avoid a race between flush and close whereby flush is skipped because
     // close is true and therefore the flush lock file is deleted before close
     // fails. This would leave the database corrupted and undetected. The flush
@@ -339,6 +346,13 @@ const transaction_database& data_base::transactions() const {
     return *transactions_;
 }
 #endif // BITPRIM_DB_LEGACY
+
+#ifdef BITPRIM_DB_NEW
+utxo_database const& data_base::utxo_db() const {
+    return *utxo_db_;
+}
+#endif // BITPRIM_DB_NEW
+
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
 const transaction_unconfirmed_database& data_base::transactions_unconfirmed() const {

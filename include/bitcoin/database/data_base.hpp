@@ -30,6 +30,10 @@
 #include <bitcoin/database/databases/block_database.hpp>
 #endif // BITPRIM_DB_LEGACY
 
+#ifdef BITPRIM_DB_NEW
+#include <bitcoin/database/databases/utxo_database.hpp>
+#endif // BITPRIM_DB_NEW
+
 #ifdef BITPRIM_DB_SPENDS
 #include <bitcoin/database/databases/spend_database.hpp>
 #endif // BITPRIM_DB_SPENDS
@@ -58,9 +62,7 @@ namespace libbitcoin {
 namespace database {
 
 /// This class is thread safe and implements the sequential locking pattern.
-class BCD_API data_base
-  : public store, noncopyable
-{
+class BCD_API data_base : public store, noncopyable {
 public:
     typedef store::handle handle;
     typedef handle0 result_handler;
@@ -93,6 +95,10 @@ public:
     const block_database& blocks() const;
     const transaction_database& transactions() const;
 #endif // BITPRIM_DB_LEGACY
+
+#ifdef BITPRIM_DB_NEW
+    utxo_database const& utxo_db() const;
+#endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     const transaction_unconfirmed_database& transactions_unconfirmed() const;
@@ -163,6 +169,11 @@ protected:
     std::shared_ptr<block_database> blocks_;
     std::shared_ptr<transaction_database> transactions_;
 #endif // BITPRIM_DB_LEGACY
+
+#ifdef BITPRIM_DB_NEW
+    std::shared_ptr<utxo_database> utxo_db_;
+#endif // BITPRIM_DB_NEW
+
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     std::shared_ptr<transaction_unconfirmed_database> transactions_unconfirmed_;
