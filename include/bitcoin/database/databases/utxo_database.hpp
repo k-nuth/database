@@ -40,6 +40,14 @@ namespace database {
 class BCD_API utxo_database {
 public:
     using path = boost::filesystem::path;
+#ifdef BITPRIM_UTXO_SERIALIZE_WHOLE_OUTPUT
+    using get_return_t = chain::output;
+#else
+    using get_return_t = chain::script;
+#endif // BITPRIM_UTXO_SERIALIZE_WHOLE_OUTPUT
+
+
+
 
     /// Construct the database.
     utxo_database(path const& db_dir);
@@ -56,52 +64,27 @@ public:
     /// Call to unload the memory map.
     bool close();
 
+    /// Remove all the previous outputs and insert all the new outputs atomically.
+    bool push_block(chain::block const& block);
 
+    /// TODO???
+    // boost::optional<get_return_t> get(chain::output_point const& key);
+    get_return_t get(chain::output_point const& key);
 
-    // /// Fetch transaction by its hash, at or below the specified block height.
-    // transaction_result get(const hash_digest& hash, size_t fork_height, bool require_confirmed) const;
-
-    // /// Get the output at the specified index within the transaction.
-    // bool get_output(chain::output& out_output, size_t& out_height,
-    //     uint32_t& out_median_time_past, bool& out_coinbase,
-    //     const chain::output_point& point, size_t fork_height,
-    //     bool require_confirmed) const;
-
-    // /// Get the output at the specified index within the transaction.
-    // bool get_output_is_confirmed(chain::output& out_output, size_t& out_height,
-    //     bool& out_coinbase, bool& out_is_confirmed, const chain::output_point& point,
-    //     size_t fork_height, bool require_confirmed) const;
-
-
-    // /// Store a transaction in the database.
-    // void store(const chain::transaction& tx, size_t height,
-    //     uint32_t median_time_past, size_t position);
-
-    // /// Update the spender height of the output in the tx store.
-    // bool spend(const chain::output_point& point, size_t spender_height);
-
-    // /// Update the spender height of the output in the tx store.
-    // bool unspend(const chain::output_point& point);
-
-    // /// Promote an unconfirmed tx (not including its indexes).
-    // bool confirm(const hash_digest& hash, size_t height,
-    //     uint32_t median_time_past, size_t position);
-
-    // /// Demote the transaction (not including its indexes).
-    // bool unconfirm(const hash_digest& hash);
-
-    // /// Commit latest inserts.
-    // void synchronize();
-
-    // /// Flush the memory map to disk.
-    // bool flush() const;
 
 private:
+    bool create_and_open_environment();
+    bool remove(chain::transaction const& tx, MDB_txn* db_txn);
+    bool insert(chain::transaction const& tx, MDB_txn* db_txn);
+    bool push_block(chain::block const& block, MDB_txn* db_txn);
+
+
     path db_dir_;
+    bool env_created_ = false;
+    bool db_created_ = false;
+
     MDB_env* env_;
     MDB_dbi dbi_;
-
-
 };
 
 } // namespace database

@@ -194,16 +194,22 @@ protected:
 
 
 private:
-    typedef chain::input::list inputs;
-    typedef chain::output::list outputs;
+    using inputs = chain::input::list;
+    using outputs = chain::output::list;
 
     // Synchronous writers.
     // ------------------------------------------------------------------------
 
-    bool push_transactions(const chain::block& block, size_t height, uint32_t median_time_past, size_t bucket=0, size_t buckets=1);
+    bool push_transactions(const chain::block& block, size_t height, uint32_t median_time_past, size_t bucket = 0, size_t buckets = 1);
     bool push_heights(const chain::block& block, size_t height);
+
+#if defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY)
     void push_inputs(const hash_digest& tx_hash, size_t height, const inputs& inputs);
+#endif // defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY)    
+
+#ifdef BITPRIM_DB_HISTORY
     void push_outputs(const hash_digest& tx_hash, size_t height, const outputs& outputs);
+#endif // BITPRIM_DB_HISTORY
 
 #ifdef BITPRIM_DB_STEALTH
     void push_stealth(hash_digest const& tx_hash, size_t height, const outputs& outputs);
@@ -220,21 +226,12 @@ private:
     // Asynchronous writers.
     // ------------------------------------------------------------------------
 
-    void push_next(const code& ec, block_const_ptr_list_const_ptr blocks,
-        size_t index, size_t height, dispatcher& dispatch,
-        result_handler handler);
-    void do_push(block_const_ptr block, size_t height,
-        uint32_t median_time_past, dispatcher& dispatch,
-        result_handler handler);
-    void do_push_transactions(block_const_ptr block, size_t height,
-        uint32_t median_time_past, size_t bucket, size_t buckets,
-        result_handler handler);
-    void handle_push_transactions(const code& ec, block_const_ptr block,
-        size_t height, result_handler handler);
+    void push_next(const code& ec, block_const_ptr_list_const_ptr blocks, size_t index, size_t height, dispatcher& dispatch, result_handler handler);
+    void do_push(block_const_ptr block, size_t height, uint32_t median_time_past, dispatcher& dispatch, result_handler handler);
+    void do_push_transactions(block_const_ptr block, size_t height, uint32_t median_time_past, size_t bucket, size_t buckets, result_handler handler);
+    void handle_push_transactions(const code& ec, block_const_ptr block, size_t height, result_handler handler);
 
-    void handle_pop(const code& ec,
-        block_const_ptr_list_const_ptr incoming_blocks,
-        size_t first_height, dispatcher& dispatch, result_handler handler);
+    void handle_pop(const code& ec, block_const_ptr_list_const_ptr incoming_blocks, size_t first_height, dispatcher& dispatch, result_handler handler);
     void handle_push(const code& ec, result_handler handler) const;
 
     std::atomic<bool> closed_;

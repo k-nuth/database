@@ -84,10 +84,12 @@ data_base::~data_base()
 
 // Throws if there is insufficient disk space, not idempotent.
 bool data_base::create(const block& genesis) {
+
     ///////////////////////////////////////////////////////////////////////////
     // Lock exclusive file access.
-    if (!store::open())
+    if ( ! store::open()) {
         return false;
+    }
 
     // Create files.
     if ( ! store::create()) {
@@ -99,12 +101,12 @@ bool data_base::create(const block& genesis) {
     // These leave the databases open.
     auto created = true
 #ifdef BITPRIM_DB_LEGACY
-                && blocks_->create() 
-                && transactions_->create() 
+                && blocks_->create()
+                && transactions_->create()
 #endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_NEW
-                && utxo_db_->create() 
+                && utxo_db_->create()
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
@@ -131,7 +133,7 @@ bool data_base::create(const block& genesis) {
     }
 
     // Store the first block.
-    push(genesis, 0);   //TODO(fernando): save the Genesis in the UTXO Set
+    push(genesis, 0);
     closed_ = false;
     return true;
 }
@@ -141,7 +143,7 @@ bool data_base::create(const block& genesis) {
 bool data_base::open() {
     ///////////////////////////////////////////////////////////////////////////
     // Lock exclusive file access and conditionally the global flush lock.
-    if (!store::open()) {
+    if ( ! store::open()) {
         return false;
     }
 
@@ -152,6 +154,10 @@ bool data_base::open() {
                 && blocks_->open() 
                 && transactions_->open() 
 #endif // BITPRIM_DB_LEGACY
+
+#ifdef BITPRIM_DB_NEW
+                && utxo_db_->open() 
+#endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
                 && transactions_unconfirmed_->open()
@@ -178,10 +184,11 @@ bool data_base::open() {
 
 // Close is idempotent and thread safe.
 // Optional as the database will close on destruct.
-bool data_base::close()
-{
-    if (closed_)
+bool data_base::close() {
+
+    if (closed_) {
         return true;
+    }
 
     closed_ = true;
 
@@ -232,6 +239,10 @@ void data_base::start() {
         settings_.transaction_table_buckets, settings_.file_growth_rate,
         settings_.cache_capacity, remap_mutex_);
 #endif // BITPRIM_DB_LEGACY
+
+#ifdef BITPRIM_DB_NEW
+    utxo_db_ = std::make_shared<utxo_database>(utxo_dir);
+#endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     //TODO: BITPRIM: FER: transaction_table_buckets and file_growth_rate
@@ -298,8 +309,7 @@ bool data_base::flush() const {
     // Just for the log.
     code ec(flushed ? error::success : error::operation_failed_0);
 
-    LOG_DEBUG(LOG_DATABASE)
-        << "Write flushed to disk: " << ec.message();
+    LOG_DEBUG(LOG_DATABASE) << "Write flushed to disk: " << ec.message();
 
     return flushed;
 }
@@ -398,14 +408,15 @@ hash_digest get_previous_hash(const block_database& blocks, size_t height) {
 }
 #endif // BITPRIM_DB_LEGACY
 
-code data_base::verify_insert(const block& block, size_t height)
-{
-    if (block.transactions().empty())
+code data_base::verify_insert(const block& block, size_t height) {
+    if (block.transactions().empty()) {
         return error::empty_block;
+    }
 
 #ifdef BITPRIM_DB_LEGACY
-    if (blocks_->exists(height))
+    if (blocks_->exists(height)) {
         return error::store_block_duplicate;
+    }
 #endif // BITPRIM_DB_LEGACY
 
     return error::success;
@@ -417,11 +428,13 @@ code data_base::verify_push(const block& block, size_t height) {
     }
 
 #ifdef BITPRIM_DB_LEGACY
-    if (get_next_height(blocks()) != height)
+    if (get_next_height(blocks()) != height) {
         return error::store_block_invalid_height;
+    }
 
-    if (block.header().previous_block_hash() != get_previous_hash(blocks(), height))
+    if (block.header().previous_block_hash() != get_previous_hash(blocks(), height)) {
         return error::store_block_missing_parent;
+    }
 #endif // BITPRIM_DB_LEGACY
 
     return error::success;
@@ -430,15 +443,13 @@ code data_base::verify_push(const block& block, size_t height) {
 code data_base::verify_push(const transaction& tx) {
 #ifdef BITPRIM_DB_LEGACY    
     const auto result = transactions_->get(tx.hash(), max_size_t, false);
-    return result && !result.is_spent(max_size_t) ? error::unspent_duplicate :
-        error::success;
+    return result && ! result.is_spent(max_size_t) ? error::unspent_duplicate : error::success;
 #else
     return error::success;
 #endif // BITPRIM_DB_LEGACY    
 }
 
-bool data_base::begin_insert() const
-{
+bool data_base::begin_insert() const {
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
     write_mutex_.lock();
@@ -446,8 +457,7 @@ bool data_base::begin_insert() const
     return begin_write();
 }
 
-bool data_base::end_insert() const
-{
+bool data_base::end_insert() const {
     write_mutex_.unlock();
     // End Critical Section
     ///////////////////////////////////////////////////////////////////////////
@@ -457,17 +467,16 @@ bool data_base::end_insert() const
 
 // Add block to the database at the given height (gaps allowed/created).
 // This is designed for write concurrency but only with itself.
-code data_base::insert(const chain::block& block, size_t height)
-{
+code data_base::insert(const chain::block& block, size_t height) {
     const auto ec = verify_insert(block, height);
 
     if (ec) return ec;
 
     const auto median_time_past = block.header().validation.median_time_past;
 
-    if (!push_transactions(block, height, median_time_past) ||
-        !push_heights(block, height))
+    if ( ! push_transactions(block, height, median_time_past) || ! push_heights(block, height)) {
         return error::operation_failed_1;
+    }
 
 #ifdef BITPRIM_DB_LEGACY
     blocks_->store(block, height);
@@ -478,8 +487,7 @@ code data_base::insert(const chain::block& block, size_t height)
 }
 
 // This is designed for write exclusivity and read concurrency.
-code data_base::push(const chain::transaction& tx, uint32_t forks)
-{
+code data_base::push(const chain::transaction& tx, uint32_t forks) {
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
     unique_lock lock(write_mutex_);
@@ -487,8 +495,9 @@ code data_base::push(const chain::transaction& tx, uint32_t forks)
     // Returns error::unspent_duplicate if an unspent tx with same hash exists.
     const auto ec = verify_push(tx);
 
-    if (ec)
+    if (ec) {
         return ec;
+    }
 
     // Begin Flush Lock and Sequential Lock
     //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
@@ -521,27 +530,27 @@ code data_base::push(const chain::transaction& tx, uint32_t forks)
 
 // Add a block in order (creates no gaps, must be at top).
 // This is designed for write exclusivity and read concurrency.
-code data_base::push(const block& block, size_t height)
-{
+code data_base::push(block const& block, size_t height) {
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
     unique_lock lock(write_mutex_);
 
     const auto ec = verify_push(block, height);
-
-    if (ec)
+    if (ec != error::success) {
         return ec;
+    }
 
     // Begin Flush Lock and Sequential Lock
     //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-    if (!begin_write())
+    if ( ! begin_write()) {
         return error::operation_failed_4;
+    }
 
     const auto median_time_past = block.header().validation.median_time_past;
 
-    if (!push_transactions(block, height, median_time_past) ||
-        !push_heights(block, height))
+    if ( ! push_transactions(block, height, median_time_past) || ! push_heights(block, height)) {
         return error::operation_failed_5;
+    }
 
 #ifdef BITPRIM_DB_LEGACY
     blocks_->store(block, height);
@@ -556,9 +565,7 @@ code data_base::push(const block& block, size_t height)
 }
 
 // To push in order call with bucket = 0 and buckets = 1 (defaults).
-bool data_base::push_transactions(const chain::block& block, size_t height,
-    uint32_t median_time_past, size_t bucket, size_t buckets)
-{
+bool data_base::push_transactions(const chain::block& block, size_t height, uint32_t median_time_past, size_t bucket /*= 0*/, size_t buckets/*= 1*/) {
     BITCOIN_ASSERT(bucket < buckets);
     const auto& txs = block.transactions();
     const auto count = txs.size();
@@ -574,17 +581,21 @@ bool data_base::push_transactions(const chain::block& block, size_t height,
         transactions_unconfirmed_->unlink_if_exists(tx.hash());
 #endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
 
-
-        if (height < settings_.index_start_height)
+        if (height < settings_.index_start_height) {
             continue;
+        }
 
         const auto tx_hash = tx.hash();
 
+#if defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY)
         if (position != 0) {
             push_inputs(tx_hash, height, tx.inputs());
         }
+#endif // defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY)        
 
+#ifdef BITPRIM_DB_HISTORY
         push_outputs(tx_hash, height, tx.outputs());
+#endif // BITPRIM_DB_HISTORY
 
 #ifdef BITPRIM_DB_STEALTH
         push_stealth(tx_hash, height, tx.outputs());
@@ -594,8 +605,7 @@ bool data_base::push_transactions(const chain::block& block, size_t height,
     return true;
 }
 
-bool data_base::push_heights(const chain::block& block, size_t height)
-{
+bool data_base::push_heights(const chain::block& block, size_t height) {
 #ifdef BITPRIM_DB_LEGACY
     transactions_->synchronize();
     const auto& txs = block.transactions();
@@ -603,7 +613,7 @@ bool data_base::push_heights(const chain::block& block, size_t height)
     // Skip coinbase as it has no previous output.
     for (auto tx = txs.begin() + 1; tx != txs.end(); ++tx) {
         for (const auto& input: tx->inputs()) {
-            if (!transactions_->spend(input.previous_output(), height)) {
+            if ( ! transactions_->spend(input.previous_output(), height)) {
                 return false;
             }
         }
@@ -612,6 +622,7 @@ bool data_base::push_heights(const chain::block& block, size_t height)
     return true;
 }
 
+#if defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY)
 void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const input::list& inputs) {
     
     for (uint32_t index = 0; index < inputs.size(); ++index) {
@@ -669,9 +680,11 @@ void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const inp
 #endif // BITPRIM_DB_HISTORY
     }
 }
+#endif // defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY)
 
-void data_base::push_outputs(const hash_digest& tx_hash, size_t height, const output::list& outputs) {
+
 #ifdef BITPRIM_DB_HISTORY
+void data_base::push_outputs(const hash_digest& tx_hash, size_t height, const output::list& outputs) {
     for (uint32_t index = 0; index < outputs.size(); ++index) {
         const auto outpoint = output_point {tx_hash, index};
         const auto& output = outputs[index];
@@ -682,19 +695,16 @@ void data_base::push_outputs(const hash_digest& tx_hash, size_t height, const ou
             history_->add_output(address.hash(), outpoint, height, value);
         }
     }
-#endif // BITPRIM_DB_HISTORY    
 }
+#endif // BITPRIM_DB_HISTORY    
 
 #ifdef BITPRIM_DB_STEALTH
-void data_base::push_stealth(hash_digest const& tx_hash, size_t height,
-    const output::list& outputs)
-{
+void data_base::push_stealth(hash_digest const& tx_hash, size_t height, const output::list& outputs) {
     if (outputs.empty())
         return;
 
     // Stealth outputs are paired by convention.
-    for (size_t index = 0; index < (outputs.size() - 1); ++index)
-    {
+    for (size_t index = 0; index < (outputs.size() - 1); ++index) {
         const auto& ephemeral_script = outputs[index].script();
         const auto& payment_output = outputs[index + 1];
 
@@ -714,8 +724,7 @@ void data_base::push_stealth(hash_digest const& tx_hash, size_t height,
             continue;
 
         // The payment address versions are arbitrary and unused here.
-        const stealth_compact row
-        {
+        const stealth_compact row {
             unsigned_ephemeral_key,
             address.hash(),
             tx_hash

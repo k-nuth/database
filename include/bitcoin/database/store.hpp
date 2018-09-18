@@ -89,6 +89,10 @@ public:
     const path transaction_table;
 #endif // BITPRIM_DB_LEGACY
 
+#ifdef BITPRIM_DB_NEW
+    const path utxo_dir;
+#endif // BITPRIM_DB_NEW
+
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     const path transaction_unconfirmed_table;
 #endif // BITPRIM_DB_STEALTH        

@@ -34,15 +34,7 @@ using namespace bc::chain;
 
 static constexpr auto value_size = sizeof(uint64_t);
 static constexpr auto height_size = sizeof(uint32_t);
-
-// #ifdef BITPRIM_CURRENCY_BCH
-// static constexpr auto position_size = sizeof(uint32_t);
-// #else 
-// static constexpr auto position_size = sizeof(uint16_t);
-// #endif    
-
 static constexpr auto position_size = sizeof(position_t);
-
 static constexpr auto median_time_past_size = sizeof(uint32_t);
 static constexpr auto metadata_size = height_size + position_size + median_time_past_size;
 
@@ -133,8 +125,9 @@ chain::output transaction_result::output(uint32_t index) const {
     const auto outputs = deserial.read_size_little_endian();
     BITCOIN_ASSERT(deserial);
 
-    if (index >= outputs)
-        return{};
+    if (index >= outputs) {
+        return {};
+    }
 
     // Skip outputs until the target output.
     for (uint32_t output = 0; output < index; ++output) {

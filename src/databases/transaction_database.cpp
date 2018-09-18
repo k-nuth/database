@@ -35,20 +35,37 @@ static constexpr auto value_size = sizeof(uint64_t);
 static constexpr auto height_size = sizeof(uint32_t);
 
 #ifdef BITPRIM_CURRENCY_BCH
+#define BITPRIM_WITNESS_DEFAULT false
+#define BITPRIM_POSITION_WRITER write_4_bytes_little_endian
+#define BITPRIM_POSITION_READER read_4_bytes_little_endian
 static constexpr auto position_size = sizeof(uint32_t);
-#else 
+const size_t position_max = max_uint32;
+#else
+#define BITPRIM_WITNESS_DEFAULT true
+#define BITPRIM_POSITION_WRITER write_2_bytes_little_endian
+#define BITPRIM_POSITION_READER read_2_bytes_little_endian
 static constexpr auto position_size = sizeof(uint16_t);
-#endif    
+const size_t position_max = max_uint16;
+#endif
 
+void write_position(serializer<uint8_t*>& serial, size_t position) {
+    serial.BITPRIM_POSITION_WRITER(static_cast<uint32_t>(position));
+}
+
+template <typename Deserializer>
+position_t read_position(Deserializer& deserial) {
+    return deserial.BITPRIM_POSITION_READER();
+}
+
+template <typename Deserializer>
+bool read_coinbase(Deserializer& deserial) {
+    return deserial.BITPRIM_POSITION_READER() == 0;
+}
+
+const size_t transaction_database::unconfirmed = position_max;
 static constexpr auto median_time_past_size = sizeof(uint32_t);
 static constexpr auto spender_height_value_size = height_size + value_size;
 static constexpr auto metadata_size = height_size + position_size + median_time_past_size;
-
-#ifdef BITPRIM_CURRENCY_BCH
-const size_t transaction_database::unconfirmed = max_uint32;
-#else 
-const size_t transaction_database::unconfirmed = max_uint16;
-#endif
 
 // Transactions uses a hash table index, O(1).
 transaction_database::transaction_database(const path& map_filename, size_t buckets, size_t expansion, size_t cache_capacity, mutex_ptr mutex)
@@ -70,61 +87,52 @@ transaction_database::~transaction_database() {
 // ----------------------------------------------------------------------------
 
 // Initialize files and start.
-bool transaction_database::create()
-{
+bool transaction_database::create() {
     // Resize and create require an opened file.
-    if (!lookup_file_.open())
+    if ( ! lookup_file_.open()) {
         return false;
+    }
 
     // This will throw if insufficient disk space.
     lookup_file_.resize(initial_map_file_size_);
 
-    if (!lookup_header_.create() ||
-        !lookup_manager_.create())
+    if ( ! lookup_header_.create() || ! lookup_manager_.create()) {
         return false;
+    }
 
     // Should not call start after create, already started.
-    return
-        lookup_header_.start() &&
-        lookup_manager_.start();
+    return lookup_header_.start() && lookup_manager_.start();
 }
 
 // Startup and shutdown.
 // ----------------------------------------------------------------------------
 
 // Start files and primitives.
-bool transaction_database::open()
-{
-    return
-        lookup_file_.open() &&
-        lookup_header_.start() &&
-        lookup_manager_.start();
+bool transaction_database::open() {
+    return lookup_file_.open() &&
+           lookup_header_.start() &&
+           lookup_manager_.start();
 }
 
 // Close files.
-bool transaction_database::close()
-{
+bool transaction_database::close() {
     return lookup_file_.close();
 }
 
 // Commit latest inserts.
-void transaction_database::synchronize()
-{
+void transaction_database::synchronize() {
     lookup_manager_.sync();
 }
 
 // Flush the memory map to disk.
-bool transaction_database::flush() const
-{
+bool transaction_database::flush() const {
     return lookup_file_.flush();
 }
 
 // Queries.
 // ----------------------------------------------------------------------------
 
-memory_ptr transaction_database::find(const hash_digest& hash,
-    size_t fork_height, bool require_confirmed) const
-{
+memory_ptr transaction_database::find(const hash_digest& hash, size_t fork_height, bool require_confirmed) const {
     //*************************************************************************
     // CONSENSUS: This simplified implementation does not allow the possibility
     // of a matching tx hash above the fork height or the existence of both
@@ -135,8 +143,9 @@ memory_ptr transaction_database::find(const hash_digest& hash,
     //*************************************************************************
     auto slab = lookup_map_.find(hash /*, fork_height, require_confirmed*/);
 
-    if (slab == nullptr || !require_confirmed)
+    if (slab == nullptr || ! require_confirmed) {
         return slab;
+    }
 
     // Read the height and position.
     // If position is unconfirmed then height is the forks used for validation.
@@ -146,56 +155,40 @@ memory_ptr transaction_database::find(const hash_digest& hash,
     // Critical Section
     metadata_mutex_.lock_shared();
     const auto height = deserial.read_4_bytes_little_endian();
-#ifdef BITPRIM_CURRENCY_BCH
-    const auto position = deserial.read_4_bytes_little_endian();
-#else
-    const auto position = deserial.read_2_bytes_little_endian();
-#endif
+    const auto position = read_position(deserial);
 
     ////const auto median_time_past = deserial.read_4_bytes_little_endian();
     metadata_mutex_.unlock_shared();
     ///////////////////////////////////////////////////////////////////////////
 
     const auto confirmed = (position != unconfirmed);
-    return (confirmed && height > fork_height) || (require_confirmed &&
-        !confirmed) ? nullptr : slab;
+    return (confirmed && height > fork_height) || (require_confirmed && ! confirmed) ? nullptr : slab;
 }
 
-transaction_result transaction_database::get(const hash_digest& hash,
-    size_t fork_height, bool require_confirmed) const
-{
+transaction_result transaction_database::get(const hash_digest& hash, size_t fork_height, bool require_confirmed) const {
     // Limit search to confirmed transactions at or below the fork height.
     // Caller should set fork height to max_size_t for unconfirmed search.
     const auto slab = find(hash, fork_height, require_confirmed);
 
-    if (slab)
-    {
+    if (slab) {
         ///////////////////////////////////////////////////////////////////////
         metadata_mutex_.lock_shared();
         auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab));
         const auto height = deserial.read_4_bytes_little_endian();
-#ifdef BITPRIM_CURRENCY_BCH
-        const auto position = deserial.read_4_bytes_little_endian();
-#else
-        const auto position = deserial.read_2_bytes_little_endian();
-#endif
-
+        const auto position = read_position(deserial);
         const auto median_time_past = deserial.read_4_bytes_little_endian();
         metadata_mutex_.unlock_shared();
         ///////////////////////////////////////////////////////////////////////
 
-        return transaction_result(slab, hash, height, median_time_past,
-            position);
+        return transaction_result(slab, hash, height, median_time_past, position);
     }
 
-    return{};
+    return {};
 }
 
-bool transaction_database::get_output(output& out_output, size_t& out_height,
-    uint32_t& out_median_time_past, bool& out_coinbase,
-    const output_point& point, size_t fork_height,
-    bool require_confirmed) const
-{
+bool transaction_database::get_output(output& out_output, size_t& out_height, uint32_t& out_median_time_past, 
+    bool& out_coinbase, const output_point& point, size_t fork_height, bool require_confirmed) const {
+
 #ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
     if (cache_.get(out_output, out_height, out_median_time_past, out_coinbase, point, fork_height, require_confirmed)) {
         return true;
@@ -205,17 +198,12 @@ bool transaction_database::get_output(output& out_output, size_t& out_height,
     // The transaction does not exist at/below fork with matching confirmation.
     const auto slab = find(point.hash(), fork_height, require_confirmed);
 
-    if (slab)
-    {
+    if (slab) {
         ///////////////////////////////////////////////////////////////////////
         metadata_mutex_.lock_shared();
         auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab));
         out_height = deserial.read_4_bytes_little_endian();
-#ifdef BITPRIM_CURRENCY_BCH
-        out_coinbase = deserial.read_4_bytes_little_endian() == 0;
-#else
-        out_coinbase = deserial.read_2_bytes_little_endian() == 0;
-#endif
+        out_coinbase = read_coinbase(deserial);
         out_median_time_past = deserial.read_4_bytes_little_endian();
         metadata_mutex_.unlock_shared();
         ///////////////////////////////////////////////////////////////////////
@@ -230,9 +218,7 @@ bool transaction_database::get_output(output& out_output, size_t& out_height,
 }
 
 bool transaction_database::get_output_is_confirmed(output& out_output, size_t& out_height,
-    bool& out_coinbase, bool& out_is_confirmed, const output_point& point, size_t fork_height,
-    bool require_confirmed) const
-{
+    bool& out_coinbase, bool& out_is_confirmed, const output_point& point, size_t fork_height, bool require_confirmed) const {
 
 #ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
     if (cache_.get_is_confirmed(out_output, out_height, out_coinbase, out_is_confirmed, point, fork_height, require_confirmed)) {
@@ -244,17 +230,14 @@ bool transaction_database::get_output_is_confirmed(output& out_output, size_t& o
     const auto slab = find(hash, fork_height, require_confirmed);
 
     // The transaction does not exist at/below fork with matching confirmation.
-    if (!slab)
+    if ( ! slab) {
         return false;
+    }
 
     metadata_mutex_.lock_shared();
     auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab));
     out_height = deserial.read_4_bytes_little_endian();
-#ifdef BITPRIM_CURRENCY_BCH
-    out_coinbase = deserial.read_4_bytes_little_endian() == 0;
-#else
-    out_coinbase = deserial.read_2_bytes_little_endian() == 0;
-#endif
+    out_coinbase = read_coinbase(deserial);
     // out_median_time_past is not a parameter
     // out_median_time_past = deserial.read_4_bytes_little_endian();
     metadata_mutex_.unlock_shared();
@@ -279,9 +262,7 @@ bool transaction_database::get_output_is_confirmed(output& out_output, size_t& o
 // [ version:varint ]
 // ----------------------------------------------------------------------------
 
-void transaction_database::store(const chain::transaction& tx,
-    size_t height, uint32_t median_time_past, size_t position)
-{
+void transaction_database::store(const chain::transaction& tx, size_t height, uint32_t median_time_past, size_t position) {
     const auto hash = tx.hash();
 
     // If is block tx previously identified as pooled then update the tx.
@@ -302,46 +283,24 @@ void transaction_database::store(const chain::transaction& tx,
 
     // Create the transaction.
     BITCOIN_ASSERT(height <= max_uint32);
-
-#ifdef BITPRIM_CURRENCY_BCH
-    BITCOIN_ASSERT(position <= max_uint32);
-#else 
-    BITCOIN_ASSERT(position <= max_uint16);
-#endif    
+    BITCOIN_ASSERT(position <= position_max);
 
     // Unconfirmed txs: position is unconfirmed and height is validation forks.
-    const auto write = [&](serializer<uint8_t*>& serial)
-    {
-        ///////////////////////////////////////////////////////////////////////
+    auto const write = [&](serializer<uint8_t*>& serial) {
+        //////////////////////
         // Critical Section
         metadata_mutex_.lock();
         serial.write_4_bytes_little_endian(static_cast<uint32_t>(height));
-        
-#ifdef BITPRIM_CURRENCY_BCH
-        serial.write_4_bytes_little_endian(static_cast<uint32_t>(position));
-#else 
-        serial.write_2_bytes_little_endian(static_cast<uint16_t>(position));
-#endif    
-
+        write_position(serial, position);
         serial.write_4_bytes_little_endian(median_time_past);
         metadata_mutex_.unlock();
         ///////////////////////////////////////////////////////////////////////
 
         // WRITE THE TX
-#ifdef BITPRIM_CURRENCY_BCH
-        bool witness = false;
-#else
-        bool witness = true;
-#endif
-
-        tx.to_data(serial, false, witness, false);
+        tx.to_data(serial, false, BITPRIM_WITNESS_DEFAULT, false);
     };
-#ifdef BITPRIM_CURRENCY_BCH
-        bool witness = false;
-#else
-        bool witness = true;
-#endif
-    const auto tx_size = tx.serialized_size(false, witness);
+
+    const auto tx_size = tx.serialized_size(false, BITPRIM_WITNESS_DEFAULT);
     BITCOIN_ASSERT(tx_size <= max_size_t - metadata_size);
     const auto total_size = metadata_size + static_cast<size_t>(tx_size);
 
@@ -360,9 +319,7 @@ void transaction_database::store(const chain::transaction& tx,
 #endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
 }
 
-bool transaction_database::spend(const output_point& point,
-    size_t spender_height)
-{
+bool transaction_database::spend(const output_point& point, size_t spender_height) {
 #ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
     // If unspent we could restore the spend to the cache, but not worth it.
     if (spender_height != output::validation::not_spent) {
@@ -378,8 +335,9 @@ bool transaction_database::spend(const output_point& point,
     const auto slab = find(point.hash(), spender_height, true);
 
     // The transaction is not exist as confirmed at or below the height.
-    if (slab == nullptr)
+    if (slab == nullptr) {
         return false;
+    }
 
     const auto tx_start = REMAP_ADDRESS(slab) + metadata_size;
     auto serial = make_unsafe_serializer(tx_start);
@@ -387,12 +345,12 @@ bool transaction_database::spend(const output_point& point,
     BITCOIN_ASSERT(serial);
 
     // The index is not in the transaction.
-    if (point.index() >= outputs)
+    if (point.index() >= outputs) {
         return false;
+    }
 
     // Skip outputs until the target output.
-    for (uint32_t output = 0; output < point.index(); ++output)
-    {
+    for (uint32_t output = 0; output < point.index(); ++output) {
         serial.skip(spender_height_value_size);
         serial.skip(serial.read_size_little_endian());
         BITCOIN_ASSERT(serial);
@@ -403,8 +361,7 @@ bool transaction_database::spend(const output_point& point,
     return true;
 }
 
-bool transaction_database::unspend(const output_point& point)
-{
+bool transaction_database::unspend(const output_point& point) {
     return spend(point, output::validation::not_spent);
 }
 
@@ -412,17 +369,12 @@ bool transaction_database::confirm(const hash_digest& hash, size_t height, uint3
     const auto slab = find(hash, height, false);
 
     // The transaction does not exist at or below the height.
-    if (slab == nullptr)
+    if (slab == nullptr) {
         return false;
+    }
 
     BITCOIN_ASSERT(height <= max_uint32);
-
-
-#ifdef BITPRIM_CURRENCY_BCH
-    BITCOIN_ASSERT(position <= max_uint32);
-#else 
-    BITCOIN_ASSERT(position <= max_uint16);
-#endif    
+    BITCOIN_ASSERT(position <= position_max);
 
     auto serial = make_unsafe_serializer(REMAP_ADDRESS(slab));
 
@@ -430,13 +382,7 @@ bool transaction_database::confirm(const hash_digest& hash, size_t height, uint3
     // Critical Section
     metadata_mutex_.lock();
     serial.write_4_bytes_little_endian(static_cast<uint32_t>(height));
-    
-#ifdef BITPRIM_CURRENCY_BCH
-    serial.write_4_bytes_little_endian(static_cast<uint32_t>(position));
-#else 
-    serial.write_2_bytes_little_endian(static_cast<uint16_t>(position));
-#endif    
-
+    write_position(serial, position);
     serial.write_4_bytes_little_endian(median_time_past);
     metadata_mutex_.unlock();
     ///////////////////////////////////////////////////////////////////////////

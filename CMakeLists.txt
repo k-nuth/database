@@ -461,32 +461,39 @@ endif()
 #------------------------------------------------------------------------------
 if (WITH_TESTS)
     add_executable(bitprim_database_test
-            test/block_database.cpp
-            test/data_base.cpp
-            test/hash_table.cpp
-            test/history_database.cpp
+            # test/block_database.cpp
+            # test/data_base.cpp
+            # test/hash_table.cpp
+            # test/history_database.cpp
             test/main.cpp
-            test/spend_database.cpp
-            test/structure.cpp
-            test/transaction_database.cpp
-            #        test/unspent_database.cpp
+            # test/spend_database.cpp
+            # test/structure.cpp
+            # test/transaction_database.cpp
+            test/utxo_database.cpp
             )
     target_link_libraries(bitprim_database_test PUBLIC bitprim-database)
 
     _group_sources(bitprim_database_test "${CMAKE_CURRENT_LIST_DIR}/test")
 
-    _add_tests(bitprim_database_test
-            hash_table_tests
-            structure_tests
-    )
+    # _add_tests(bitprim_database_test
+    #         hash_table_tests
+    #         structure_tests
+    # )
 
-    if (DB_LEGACY)
+    # if (DB_LEGACY)
+    #     _add_tests(bitprim_database_test
+    #             database_tests
+    #             data_base_tests
+    #     )
+    # endif()
+
+    if (DB_NEW)
         _add_tests(bitprim_database_test
-                database_tests
-                data_base_tests
+                utxo_tests
         )
     endif()
-          
+
+
 endif()
 
 # Tools

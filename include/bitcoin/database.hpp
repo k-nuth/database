@@ -31,6 +31,10 @@
 #include <bitcoin/database/databases/block_database.hpp>
 #endif // BITPRIM_DB_LEGACY
 
+#ifdef BITPRIM_DB_NEW
+#include <bitcoin/database/databases/utxo_database.hpp>
+#endif // BITPRIM_DB_NEW
+
 #ifdef BITPRIM_DB_HISTORY
 #include <bitcoin/database/databases/history_database.hpp>
 #endif // BITPRIM_DB_HISTORY

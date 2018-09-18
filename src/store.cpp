@@ -38,6 +38,10 @@ using namespace bc::database;
 #define TRANSACTION_TABLE "transaction_table"
 #endif // BITPRIM_DB_LEGACY
 
+#ifdef BITPRIM_DB_NEW
+#define UTXO_DIR "utxo_db"
+#endif // BITPRIM_DB_NEW
+
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
 #define TRANSACTION_UNCONFIRMED_TABLE "transaction_unconfirmed_table"
 #endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
@@ -90,6 +94,10 @@ store::store(const path& prefix, bool with_indexes, bool flush_each_write)
     , transaction_table(prefix / TRANSACTION_TABLE)
 #endif // BITPRIM_DB_LEGACY
 
+#ifdef BITPRIM_DB_NEW
+    , utxo_dir(prefix / UTXO_DIR)
+#endif // BITPRIM_DB_NEW
+
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     , transaction_unconfirmed_table(prefix / TRANSACTION_UNCONFIRMED_TABLE)
 #endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
@@ -114,8 +122,7 @@ store::store(const path& prefix, bool with_indexes, bool flush_each_write)
 // ------------------------------------------------------------------------
 
 // Create files.
-bool store::create()
-{
+bool store::create() {
     const auto created = true
 #ifdef BITPRIM_DB_LEGACY
                         && create(block_table) 

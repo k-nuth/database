@@ -24,6 +24,13 @@
 #include <cstdint>
 // #include <bitcoin/bitcoin.hpp>
 
+#ifdef BITPRIM_UTXO_4BYTES_INDEX
+#define BITPRIM_UXTO_WIRE true
+#else
+#define BITPRIM_UXTO_WIRE false
+#endif
+
+
 namespace libbitcoin { namespace database {
 
 // Transactions uses a hash table index, O(1).
@@ -37,6 +44,30 @@ utxo_database::~utxo_database() {
 
 // Create.
 // ----------------------------------------------------------------------------
+
+bool utxo_database::create_and_open_environment() {
+
+    if (mdb_env_create(&env_) != MDB_SUCCESS) {
+        return false;
+    }
+    env_created_ = true;
+
+
+    // E(mdb_env_set_maxreaders(env_, 1));
+    // E(mdb_env_set_mapsize(env_, 10485760));
+
+    //TODO(fernando): use MDB_RDONLY for Read-only node
+    //                  MDB_WRITEMAP ????
+    //                  MDB_NOMETASYNC ????
+    //                  MDB_NOSYNC ????
+
+    //TODO(fernando): put the 0664 in the CFG file
+    if (mdb_env_open(env_, db_dir_.c_str(), MDB_FIXEDMAP | MDB_NORDAHEAD | MDB_NOMEMINIT, 0664) != MDB_SUCCESS) {
+        return false;
+    }
+
+    return true;
+}
 
 // Initialize files and start.
 bool utxo_database::create() {
@@ -53,28 +84,7 @@ bool utxo_database::create() {
     }
     // LOG_INFO(LOG_NODE) << format(BN_INITIALIZING_CHAIN) % directory;
 
-
-    if (mdb_env_create(&env_) != MDB_SUCCESS) {
-        return false;
-    }
-
-    // E(mdb_env_set_maxreaders(env_, 1));
-    // E(mdb_env_set_mapsize(env_, 10485760));
-
-    //TODO(fernando): use MDB_RDONLY for Read-only node
-    //                  MDB_WRITEMAP ????
-    //                  MDB_NOMETASYNC ????
-    //                  MDB_NOSYNC ????
-
-    // 
-
-    //TODO(fernando): put the 0664 in the CFG file
-    if (mdb_env_open(env_, db_dir_.c_str(), MDB_FIXEDMAP | MDB_NORDAHEAD | MDB_NOMEMINIT, 0664) != MDB_SUCCESS) {
-        // mdb_env_close(env_);
-        return false;
-    }
-
-    return true;
+    return create_and_open_environment();
 }
 
 // Startup and shutdown.
@@ -82,18 +92,161 @@ bool utxo_database::create() {
 
 // Start files and primitives.
 bool utxo_database::open() {
-    // E(mdb_txn_begin(env_, NULL, 0, &txn));
-    // E(mdb_dbi_open(txn, NULL, 0, &dbi));
-    // E(mdb_txn_commit(txn));
+    if ( ! create_and_open_environment()) {
+        return false;
+    }
+
+    MDB_txn* db_txn;
+    if (mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) != MDB_SUCCESS) {
+        return false;
+    }
+
+    if (mdb_dbi_open(db_txn, NULL, 0, &dbi_) != MDB_SUCCESS) {
+        return false;
+    }
+    db_created_ = true;
+
+    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+        return false;
+    }
 
     return true;
 }
 
 // Close files.
 bool utxo_database::close() {
-    // mdb_dbi_close(env_, dbi);
-    mdb_env_close(env_);
+    if (env_created_) {
+        mdb_env_close(env_);
+        env_created_ = false;
+    }
+
+    if (db_created_) {
+        mdb_dbi_close(env_, dbi_);
+        db_created_ = false;
+    }
+
     return true;
+}
+
+/*
+key:        TxId (32 bytes) + Output Index (4 bytes) = 36 bytes or
+key:        TxId (32 bytes) + Output Index (2 bytes) = 34 bytes
+value:      Output Serialized (n bytes)
+*/
+
+// private
+bool utxo_database::remove(chain::transaction const& tx, MDB_txn* db_txn) {
+    for (const auto& input: tx.inputs()) {
+        auto keyarr = input.previous_output().to_data(BITPRIM_UXTO_WIRE);
+
+        // MDB_val key;
+        // key.mv_size = keyarr.size();
+		// key.mv_data = keyarr.data();
+
+        MDB_val key {keyarr.size(), keyarr.data()};
+        if (mdb_del(db_txn, dbi_, &key, NULL) != MDB_SUCCESS) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// private
+bool utxo_database::insert(chain::transaction const& tx, MDB_txn* db_txn) {
+
+    uint32_t pos = 0;
+    for (const auto& output: tx.outputs()) {
+        auto keyarr = chain::point{tx.hash(), pos}.to_data(BITPRIM_UXTO_WIRE);
+
+#ifdef BITPRIM_UTXO_SERIALIZE_WHOLE_OUTPUT
+        auto valuearr = output.to_data(false);
+#else
+        auto valuearr = output.script().to_data(true);
+#endif // BITPRIM_UTXO_SERIALIZE_WHOLE_OUTPUT
+
+        MDB_val key   {keyarr.size(), keyarr.data()};
+        MDB_val value {valuearr.size(), valuearr.data()};
+
+        if (mdb_put(db_txn, dbi_, &key, &value, MDB_NOOVERWRITE) != MDB_SUCCESS) {
+            return false;
+        }
+
+        ++pos;
+    }
+    return true;
+}
+
+// private
+bool utxo_database::push_block(chain::block const& block, MDB_txn* db_txn) {
+    //precondition: block.transactions().size() >= 1
+
+    auto const& txs = block.transactions();
+    auto const& coinbase = txs.front();
+    if ( ! insert(coinbase, db_txn)) {
+        return false;
+    }
+
+    // Skip coinbase as it has no previous output.
+    for (auto it = txs.begin() + 1; it != txs.end(); ++it) {
+        auto const& tx = *it;
+
+        if ( ! remove(tx, db_txn)) {
+            return false;
+        }
+
+        if ( ! insert(tx, db_txn)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool utxo_database::push_block(chain::block const& block) {
+    MDB_txn* db_txn;
+    if (mdb_txn_begin(env_, NULL, 0, &db_txn) != MDB_SUCCESS) {
+        return false;
+    }
+
+    if ( ! push_block(block, db_txn)) {
+        mdb_txn_abort(db_txn);
+        return false;
+    }
+
+    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+        return false;
+    }
+    return true;
+}
+
+// boost::optional<get_return_t> utxo_database::get(chain::output_point const& key) {
+utxo_database::get_return_t utxo_database::get(chain::output_point const& point) {
+    MDB_txn* db_txn;
+    if (mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) != MDB_SUCCESS) {
+        return utxo_database::get_return_t{};
+    }
+
+    auto keyarr = point.to_data(BITPRIM_UXTO_WIRE);
+    MDB_val key {keyarr.size(), keyarr.data()};
+    MDB_val value;
+
+    if (mdb_get(db_txn, dbi_, &key, &value) != MDB_SUCCESS) {
+        mdb_txn_commit(db_txn);
+        // mdb_txn_abort(db_txn);
+        return utxo_database::get_return_t{};
+    }
+
+    data_chunk data {static_cast<uint8_t*>(value.mv_data), static_cast<uint8_t*>(value.mv_data) + value.mv_size};
+#ifdef BITPRIM_UTXO_SERIALIZE_WHOLE_OUTPUT
+    auto res = chain::output::factory_from_data(data, false);
+#else
+    auto res = chain::script::factory_from_data(data, true);
+#endif // BITPRIM_UTXO_SERIALIZE_WHOLE_OUTPUT
+
+    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+        return utxo_database::get_return_t{};
+    }
+
+    return res;
 }
 
 } // namespace database

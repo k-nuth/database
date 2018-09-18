@@ -34,8 +34,7 @@ namespace database {
 using position_t = uint32_t;
 #else 
 using position_t = uint16_t;
-#endif    
-
+#endif
 
 /// Deferred read transaction result.
 class BCD_API transaction_result {
@@ -70,7 +69,7 @@ public:
     chain::output output(uint32_t index) const;
 
     /// The transaction, optionally including witness.
-    chain::transaction transaction(bool witness=true) const;
+    chain::transaction transaction(bool witness = true) const;
 
 private:
     memory_ptr slab_;

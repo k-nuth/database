@@ -73,10 +73,12 @@ void test_block_exists(const data_base& interface, size_t height, const block& b
                 input_point spend{ tx_hash, j };
                 BOOST_REQUIRE_EQUAL(spend.index(), j);
 
+#ifdef BITPRIM_DB_SPENDS
                 auto r0_spend = interface.spends().get(input.previous_output());
                 BOOST_REQUIRE(r0_spend.is_valid());
                 BOOST_REQUIRE(r0_spend.hash() == spend.hash());
                 BOOST_REQUIRE_EQUAL(r0_spend.index(), spend.index());
+#endif // BITPRIM_DB_SPENDS
 
                 if (!indexed)
                     continue;
@@ -103,7 +105,7 @@ void test_block_exists(const data_base& interface, size_t height, const block& b
 
                     BOOST_REQUIRE(found);
                 }
-#endif BITPRIM_DB_HISTORY                
+#endif // BITPRIM_DB_HISTORY                
             }
         }
 
@@ -164,8 +166,11 @@ void test_block_not_exists(const data_base& interface, const block& block0,
             {
                 const auto& input = tx.inputs()[j];
                 input_point spend{ tx_hash, static_cast<uint32_t>(j) };
+
+#ifdef BITPRIM_DB_SPENDS                
                 auto r0_spend = interface.spends().get(input.previous_output());
                 BOOST_REQUIRE(!r0_spend.is_valid());
+#endif // BITPRIM_DB_SPENDS
 
                 if (!indexed)
                     continue;
@@ -174,6 +179,7 @@ void test_block_not_exists(const data_base& interface, const block& block0,
                 ////const auto& prevout = input.previous_output();
                 ////const auto address = prevout.validation.cache.addresses();
 
+#ifdef BITPRIM_DB_HISTORY
                 for (auto const& address : addresses)
                 {
                     auto history = history_store.get(address.hash(), 0, 0);
@@ -190,6 +196,7 @@ void test_block_not_exists(const data_base& interface, const block& block0,
 
                     BOOST_REQUIRE(!found);
                 }
+#endif // BITPRIM_DB_HISTORY                
             }
         }
 
@@ -202,6 +209,7 @@ void test_block_not_exists(const data_base& interface, const block& block0,
             output_point outpoint{ tx_hash, static_cast<uint32_t>(j) };
             const auto addresses = output.addresses();
 
+#ifdef BITPRIM_DB_HISTORY
             for (auto const& address : addresses)
             {
                 auto history = history_store.get(address.hash(), 0, 0);
@@ -218,6 +226,7 @@ void test_block_not_exists(const data_base& interface, const block& block0,
 
                 BOOST_REQUIRE(!found);
             }
+#endif // BITPRIM_DB_HISTORY            
         }
     }
 }
