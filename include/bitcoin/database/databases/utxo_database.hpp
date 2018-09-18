@@ -21,15 +21,9 @@
 
 // #ifdef BITPRIM_DB_NEW
 
-// #include <cstddef>
-// #include <memory>
 #include <boost/filesystem.hpp>
 #include <bitcoin/bitcoin.hpp>
 #include <bitcoin/database/define.hpp>
-// #include <bitcoin/database/memory/memory_map.hpp>
-// #include <bitcoin/database/result/transaction_result.hpp>
-// #include <bitcoin/database/primitives/slab_hash_table.hpp>
-// #include <bitcoin/database/primitives/slab_manager.hpp>
 
 // #include <lmdb.h>
 #include "lmdb.h"
@@ -45,9 +39,6 @@ public:
 #else
     using get_return_t = chain::script;
 #endif // BITPRIM_UTXO_SERIALIZE_WHOLE_OUTPUT
-
-
-
 
     /// Construct the database.
     utxo_database(path const& db_dir);
@@ -70,7 +61,6 @@ public:
     /// TODO???
     // boost::optional<get_return_t> get(chain::output_point const& key);
     get_return_t get(chain::output_point const& key);
-
 
 private:
     bool create_and_open_environment();
