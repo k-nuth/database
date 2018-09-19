@@ -56,6 +56,13 @@ bool utxo_database::create_and_open_environment() {
     // E(mdb_env_set_maxreaders(env_, 1));
     // E(mdb_env_set_mapsize(env_, 10485760));
 
+    auto res = mdb_env_set_mapsize(env_, 10485760 * 1024);
+    if (res != MDB_SUCCESS) {
+        std::cout << "utxo_database::create_and_open_environment() - mdb_env_set_mapsize - res: " << res << std::endl;
+        return false;
+    }
+
+
     //TODO(fernando): use MDB_RDONLY for Read-only node
     //                  MDB_WRITEMAP ????
     //                  MDB_NOMETASYNC ????
@@ -220,11 +227,14 @@ size_t utxo_database::push_block(chain::block const& block) {
     // if ( ! push_block(block, db_txn)) {
     auto res = push_block(block, db_txn);
     if (res != 0) {
+        std::cout << "utxo_database::push_block - before abort!" << std::endl;
         mdb_txn_abort(db_txn);
         return res;
     }
 
-    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+    auto res2 = mdb_txn_commit(db_txn);
+    if (res2 != MDB_SUCCESS) {
+        std::cout << "utxo_database::push_block - res2: " << res2 << std::endl;
         return 3;
     }
     return 0;
