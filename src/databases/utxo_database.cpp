@@ -56,7 +56,7 @@ bool utxo_database::create_and_open_environment() {
     // E(mdb_env_set_maxreaders(env_, 1));
     // E(mdb_env_set_mapsize(env_, 10485760));
 
-    auto res = mdb_env_set_mapsize(env_, 10485760 * 1024);
+    auto res = mdb_env_set_mapsize(env_, size_t(10485760) * 1024);
     if (res != MDB_SUCCESS) {
         std::cout << "utxo_database::create_and_open_environment() - mdb_env_set_mapsize - res: " << res << std::endl;
         return false;
