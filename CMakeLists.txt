@@ -440,8 +440,6 @@ if (NOT NO_CONAN_AT_ALL)
 endif()
 
 
-target_link_libraries(bitprim-database PUBLIC /home/fernando/lmdb-LMDB_0.9.22/libraries/liblmdb/liblmdb.a)
-
 # if (USE_CONAN)
     if (MINGW)
         target_link_libraries(bitprim-database PUBLIC ws2_32 wsock32) #TODO(fernando): manage with Conan

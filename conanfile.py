@@ -79,6 +79,9 @@ class BitprimDatabaseConan(BitprimConanFile):
 
     def requirements(self):
         self.requires("boost/1.66.0@bitprim/stable")
+        
+        if self.options.db_new:
+            self.requires("lmdb/0.9.22@bitprim/stable")
 
         if self.options.use_domain:
             self.requires("bitprim-domain/0.X@%s/%s" % (self.user, self.channel))

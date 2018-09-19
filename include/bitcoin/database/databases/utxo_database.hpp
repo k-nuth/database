@@ -25,8 +25,8 @@
 #include <bitcoin/bitcoin.hpp>
 #include <bitcoin/database/define.hpp>
 
-// #include <lmdb.h>
-#include "lmdb.h"
+#include <lmdb.h>
+// #include "lmdb.h"
 
 namespace libbitcoin {
 namespace database {
