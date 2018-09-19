@@ -56,7 +56,7 @@ public:
     bool close();
 
     /// Remove all the previous outputs and insert all the new outputs atomically.
-    bool push_block(chain::block const& block);
+    size_t push_block(chain::block const& block);
 
     /// TODO???
     // boost::optional<get_return_t> get(chain::output_point const& key);
@@ -66,7 +66,7 @@ private:
     bool create_and_open_environment();
     bool remove(chain::transaction const& tx, MDB_txn* db_txn);
     bool insert(chain::transaction const& tx, MDB_txn* db_txn);
-    bool push_block(chain::block const& block, MDB_txn* db_txn);
+    size_t push_block(chain::block const& block, MDB_txn* db_txn);
 
 
     path db_dir_;

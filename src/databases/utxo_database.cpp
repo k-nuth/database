@@ -144,7 +144,9 @@ bool utxo_database::remove(chain::transaction const& tx, MDB_txn* db_txn) {
 		// key.mv_data = keyarr.data();
 
         MDB_val key {keyarr.size(), keyarr.data()};
-        if (mdb_del(db_txn, dbi_, &key, NULL) != MDB_SUCCESS) {
+        auto res = mdb_del(db_txn, dbi_, &key, NULL);
+        if (res != MDB_SUCCESS) {
+            std::cout << "utxo_database::remove - res: " << res << std::endl;
             return false;
         }
     }
@@ -167,7 +169,10 @@ bool utxo_database::insert(chain::transaction const& tx, MDB_txn* db_txn) {
         MDB_val key   {keyarr.size(), keyarr.data()};
         MDB_val value {valuearr.size(), valuearr.data()};
 
-        if (mdb_put(db_txn, dbi_, &key, &value, MDB_NOOVERWRITE) != MDB_SUCCESS) {
+
+        auto res = mdb_put(db_txn, dbi_, &key, &value, MDB_NOOVERWRITE);
+        if (res != MDB_SUCCESS) {
+            std::cout << "utxo_database::insert - res: " << res << std::endl;
             return false;
         }
 
@@ -177,13 +182,13 @@ bool utxo_database::insert(chain::transaction const& tx, MDB_txn* db_txn) {
 }
 
 // private
-bool utxo_database::push_block(chain::block const& block, MDB_txn* db_txn) {
+size_t utxo_database::push_block(chain::block const& block, MDB_txn* db_txn) {
     //precondition: block.transactions().size() >= 1
 
     auto const& txs = block.transactions();
     auto const& coinbase = txs.front();
     if ( ! insert(coinbase, db_txn)) {
-        return false;
+        return 4;
     }
 
     // Skip coinbase as it has no previous output.
@@ -191,31 +196,34 @@ bool utxo_database::push_block(chain::block const& block, MDB_txn* db_txn) {
         auto const& tx = *it;
 
         if ( ! remove(tx, db_txn)) {
-            return false;
+            return 5;
         }
 
         if ( ! insert(tx, db_txn)) {
-            return false;
+            return 6;
         }
     }
-    return true;
+    return 0;
 }
 
-bool utxo_database::push_block(chain::block const& block) {
+//TODO(fernando): to enum
+size_t utxo_database::push_block(chain::block const& block) {
     MDB_txn* db_txn;
     if (mdb_txn_begin(env_, NULL, 0, &db_txn) != MDB_SUCCESS) {
-        return false;
+        return 1;
     }
 
-    if ( ! push_block(block, db_txn)) {
+    // if ( ! push_block(block, db_txn)) {
+    auto res = push_block(block, db_txn);
+    if (res != 0) {
         mdb_txn_abort(db_txn);
-        return false;
+        return res;
     }
 
     if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
-        return false;
+        return 3;
     }
-    return true;
+    return 0;
 }
 
 // boost::optional<get_return_t> utxo_database::get(chain::output_point const& key) {
