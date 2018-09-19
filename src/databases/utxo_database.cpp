@@ -208,6 +208,8 @@ size_t utxo_database::push_block(chain::block const& block, MDB_txn* db_txn) {
 
 //TODO(fernando): to enum
 size_t utxo_database::push_block(chain::block const& block) {
+    std::cout << "utxo_database::push_block - BEGIN" << std::endl;
+
     MDB_txn* db_txn;
     auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
     if (res0 != MDB_SUCCESS) {
