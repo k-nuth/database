@@ -32,10 +32,10 @@ namespace libbitcoin {
 namespace database {
 
 enum class uxto_code {
-    success = 0;
-    duplicated_key = 1;
-    key_not_found = 2;
-    other = 3;
+    success = 0,
+    duplicated_key = 1,
+    key_not_found = 2,
+    other = 3
 };
 
 class BCD_API utxo_database {
