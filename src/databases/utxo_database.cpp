@@ -178,7 +178,7 @@ bool utxo_database::insert(chain::transaction const& tx, MDB_txn* db_txn) {
         auto res = mdb_put(db_txn, dbi_, &key, &value, MDB_NOOVERWRITE);
         if (res != MDB_SUCCESS) {
             std::cout << "utxo_database::insert - res: " << res << std::endl;
-            std::cout << "utxo_database::insert - tx.hash(): " << enconde_hash(tx.hash()) << std::endl;
+            std::cout << "utxo_database::insert - tx.hash(): " << encode_hash(tx.hash()) << std::endl;
             std::cout << "utxo_database::insert - pos:       " << pos << std::endl;
             return false;
         }
