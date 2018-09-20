@@ -72,7 +72,10 @@ private:
     uxto_code push_block(chain::block const& block, MDB_txn* db_txn);
     uxto_code push_transaction(chain::transaction const& tx, MDB_txn* db_txn);
     uxto_code push_transaction_non_coinbase(chain::transaction const& tx, MDB_txn* db_txn);
-    uxto_code push_transactions_non_coinbase(chain::transaction::list const& txs, MDB_txn* db_txn);
+
+    // uxto_code push_transactions_non_coinbase(chain::transaction::list const& txs, MDB_txn* db_txn);
+    template <typename I>
+    uxto_code push_transactions_non_coinbase(I f, I l, MDB_txn* db_txn);
 
     path db_dir_;
     bool env_created_ = false;
