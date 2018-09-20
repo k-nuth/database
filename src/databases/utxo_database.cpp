@@ -202,10 +202,10 @@ uxto_code utxo_database::push_transaction(chain::transaction const& tx, MDB_txn*
 // private
 uxto_code utxo_database::push_transaction_non_coinbase(chain::transaction const& tx, MDB_txn* db_txn) {
 
-    // auto res = remove(tx, db_txn);
-    // if (res != uxto_code::success) {
-    //     return res;
-    // }
+    auto res = remove(tx, db_txn);
+    if (res != uxto_code::success) {
+        return res;
+    }
 
     return push_transaction(tx, db_txn);
 }
