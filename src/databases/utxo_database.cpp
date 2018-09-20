@@ -142,7 +142,7 @@ value:      Output Serialized (n bytes)
 
 // private
 bool utxo_database::remove(chain::transaction const& tx, MDB_txn* db_txn) {
-    for (const auto& input: tx.inputs()) {
+    for (auto const& input: tx.inputs()) {
         auto keyarr = input.previous_output().to_data(BITPRIM_UXTO_WIRE);
 
         // MDB_val key;
@@ -153,6 +153,8 @@ bool utxo_database::remove(chain::transaction const& tx, MDB_txn* db_txn) {
         auto res = mdb_del(db_txn, dbi_, &key, NULL);
         if (res != MDB_SUCCESS) {
             std::cout << "utxo_database::remove - res: " << res << std::endl;
+            std::cout << "utxo_database::remove - input.previous_output().hash(): " << encode_hash(input.previous_output().hash()) << std::endl;
+            std::cout << "utxo_database::remove - input.previous_output().index(): " << input.previous_output().index() << std::endl;
             return false;
         }
     }
