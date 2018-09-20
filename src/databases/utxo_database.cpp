@@ -141,28 +141,27 @@ value:      Output Serialized (n bytes)
 */
 
 // private
-bool utxo_database::remove(chain::transaction const& tx, MDB_txn* db_txn) {
+uxto_code utxo_database::remove(chain::transaction const& tx, MDB_txn* db_txn) {
     for (auto const& input: tx.inputs()) {
         auto keyarr = input.previous_output().to_data(BITPRIM_UXTO_WIRE);
 
-        // MDB_val key;
-        // key.mv_size = keyarr.size();
-		// key.mv_data = keyarr.data();
-
         MDB_val key {keyarr.size(), keyarr.data()};
         auto res = mdb_del(db_txn, dbi_, &key, NULL);
+        
+        if (res == MDB_NOTFOUND) return uxto_code::key_not_found;
+        
         if (res != MDB_SUCCESS) {
             std::cout << "utxo_database::remove - res: " << res << std::endl;
             std::cout << "utxo_database::remove - input.previous_output().hash(): " << encode_hash(input.previous_output().hash()) << std::endl;
             std::cout << "utxo_database::remove - input.previous_output().index(): " << input.previous_output().index() << std::endl;
-            return false;
+            return uxto_code::other;
         }
     }
-    return true;
+    return uxto_code::success;
 }
 
 // private
-int utxo_database::insert(chain::transaction const& tx, MDB_txn* db_txn) {
+uxto_code utxo_database::insert(chain::transaction const& tx, MDB_txn* db_txn) {
 
     uint32_t pos = 0;
     for (const auto& output: tx.outputs()) {
@@ -174,83 +173,93 @@ int utxo_database::insert(chain::transaction const& tx, MDB_txn* db_txn) {
         MDB_val value {valuearr.size(), valuearr.data()};
 
         auto res = mdb_put(db_txn, dbi_, &key, &value, MDB_NOOVERWRITE);
+
+        if (res == MDB_KEYEXIST) return uxto_code::duplicated_key;
+
         if (res != MDB_SUCCESS) {
             std::cout << "utxo_database::insert - res: " << res << std::endl;
             std::cout << "utxo_database::insert - tx.hash(): " << encode_hash(tx.hash()) << std::endl;
             std::cout << "utxo_database::insert - pos:       " << pos << std::endl;
-            return res;
+            return uxto_code::other;
         }
 
         ++pos;
     }
-    return MDB_SUCCESS;
+    return uxto_code::success;
 }
 
 // private
-int utxo_database::push_transaction(chain::transaction const& tx, MDB_txn* db_txn) {
+uxto_code utxo_database::push_transaction(chain::transaction const& tx, MDB_txn* db_txn) {
     auto res = insert(tx, db_txn);
-    if (res != MDB_SUCCESS) {
-        if (res == MDB_KEYEXIST) {
-            //TODO(fernando): log and continue
-        } else {
-            return 6;
-        }
-    }    
+    
+    if (res == uxto_code::duplicated_key) {
+        //TODO(fernando): log and continue
+        return uxto_code::success;
+    }
+    return res;
 }
 
 // private
-int utxo_database::push_transaction_non_coinbase(chain::transaction const& tx, MDB_txn* db_txn) {
-    if (! remove(tx, db_txn)) {
-        return 5;
+uxto_code utxo_database::push_transaction_non_coinbase(chain::transaction const& tx, MDB_txn* db_txn) {
+
+    auto res = remove(tx, db_txn);
+    if (res != uxto_code::success) {
+        return res;
     }
 
     return push_transaction(tx, db_txn);
 }
 
 // private
-int utxo_database::push_transactions_non_coinbase(chain::transaction::list const& txs, MDB_txn* db_txn) {
-    for (auto it = txs.begin() + 1; it != txs.end(); ++it) {
-        auto const& tx = *it;
+template <typename I>
+uxto_code utxo_database::push_transactions_non_coinbase(I f, I l, MDB_txn* db_txn) {
+    // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
+
+    while (f != l) {
+        auto const& tx = *f;
         auto res = push_transaction_non_coinbase(tx, db_txn);
-        if (res != 0) {
+        if (res != uxto_code::success) {
             return res;
         }
+        ++f;
     }
+
+    return uxto_code::success;
 }
 
 // private
-size_t utxo_database::push_block(chain::block const& block, MDB_txn* db_txn) {
+uxto_code utxo_database::push_block(chain::block const& block, MDB_txn* db_txn) {
     //precondition: block.transactions().size() >= 1
 
     auto const& txs = block.transactions();
     auto const& coinbase = txs.front();
 
     auto res = push_transaction(coinbase, db_txn);
-    if (res != 0) {
+    if (res != uxto_code::success) {
         return res;
     }
 
-    res = push_transactions_non_coinbase(txs, db_txn);
-    if (res != 0) {
+    res = push_transactions_non_coinbase(txs.begin() + 1, txs.end(), db_txn);
+    if (res != uxto_code::success) {
         return res;
     }
-    return 0;
+    return uxto_code::success;
 }
 
 //TODO(fernando): to enum
-size_t utxo_database::push_block(chain::block const& block) {
+uxto_code utxo_database::push_block(chain::block const& block) {
     // std::cout << "utxo_database::push_block - BEGIN" << std::endl;
 
     MDB_txn* db_txn;
     auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
     if (res0 != MDB_SUCCESS) {
         std::cout << "utxo_database::push_block - res0: " << res0 << std::endl;
-        return 1;
+        return uxto_code::other;
     }
 
     // if ( ! push_block(block, db_txn)) {
     auto res = push_block(block, db_txn);
-    if (res != 0) {
+    if (res != uxto_code::success) {
         std::cout << "utxo_database::push_block - before abort!" << std::endl;
         mdb_txn_abort(db_txn);
         return res;
@@ -259,9 +268,9 @@ size_t utxo_database::push_block(chain::block const& block) {
     auto res2 = mdb_txn_commit(db_txn);
     if (res2 != MDB_SUCCESS) {
         std::cout << "utxo_database::push_block - res2: " << res2 << std::endl;
-        return 3;
+        return uxto_code::other;
     }
-    return 0;
+    return uxto_code::success;
 }
 
 // boost::optional<get_return_t> utxo_database::get(chain::output_point const& key) {

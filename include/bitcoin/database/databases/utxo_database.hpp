@@ -31,6 +31,13 @@
 namespace libbitcoin {
 namespace database {
 
+enum class uxto_code {
+    success = 0;
+    duplicated_key = 1;
+    key_not_found = 2;
+    other = 3;
+};
+
 class BCD_API utxo_database {
 public:
     using path = boost::filesystem::path;
@@ -52,7 +59,7 @@ public:
     bool close();
 
     /// Remove all the previous outputs and insert all the new outputs atomically.
-    size_t push_block(chain::block const& block);
+    uxto_code push_block(chain::block const& block);
 
     /// TODO???
     // boost::optional<get_return_t> get(chain::output_point const& key);
@@ -60,12 +67,12 @@ public:
 
 private:
     bool create_and_open_environment();
-    bool remove(chain::transaction const& tx, MDB_txn* db_txn);
-    int insert(chain::transaction const& tx, MDB_txn* db_txn);
-    size_t push_block(chain::block const& block, MDB_txn* db_txn);
-    int push_transaction(chain::transaction const& tx, MDB_txn* db_txn);
-    int push_transaction_non_coinbase(chain::transaction const& tx, MDB_txn* db_txn);
-    int push_transactions_non_coinbase(chain::transaction::list const& txs, MDB_txn* db_txn);
+    uxto_code remove(chain::transaction const& tx, MDB_txn* db_txn);
+    uxto_code insert(chain::transaction const& tx, MDB_txn* db_txn);
+    uxto_code push_block(chain::block const& block, MDB_txn* db_txn);
+    uxto_code push_transaction(chain::transaction const& tx, MDB_txn* db_txn);
+    uxto_code push_transaction_non_coinbase(chain::transaction const& tx, MDB_txn* db_txn);
+    uxto_code push_transactions_non_coinbase(chain::transaction::list const& txs, MDB_txn* db_txn);
 
     path db_dir_;
     bool env_created_ = false;
