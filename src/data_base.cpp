@@ -55,7 +55,9 @@ using namespace std::placeholders;
 data_base::data_base(const settings& settings)
     : closed_(true)
     , settings_(settings)
+#ifdef BITPRIM_DB_LEGACY    
     , remap_mutex_(std::make_shared<shared_mutex>())
+#endif
     , store(settings.directory, settings.index_start_height < without_indexes, settings.flush_writes)
 {
     LOG_DEBUG(LOG_DATABASE)
@@ -74,8 +76,7 @@ data_base::data_base(const settings& settings)
         ;
 }
 
-data_base::~data_base()
-{
+data_base::~data_base() {
     close();
 }
 
@@ -441,7 +442,7 @@ code data_base::verify_push(const block& block, size_t height) {
 }
 
 code data_base::verify_push(const transaction& tx) {
-#ifdef BITPRIM_DB_LEGACY    
+#ifdef BITPRIM_DB_LEGACY
     const auto result = transactions_->get(tx.hash(), max_size_t, false);
     return result && ! result.is_spent(max_size_t) ? error::unspent_duplicate : error::success;
 #else
@@ -449,6 +450,7 @@ code data_base::verify_push(const transaction& tx) {
 #endif // BITPRIM_DB_LEGACY    
 }
 
+#ifdef BITPRIM_DB_LEGACY
 bool data_base::begin_insert() const {
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
@@ -464,10 +466,20 @@ bool data_base::end_insert() const {
 
     return end_write();
 }
+#endif // BITPRIM_DB_LEGACY
 
 // Add block to the database at the given height (gaps allowed/created).
 // This is designed for write concurrency but only with itself.
 code data_base::insert(const chain::block& block, size_t height) {
+
+#ifdef BITPRIM_DB_NEW
+    auto res = utxo_db_->push_block(block);
+    if (res != utxo_code::success) {
+        return error::operation_failed_1;   //TODO(fernando): create a new operation_failed
+    }
+#endif // BITPRIM_DB_NEW
+
+#ifdef BITPRIM_DB_LEGACY
     const auto ec = verify_insert(block, height);
 
     if (ec) return ec;
@@ -478,11 +490,11 @@ code data_base::insert(const chain::block& block, size_t height) {
         return error::operation_failed_1;
     }
 
-#ifdef BITPRIM_DB_LEGACY
     blocks_->store(block, height);
-#endif // BITPRIM_DB_LEGACY
 
     synchronize();
+#endif // BITPRIM_DB_LEGACY
+
     return error::success;
 }
 
@@ -531,6 +543,15 @@ code data_base::push(const chain::transaction& tx, uint32_t forks) {
 // Add a block in order (creates no gaps, must be at top).
 // This is designed for write exclusivity and read concurrency.
 code data_base::push(block const& block, size_t height) {
+
+#ifdef BITPRIM_DB_NEW
+    auto res = utxo_db_->push_block(block);
+    if (res != utxo_code::success) {
+        return error::operation_failed_6;   //TODO(fernando): create a new operation_failed
+    }
+#endif // BITPRIM_DB_NEW
+
+#ifdef BITPRIM_DB_LEGACY
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
     unique_lock lock(write_mutex_);
@@ -552,9 +573,7 @@ code data_base::push(block const& block, size_t height) {
         return error::operation_failed_5;
     }
 
-#ifdef BITPRIM_DB_LEGACY
     blocks_->store(block, height);
-#endif // BITPRIM_DB_LEGACY
 
     synchronize();
 
@@ -562,6 +581,9 @@ code data_base::push(block const& block, size_t height) {
     // End Sequential Lock and Flush Lock
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     ///////////////////////////////////////////////////////////////////////////
+#endif // BITPRIM_DB_LEGACY
+
+    return error::success;
 }
 
 // To push in order call with bucket = 0 and buckets = 1 (defaults).
@@ -810,8 +832,7 @@ bool data_base::pop(block& out_block) {
 }
 
 // A false return implies store corruption.
-bool data_base::pop_inputs(const input::list& inputs, size_t height)
-{
+bool data_base::pop_inputs(const input::list& inputs, size_t height) {
     // Loop in reverse.
     for (const auto& input: reverse(inputs)) {
 
@@ -843,8 +864,7 @@ bool data_base::pop_inputs(const input::list& inputs, size_t height)
 }
 
 // A false return implies store corruption.
-bool data_base::pop_outputs(const output::list& outputs, size_t height)
-{
+bool data_base::pop_outputs(const output::list& outputs, size_t height) {
     if (height < settings_.index_start_height) {
         return true;
     }
@@ -870,9 +890,7 @@ bool data_base::pop_outputs(const output::list& outputs, size_t height)
 // Add a list of blocks in order.
 // If the dispatch threadpool is shut down when this is running the handler
 // will never be invoked, resulting in a threadpool.join indefinite hang.
-void data_base::push_all(block_const_ptr_list_const_ptr in_blocks,
-    size_t first_height, dispatcher& dispatch, result_handler handler)
-{
+void data_base::push_all(block_const_ptr_list_const_ptr in_blocks, size_t first_height, dispatcher& dispatch, result_handler handler) {
     DEBUG_ONLY(safe_add(in_blocks->size(), first_height));
 
     // This is the beginning of the push_all sequence.
@@ -880,12 +898,8 @@ void data_base::push_all(block_const_ptr_list_const_ptr in_blocks,
 }
 
 // TODO: resolve inconsistency with height and median_time_past passing.
-void data_base::push_next(const code& ec,
-    block_const_ptr_list_const_ptr blocks, size_t index, size_t height,
-    dispatcher& dispatch, result_handler handler)
-{
-    if (ec || index >= blocks->size())
-    {
+void data_base::push_next(const code& ec, block_const_ptr_list_const_ptr blocks, size_t index, size_t height, dispatcher& dispatch, result_handler handler) {
+    if (ec || index >= blocks->size()) {
         // This ends the loop.
         handler(ec);
         return;
@@ -897,28 +911,29 @@ void data_base::push_next(const code& ec,
     // Set push start time for the block.
     block->validation.start_push = asio::steady_clock::now();
 
-    const result_handler next =
-        std::bind(&data_base::push_next,
-            this, _1, blocks, index + 1, height + 1, std::ref(dispatch),
-                handler);
+    const result_handler next = std::bind(&data_base::push_next, this, _1, blocks, index + 1, height + 1, std::ref(dispatch), handler);
 
     // This is the beginning of the block sub-sequence.
-    dispatch.concurrent(&data_base::do_push,
-        this, block, height, median_time_past, std::ref(dispatch), next);
+    dispatch.concurrent(&data_base::do_push, this, block, height, median_time_past, std::ref(dispatch), next);
 }
 
-void data_base::do_push(block_const_ptr block, size_t height,
-    uint32_t median_time_past, dispatcher& dispatch, result_handler handler)
-{
-    result_handler block_complete =
-        std::bind(&data_base::handle_push_transactions,
-            this, _1, block, height, handler);
+void data_base::do_push(block_const_ptr block, size_t height, uint32_t median_time_past, dispatcher& dispatch, result_handler handler) {
+
+#ifdef BITPRIM_DB_NEW
+    auto res = utxo_db_->push_block(*block);
+    if (res != utxo_code::success) {
+        handler(error::operation_failed_7); //TODO(fernando): create a new operation_failed
+        return;
+    }
+#endif // BITPRIM_DB_NEW
+
+#ifdef BITPRIM_DB_LEGACY
+    result_handler block_complete = std::bind(&data_base::handle_push_transactions, this, _1, block, height, handler);
 
     // This ensures linkage and that the there is at least one tx.
     const auto ec = verify_push(*block, height);
 
-    if (ec)
-    {
+    if (ec) {
         block_complete(ec);
         return;
     }
@@ -927,27 +942,20 @@ void data_base::do_push(block_const_ptr block, size_t height,
     const auto buckets = std::min(threads, block->transactions().size());
     BITCOIN_ASSERT(buckets != 0);
 
-    const auto join_handler = bc::synchronize(std::move(block_complete),
-        buckets, NAME "_do_push");
+    const auto join_handler = bc::synchronize(std::move(block_complete), buckets, NAME "_do_push");
 
-    for (size_t bucket = 0; bucket < buckets; ++bucket)
-        dispatch.concurrent(&data_base::do_push_transactions,
-            this, block, height, median_time_past, bucket, buckets,
-                join_handler);
+    for (size_t bucket = 0; bucket < buckets; ++bucket) {
+        dispatch.concurrent(&data_base::do_push_transactions, this, block, height, median_time_past, bucket, buckets, join_handler);
+    }
+#endif // BITPRIM_DB_LEGACY
 }
 
-void data_base::do_push_transactions(block_const_ptr block, size_t height,
-    uint32_t median_time_past, size_t bucket, size_t buckets,
-    result_handler handler)
-{
-    const auto result = push_transactions(*block, height, median_time_past,
-        bucket, buckets);
+void data_base::do_push_transactions(block_const_ptr block, size_t height, uint32_t median_time_past, size_t bucket, size_t buckets, result_handler handler) {
+    const auto result = push_transactions(*block, height, median_time_past, bucket, buckets);
     handler(result ? error::success : error::operation_failed_7);
 }
 
-void data_base::handle_push_transactions(const code& ec, block_const_ptr block,
-    size_t height, result_handler handler)
-{
+void data_base::handle_push_transactions(const code& ec, block_const_ptr block, size_t height, result_handler handler) {
     if (ec) {
         handler(ec);
         return;
@@ -975,9 +983,7 @@ void data_base::handle_push_transactions(const code& ec, block_const_ptr block,
 
 // TODO: make async and concurrency as appropriate.
 // This precludes popping the genesis block.
-void data_base::pop_above(block_const_ptr_list_ptr out_blocks,
-    const hash_digest& fork_hash, dispatcher&, result_handler handler)
-{
+void data_base::pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest& fork_hash, dispatcher&, result_handler handler) {
     size_t top;
     out_blocks->clear();
 
@@ -985,7 +991,7 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks,
     const auto result = blocks_->get(fork_hash);
 
     // The fork point does not exist or failed to get it or the top, fail.
-    if (!result || !blocks_->top(top)) {
+    if ( ! result || ! blocks_->top(top)) {
         //**--**
         handler(error::operation_failed_9);
         return;
@@ -1008,8 +1014,7 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks,
         message::block next;
 
         // TODO: parallelize pop of transactions within each block.
-        if (!pop(next))
-        {
+        if ( ! pop(next)) {
             //**--**
             handler(error::operation_failed_10);
             return;
@@ -1026,17 +1031,9 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks,
 }
 
 // This is designed for write exclusivity and read concurrency.
-void data_base::reorganize(const checkpoint& fork_point,
-    block_const_ptr_list_const_ptr incoming_blocks,
-    block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch,
-    result_handler handler)
-{
+void data_base::reorganize(const checkpoint& fork_point, block_const_ptr_list_const_ptr incoming_blocks, block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch, result_handler handler) {
     const auto next_height = safe_add(fork_point.height(), size_t(1));
-
-    const result_handler pop_handler =
-        std::bind(&data_base::handle_pop,
-            this, _1, incoming_blocks, next_height, std::ref(dispatch),
-                handler);
+    const result_handler pop_handler = std::bind(&data_base::handle_pop, this, _1, incoming_blocks, next_height, std::ref(dispatch), handler);
 
     // Critical Section.
     ///////////////////////////////////////////////////////////////////////////
@@ -1045,8 +1042,7 @@ void data_base::reorganize(const checkpoint& fork_point,
     //**--**
     // Begin Flush Lock and Sequential Lock
     //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-    if (!begin_write())
-    {
+    if ( ! begin_write()) {
         pop_handler(error::operation_failed_11);
         return;
     }
@@ -1054,16 +1050,10 @@ void data_base::reorganize(const checkpoint& fork_point,
     pop_above(outgoing_blocks, fork_point.hash(), dispatch, pop_handler);
 }
 
-void data_base::handle_pop(const code& ec,
-    block_const_ptr_list_const_ptr incoming_blocks,
-    size_t first_height, dispatcher& dispatch, result_handler handler)
-{
-    const result_handler push_handler =
-        std::bind(&data_base::handle_push,
-            this, _1, handler);
+void data_base::handle_pop(const code& ec, block_const_ptr_list_const_ptr incoming_blocks, size_t first_height, dispatcher& dispatch, result_handler handler) {
+    const result_handler push_handler = std::bind(&data_base::handle_push, this, _1, handler);
 
-    if (ec)
-    {
+    if (ec) {
         push_handler(ec);
         return;
     }
@@ -1073,14 +1063,12 @@ void data_base::handle_pop(const code& ec,
 
 // We never invoke the caller's handler under the mutex, we never fail to clear
 // the mutex, and we always invoke the caller's handler exactly once.
-void data_base::handle_push(const code& ec, result_handler handler) const
-{
+void data_base::handle_push(const code& ec, result_handler handler) const {
     write_mutex_.unlock();
     // End Critical Section.
     ///////////////////////////////////////////////////////////////////////////
 
-    if (ec)
-    {
+    if (ec) {
         handler(ec);
         return;
     }

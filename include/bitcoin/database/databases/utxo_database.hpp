@@ -30,8 +30,8 @@
 
 namespace libbitcoin {
 namespace database {
-
-enum class uxto_code {
+           
+enum class utxo_code {
     success = 0,
     duplicated_key = 1,
     key_not_found = 2,
@@ -42,6 +42,9 @@ class BCD_API utxo_database {
 public:
     using path = boost::filesystem::path;
     using get_return_t = chain::output;
+
+    constexpr char[] utxo_db_name = "utxo_db";
+    constexpr char[] reorg_pool_name = "reorg_pool";
 
     /// Construct the database.
     utxo_database(path const& db_dir);
@@ -59,30 +62,45 @@ public:
     bool close();
 
     /// Remove all the previous outputs and insert all the new outputs atomically.
-    uxto_code push_block(chain::block const& block);
+    utxo_code push_block(chain::block const& block);
 
-    /// TODO???
+    /// TODO
+    utxo_code remove_block(chain::block const& block);
+
+    /// TODO
     // boost::optional<get_return_t> get(chain::output_point const& key);
     get_return_t get(chain::output_point const& key);
 
 private:
+    utxo_code remove(chain::output_point const& point, MDB_txn* db_txn);
+    utxo_code insert(chain::output_point const& point, chain::output const& output, MDB_txn* db_txn);
+    
     bool create_and_open_environment();
-    uxto_code remove(chain::transaction const& tx, MDB_txn* db_txn);
-    uxto_code insert(chain::transaction const& tx, MDB_txn* db_txn);
-    uxto_code push_block(chain::block const& block, MDB_txn* db_txn);
-    uxto_code push_transaction(chain::transaction const& tx, MDB_txn* db_txn);
-    uxto_code push_transaction_non_coinbase(chain::transaction const& tx, MDB_txn* db_txn);
 
-    // uxto_code push_transactions_non_coinbase(chain::transaction::list const& txs, MDB_txn* db_txn);
+    utxo_code remove_inputs(chain::input::list const& inputs, MDB_txn* db_txn);
+    utxo_code insert_outputs(hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn);
+
+
+    utxo_code insert_outputs_error_treatment(hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn);
+    utxo_code push_transaction_non_coinbase(chain::transaction const& tx, MDB_txn* db_txn);
     template <typename I>
-    uxto_code push_transactions_non_coinbase(I f, I l, MDB_txn* db_txn);
+    utxo_code push_transactions_non_coinbase(I f, I l, MDB_txn* db_txn);
+    utxo_code push_block(chain::block const& block, MDB_txn* db_txn);
+
+    utxo_code remove_transaction(chain::transaction const& tx, MDB_txn* db_txn);
+    utxo_code remove_transaction_non_coinbase(chain::transaction const& tx, MDB_txn* db_txn);
+    template <typename I>
+    utxo_code remove_transactions_non_coinbase(I f, I l, MDB_txn* db_txn);
+    utxo_code remove_block(chain::block const& block, MDB_txn* db_txn);
+
 
     path db_dir_;
     bool env_created_ = false;
     bool db_created_ = false;
 
     MDB_env* env_;
-    MDB_dbi dbi_;
+    MDB_dbi dbi_utxo_;
+    MDB_dbi dbi_reorg_pool_;
 };
 
 } // namespace database

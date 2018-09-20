@@ -122,11 +122,14 @@ public:
     // Synchronous writers.
     // ------------------------------------------------------------------------
 
+
+#ifdef BITPRIM_DB_LEGACY
     /// Create flush lock if flush_writes is true, and set sequential lock.
     bool begin_insert() const;
 
     /// Clear flush lock if flush_writes is true, and clear sequential lock.
     bool end_insert() const;
+#endif // BITPRIM_DB_LEGACY
 
     /// Store a block in the database.
     /// Returns store_block_duplicate if a block already exists at height.
@@ -144,10 +147,7 @@ public:
     // ------------------------------------------------------------------------
 
     /// Invoke pop_all and then push_all under a common lock.
-    void reorganize(const config::checkpoint& fork_point,
-        block_const_ptr_list_const_ptr incoming_blocks,
-        block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch,
-        result_handler handler);
+    void reorganize(const config::checkpoint& fork_point, block_const_ptr_list_const_ptr incoming_blocks, block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch, result_handler handler);
 
 protected:
     void start();
@@ -155,15 +155,12 @@ protected:
     bool flush() const override;
 
     // Sets error if first_height is not the current top + 1 or not linked.
-    void push_all(block_const_ptr_list_const_ptr in_blocks,
-        size_t first_height, dispatcher& dispatch, result_handler handler);
+    void push_all(block_const_ptr_list_const_ptr in_blocks, size_t first_height, dispatcher& dispatch, result_handler handler);
 
     // Pop the set of blocks above the given hash.
     // Sets error if the database is corrupt or the hash doesn't exist.
     // Any blocks returned were successfully popped prior to any failure.
-    void pop_above(block_const_ptr_list_ptr out_blocks,
-        const hash_digest& fork_hash, dispatcher& dispatch,
-        result_handler handler);
+    void pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest& fork_hash, dispatcher& dispatch, result_handler handler);
 
 #ifdef BITPRIM_DB_LEGACY
     std::shared_ptr<block_database> blocks_;
@@ -174,11 +171,9 @@ protected:
     std::shared_ptr<utxo_database> utxo_db_;
 #endif // BITPRIM_DB_NEW
 
-
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     std::shared_ptr<transaction_unconfirmed_database> transactions_unconfirmed_;
 #endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
-
 
 #ifdef BITPRIM_DB_SPENDS
     std::shared_ptr<spend_database> spends_;
@@ -237,11 +232,15 @@ private:
     std::atomic<bool> closed_;
     const settings& settings_;
 
+
+#ifdef BITPRIM_DB_LEGACY
     // Used to prevent concurrent unsafe writes.
     mutable shared_mutex write_mutex_;
 
     // Used to prevent concurrent file remapping.
     std::shared_ptr<shared_mutex> remap_mutex_;
+#endif // BITPRIM_DB_LEGACY
+
 };
 
 } // namespace database
