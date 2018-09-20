@@ -34,11 +34,7 @@ namespace database {
 class BCD_API utxo_database {
 public:
     using path = boost::filesystem::path;
-#ifdef BITPRIM_UTXO_SERIALIZE_WHOLE_OUTPUT
     using get_return_t = chain::output;
-#else
-    using get_return_t = chain::script;
-#endif // BITPRIM_UTXO_SERIALIZE_WHOLE_OUTPUT
 
     /// Construct the database.
     utxo_database(path const& db_dir);
@@ -65,9 +61,11 @@ public:
 private:
     bool create_and_open_environment();
     bool remove(chain::transaction const& tx, MDB_txn* db_txn);
-    bool insert(chain::transaction const& tx, MDB_txn* db_txn);
+    int insert(chain::transaction const& tx, MDB_txn* db_txn);
     size_t push_block(chain::block const& block, MDB_txn* db_txn);
-
+    int push_transaction(chain::transaction const& tx, MDB_txn* db_txn);
+    int push_transaction_non_coinbase(chain::transaction const& tx, MDB_txn* db_txn);
+    int push_transactions_non_coinbase(chain::transaction::list const& txs, MDB_txn* db_txn);
 
     path db_dir_;
     bool env_created_ = false;
