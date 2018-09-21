@@ -65,7 +65,9 @@ bool utxo_database::create_and_open_environment() {
 
     // E(mdb_env_set_maxreaders(env_, 1));
     // E(mdb_env_set_mapsize(env_, 10485760));
-    auto res = mdb_env_set_mapsize(env_, size_t(10485760) * 1024);      //TODO(fernando): hardcoded
+
+    // auto res = mdb_env_set_mapsize(env_, size_t(10485760) * 1024);      //TODO(fernando): hardcoded
+    auto res = mdb_env_set_mapsize(env_, size_t(10485760) * 10);      //TODO(fernando): hardcoded
     if (res != MDB_SUCCESS) {
         return false;
     }
@@ -81,7 +83,11 @@ bool utxo_database::create_and_open_environment() {
     //                  MDB_NOSYNC ????
 
     //TODO(fernando): put the 0664 in the CFG file
-    return mdb_env_open(env_, db_dir_.c_str(), MDB_FIXEDMAP | MDB_NORDAHEAD | MDB_NOMEMINIT, 0664) == MDB_SUCCESS;
+    //TODO(fernando): MDB_NOSYNC para IBD ??
+
+    // res = mdb_env_open(env_, db_dir_.c_str(), MDB_FIXEDMAP | MDB_NORDAHEAD | MDB_NOMEMINIT, 0664);
+    res = mdb_env_open(env_, db_dir_.c_str(), MDB_FIXEDMAP, 0664);
+    return res == MDB_SUCCESS;
 }
 
 // Initialize files and start.
@@ -99,18 +105,14 @@ bool utxo_database::create() {
     }
     // LOG_INFO(LOG_NODE) << format(BN_INITIALIZING_CHAIN) % directory;
 
-    return create_and_open_environment();
+    return open();
 }
 
 // Startup and shutdown.
 // ----------------------------------------------------------------------------
 
-// Start files and primitives.
-bool utxo_database::open() {
-    if ( ! create_and_open_environment()) {
-        return false;
-    }
-
+// private
+bool utxo_database::open_databases() {
     MDB_txn* db_txn;
     if (mdb_txn_begin(env_, NULL, 0, &db_txn) != MDB_SUCCESS) {
         return false;
@@ -134,6 +136,14 @@ bool utxo_database::open() {
     db_created_ = true;
 
     return mdb_txn_commit(db_txn) == MDB_SUCCESS;
+}
+
+// Start files and primitives.
+bool utxo_database::open() {
+    if ( ! create_and_open_environment()) {
+        return false;
+    }
+    return open_databases();
 }
 
 // Close files.

@@ -79,6 +79,8 @@ public:
 
 private:
     bool create_and_open_environment();
+    bool open_databases();
+
 
     utxo_code insert_reorg_pool(uint32_t height, MDB_val& key, MDB_txn* db_txn);
     utxo_code remove(uint32_t height, chain::output_point const& point, MDB_txn* db_txn);
