@@ -150,11 +150,10 @@ bool data_base::open() {
 
     start();
 
-#ifdef BITPRIM_DB_NEW
-    auto xxx = utxo_db_->open();
-    std::cout << "xxx: " << xxx << std::endl;
-#endif // BITPRIM_DB_NEW
-
+// #ifdef BITPRIM_DB_NEW
+//     auto xxx = utxo_db_->open();
+//     std::cout << "xxx: " << xxx << std::endl;
+// #endif // BITPRIM_DB_NEW
 
     auto opened = true
 #ifdef BITPRIM_DB_LEGACY
@@ -162,9 +161,9 @@ bool data_base::open() {
                 && transactions_->open() 
 #endif // BITPRIM_DB_LEGACY
 
-// #ifdef BITPRIM_DB_NEW
-//                 && utxo_db_->open() 
-// #endif // BITPRIM_DB_NEW
+#ifdef BITPRIM_DB_NEW
+                && utxo_db_->open() 
+#endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
                 && transactions_unconfirmed_->open()
