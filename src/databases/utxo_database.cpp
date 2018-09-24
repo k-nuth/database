@@ -88,6 +88,7 @@ bool utxo_database::create_and_open_environment() {
     // res = mdb_env_open(env_, db_dir_.c_str(), MDB_FIXEDMAP | MDB_NORDAHEAD | MDB_NOMEMINIT, 0664);
     // res = mdb_env_open(env_, db_dir_.c_str(), MDB_FIXEDMAP, 0664);
     res = mdb_env_open(env_, db_dir_.c_str(), 0, 0664);
+    std::cout << "utxo_database::create_and_open_environment() - mdb_env_open: " << res << std::endl;
     return res == MDB_SUCCESS;
 }
 
