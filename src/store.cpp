@@ -183,6 +183,7 @@ bool store::is_write_locked(handle value) const
     return sequential_lock_.is_write_locked(value);
 }
 
+#ifdef BITPRIM_DB_LEGACY
 bool store::begin_write() const
 {
     return flush_lock() && sequential_lock_.begin_write();
@@ -192,6 +193,7 @@ bool store::end_write() const
 {
     return sequential_lock_.end_write() && flush_unlock();
 }
+#endif // BITPRIM_DB_LEGACY
 
 bool store::flush_lock() const
 {

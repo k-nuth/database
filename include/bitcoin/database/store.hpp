@@ -67,11 +67,14 @@ public:
     /// Check the write state of the handle.
     bool is_write_locked(handle handle) const;
 
+
+#ifdef BITPRIM_DB_LEGACY
     /// Start sequence write with optional flush lock.
     bool begin_write() const;
 
     /// End sequence write with optional flush unlock.
     bool end_write() const;
+#endif // BITPRIM_DB_LEGACY    
 
     /// Optionally begin flush lock scope.
     bool flush_lock() const;

@@ -510,6 +510,8 @@ code data_base::insert(const chain::block& block, size_t height) {
 
 // This is designed for write exclusivity and read concurrency.
 code data_base::push(const chain::transaction& tx, uint32_t forks) {
+#ifdef BITPRIM_DB_LEGACY
+
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
     unique_lock lock(write_mutex_);
@@ -527,10 +529,8 @@ code data_base::push(const chain::transaction& tx, uint32_t forks) {
         return error::operation_failed_2;
     }
 
-#ifdef BITPRIM_DB_LEGACY
     // When position is unconfirmed, height is used to store validation forks.
     transactions_->store(tx, forks, 0, transaction_database::unconfirmed);
-#endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     transactions_unconfirmed_->store(tx); //, forks, transaction_unconfirmed_database::unconfirmed);
@@ -548,6 +548,10 @@ code data_base::push(const chain::transaction& tx, uint32_t forks) {
     // End Sequential Lock and Flush Lock
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     ///////////////////////////////////////////////////////////////////////////
+
+#else
+    return error::success;  //TODO(fernando): store the transactions in a new mempool
+#endif // BITPRIM_DB_LEGACY
 }
 
 // Add a block in order (creates no gaps, must be at top).
@@ -1054,6 +1058,8 @@ void data_base::reorganize(const checkpoint& fork_point, block_const_ptr_list_co
     const auto next_height = safe_add(fork_point.height(), size_t(1));
     const result_handler pop_handler = std::bind(&data_base::handle_pop, this, _1, incoming_blocks, next_height, std::ref(dispatch), handler);
 
+
+#ifdef BITPRIM_DB_LEGACY
     // Critical Section.
     ///////////////////////////////////////////////////////////////////////////
     write_mutex_.lock();
@@ -1065,6 +1071,7 @@ void data_base::reorganize(const checkpoint& fork_point, block_const_ptr_list_co
         pop_handler(error::operation_failed_11);
         return;
     }
+#endif // BITPRIM_DB_LEGACY
 
     pop_above(outgoing_blocks, fork_point.hash(), dispatch, pop_handler);
 }
@@ -1083,18 +1090,28 @@ void data_base::handle_pop(const code& ec, block_const_ptr_list_const_ptr incomi
 // We never invoke the caller's handler under the mutex, we never fail to clear
 // the mutex, and we always invoke the caller's handler exactly once.
 void data_base::handle_push(const code& ec, result_handler handler) const {
+
+#ifdef BITPRIM_DB_LEGACY
     write_mutex_.unlock();
     // End Critical Section.
     ///////////////////////////////////////////////////////////////////////////
+#endif // BITPRIM_DB_LEGACY
 
     if (ec) {
         handler(ec);
         return;
     }
 
+#if defined(BITPRIM_DB_LEGACY)
     handler(end_write() ? error::success : error::operation_failed_12);
     // End Sequential Lock and Flush Lock
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#elif defined(BITPRIM_DB_NEW)
+    handler(error::success);
+#else
+#error You must define BITPRIM_DB_LEGACY or BITPRIM_DB_NEW
+#endif
+
 }
 
 } // namespace data_base
