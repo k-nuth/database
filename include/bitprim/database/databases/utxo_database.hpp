@@ -74,7 +74,7 @@ public:
     // utxo_code remove_block(chain::block const& block);
 
     /// TODO
-    utxo_entry get(chain::output_point const& key);
+    utxo_entry get(chain::output_point const& key) const;
 
 private:
     bool create_and_open_environment();

@@ -468,8 +468,7 @@ utxo_code utxo_database::push_block(chain::block const& block, size_t height, ui
 // }
 
 
-// boost::optional<get_return_t> utxo_database::get(chain::output_point const& key) {
-utxo_entry utxo_database::get(chain::output_point const& point) {
+utxo_entry utxo_database::get(chain::output_point const& point) const {
     MDB_txn* db_txn;
     if (mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) != MDB_SUCCESS) {
         return utxo_entry{};

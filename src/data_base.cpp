@@ -477,8 +477,11 @@ bool data_base::end_insert() const {
 // This is designed for write concurrency but only with itself.
 code data_base::insert(const chain::block& block, size_t height) {
 
+    auto const median_time_past = block.header().validation.median_time_past;
+    // std::cout << "data_base::insert - median_time_past: " << median_time_past << std::endl;
+
 #ifdef BITPRIM_DB_NEW
-    auto res = utxo_db_->push_block(block, height, 0); //TODO(fernando_utxo): median_time_past
+    auto res = utxo_db_->push_block(block, height, median_time_past);
     if ( ! utxo_database::succeed(res)) {
         return error::operation_failed_1;   //TODO(fernando_utxo): create a new operation_failed
     }
@@ -489,7 +492,9 @@ code data_base::insert(const chain::block& block, size_t height) {
 
     if (ec) return ec;
 
-    const auto median_time_past = block.header().validation.median_time_past;
+    // const auto median_time_past = block.header().validation.median_time_past;
+    // median_time_past = block.header().validation.median_time_past;
+    // std::cout << "data_base::insert - median_time_past(2): " << median_time_past << std::endl;
 
     if ( ! push_transactions(block, height, median_time_past) || ! push_heights(block, height)) {
         return error::operation_failed_1;
@@ -549,8 +554,10 @@ code data_base::push(const chain::transaction& tx, uint32_t forks) {
 // This is designed for write exclusivity and read concurrency.
 code data_base::push(block const& block, size_t height) {
 
+    const auto median_time_past = block.header().validation.median_time_past;
+
 #ifdef BITPRIM_DB_NEW
-    auto res = utxo_db_->push_block(block, height, 0); //TODO(fernando_utxo): median_time_past
+    auto res = utxo_db_->push_block(block, height, median_time_past);
     if ( ! utxo_database::succeed(res)) {
         return error::operation_failed_6;   //TODO(fernando): create a new operation_failed
     }
@@ -572,7 +579,7 @@ code data_base::push(block const& block, size_t height) {
         return error::operation_failed_4;
     }
 
-    const auto median_time_past = block.header().validation.median_time_past;
+    // const auto median_time_past = block.header().validation.median_time_past;
 
     if ( ! push_transactions(block, height, median_time_past) || ! push_heights(block, height)) {
         return error::operation_failed_5;
@@ -932,7 +939,7 @@ void data_base::push_next(const code& ec, block_const_ptr_list_const_ptr blocks,
 void data_base::do_push(block_const_ptr block, size_t height, uint32_t median_time_past, dispatcher& dispatch, result_handler handler) {
 
 #ifdef BITPRIM_DB_NEW
-    auto res = utxo_db_->push_block(*block, height, 0); //TODO(fernando_utxo): median_time_past
+    auto res = utxo_db_->push_block(*block, height, median_time_past);
     if ( ! utxo_database::succeed(res)) {
         handler(error::operation_failed_7); //TODO(fernando): create a new operation_failed
         return;

@@ -50,14 +50,14 @@ bool utxo_entry::coinbase() const {
 // private
 void utxo_entry::reset() {
     output_ = chain::output{};
-    height_ = bc::max_uint32;
-    median_time_past_ = 0;
+    height_ = max_uint32;
+    median_time_past_ = max_uint32;
     coinbase_ = false;
 }
 
 // Empty scripts are valid, validation relies on not_found only.
 bool utxo_entry::is_valid() const {
-    return output_.is_valid() && height_ != bc::max_uint32 && median_time_past_ != 0;
+    return output_.is_valid() && height_ != bc::max_uint32 && median_time_past_ != max_uint32;
 }
 
 

@@ -80,10 +80,9 @@ private:
     constexpr static
     size_t serialized_size_fixed();
 
-
     chain::output output_;
     uint32_t height_ = max_uint32;
-    uint32_t median_time_past_ = 0;
+    uint32_t median_time_past_ = max_uint32;
     bool coinbase_;
 };
 
