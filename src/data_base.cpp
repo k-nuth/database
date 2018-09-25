@@ -693,16 +693,16 @@ void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const inp
                 uint32_t output_median_time_past;
                 bool output_is_coinbase;
 
-#if defined(BITPRIM_DB_LEGACY)
-                if (transactions_->get_output(prev_output, output_height, output_median_time_past, output_is_coinbase, prevout, MAX_UINT64, false)) {
-                    for (auto const& address : prev_output.addresses()) {
-                        history_->add_input(address.hash(), inpoint, height, prevout);
-                    }
-                }
-#elif defined(BITPRIM_DB_NEW)
+#if defined(BITPRIM_DB_NEW)
                 auto const entry = utxo_db->get(prevout);
                 if (entry.is_valid()) {
                     for (auto const& address : entry.output().addresses()) {
+                        history_->add_input(address.hash(), inpoint, height, prevout);
+                    }
+                }
+#elif defined(BITPRIM_DB_LEGACY)
+                if (transactions_->get_output(prev_output, output_height, output_median_time_past, output_is_coinbase, prevout, MAX_UINT64, false)) {
+                    for (auto const& address : prev_output.addresses()) {
                         history_->add_input(address.hash(), inpoint, height, prevout);
                     }
                 }
