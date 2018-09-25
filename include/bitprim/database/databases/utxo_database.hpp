@@ -25,8 +25,9 @@
 #include <bitcoin/bitcoin.hpp>
 #include <bitcoin/database/define.hpp>
 
+#include <bitprim/database/databases/utxo_entry.hpp>
+
 #include <lmdb.h>
-// #include "lmdb.h"
 
 namespace libbitcoin {
 namespace database {
@@ -42,7 +43,6 @@ enum class utxo_code {
 class BCD_API utxo_database {
 public:
     using path = boost::filesystem::path;
-    using get_return_t = chain::output;
 
     constexpr static char utxo_db_name[] = "utxo_db";
     constexpr static char reorg_pool_name[] = "reorg_pool";
@@ -68,14 +68,13 @@ public:
     bool close();
 
     /// Remove all the previous outputs and insert all the new outputs atomically.
-    utxo_code push_block(chain::block const& block, size_t height);
+    utxo_code push_block(chain::block const& block, size_t height, uint32_t median_time_past);
 
     // /// TODO
     // utxo_code remove_block(chain::block const& block);
 
     /// TODO
-    // boost::optional<get_return_t> get(chain::output_point const& key);
-    get_return_t get(chain::output_point const& key);
+    utxo_entry get(chain::output_point const& key);
 
 private:
     bool create_and_open_environment();
@@ -84,20 +83,20 @@ private:
 
     utxo_code insert_reorg_pool(uint32_t height, MDB_val& key, MDB_txn* db_txn);
     utxo_code remove(uint32_t height, chain::output_point const& point, MDB_txn* db_txn);
-    utxo_code insert(chain::output_point const& point, chain::output const& output, MDB_txn* db_txn);
+    utxo_code insert(chain::output_point const& point, chain::output const& output, data_chunk const& fixed_data, MDB_txn* db_txn);
 
 
     utxo_code remove_inputs(uint32_t height, chain::input::list const& inputs, MDB_txn* db_txn);
-    utxo_code insert_outputs(hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn);
+    utxo_code insert_outputs(hash_digest const& txid, chain::output::list const& outputs, data_chunk const& fixed_data, MDB_txn* db_txn);
 
 
-    utxo_code insert_outputs_error_treatment(hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn);
-    utxo_code push_transaction_non_coinbase(size_t height, chain::transaction const& tx, MDB_txn* db_txn);
+    utxo_code insert_outputs_error_treatment(size_t height, data_chunk const& fixed_data, hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn);
+    utxo_code push_transaction_non_coinbase(size_t height, data_chunk const& fixed_data, chain::transaction const& tx, MDB_txn* db_txn);
 
     template <typename I>
-    utxo_code push_transactions_non_coinbase(size_t height, I f, I l, MDB_txn* db_txn);
+    utxo_code push_transactions_non_coinbase(size_t height, data_chunk const& fixed_data, I f, I l, MDB_txn* db_txn);
 
-    utxo_code push_block(chain::block const& block, size_t height, MDB_txn* db_txn);
+    utxo_code push_block(chain::block const& block, size_t height, uint32_t median_time_past, MDB_txn* db_txn);
     
     // utxo_code remove_transaction(chain::transaction const& tx, MDB_txn* db_txn);
     // utxo_code remove_transaction_non_coinbase(chain::transaction const& tx, MDB_txn* db_txn);

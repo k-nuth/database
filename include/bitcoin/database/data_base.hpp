@@ -31,7 +31,7 @@
 #endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_NEW
-#include <bitcoin/database/databases/utxo_database.hpp>
+#include <bitprim/database/databases/utxo_database.hpp>
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_SPENDS

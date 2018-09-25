@@ -18,7 +18,7 @@
  */
 // #ifdef BITPRIM_DB_NEW
 
-#include <bitcoin/database/databases/utxo_database.hpp>
+#include <bitprim/database/databases/utxo_database.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -260,9 +260,10 @@ utxo_code utxo_database::remove(uint32_t height, chain::output_point const& poin
 }
 
 // private
-utxo_code utxo_database::insert(chain::output_point const& point, chain::output const& output, MDB_txn* db_txn) {
+utxo_code utxo_database::insert(chain::output_point const& point, chain::output const& output, data_chunk const& fixed_data, MDB_txn* db_txn) {
     auto keyarr = point.to_data(BITPRIM_UXTO_WIRE);
-    auto valuearr = output.to_data(false);
+    // auto valuearr = entry.to_data();
+    auto valuearr = utxo_entry::to_data_pepe(output, fixed_data);
 
     MDB_val key   {keyarr.size(), keyarr.data()};
     MDB_val value {valuearr.size(), valuearr.data()};
@@ -285,10 +286,10 @@ utxo_code utxo_database::remove_inputs(uint32_t height, chain::input::list const
 }
 
 // private
-utxo_code utxo_database::insert_outputs(hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn) {
+utxo_code utxo_database::insert_outputs(hash_digest const& txid, chain::output::list const& outputs, data_chunk const& fixed_data, MDB_txn* db_txn) {
     uint32_t pos = 0;
     for (auto const& output: outputs) {
-        auto res = insert(chain::point{txid, pos}, output, db_txn);
+        auto res = insert(chain::point{txid, pos}, output, fixed_data, db_txn);
         if (res != utxo_code::success) {
             return res;
         }
@@ -300,8 +301,8 @@ utxo_code utxo_database::insert_outputs(hash_digest const& txid, chain::output::
 // Push functions   ------------------------------------------------------
 
 // private
-utxo_code utxo_database::insert_outputs_error_treatment(hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn) {
-    auto res = insert_outputs(txid, outputs, db_txn);
+utxo_code utxo_database::insert_outputs_error_treatment(size_t height, data_chunk const& fixed_data, hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn) {
+    auto res = insert_outputs(txid, outputs, fixed_data, db_txn);
     
     if (res == utxo_code::duplicated_key) {
         //TODO(fernando): log and continue
@@ -311,24 +312,24 @@ utxo_code utxo_database::insert_outputs_error_treatment(hash_digest const& txid,
 }
 
 // private
-utxo_code utxo_database::push_transaction_non_coinbase(size_t height, chain::transaction const& tx, MDB_txn* db_txn) {
+utxo_code utxo_database::push_transaction_non_coinbase(size_t height, data_chunk const& fixed_data, chain::transaction const& tx, MDB_txn* db_txn) {
 
     auto res = remove_inputs(height, tx.inputs(), db_txn);
     if (res != utxo_code::success) {
         return res;
     }
 
-    return insert_outputs_error_treatment(tx.hash(), tx.outputs(), db_txn);
+    return insert_outputs_error_treatment(height, fixed_data, tx.hash(), tx.outputs(), db_txn);
 }
 
 // private
 template <typename I>
-utxo_code utxo_database::push_transactions_non_coinbase(size_t height, I f, I l, MDB_txn* db_txn) {
+utxo_code utxo_database::push_transactions_non_coinbase(size_t height, data_chunk const& fixed_data, I f, I l, MDB_txn* db_txn) {
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
 
     while (f != l) {
         auto const& tx = *f;
-        auto res = push_transaction_non_coinbase(height, tx, db_txn);
+        auto res = push_transaction_non_coinbase(height, fixed_data, tx, db_txn);
         if (res != utxo_code::success) {
             return res;
         }
@@ -339,18 +340,20 @@ utxo_code utxo_database::push_transactions_non_coinbase(size_t height, I f, I l,
 }
 
 // private
-utxo_code utxo_database::push_block(chain::block const& block, size_t height, MDB_txn* db_txn) {
+utxo_code utxo_database::push_block(chain::block const& block, size_t height, uint32_t median_time_past, MDB_txn* db_txn) {
     //precondition: block.transactions().size() >= 1
 
     auto const& txs = block.transactions();
     auto const& coinbase = txs.front();
 
-    auto res0 = insert_outputs_error_treatment(coinbase.hash(), coinbase.outputs(), db_txn);
+    auto fixed = utxo_entry::to_data_fixed(height, median_time_past, true);
+    auto res0 = insert_outputs_error_treatment(height, fixed, coinbase.hash(), coinbase.outputs(), db_txn);
     if ( ! succeed(res0)) {
         return res0;
     }
 
-    auto res = push_transactions_non_coinbase(height, txs.begin() + 1, txs.end(), db_txn);
+    fixed.back() = 0;   //TODO: comment this
+    auto res = push_transactions_non_coinbase(height, fixed, txs.begin() + 1, txs.end(), db_txn);
     if (res != utxo_code::success) {
         return res;
     }
@@ -423,14 +426,14 @@ utxo_code utxo_database::push_block(chain::block const& block, size_t height, MD
 
 // Public interface functions ---------------------------
 
-utxo_code utxo_database::push_block(chain::block const& block, size_t height) {
+utxo_code utxo_database::push_block(chain::block const& block, size_t height, uint32_t median_time_past) {
     MDB_txn* db_txn;
     auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
     if (res0 != MDB_SUCCESS) {
         return utxo_code::other;
     }
 
-    auto res = push_block(block, height, db_txn);
+    auto res = push_block(block, height, median_time_past, db_txn);
     if (! succeed(res)) {
         mdb_txn_abort(db_txn);
         return res;
@@ -466,10 +469,10 @@ utxo_code utxo_database::push_block(chain::block const& block, size_t height) {
 
 
 // boost::optional<get_return_t> utxo_database::get(chain::output_point const& key) {
-utxo_database::get_return_t utxo_database::get(chain::output_point const& point) {
+utxo_entry utxo_database::get(chain::output_point const& point) {
     MDB_txn* db_txn;
     if (mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) != MDB_SUCCESS) {
-        return utxo_database::get_return_t{};
+        return utxo_entry{};
     }
 
     auto keyarr = point.to_data(BITPRIM_UXTO_WIRE);
@@ -479,14 +482,14 @@ utxo_database::get_return_t utxo_database::get(chain::output_point const& point)
     if (mdb_get(db_txn, dbi_utxo_, &key, &value) != MDB_SUCCESS) {
         mdb_txn_commit(db_txn);
         // mdb_txn_abort(db_txn);
-        return utxo_database::get_return_t{};
+        return utxo_entry{};
     }
 
     data_chunk data {static_cast<uint8_t*>(value.mv_data), static_cast<uint8_t*>(value.mv_data) + value.mv_size};
-    auto res = chain::output::factory_from_data(data, false);
+    auto res = utxo_entry::factory_from_data(data);
 
     if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
-        return utxo_database::get_return_t{};
+        return utxo_entry{};
     }
 
     return res;

@@ -347,22 +347,19 @@ if (DB_LEGACY)
         )
 endif()
 
+set(bitprim_database_sources_just_bitprim
+)
+
 if (DB_NEW)
-    set(bitprim_database_sources_just_libbitcoin 
-        ${bitprim_database_sources_just_libbitcoin}
-        src/databases/utxo_database.cpp
+    set(bitprim_database_sources_just_bitprim 
+        ${bitprim_database_sources_just_bitprim}
+        src/bitprim/databases/utxo_database.cpp
+        src/bitprim/databases/utxo_entry.cpp
     )
 endif()
 
 
 
-
-
-
-
-
-set(bitprim_database_sources_just_bitprim
-)
 
 if (NOT JUST_BITPRIM_SOURCES)
   set(bitprim_database_sources 
