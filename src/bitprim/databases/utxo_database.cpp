@@ -74,7 +74,7 @@ bool utxo_database::create_and_open_environment() {
         return false;
     }
 
-    res = mdb_env_set_maxdbs(env_, 3);      //TODO(fernando): hardcoded
+    res = mdb_env_set_maxdbs(env_, 5);      //TODO(fernando): hardcoded
     if (res != MDB_SUCCESS) {
         return false;
     }
@@ -122,6 +122,7 @@ bool utxo_database::open_databases() {
         return false;
     }
 
+    //TODO(fernando): check if we can use an optimization for fixed size keys and values
     auto res = mdb_dbi_open(db_txn, block_header_db_name, MDB_CREATE, &dbi_block_header_);
     if (res != MDB_SUCCESS) {
         return false;
@@ -318,7 +319,7 @@ utxo_code utxo_database::insert_outputs(hash_digest const& txid, chain::output::
 // Push functions   ------------------------------------------------------
 
 // private
-utxo_code utxo_database::insert_outputs_error_treatment(size_t height, data_chunk const& fixed_data, hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn) {
+utxo_code utxo_database::insert_outputs_error_treatment(uint32_t height, data_chunk const& fixed_data, hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn) {
     auto res = insert_outputs(txid, outputs, fixed_data, db_txn);
     
     if (res == utxo_code::duplicated_key) {
@@ -329,7 +330,7 @@ utxo_code utxo_database::insert_outputs_error_treatment(size_t height, data_chun
 }
 
 // private
-utxo_code utxo_database::push_transaction_non_coinbase(size_t height, data_chunk const& fixed_data, chain::transaction const& tx, MDB_txn* db_txn) {
+utxo_code utxo_database::push_transaction_non_coinbase(uint32_t height, data_chunk const& fixed_data, chain::transaction const& tx, MDB_txn* db_txn) {
 
     auto res = remove_inputs(height, tx.inputs(), db_txn);
     if (res != utxo_code::success) {
@@ -341,7 +342,7 @@ utxo_code utxo_database::push_transaction_non_coinbase(size_t height, data_chunk
 
 // private
 template <typename I>
-utxo_code utxo_database::push_transactions_non_coinbase(size_t height, data_chunk const& fixed_data, I f, I l, MDB_txn* db_txn) {
+utxo_code utxo_database::push_transactions_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, MDB_txn* db_txn) {
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
 
     while (f != l) {
@@ -357,7 +358,7 @@ utxo_code utxo_database::push_transactions_non_coinbase(size_t height, data_chun
 }
 
 // private
-utxo_code utxo_database::push_block_header(chain::block const& block, size_t height, MDB_txn* db_txn) {
+utxo_code utxo_database::push_block_header(chain::block const& block, uint32_t height, MDB_txn* db_txn) {
 
     auto valuearr = block.header().to_data(true);
     MDB_val key {sizeof(height), &height};
@@ -376,7 +377,7 @@ utxo_code utxo_database::push_block_header(chain::block const& block, size_t hei
 }
 
 // private
-utxo_code utxo_database::push_block(chain::block const& block, size_t height, uint32_t median_time_past, MDB_txn* db_txn) {
+utxo_code utxo_database::push_block(chain::block const& block, uint32_t height, uint32_t median_time_past, MDB_txn* db_txn) {
     //precondition: block.transactions().size() >= 1
 
     auto res = push_block_header(block, height, db_txn);
@@ -473,7 +474,7 @@ utxo_code utxo_database::push_genesis(chain::block const& block, MDB_txn* db_txn
 
 // Public interface functions ---------------------------
 
-utxo_code utxo_database::push_block(chain::block const& block, size_t height, uint32_t median_time_past) {
+utxo_code utxo_database::push_block(chain::block const& block, uint32_t height, uint32_t median_time_past) {
     MDB_txn* db_txn;
     auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
     if (res0 != MDB_SUCCESS) {
@@ -539,7 +540,7 @@ utxo_entry utxo_database::get(chain::output_point const& point) const {
     return res;
 }
 
-utxo_code utxo_database::get_last_height(size_t& out_height) const {
+utxo_code utxo_database::get_last_height(uint32_t& out_height) const {
     MDB_txn* db_txn;
     if (mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) != MDB_SUCCESS) {
         return utxo_code::other;
@@ -554,10 +555,12 @@ utxo_code utxo_database::get_last_height(size_t& out_height) const {
     MDB_val value;
     int rc;
 
-    if ((rc = mdb_cursor_get(cursor, &key, &value, MDB_LAST)) != MDB_SUCCESS) {
+    // if ((rc = mdb_cursor_get(cursor, &key, &value, MDB_LAST)) != MDB_SUCCESS) {
+    if ((rc = mdb_cursor_get(cursor, &key, nullptr, MDB_LAST)) != MDB_SUCCESS) {
         return utxo_code::db_empty;  
     }
 
+    // assert key.mv_size == 4;
     out_height = *static_cast<uint32_t*>(key.mv_data);
     
     mdb_cursor_close(cursor);
@@ -570,6 +573,65 @@ utxo_code utxo_database::get_last_height(size_t& out_height) const {
     return utxo_code::success;
 }
 
+
+std::pair<chain::header, uint32_t> utxo_database::get_header(hash_digest const& hash) const {
+    MDB_txn* db_txn;
+    if (mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) != MDB_SUCCESS) {
+        return {};
+    }
+
+    MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
+    MDB_val value;
+
+    if (mdb_get(db_txn, dbi_block_header_by_hash_, &key, &value) != MDB_SUCCESS) {
+        mdb_txn_commit(db_txn);
+        // mdb_txn_abort(db_txn);
+        return {};
+    }
+
+    // assert value.mv_size == 4;
+    auto height = *static_cast<uint32_t*>(value.mv_data);
+
+    auto header = get_header(height, db_txn);
+
+    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+        return {};
+    }
+
+    return {header, height};
+}
+
+
+// private
+chain::header utxo_database::get_header(uint32_t height, MDB_txn* db_txn) const {
+    MDB_val key {sizeof(height), &height};
+    MDB_val value;
+
+    if (mdb_get(db_txn, dbi_block_header_, &key, &value) != MDB_SUCCESS) {
+        mdb_txn_commit(db_txn);
+        // mdb_txn_abort(db_txn);
+        return chain::header{};
+    }
+
+    data_chunk data {static_cast<uint8_t*>(value.mv_data), static_cast<uint8_t*>(value.mv_data) + value.mv_size};
+    auto res = chain::header::factory_from_data(data);
+    return res;
+}
+
+chain::header utxo_database::get_header(uint32_t height) const {
+    MDB_txn* db_txn;
+    if (mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) != MDB_SUCCESS) {
+        return chain::header{};
+    }
+
+    auto res = get_header(height, db_txn);
+
+    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+        return chain::header{};
+    }
+
+    return res;
+}
 
 // utxo_code utxo_database::remove_block(chain::block const& block) {
 

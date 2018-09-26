@@ -75,7 +75,7 @@ public:
     utxo_code push_genesis(chain::block const& block);
 
     /// Remove all the previous outputs and insert all the new outputs atomically.
-    utxo_code push_block(chain::block const& block, size_t height, uint32_t median_time_past);
+    utxo_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past);
 
     // /// TODO comment
     // utxo_code remove_block(chain::block const& block);
@@ -84,37 +84,37 @@ public:
     utxo_entry get(chain::output_point const& key) const;
 
     /// TODO comment
-    utxo_code get_last_height(size_t& out_height) const;
+    utxo_code get_last_height(uint32_t& out_height) const;
 
+    /// TODO comment
+    chain::header get_header(uint32_t height) const;
+    /// TODO comment
+    std::pair<chain::header, uint32_t> get_header(hash_digest const& hash) const;
 
 private:
     bool create_and_open_environment();
     bool open_databases();
 
-
     utxo_code insert_reorg_pool(uint32_t height, MDB_val& key, MDB_txn* db_txn);
     utxo_code remove(uint32_t height, chain::output_point const& point, MDB_txn* db_txn);
     utxo_code insert(chain::output_point const& point, chain::output const& output, data_chunk const& fixed_data, MDB_txn* db_txn);
 
-
     utxo_code remove_inputs(uint32_t height, chain::input::list const& inputs, MDB_txn* db_txn);
     utxo_code insert_outputs(hash_digest const& txid, chain::output::list const& outputs, data_chunk const& fixed_data, MDB_txn* db_txn);
 
-
-    utxo_code insert_outputs_error_treatment(size_t height, data_chunk const& fixed_data, hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn);
-    utxo_code push_transaction_non_coinbase(size_t height, data_chunk const& fixed_data, chain::transaction const& tx, MDB_txn* db_txn);
+    utxo_code insert_outputs_error_treatment(uint32_t height, data_chunk const& fixed_data, hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn);
+    utxo_code push_transaction_non_coinbase(uint32_t height, data_chunk const& fixed_data, chain::transaction const& tx, MDB_txn* db_txn);
 
     template <typename I>
-    utxo_code push_transactions_non_coinbase(size_t height, data_chunk const& fixed_data, I f, I l, MDB_txn* db_txn);
+    utxo_code push_transactions_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, MDB_txn* db_txn);
 
+    utxo_code push_block_header(chain::block const& block, uint32_t height, MDB_txn* db_txn);
 
-    utxo_code push_block_header(chain::block const& block, size_t height, MDB_txn* db_txn);
-
-
-    utxo_code push_block(chain::block const& block, size_t height, uint32_t median_time_past, MDB_txn* db_txn);
+    utxo_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past, MDB_txn* db_txn);
     
     utxo_code push_genesis(chain::block const& block, MDB_txn* db_txn);
 
+    chain::header get_header(uint32_t height, MDB_txn* db_txn) const;
 
     // utxo_code remove_transaction(chain::transaction const& tx, MDB_txn* db_txn);
     // utxo_code remove_transaction_non_coinbase(chain::transaction const& tx, MDB_txn* db_txn);
@@ -128,10 +128,8 @@ private:
     bool db_created_ = false;
 
     MDB_env* env_;
-    
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
-
     MDB_dbi dbi_utxo_;
     MDB_dbi dbi_reorg_pool_;
     MDB_dbi dbi_reorg_index_;
