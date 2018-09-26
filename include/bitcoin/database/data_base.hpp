@@ -141,7 +141,9 @@ public:
 
     /// Returns store_block_missing_parent if not linked.
     /// Returns store_block_invalid_height if height is not the current top + 1.
-    code push(const chain::block& block, size_t height);
+    code push(chain::block const& block, size_t height);
+
+
 
     // Asynchronous writers.
     // ------------------------------------------------------------------------
@@ -191,6 +193,14 @@ protected:
 private:
     using inputs = chain::input::list;
     using outputs = chain::output::list;
+
+
+    /// TODO comment
+    code push_genesis(chain::block const& block);
+
+#ifdef BITPRIM_DB_LEGACY
+    code push_legacy(chain::block const& block, size_t height);
+#endif
 
     // Synchronous writers.
     // ------------------------------------------------------------------------

@@ -34,6 +34,8 @@
 namespace libbitcoin { 
 namespace database {
 
+constexpr char utxo_database::block_header_db_name[];
+constexpr char utxo_database::block_header_by_hash_db_name[];
 constexpr char utxo_database::utxo_db_name[];
 constexpr char utxo_database::reorg_pool_name[];
 constexpr char utxo_database::reorg_index_name[];
@@ -399,6 +401,13 @@ utxo_code utxo_database::push_block(chain::block const& block, size_t height, ui
     return res0;
 }
 
+// private
+utxo_code utxo_database::push_genesis(chain::block const& block, MDB_txn* db_txn) {
+    auto res = push_block_header(block, 0, db_txn);
+    return res;
+}
+
+
 // Remove functions ------------------------------------------------------
 
 // // private
@@ -484,27 +493,25 @@ utxo_code utxo_database::push_block(chain::block const& block, size_t height, ui
     return res;
 }
 
-// utxo_code utxo_database::remove_block(chain::block const& block) {
+utxo_code utxo_database::push_genesis(chain::block const& block) {
+    MDB_txn* db_txn;
+    auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
+    if (res0 != MDB_SUCCESS) {
+        return utxo_code::other;
+    }
 
-//     MDB_txn* db_txn;
-//     auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
-//     if (res0 != MDB_SUCCESS) {
-//         return utxo_code::other;
-//     }
+    auto res = push_genesis(block, db_txn);
+    if (! succeed(res)) {
+        mdb_txn_abort(db_txn);
+        return res;
+    }
 
-//     auto res = remove_block(block, db_txn);
-//     if (res != utxo_code::success) {
-//         mdb_txn_abort(db_txn);
-//         return res;
-//     }
-
-//     auto res2 = mdb_txn_commit(db_txn);
-//     if (res2 != MDB_SUCCESS) {
-//         return utxo_code::other;
-//     }
-//     return utxo_code::success;
-// }
-
+    auto res2 = mdb_txn_commit(db_txn);
+    if (res2 != MDB_SUCCESS) {
+        return utxo_code::other;
+    }
+    return res;
+}
 
 utxo_entry utxo_database::get(chain::output_point const& point) const {
     MDB_txn* db_txn;
@@ -531,6 +538,74 @@ utxo_entry utxo_database::get(chain::output_point const& point) const {
 
     return res;
 }
+
+utxo_code utxo_database::get_last_height(size_t& out_height) const {
+    MDB_txn* db_txn;
+    if (mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) != MDB_SUCCESS) {
+        return utxo_code::other;
+    }
+
+    MDB_cursor* cursor;
+    if (mdb_cursor_open(db_txn, dbi_block_header_, &cursor) != MDB_SUCCESS) {
+        return utxo_code::other;
+    }
+
+    MDB_val key;
+    MDB_val value;
+    int rc;
+
+    if ((rc = mdb_cursor_get(cursor, &key, &value, MDB_LAST)) != MDB_SUCCESS) {
+        return utxo_code::db_empty;  
+    }
+
+    out_height = *static_cast<uint32_t*>(key.mv_data);
+    
+    mdb_cursor_close(cursor);
+
+    // mdb_txn_abort(db_txn);
+    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+        return utxo_code::other;
+    }
+
+    return utxo_code::success;
+}
+
+
+// utxo_code utxo_database::remove_block(chain::block const& block) {
+
+//     MDB_txn* db_txn;
+//     auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
+//     if (res0 != MDB_SUCCESS) {
+//         return utxo_code::other;
+//     }
+
+//     auto res = remove_block(block, db_txn);
+//     if (res != utxo_code::success) {
+//         mdb_txn_abort(db_txn);
+//         return res;
+//     }
+
+//     auto res2 = mdb_txn_commit(db_txn);
+//     if (res2 != MDB_SUCCESS) {
+//         return utxo_code::other;
+//     }
+//     return utxo_code::success;
+// }
+
+} // namespace database
+} // namespace libbitcoin
+
+// #endif // BITPRIM_DB_NEW
+
+
+
+
+
+
+
+
+
+
 
 /*void lmdb_resized(MDB_env *env)
 {
@@ -1135,7 +1210,3 @@ uint64_t BlockchainLMDB::get_database_size() const
 
 
 
-} // namespace database
-} // namespace libbitcoin
-
-// #endif // BITPRIM_DB_NEW

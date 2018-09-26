@@ -134,7 +134,9 @@ bool data_base::create(const block& genesis) {
     }
 
     // Store the first block.
-    push(genesis, 0);
+    // push(genesis, 0);
+    push_genesis(genesis);
+
     closed_ = false;
     return true;
 }
@@ -554,20 +556,10 @@ code data_base::push(const chain::transaction& tx, uint32_t forks) {
 #endif // BITPRIM_DB_LEGACY
 }
 
-// Add a block in order (creates no gaps, must be at top).
-// This is designed for write exclusivity and read concurrency.
-code data_base::push(block const& block, size_t height) {
-
-    const auto median_time_past = block.header().validation.median_time_past;
-
-#ifdef BITPRIM_DB_NEW
-    auto res = utxo_db_->push_block(block, height, median_time_past);
-    if ( ! utxo_database::succeed(res)) {
-        return error::operation_failed_6;   //TODO(fernando): create a new operation_failed
-    }
-#endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_LEGACY
+/// TODO comment
+code data_base::push_legacy(block const& block, size_t height) {
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
     unique_lock lock(write_mutex_);
@@ -583,7 +575,7 @@ code data_base::push(block const& block, size_t height) {
         return error::operation_failed_4;
     }
 
-    // const auto median_time_past = block.header().validation.median_time_past;
+    const auto median_time_past = block.header().validation.median_time_past;
 
     if ( ! push_transactions(block, height, median_time_past) || ! push_heights(block, height)) {
         return error::operation_failed_5;
@@ -597,6 +589,45 @@ code data_base::push(block const& block, size_t height) {
     // End Sequential Lock and Flush Lock
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     ///////////////////////////////////////////////////////////////////////////
+
+    return error::success;
+}
+#endif // BITPRIM_DB_LEGACY
+
+// Add a block in order (creates no gaps, must be at top).
+// This is designed for write exclusivity and read concurrency.
+code data_base::push(block const& block, size_t height) {
+
+    const auto median_time_past = block.header().validation.median_time_past;
+
+#ifdef BITPRIM_DB_NEW
+    auto res = utxo_db_->push_block(block, height, median_time_past);
+    if ( ! utxo_database::succeed(res)) {
+        return error::operation_failed_6;   //TODO(fernando): create a new operation_failed
+    }
+#endif // BITPRIM_DB_NEW
+
+#ifdef BITPRIM_DB_LEGACY
+    return push_legacy(block, height);
+#endif // BITPRIM_DB_LEGACY
+
+    return error::success;
+}
+
+// private
+// Add the Genesis block
+code data_base::push_genesis(block const& block) {
+
+#ifdef BITPRIM_DB_NEW
+    auto res = utxo_db_->push_genesis(block);
+    if ( ! utxo_database::succeed(res)) {
+        return error::operation_failed_6;   //TODO(fernando): create a new operation_failed
+    }
+#endif // BITPRIM_DB_NEW
+
+#ifdef BITPRIM_DB_LEGACY
+    size_t const height = 0;
+    return push_legacy(block, height);
 #endif // BITPRIM_DB_LEGACY
 
     return error::success;

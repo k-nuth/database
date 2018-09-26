@@ -37,7 +37,8 @@ enum class utxo_code {
     success_duplicate_coinbase = 1,
     duplicated_key = 2,
     key_not_found = 3,
-    other = 4
+    db_empty = 4,
+    other = 5
 };
 
 class BCD_API utxo_database {
@@ -70,14 +71,21 @@ public:
     /// Call to unload the memory map.
     bool close();
 
+    /// TODO comment
+    utxo_code push_genesis(chain::block const& block);
+
     /// Remove all the previous outputs and insert all the new outputs atomically.
     utxo_code push_block(chain::block const& block, size_t height, uint32_t median_time_past);
 
-    // /// TODO
+    // /// TODO comment
     // utxo_code remove_block(chain::block const& block);
 
-    /// TODO
+    /// TODO comment
     utxo_entry get(chain::output_point const& key) const;
+
+    /// TODO comment
+    utxo_code get_last_height(size_t& out_height) const;
+
 
 private:
     bool create_and_open_environment();
@@ -105,6 +113,9 @@ private:
 
     utxo_code push_block(chain::block const& block, size_t height, uint32_t median_time_past, MDB_txn* db_txn);
     
+    utxo_code push_genesis(chain::block const& block, MDB_txn* db_txn);
+
+
     // utxo_code remove_transaction(chain::transaction const& tx, MDB_txn* db_txn);
     // utxo_code remove_transaction_non_coinbase(chain::transaction const& tx, MDB_txn* db_txn);
     // template <typename I>
