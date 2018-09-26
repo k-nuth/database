@@ -88,7 +88,7 @@ bool utxo_database::create_and_open_environment() {
     // res = mdb_env_open(env_, db_dir_.c_str(), MDB_FIXEDMAP | MDB_NORDAHEAD | MDB_NOMEMINIT, 0664);
     // res = mdb_env_open(env_, db_dir_.c_str(), MDB_FIXEDMAP, 0664);
     res = mdb_env_open(env_, db_dir_.c_str(), 0, 0664);
-    std::cout << "utxo_database::create_and_open_environment() - mdb_env_open: " << res << std::endl;
+    // std::cout << "utxo_database::create_and_open_environment() - mdb_env_open: " << res << std::endl;
     return res == MDB_SUCCESS;
 }
 
@@ -120,7 +120,18 @@ bool utxo_database::open_databases() {
         return false;
     }
 
-    auto res = mdb_dbi_open(db_txn, utxo_db_name, MDB_CREATE, &dbi_utxo_);
+    auto res = mdb_dbi_open(db_txn, block_header_db_name, MDB_CREATE, &dbi_block_header_);
+    if (res != MDB_SUCCESS) {
+        return false;
+    }
+    res = mdb_dbi_open(db_txn, block_header_by_hash_db_name, MDB_CREATE, &dbi_block_header_by_hash_);
+    if (res != MDB_SUCCESS) {
+        return false;
+    }
+
+    
+
+    res = mdb_dbi_open(db_txn, utxo_db_name, MDB_CREATE, &dbi_utxo_);
     if (res != MDB_SUCCESS) {
         return false;
     }
@@ -151,6 +162,10 @@ bool utxo_database::open() {
 // Close files.
 bool utxo_database::close() {
     if (db_created_) {
+        
+        mdb_dbi_close(env_, dbi_block_header_);
+        mdb_dbi_close(env_, dbi_block_header_by_hash_);
+
         mdb_dbi_close(env_, dbi_utxo_);
         mdb_dbi_close(env_, dbi_reorg_pool_);
         mdb_dbi_close(env_, dbi_reorg_index_);
@@ -340,8 +355,32 @@ utxo_code utxo_database::push_transactions_non_coinbase(size_t height, data_chun
 }
 
 // private
+utxo_code utxo_database::push_block_header(chain::block const& block, size_t height, MDB_txn* db_txn) {
+
+    auto valuearr = block.header().to_data(true);
+    MDB_val key {sizeof(height), &height};
+    MDB_val value {valuearr.size(), valuearr.data()};
+    auto res = mdb_put(db_txn, dbi_block_header_, &key, &value, MDB_NOOVERWRITE);
+    if (res == MDB_KEYEXIST) return utxo_code::duplicated_key;
+    if (res != MDB_SUCCESS) return utxo_code::other;
+
+    auto key_by_hash_arr = block.hash();
+    MDB_val key_by_hash {key_by_hash_arr.size(), key_by_hash_arr.data()};
+    res = mdb_put(db_txn, dbi_block_header_by_hash_, &key_by_hash, &key, MDB_NOOVERWRITE);
+    if (res == MDB_KEYEXIST) return utxo_code::duplicated_key;
+    if (res != MDB_SUCCESS) return utxo_code::other;
+
+    return utxo_code::success;
+}
+
+// private
 utxo_code utxo_database::push_block(chain::block const& block, size_t height, uint32_t median_time_past, MDB_txn* db_txn) {
     //precondition: block.transactions().size() >= 1
+
+    auto res = push_block_header(block, height, db_txn);
+    if (res != utxo_code::success) {
+        return res;
+    }
 
     auto const& txs = block.transactions();
     auto const& coinbase = txs.front();
@@ -352,14 +391,13 @@ utxo_code utxo_database::push_block(chain::block const& block, size_t height, ui
         return res0;
     }
 
-    fixed.back() = 0;   //TODO: comment this
-    auto res = push_transactions_non_coinbase(height, fixed, txs.begin() + 1, txs.end(), db_txn);
+    fixed.back() = 0;   //TODO(fernando): comment this
+    res = push_transactions_non_coinbase(height, fixed, txs.begin() + 1, txs.end(), db_txn);
     if (res != utxo_code::success) {
         return res;
     }
     return res0;
 }
-
 
 // Remove functions ------------------------------------------------------
 

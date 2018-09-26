@@ -44,6 +44,9 @@ class BCD_API utxo_database {
 public:
     using path = boost::filesystem::path;
 
+    constexpr static char block_header_db_name[] = "block_header";
+    constexpr static char block_header_by_hash_db_name[] = "block_header_by_hash";
+
     constexpr static char utxo_db_name[] = "utxo_db";
     constexpr static char reorg_pool_name[] = "reorg_pool";
     constexpr static char reorg_index_name[] = "reorg_index";
@@ -96,6 +99,10 @@ private:
     template <typename I>
     utxo_code push_transactions_non_coinbase(size_t height, data_chunk const& fixed_data, I f, I l, MDB_txn* db_txn);
 
+
+    utxo_code push_block_header(chain::block const& block, size_t height, MDB_txn* db_txn);
+
+
     utxo_code push_block(chain::block const& block, size_t height, uint32_t median_time_past, MDB_txn* db_txn);
     
     // utxo_code remove_transaction(chain::transaction const& tx, MDB_txn* db_txn);
@@ -110,6 +117,10 @@ private:
     bool db_created_ = false;
 
     MDB_env* env_;
+    
+    MDB_dbi dbi_block_header_;
+    MDB_dbi dbi_block_header_by_hash_;
+
     MDB_dbi dbi_utxo_;
     MDB_dbi dbi_reorg_pool_;
     MDB_dbi dbi_reorg_index_;
