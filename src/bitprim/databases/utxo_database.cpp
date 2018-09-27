@@ -243,12 +243,25 @@ Block 3
 utxo_code utxo_database::insert_reorg_pool(uint32_t height, MDB_val& key, MDB_txn* db_txn) {
     MDB_val value;
     auto res = mdb_get(db_txn, dbi_utxo_, &key, &value);
-    if (res == MDB_NOTFOUND) return utxo_code::key_not_found;
-    if (res != MDB_SUCCESS) return utxo_code::other;
+    if (res == MDB_NOTFOUND) {
+        LOG_DEBUG(LOG_DATABASE) << "utxo_database::insert_reorg_pool - mdb_get: " << res;        
+        return utxo_code::key_not_found;
+    }
+    if (res != MDB_SUCCESS) {
+        LOG_DEBUG(LOG_DATABASE) << "utxo_database::insert_reorg_pool - mdb_get: " << res;        
+        return utxo_code::other;
+    }
+    
 
     res = mdb_put(db_txn, dbi_reorg_pool_, &key, &value, MDB_NOOVERWRITE);
-    if (res == MDB_KEYEXIST) return utxo_code::duplicated_key;
-    if (res != MDB_SUCCESS) return utxo_code::other;
+    if (res == MDB_KEYEXIST) {
+        LOG_DEBUG(LOG_DATABASE) << "utxo_database::insert_reorg_pool - mdb_put(0): " << res;        
+        return utxo_code::duplicated_key;
+    }
+    if (res != MDB_SUCCESS) {
+        LOG_DEBUG(LOG_DATABASE) << "utxo_database::insert_reorg_pool - mdb_put(0): " << res;        
+        return utxo_code::other;
+    }
 
     MDB_val key_index {sizeof(height), &height};
     MDB_val value_index {key.mv_size, key.mv_data};
@@ -257,8 +270,14 @@ utxo_code utxo_database::insert_reorg_pool(uint32_t height, MDB_val& key, MDB_tx
     // res = mdb_put(db_txn, dbi_reorg_index_, &key_index, &value_index, MDB_NODUPDATA);
     res = mdb_put(db_txn, dbi_reorg_index_, &key_index, &value_index, 0);
     
-    if (res == MDB_KEYEXIST) return utxo_code::duplicated_key;
-    if (res != MDB_SUCCESS) return utxo_code::other;
+    if (res == MDB_KEYEXIST) {
+        LOG_DEBUG(LOG_DATABASE) << "utxo_database::insert_reorg_pool - mdb_put(1): " << res;
+        return utxo_code::duplicated_key;
+    }
+    if (res != MDB_SUCCESS) {
+        LOG_DEBUG(LOG_DATABASE) << "utxo_database::insert_reorg_pool - mdb_put(1): " << res;
+        return utxo_code::other;
+    }
 
     return utxo_code::success;
 }
@@ -272,8 +291,14 @@ utxo_code utxo_database::remove(uint32_t height, chain::output_point const& poin
     if (res0 != utxo_code::success) return res0;
 
     auto res = mdb_del(db_txn, dbi_utxo_, &key, NULL);
-    if (res == MDB_NOTFOUND) return utxo_code::key_not_found;
-    if (res != MDB_SUCCESS) return utxo_code::other;
+    if (res == MDB_NOTFOUND) {
+        LOG_DEBUG(LOG_DATABASE) << "utxo_database::remove - mdb_del: " << res;
+        return utxo_code::key_not_found;
+    }
+    if (res != MDB_SUCCESS) {
+        LOG_DEBUG(LOG_DATABASE) << "utxo_database::remove - mdb_del: " << res;
+        return utxo_code::other;
+    }
     return utxo_code::success;
 }
 
@@ -287,8 +312,14 @@ utxo_code utxo_database::insert(chain::output_point const& point, chain::output 
     MDB_val value {valuearr.size(), valuearr.data()};
     auto res = mdb_put(db_txn, dbi_utxo_, &key, &value, MDB_NOOVERWRITE);
 
-    if (res == MDB_KEYEXIST) return utxo_code::duplicated_key;
-    if (res != MDB_SUCCESS) return utxo_code::other;
+    if (res == MDB_KEYEXIST) {
+        LOG_DEBUG(LOG_DATABASE) << "utxo_database::insert - mdb_put: " << res;        
+        return utxo_code::duplicated_key;
+    }
+    if (res != MDB_SUCCESS) {
+        LOG_DEBUG(LOG_DATABASE) << "utxo_database::insert - mdb_put: " << res;        
+        return utxo_code::other;
+    }
     return utxo_code::success;
 }
 
@@ -364,14 +395,26 @@ utxo_code utxo_database::push_block_header(chain::block const& block, uint32_t h
     MDB_val key {sizeof(height), &height};
     MDB_val value {valuearr.size(), valuearr.data()};
     auto res = mdb_put(db_txn, dbi_block_header_, &key, &value, MDB_NOOVERWRITE);
-    if (res == MDB_KEYEXIST) return utxo_code::duplicated_key;
-    if (res != MDB_SUCCESS) return utxo_code::other;
+    if (res == MDB_KEYEXIST) {
+        LOG_DEBUG(LOG_DATABASE) << "utxo_database::push_block_header - mdb_put(0) " << res;
+        return utxo_code::duplicated_key;
+    }
+    if (res != MDB_SUCCESS) {
+        LOG_DEBUG(LOG_DATABASE) << "utxo_database::push_block_header - mdb_put(0) " << res;        
+        return utxo_code::other;
+    }
 
     auto key_by_hash_arr = block.hash();
     MDB_val key_by_hash {key_by_hash_arr.size(), key_by_hash_arr.data()};
     res = mdb_put(db_txn, dbi_block_header_by_hash_, &key_by_hash, &key, MDB_NOOVERWRITE);
-    if (res == MDB_KEYEXIST) return utxo_code::duplicated_key;
-    if (res != MDB_SUCCESS) return utxo_code::other;
+    if (res == MDB_KEYEXIST) {
+        LOG_DEBUG(LOG_DATABASE) << "utxo_database::push_block_header - mdb_put(1) " << res;        
+        return utxo_code::duplicated_key;
+    }
+    if (res != MDB_SUCCESS) {
+        LOG_DEBUG(LOG_DATABASE) << "utxo_database::push_block_header - mdb_put(1) " << res;        
+        return utxo_code::other;
+    }
 
     return utxo_code::success;
 }
@@ -478,11 +521,9 @@ utxo_code utxo_database::push_block(chain::block const& block, uint32_t height, 
     MDB_txn* db_txn;
     auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
     if (res0 != MDB_SUCCESS) {
+        LOG_DEBUG(LOG_DATABASE) << "utxo_database::push_block - mdb_txn_begin " << res0;
         return utxo_code::other;
     }
-
-    // auto hash = block.hash();
-    // std::cout << encode_hash(hash) << std::endl;
 
     auto res = push_block(block, height, median_time_past, db_txn);
     if (! succeed(res)) {
@@ -492,6 +533,7 @@ utxo_code utxo_database::push_block(chain::block const& block, uint32_t height, 
 
     auto res2 = mdb_txn_commit(db_txn);
     if (res2 != MDB_SUCCESS) {
+        LOG_DEBUG(LOG_DATABASE) << "utxo_database::push_block - mdb_txn_commit " << res2;
         return utxo_code::other;
     }
     return res;

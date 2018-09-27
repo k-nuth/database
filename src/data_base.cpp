@@ -975,6 +975,7 @@ void data_base::do_push(block_const_ptr block, size_t height, uint32_t median_ti
 
 
 #ifdef BITPRIM_DB_NEW
+    // LOG_DEBUG(LOG_DATABASE) << "Write flushed to disk: " << ec.message();
     auto res = utxo_db_->push_block(*block, height, median_time_past);
     if ( ! utxo_database::succeed(res)) {
         handler(error::operation_failed_7); //TODO(fernando): create a new operation_failed
