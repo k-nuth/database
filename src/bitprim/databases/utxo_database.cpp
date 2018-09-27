@@ -244,22 +244,22 @@ utxo_code utxo_database::insert_reorg_pool(uint32_t height, MDB_val& key, MDB_tx
     MDB_val value;
     auto res = mdb_get(db_txn, dbi_utxo_, &key, &value);
     if (res == MDB_NOTFOUND) {
-        LOG_DEBUG(LOG_DATABASE) << "utxo_database::insert_reorg_pool - mdb_get: " << res;        
+        LOG_INFO(LOG_DATABASE) << "utxo_database::insert_reorg_pool - mdb_get: " << res;        
         return utxo_code::key_not_found;
     }
     if (res != MDB_SUCCESS) {
-        LOG_DEBUG(LOG_DATABASE) << "utxo_database::insert_reorg_pool - mdb_get: " << res;        
+        LOG_INFO(LOG_DATABASE) << "utxo_database::insert_reorg_pool - mdb_get: " << res;        
         return utxo_code::other;
     }
     
 
     res = mdb_put(db_txn, dbi_reorg_pool_, &key, &value, MDB_NOOVERWRITE);
     if (res == MDB_KEYEXIST) {
-        LOG_DEBUG(LOG_DATABASE) << "utxo_database::insert_reorg_pool - mdb_put(0): " << res;        
+        LOG_INFO(LOG_DATABASE) << "utxo_database::insert_reorg_pool - mdb_put(0): " << res;        
         return utxo_code::duplicated_key;
     }
     if (res != MDB_SUCCESS) {
-        LOG_DEBUG(LOG_DATABASE) << "utxo_database::insert_reorg_pool - mdb_put(0): " << res;        
+        LOG_INFO(LOG_DATABASE) << "utxo_database::insert_reorg_pool - mdb_put(0): " << res;        
         return utxo_code::other;
     }
 
@@ -271,11 +271,11 @@ utxo_code utxo_database::insert_reorg_pool(uint32_t height, MDB_val& key, MDB_tx
     res = mdb_put(db_txn, dbi_reorg_index_, &key_index, &value_index, 0);
     
     if (res == MDB_KEYEXIST) {
-        LOG_DEBUG(LOG_DATABASE) << "utxo_database::insert_reorg_pool - mdb_put(1): " << res;
+        LOG_INFO(LOG_DATABASE) << "utxo_database::insert_reorg_pool - mdb_put(1): " << res;
         return utxo_code::duplicated_key;
     }
     if (res != MDB_SUCCESS) {
-        LOG_DEBUG(LOG_DATABASE) << "utxo_database::insert_reorg_pool - mdb_put(1): " << res;
+        LOG_INFO(LOG_DATABASE) << "utxo_database::insert_reorg_pool - mdb_put(1): " << res;
         return utxo_code::other;
     }
 
@@ -292,11 +292,11 @@ utxo_code utxo_database::remove(uint32_t height, chain::output_point const& poin
 
     auto res = mdb_del(db_txn, dbi_utxo_, &key, NULL);
     if (res == MDB_NOTFOUND) {
-        LOG_DEBUG(LOG_DATABASE) << "utxo_database::remove - mdb_del: " << res;
+        LOG_INFO(LOG_DATABASE) << "utxo_database::remove - mdb_del: " << res;
         return utxo_code::key_not_found;
     }
     if (res != MDB_SUCCESS) {
-        LOG_DEBUG(LOG_DATABASE) << "utxo_database::remove - mdb_del: " << res;
+        LOG_INFO(LOG_DATABASE) << "utxo_database::remove - mdb_del: " << res;
         return utxo_code::other;
     }
     return utxo_code::success;
@@ -313,11 +313,11 @@ utxo_code utxo_database::insert(chain::output_point const& point, chain::output 
     auto res = mdb_put(db_txn, dbi_utxo_, &key, &value, MDB_NOOVERWRITE);
 
     if (res == MDB_KEYEXIST) {
-        LOG_DEBUG(LOG_DATABASE) << "utxo_database::insert - mdb_put: " << res;        
+        LOG_INFO(LOG_DATABASE) << "utxo_database::insert - mdb_put: " << res;        
         return utxo_code::duplicated_key;
     }
     if (res != MDB_SUCCESS) {
-        LOG_DEBUG(LOG_DATABASE) << "utxo_database::insert - mdb_put: " << res;        
+        LOG_INFO(LOG_DATABASE) << "utxo_database::insert - mdb_put: " << res;        
         return utxo_code::other;
     }
     return utxo_code::success;
@@ -396,11 +396,11 @@ utxo_code utxo_database::push_block_header(chain::block const& block, uint32_t h
     MDB_val value {valuearr.size(), valuearr.data()};
     auto res = mdb_put(db_txn, dbi_block_header_, &key, &value, MDB_NOOVERWRITE);
     if (res == MDB_KEYEXIST) {
-        LOG_DEBUG(LOG_DATABASE) << "utxo_database::push_block_header - mdb_put(0) " << res;
+        LOG_INFO(LOG_DATABASE) << "utxo_database::push_block_header - mdb_put(0) " << res;
         return utxo_code::duplicated_key;
     }
     if (res != MDB_SUCCESS) {
-        LOG_DEBUG(LOG_DATABASE) << "utxo_database::push_block_header - mdb_put(0) " << res;        
+        LOG_INFO(LOG_DATABASE) << "utxo_database::push_block_header - mdb_put(0) " << res;        
         return utxo_code::other;
     }
 
@@ -408,11 +408,11 @@ utxo_code utxo_database::push_block_header(chain::block const& block, uint32_t h
     MDB_val key_by_hash {key_by_hash_arr.size(), key_by_hash_arr.data()};
     res = mdb_put(db_txn, dbi_block_header_by_hash_, &key_by_hash, &key, MDB_NOOVERWRITE);
     if (res == MDB_KEYEXIST) {
-        LOG_DEBUG(LOG_DATABASE) << "utxo_database::push_block_header - mdb_put(1) " << res;        
+        LOG_INFO(LOG_DATABASE) << "utxo_database::push_block_header - mdb_put(1) " << res;        
         return utxo_code::duplicated_key;
     }
     if (res != MDB_SUCCESS) {
-        LOG_DEBUG(LOG_DATABASE) << "utxo_database::push_block_header - mdb_put(1) " << res;        
+        LOG_INFO(LOG_DATABASE) << "utxo_database::push_block_header - mdb_put(1) " << res;        
         return utxo_code::other;
     }
 
@@ -521,7 +521,7 @@ utxo_code utxo_database::push_block(chain::block const& block, uint32_t height, 
     MDB_txn* db_txn;
     auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
     if (res0 != MDB_SUCCESS) {
-        LOG_DEBUG(LOG_DATABASE) << "utxo_database::push_block - mdb_txn_begin " << res0;
+        LOG_INFO(LOG_DATABASE) << "utxo_database::push_block - mdb_txn_begin " << res0;
         return utxo_code::other;
     }
 
@@ -533,7 +533,7 @@ utxo_code utxo_database::push_block(chain::block const& block, uint32_t height, 
 
     auto res2 = mdb_txn_commit(db_txn);
     if (res2 != MDB_SUCCESS) {
-        LOG_DEBUG(LOG_DATABASE) << "utxo_database::push_block - mdb_txn_commit " << res2;
+        LOG_INFO(LOG_DATABASE) << "utxo_database::push_block - mdb_txn_commit " << res2;
         return utxo_code::other;
     }
     return res;
