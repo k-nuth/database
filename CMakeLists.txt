@@ -288,17 +288,38 @@ set(bitprim_database_sources_just_libbitcoin
     src/settings.cpp
     src/store.cpp
     src/version.cpp
-
-    src/memory/accessor.cpp
-    src/memory/allocator.cpp
-    src/memory/memory_map.cpp
-    src/mman-win32/mman.c
-    src/primitives/record_list.cpp
-    src/primitives/record_manager.cpp
-    src/primitives/record_multimap_iterable.cpp
-    src/primitives/record_multimap_iterator.cpp
-    src/primitives/slab_manager.cpp
 )
+
+
+
+if (DB_LEGACY)
+    set(bitprim_database_sources_just_libbitcoin 
+        ${bitprim_database_sources_just_libbitcoin}
+        src/memory/accessor.cpp
+        src/memory/allocator.cpp
+        src/memory/memory_map.cpp
+        # src/mman-win32/mman.c
+        src/primitives/record_list.cpp
+        src/primitives/record_manager.cpp
+        src/primitives/record_multimap_iterable.cpp
+        src/primitives/record_multimap_iterator.cpp
+        src/primitives/slab_manager.cpp
+    
+        src/databases/block_database.cpp
+        src/databases/transaction_database.cpp
+        src/result/block_result.cpp
+        src/result/transaction_result.cpp
+    )
+
+    if (MSVC) # OR MINGW)
+        set(bitprim_database_sources_just_libbitcoin 
+            ${bitprim_database_sources_just_libbitcoin}
+            src/mman-win32/mman.c
+        )
+    endif()
+  
+endif()
+
 
 if (DB_TRANSACTION_UNCONFIRMED)
     set(bitprim_database_sources_just_libbitcoin 
