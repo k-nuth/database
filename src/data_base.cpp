@@ -973,12 +973,16 @@ void data_base::push_next(const code& ec, block_const_ptr_list_const_ptr blocks,
 
 void data_base::do_push(block_const_ptr block, size_t height, uint32_t median_time_past, dispatcher& dispatch, result_handler handler) {
 
+
 #ifdef BITPRIM_DB_NEW
     auto res = utxo_db_->push_block(*block, height, median_time_past);
     if ( ! utxo_database::succeed(res)) {
         handler(error::operation_failed_7); //TODO(fernando): create a new operation_failed
         return;
     }
+    block->validation.end_push = asio::steady_clock::now();
+    // This is the end of the block sub-sequence.
+    handler(error::success);
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_LEGACY
@@ -1014,19 +1018,18 @@ void data_base::handle_push_transactions(const code& ec, block_const_ptr block, 
         handler(ec);
         return;
     }
-
+#ifdef BITPRIM_DB_LEGACY
     if ( ! push_heights(*block, height)) {
         handler(error::operation_failed_8);
         return;
     }
 
-#ifdef BITPRIM_DB_LEGACY
     // Push the block header and synchronize to complete the block.
     blocks_->store(*block, height);
-#endif // BITPRIM_DB_LEGACY
 
     // Synchronize tx updates, indexes and block.
     synchronize();
+#endif // BITPRIM_DB_LEGACY
 
     // Set push end time for the block.
     block->validation.end_push = asio::steady_clock::now();

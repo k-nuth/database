@@ -481,6 +481,9 @@ utxo_code utxo_database::push_block(chain::block const& block, uint32_t height, 
         return utxo_code::other;
     }
 
+    // auto hash = block.hash();
+    // std::cout << encode_hash(hash) << std::endl;
+
     auto res = push_block(block, height, median_time_past, db_txn);
     if (! succeed(res)) {
         mdb_txn_abort(db_txn);
@@ -500,6 +503,9 @@ utxo_code utxo_database::push_genesis(chain::block const& block) {
     if (res0 != MDB_SUCCESS) {
         return utxo_code::other;
     }
+
+    // auto hash = block.hash();
+    // std::cout << encode_hash(hash) << std::endl;
 
     auto res = push_genesis(block, db_txn);
     if (! succeed(res)) {
