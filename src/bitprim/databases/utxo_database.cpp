@@ -1321,3 +1321,21 @@ uint64_t BlockchainLMDB::get_database_size() const
 
 
 
+
+
+
+
+/*
+
+
+Some Optimization
+If you frequently begin and abort read-only transactions, as an optimization, it is possible to only reset and renew a transaction.
+
+mdb_txn_reset() releases any old copies of data kept around for a read-only transaction. To reuse this reset transaction, call mdb_txn_renew() on it. Any cursors in this transaction must also be renewed using mdb_cursor_renew().
+
+Note that mdb_txn_reset() is similar to mdb_txn_abort() and will close any databases you opened within the transaction.
+
+To permanently free a transaction, reset or not, use mdb_txn_abort().
+
+
+*/
