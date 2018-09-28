@@ -31,7 +31,29 @@
 
 namespace libbitcoin {
 namespace database {
-           
+
+
+//Note: same logic as is_stale()
+
+//TODO(fernando): move to an utility file
+
+template <typename Clock>
+// std::chrono::time_point<Clock> to_time_point(uint32_t secs) {
+std::chrono::time_point<Clock> to_time_point(std::chrono::seconds secs) {
+    return std::chrono::time_point<Clock>(typename Clock::duration(secs));
+}
+
+inline
+bool is_old_block_(uint32_t header_ts, std::chrono::seconds limit) {
+    using clock_t = std::chrono::system_clock;
+    return (clock_t::now() - to_time_point<clock_t>(std::chrono::seconds(header_ts))) >= limit;
+}
+
+inline
+bool is_old_block_(chain::block const& block, std::chrono::seconds limit) {
+    return is_old_block_(block.header().timestamp(), limit);
+}
+
 enum class utxo_code {
     success = 0,
     success_duplicate_coinbase = 1,
@@ -53,7 +75,7 @@ public:
     constexpr static char reorg_index_name[] = "reorg_index";
 
     /// Construct the database.
-    utxo_database(path const& db_dir);
+    utxo_database(path const& db_dir, std::chrono::seconds limit);
 
     /// Close the database.
     ~utxo_database();
@@ -96,22 +118,22 @@ private:
     bool open_databases();
 
     utxo_code insert_reorg_pool(uint32_t height, MDB_val& key, MDB_txn* db_txn);
-    utxo_code remove(uint32_t height, chain::output_point const& point, MDB_txn* db_txn);
+    utxo_code remove(uint32_t height, chain::output_point const& point, bool insert_reorg, MDB_txn* db_txn);
     utxo_code insert(chain::output_point const& point, chain::output const& output, data_chunk const& fixed_data, MDB_txn* db_txn);
 
-    utxo_code remove_inputs(uint32_t height, chain::input::list const& inputs, MDB_txn* db_txn);
+    utxo_code remove_inputs(uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn);
     utxo_code insert_outputs(hash_digest const& txid, chain::output::list const& outputs, data_chunk const& fixed_data, MDB_txn* db_txn);
 
     utxo_code insert_outputs_error_treatment(uint32_t height, data_chunk const& fixed_data, hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn);
-    utxo_code push_transaction_non_coinbase(uint32_t height, data_chunk const& fixed_data, chain::transaction const& tx, MDB_txn* db_txn);
+    utxo_code push_transaction_non_coinbase(uint32_t height, data_chunk const& fixed_data, chain::transaction const& tx, bool insert_reorg, MDB_txn* db_txn);
 
     template <typename I>
-    utxo_code push_transactions_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, MDB_txn* db_txn);
+    utxo_code push_transactions_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, bool insert_reorg, MDB_txn* db_txn);
 
     utxo_code push_block_header(chain::block const& block, uint32_t height, MDB_txn* db_txn);
 
-    utxo_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past, MDB_txn* db_txn);
-    
+    utxo_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg, MDB_txn* db_txn);
+
     utxo_code push_genesis(chain::block const& block, MDB_txn* db_txn);
 
     chain::header get_header(uint32_t height, MDB_txn* db_txn) const;
@@ -123,7 +145,12 @@ private:
     // utxo_code remove_block(chain::block const& block, MDB_txn* db_txn);
 
 
-    path db_dir_;
+    bool is_old_block(chain::block const& block) const;
+
+
+
+    path const db_dir_;
+    std::chrono::seconds const limit_;
     bool env_created_ = false;
     bool db_created_ = false;
 

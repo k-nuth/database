@@ -39,6 +39,11 @@ public:
     uint16_t file_growth_rate;
     uint32_t index_start_height;
 
+#ifdef BITPRIM_DB_NEW
+    uint32_t reorg_pool_limit;
+#endif // BITPRIM_DB_NEW
+
+
 #ifdef BITPRIM_DB_LEGACY
     uint32_t block_table_buckets;
     uint32_t transaction_table_buckets;

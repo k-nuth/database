@@ -31,6 +31,11 @@ settings::settings()
     , file_growth_rate(50)
     , index_start_height(0)
 
+
+#ifdef BITPRIM_DB_NEW
+    , reorg_pool_limit(100)     //TODO(fernando): look for a good default
+#endif // BITPRIM_DB_NEW
+
     // Hash table sizes (must be configured).
 #ifdef BITPRIM_DB_LEGACY
     , block_table_buckets(0)

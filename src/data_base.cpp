@@ -234,6 +234,16 @@ bool data_base::close() {
     ///////////////////////////////////////////////////////////////////////////
 }
 
+
+
+//TODO(fernando): move to an util/tools file
+constexpr 
+std::chrono::seconds blocks_to_seconds(uint32_t blocks) {
+    // uint32_t const target_spacing_seconds = 10 * 60;
+    return std::chrono::seconds(blocks * target_spacing_seconds);
+}
+
+
 // protected
 void data_base::start() {
     // TODO: parameterize initial file sizes as record count or slab bytes?
@@ -249,7 +259,8 @@ void data_base::start() {
 #endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_NEW
-    utxo_db_ = std::make_shared<utxo_database>(utxo_dir);
+    // utxo_db_ = std::make_shared<utxo_database>(utxo_dir, std::chrono::seconds(60000));  //TODO(fernando): put in a CFG file
+    utxo_db_ = std::make_shared<utxo_database>(utxo_dir, blocks_to_seconds(settings_.reorg_pool_limit));
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED

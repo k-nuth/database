@@ -45,13 +45,19 @@ bool utxo_database::succeed(utxo_code code) {
     return code == utxo_code::success || code == utxo_code::success_duplicate_coinbase;
 }
 
-// Transactions uses a hash table index, O(1).
-utxo_database::utxo_database(path const& db_dir)
-    : db_dir_(db_dir)
+// Constructors.
+// ----------------------------------------------------------------------------
+
+utxo_database::utxo_database(path const& db_dir, std::chrono::seconds limit)
+    : db_dir_(db_dir), limit_(limit)
 {}
 
 utxo_database::~utxo_database() {
     close();
+}
+
+bool utxo_database::is_old_block(chain::block const& block) const {
+    return is_old_block_(block, limit_);
 }
 
 // Create.
@@ -284,12 +290,14 @@ utxo_code utxo_database::insert_reorg_pool(uint32_t height, MDB_val& key, MDB_tx
 }
 
 // private
-utxo_code utxo_database::remove(uint32_t height, chain::output_point const& point, MDB_txn* db_txn) {
+utxo_code utxo_database::remove(uint32_t height, chain::output_point const& point, bool insert_reorg, MDB_txn* db_txn) {
     auto keyarr = point.to_data(BITPRIM_UXTO_WIRE);
     MDB_val key {keyarr.size(), keyarr.data()};
 
-    auto res0 = insert_reorg_pool(height, key, db_txn);
-    if (res0 != utxo_code::success) return res0;
+    if (insert_reorg) {
+        auto res0 = insert_reorg_pool(height, key, db_txn);
+        if (res0 != utxo_code::success) return res0;
+    }
 
     auto res = mdb_del(db_txn, dbi_utxo_, &key, NULL);
     if (res == MDB_NOTFOUND) {
@@ -325,9 +333,9 @@ utxo_code utxo_database::insert(chain::output_point const& point, chain::output 
 }
 
 // private
-utxo_code utxo_database::remove_inputs(uint32_t height, chain::input::list const& inputs, MDB_txn* db_txn) {
+utxo_code utxo_database::remove_inputs(uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
     for (auto const& input: inputs) {
-        auto res = remove(height, input.previous_output(), db_txn);
+        auto res = remove(height, input.previous_output(), insert_reorg, db_txn);
         if (res != utxo_code::success) {
             return res;
         }
@@ -362,9 +370,9 @@ utxo_code utxo_database::insert_outputs_error_treatment(uint32_t height, data_ch
 }
 
 // private
-utxo_code utxo_database::push_transaction_non_coinbase(uint32_t height, data_chunk const& fixed_data, chain::transaction const& tx, MDB_txn* db_txn) {
+utxo_code utxo_database::push_transaction_non_coinbase(uint32_t height, data_chunk const& fixed_data, chain::transaction const& tx, bool insert_reorg, MDB_txn* db_txn) {
 
-    auto res = remove_inputs(height, tx.inputs(), db_txn);
+    auto res = remove_inputs(height, tx.inputs(), insert_reorg, db_txn);
     if (res != utxo_code::success) {
         return res;
     }
@@ -374,12 +382,12 @@ utxo_code utxo_database::push_transaction_non_coinbase(uint32_t height, data_chu
 
 // private
 template <typename I>
-utxo_code utxo_database::push_transactions_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, MDB_txn* db_txn) {
+utxo_code utxo_database::push_transactions_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, bool insert_reorg, MDB_txn* db_txn) {
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
 
     while (f != l) {
         auto const& tx = *f;
-        auto res = push_transaction_non_coinbase(height, fixed_data, tx, db_txn);
+        auto res = push_transaction_non_coinbase(height, fixed_data, tx, insert_reorg, db_txn);
         if (res != utxo_code::success) {
             return res;
         }
@@ -421,7 +429,7 @@ utxo_code utxo_database::push_block_header(chain::block const& block, uint32_t h
 }
 
 // private
-utxo_code utxo_database::push_block(chain::block const& block, uint32_t height, uint32_t median_time_past, MDB_txn* db_txn) {
+utxo_code utxo_database::push_block(chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg, MDB_txn* db_txn) {
     //precondition: block.transactions().size() >= 1
 
     auto res = push_block_header(block, height, db_txn);
@@ -439,7 +447,7 @@ utxo_code utxo_database::push_block(chain::block const& block, uint32_t height, 
     }
 
     fixed.back() = 0;   //TODO(fernando): comment this
-    res = push_transactions_non_coinbase(height, fixed, txs.begin() + 1, txs.end(), db_txn);
+    res = push_transactions_non_coinbase(height, fixed, txs.begin() + 1, txs.end(), insert_reorg, db_txn);
     if (res != utxo_code::success) {
         return res;
     }
@@ -519,6 +527,7 @@ utxo_code utxo_database::push_genesis(chain::block const& block, MDB_txn* db_txn
 // Public interface functions ---------------------------
 
 utxo_code utxo_database::push_block(chain::block const& block, uint32_t height, uint32_t median_time_past) {
+
     MDB_txn* db_txn;
     auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
     if (res0 != MDB_SUCCESS) {
@@ -526,7 +535,7 @@ utxo_code utxo_database::push_block(chain::block const& block, uint32_t height, 
         return utxo_code::other;
     }
 
-    auto res = push_block(block, height, median_time_past, db_txn);
+    auto res = push_block(block, height, median_time_past, ! is_old_block(block), db_txn);
     if (! succeed(res)) {
         mdb_txn_abort(db_txn);
         return res;
