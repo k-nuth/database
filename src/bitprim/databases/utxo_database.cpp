@@ -130,7 +130,7 @@ bool utxo_database::open_databases() {
     }
 
     //TODO(fernando): check if we can use an optimization for fixed size keys and values
-    auto res = mdb_dbi_open(db_txn, block_header_db_name, MDB_CREATE, &dbi_block_header_);
+    auto res = mdb_dbi_open(db_txn, block_header_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_header_);
     if (res != MDB_SUCCESS) {
         return false;
     }
