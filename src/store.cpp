@@ -164,6 +164,8 @@ bool store::open() {
         && (flush_each_write_ 
 #ifdef BITPRIM_DB_LEGACY
         || flush_lock_.lock_shared()
+#else
+        || true
 #endif
         );
 }
@@ -172,6 +174,8 @@ bool store::close() {
     return (flush_each_write_ 
 #ifdef BITPRIM_DB_LEGACY
             || flush_lock_.unlock_shared()
+#else
+            || true
 #endif
            ) 
 #ifdef BITPRIM_DB_LEGACY
@@ -197,8 +201,7 @@ bool store::begin_write() const {
     return flush_lock() && sequential_lock_.begin_write();
 }
 
-bool store::end_write() const
-{
+bool store::end_write() const {
     return sequential_lock_.end_write() && flush_unlock();
 }
 #endif // BITPRIM_DB_LEGACY
@@ -207,6 +210,8 @@ bool store::flush_lock() const {
     return ! flush_each_write_ 
 #ifdef BITPRIM_DB_LEGACY
            || flush_lock_.lock_shared()
+#else
+           || true
 #endif
            ;
 }
@@ -216,6 +221,8 @@ bool store::flush_unlock() const {
             || (flush() 
 #ifdef BITPRIM_DB_LEGACY
             && flush_lock_.unlock_shared()
+#else
+            && true
 #endif
             );
 }
