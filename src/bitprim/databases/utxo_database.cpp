@@ -143,8 +143,6 @@ bool utxo_database::open_databases() {
         return false;
     }
 
-    
-
     res = mdb_dbi_open(db_txn, utxo_db_name, MDB_CREATE, &dbi_utxo_);
     if (res != MDB_SUCCESS) {
         return false;
@@ -670,8 +668,6 @@ chain::header utxo_database::get_header(uint32_t height, MDB_txn* db_txn) const 
     MDB_val value;
 
     if (mdb_get(db_txn, dbi_block_header_, &key, &value) != MDB_SUCCESS) {
-        mdb_txn_commit(db_txn);
-        // mdb_txn_abort(db_txn);
         return chain::header{};
     }
 
