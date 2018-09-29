@@ -28,11 +28,11 @@ namespace database {
 using namespace bc::chain;
 using namespace bc::database;
 
+
+#ifdef BITPRIM_DB_LEGACY
 // Database file names.
 #define FLUSH_LOCK "flush_lock"
 #define EXCLUSIVE_LOCK "exclusive_lock"
-
-#ifdef BITPRIM_DB_LEGACY
 #define BLOCK_TABLE "block_table"
 #define BLOCK_INDEX "block_index"
 #define TRANSACTION_TABLE "transaction_table"
@@ -84,11 +84,10 @@ bool store::create(const path& file_path)
 store::store(const path& prefix, bool with_indexes, bool flush_each_write)
     : use_indexes(with_indexes)
     , flush_each_write_(flush_each_write)
+#ifdef BITPRIM_DB_LEGACY
     , flush_lock_(prefix / FLUSH_LOCK)
     , exclusive_lock_(prefix / EXCLUSIVE_LOCK)
-
     // Content store.
-#ifdef BITPRIM_DB_LEGACY
     , block_table(prefix / BLOCK_TABLE)
     , block_index(prefix / BLOCK_INDEX)
     , transaction_table(prefix / TRANSACTION_TABLE)
@@ -156,36 +155,45 @@ bool store::create() {
             ;
 }
 
-bool store::open()
-{
-    return exclusive_lock_.lock() && flush_lock_.try_lock() &&
-        (flush_each_write_ || flush_lock_.lock_shared());
+bool store::open() {
+    return true 
+#ifdef BITPRIM_DB_LEGACY
+        && exclusive_lock_.lock() 
+        && flush_lock_.try_lock() 
+#endif
+        && (flush_each_write_ 
+#ifdef BITPRIM_DB_LEGACY
+        || flush_lock_.lock_shared()
+#endif
+        );
 }
 
-bool store::close()
-{
-    return (flush_each_write_ || flush_lock_.unlock_shared()) &&
-        exclusive_lock_.unlock();
+bool store::close() {
+    return (flush_each_write_ 
+#ifdef BITPRIM_DB_LEGACY
+            || flush_lock_.unlock_shared()
+#endif
+           ) 
+#ifdef BITPRIM_DB_LEGACY
+           && exclusive_lock_.unlock()
+#endif
+           ;
 }
 
-store::handle store::begin_read() const
-{
+store::handle store::begin_read() const {
     return sequential_lock_.begin_read();
 }
 
-bool store::is_read_valid(handle value) const
-{
+bool store::is_read_valid(handle value) const {
     return sequential_lock_.is_read_valid(value);
 }
 
-bool store::is_write_locked(handle value) const
-{
+bool store::is_write_locked(handle value) const {
     return sequential_lock_.is_write_locked(value);
 }
 
 #ifdef BITPRIM_DB_LEGACY
-bool store::begin_write() const
-{
+bool store::begin_write() const {
     return flush_lock() && sequential_lock_.begin_write();
 }
 
@@ -195,14 +203,21 @@ bool store::end_write() const
 }
 #endif // BITPRIM_DB_LEGACY
 
-bool store::flush_lock() const
-{
-    return !flush_each_write_ || flush_lock_.lock_shared();
+bool store::flush_lock() const {
+    return ! flush_each_write_ 
+#ifdef BITPRIM_DB_LEGACY
+           || flush_lock_.lock_shared()
+#endif
+           ;
 }
 
-bool store::flush_unlock() const
-{
-    return !flush_each_write_ || (flush() && flush_lock_.unlock_shared());
+bool store::flush_unlock() const {
+    return  ! flush_each_write_ 
+            || (flush() 
+#ifdef BITPRIM_DB_LEGACY
+            && flush_lock_.unlock_shared()
+#endif
+            );
 }
 
 } // namespace data_base

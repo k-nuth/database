@@ -121,8 +121,11 @@ protected:
 
 private:
     const bool flush_each_write_;
+
+#ifdef BITPRIM_DB_LEGACY
     mutable bc::flush_lock flush_lock_;
     mutable interprocess_lock exclusive_lock_;
+#endif
     mutable sequential_lock sequential_lock_;
 };
 
