@@ -86,6 +86,7 @@ data_base::~data_base() {
 // Throws if there is insufficient disk space, not idempotent.
 bool data_base::create(const block& genesis) {
 
+#ifdef BITPRIM_DB_LEGACY
     ///////////////////////////////////////////////////////////////////////////
     // Lock exclusive file access.
     if ( ! store::open()) {
@@ -96,6 +97,7 @@ bool data_base::create(const block& genesis) {
     if ( ! store::create()) {
         return false;
     }
+#endif // BITPRIM_DB_LEGACY
 
     start();
 
@@ -115,7 +117,8 @@ bool data_base::create(const block& genesis) {
 #endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
                 ;
 
-    if (use_indexes) {
+#ifdef BITPRIM_DB_WITH_INDEXES
+    if (use_indexes()) {
         created = created 
 #ifdef BITPRIM_DB_SPENDS
                 && spends_->create() 
@@ -128,6 +131,7 @@ bool data_base::create(const block& genesis) {
 #endif // BITPRIM_DB_STEALTH                
                 ;
     }
+#endif // BITPRIM_DB_WITH_INDEXES    
 
     if ( ! created) {
         return false;
@@ -144,11 +148,14 @@ bool data_base::create(const block& genesis) {
 // Must be called before performing queries, not idempotent.
 // May be called after stop and/or after close in order to reopen.
 bool data_base::open() {
+
+#ifdef BITPRIM_DB_LEGACY
     ///////////////////////////////////////////////////////////////////////////
     // Lock exclusive file access and conditionally the global flush lock.
     if ( ! store::open()) {
         return false;
     }
+#endif // BITPRIM_DB_LEGACY
 
     start();
 
@@ -172,7 +179,8 @@ bool data_base::open() {
 #endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
                 ;
 
-    if (use_indexes) {
+#ifdef BITPRIM_DB_WITH_INDEXES
+    if (use_indexes()) {
         opened = opened 
 #ifdef BITPRIM_DB_SPENDS
                 && spends_->open()
@@ -185,6 +193,8 @@ bool data_base::open() {
 #endif // BITPRIM_DB_STEALTH                
                 ;
     }
+#endif // BITPRIM_DB_WITH_INDEXES
+
 
     closed_ = false;
     return opened;
@@ -215,7 +225,8 @@ bool data_base::close() {
 #endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
                 ;
 
-    if (use_indexes) {
+#ifdef BITPRIM_DB_WITH_INDEXES
+    if (use_indexes()) {
         closed = closed 
 #ifdef BITPRIM_DB_SPENDS
                 && spends_->close()
@@ -228,10 +239,16 @@ bool data_base::close() {
 #endif // BITPRIM_DB_STEALTH                
                 ;
     }
+#endif // BITPRIM_DB_WITH_INDEXES
 
-    return closed && store::close();
+
+    return closed 
+#ifdef BITPRIM_DB_LEGACY    
+            && store::close()
     // Unlock exclusive file access and conditionally the global flush lock.
     ///////////////////////////////////////////////////////////////////////////
+#endif // BITPRIM_DB_LEGACY
+            ;
 }
 
 
@@ -269,7 +286,9 @@ void data_base::start() {
         settings_.transaction_unconfirmed_table_buckets, settings_.file_growth_rate, remap_mutex_);
 #endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
 
-    if (use_indexes) {
+
+#ifdef BITPRIM_DB_WITH_INDEXES
+    if (use_indexes()) {
 
 #ifdef BITPRIM_DB_SPENDS
         spends_ = std::make_shared<spend_database>(spend_table,
@@ -287,10 +306,13 @@ void data_base::start() {
         stealth_ = std::make_shared<stealth_database>(stealth_rows,
             settings_.file_growth_rate, remap_mutex_);
 #endif // BITPRIM_DB_STEALTH
-
     }
+#endif // BITPRIM_DB_WITH_INDEXES
+
 }
 
+
+#ifdef BITPRIM_DB_LEGACY
 // protected
 bool data_base::flush() const {
     // Avoid a race between flush and close whereby flush is skipped because
@@ -301,17 +323,16 @@ bool data_base::flush() const {
     ////    return true;
 
     auto flushed = true
-#ifdef BITPRIM_DB_LEGACY
                 && blocks_->flush() 
                 && transactions_->flush() 
-#endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
                 && transactions_unconfirmed_->flush()
 #endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
                 ;
 
-    if (use_indexes) {
+#ifdef BITPRIM_DB_WITH_INDEXES
+    if (use_indexes()) {
         flushed = flushed 
 #ifdef BITPRIM_DB_SPENDS
                 && spends_->flush() 
@@ -324,6 +345,7 @@ bool data_base::flush() const {
 #endif // BITPRIM_DB_STEALTH                
                 ;
     }
+#endif // BITPRIM_DB_WITH_INDEXES
 
     // Just for the log.
     code ec(flushed ? error::success : error::operation_failed_0);
@@ -334,9 +356,9 @@ bool data_base::flush() const {
 }
 
 // protected
-void data_base::synchronize()
-{
-    if (use_indexes) {
+void data_base::synchronize() {
+#ifdef BITPRIM_DB_WITH_INDEXES
+    if (use_indexes()) {
 #ifdef BITPRIM_DB_SPENDS
         spends_->synchronize();
 #endif // BITPRIM_DB_SPENDS
@@ -349,19 +371,17 @@ void data_base::synchronize()
         stealth_->synchronize();
 #endif // BITPRIM_DB_STEALTH                
     }
+#endif // BITPRIM_DB_WITH_INDEXES
 
-#ifdef BITPRIM_DB_LEGACY    
     transactions_->synchronize();
-#endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     transactions_unconfirmed_->synchronize();
 #endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
 
-#ifdef BITPRIM_DB_LEGACY
     blocks_->synchronize();
-#endif // BITPRIM_DB_LEGACY
 }
+#endif // BITPRIM_DB_LEGACY
 
 // Readers.
 // ----------------------------------------------------------------------------

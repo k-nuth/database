@@ -71,19 +71,28 @@ public:
     // Construct.
     // ----------------------------------------------------------------------------
 
-    data_base(const settings& settings);
+    data_base(settings const& settings);
 
     // Open and close.
     // ------------------------------------------------------------------------
 
     /// Create and open all databases.
-    bool create(const chain::block& genesis);
+    bool create(chain::block const& genesis);
 
+
+#ifdef BITPRIM_DB_LEGACY
     /// Open all databases.
     bool open() override;
 
     /// Close all databases.
     bool close() override;
+#else
+    /// Open all databases.
+    bool open();
+
+    /// Close all databases.
+    bool close();
+#endif// BITPRIM_DB_LEGACY
 
     /// Call close on destruct.
     ~data_base();
@@ -153,8 +162,11 @@ public:
 
 protected:
     void start();
+
+#ifdef BITPRIM_DB_LEGACY
     void synchronize();
     bool flush() const override;
+#endif // BITPRIM_DB_LEGACY
 
     // Sets error if first_height is not the current top + 1 or not linked.
     void push_all(block_const_ptr_list_const_ptr in_blocks, size_t first_height, dispatcher& dispatch, result_handler handler);
