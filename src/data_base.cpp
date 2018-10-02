@@ -251,16 +251,6 @@ bool data_base::close() {
             ;
 }
 
-
-
-//TODO(fernando): move to an util/tools file
-constexpr 
-std::chrono::seconds blocks_to_seconds(uint32_t blocks) {
-    // uint32_t const target_spacing_seconds = 10 * 60;
-    return std::chrono::seconds(blocks * target_spacing_seconds);
-}
-
-
 // protected
 void data_base::start() {
     // TODO: parameterize initial file sizes as record count or slab bytes?
@@ -276,8 +266,8 @@ void data_base::start() {
 #endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_NEW
-    // utxo_db_ = std::make_shared<utxo_database>(utxo_dir, std::chrono::seconds(60000));  //TODO(fernando): put in a CFG file
-    utxo_db_ = std::make_shared<utxo_database>(utxo_dir, blocks_to_seconds(settings_.reorg_pool_limit));
+    // utxo_db_ = std::make_shared<utxo_database>(utxo_dir, blocks_to_seconds(settings_.reorg_pool_limit));
+    utxo_db_ = std::make_shared<utxo_database>(utxo_dir, settings_.reorg_pool_limit);
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
@@ -437,7 +427,7 @@ const stealth_database& data_base::stealth() const {
 static inline 
 size_t get_next_height(const block_database& blocks) {
     size_t current_height;
-    const auto empty_chain = !blocks.top(current_height);
+    auto const empty_chain = !blocks.top(current_height);
     return empty_chain ? 0 : current_height + 1;
 }
 
@@ -481,7 +471,7 @@ code data_base::verify_push(const block& block, size_t height) {
 
 code data_base::verify_push(const transaction& tx) {
 #ifdef BITPRIM_DB_LEGACY
-    const auto result = transactions_->get(tx.hash(), max_size_t, false);
+    auto const result = transactions_->get(tx.hash(), max_size_t, false);
     return result && ! result.is_spent(max_size_t) ? error::unspent_duplicate : error::success;
 #else
     return error::success;
@@ -521,11 +511,11 @@ code data_base::insert(const chain::block& block, size_t height) {
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_LEGACY
-    const auto ec = verify_insert(block, height);
+    auto const ec = verify_insert(block, height);
 
     if (ec) return ec;
 
-    // const auto median_time_past = block.header().validation.median_time_past;
+    // auto const median_time_past = block.header().validation.median_time_past;
     // median_time_past = block.header().validation.median_time_past;
     // std::cout << "data_base::insert - median_time_past(2): " << median_time_past << std::endl;
 
@@ -550,7 +540,7 @@ code data_base::push(const chain::transaction& tx, uint32_t forks) {
     unique_lock lock(write_mutex_);
 
     // Returns error::unspent_duplicate if an unspent tx with same hash exists.
-    const auto ec = verify_push(tx);
+    auto const ec = verify_push(tx);
 
     if (ec) {
         return ec;
@@ -595,7 +585,7 @@ code data_base::push_legacy(block const& block, size_t height) {
     ///////////////////////////////////////////////////////////////////////////
     unique_lock lock(write_mutex_);
 
-    const auto ec = verify_push(block, height);
+    auto const ec = verify_push(block, height);
     if (ec != error::success) {
         return ec;
     }
@@ -606,7 +596,7 @@ code data_base::push_legacy(block const& block, size_t height) {
         return error::operation_failed_4;
     }
 
-    const auto median_time_past = block.header().validation.median_time_past;
+    auto const median_time_past = block.header().validation.median_time_past;
 
     if ( ! push_transactions(block, height, median_time_past) || ! push_heights(block, height)) {
         return error::operation_failed_5;
@@ -629,7 +619,7 @@ code data_base::push_legacy(block const& block, size_t height) {
 // This is designed for write exclusivity and read concurrency.
 code data_base::push(block const& block, size_t height) {
 
-    const auto median_time_past = block.header().validation.median_time_past;
+    auto const median_time_past = block.header().validation.median_time_past;
 
 #ifdef BITPRIM_DB_NEW
     auto res = utxo_db_->push_block(block, height, median_time_past);
@@ -667,11 +657,11 @@ code data_base::push_genesis(block const& block) {
 // To push in order call with bucket = 0 and buckets = 1 (defaults).
 bool data_base::push_transactions(const chain::block& block, size_t height, uint32_t median_time_past, size_t bucket /*= 0*/, size_t buckets/*= 1*/) {
     BITCOIN_ASSERT(bucket < buckets);
-    const auto& txs = block.transactions();
-    const auto count = txs.size();
+    auto const& txs = block.transactions();
+    auto const count = txs.size();
 
     for (auto position = bucket; position < count; position = ceiling_add(position, buckets)) {
-        const auto& tx = txs[position];
+        auto const& tx = txs[position];
 
 #ifdef BITPRIM_DB_LEGACY
         transactions_->store(tx, height, median_time_past, position);
@@ -685,7 +675,7 @@ bool data_base::push_transactions(const chain::block& block, size_t height, uint
             continue;
         }
 
-        const auto tx_hash = tx.hash();
+        auto const tx_hash = tx.hash();
 
 #if defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY)
         if (position != 0) {
@@ -708,11 +698,11 @@ bool data_base::push_transactions(const chain::block& block, size_t height, uint
 bool data_base::push_heights(const chain::block& block, size_t height) {
 #ifdef BITPRIM_DB_LEGACY
     transactions_->synchronize();
-    const auto& txs = block.transactions();
+    auto const& txs = block.transactions();
 
     // Skip coinbase as it has no previous output.
     for (auto tx = txs.begin() + 1; tx != txs.end(); ++tx) {
-        for (const auto& input: tx->inputs()) {
+        for (auto const& input: tx->inputs()) {
             if ( ! transactions_->spend(input.previous_output(), height)) {
                 return false;
             }
@@ -726,9 +716,9 @@ bool data_base::push_heights(const chain::block& block, size_t height) {
 void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const input::list& inputs) {
     
     for (uint32_t index = 0; index < inputs.size(); ++index) {
-        const auto& input = inputs[index];
+        auto const& input = inputs[index];
         const input_point inpoint {tx_hash, index};
-        const auto& prevout = input.previous_output();
+        auto const& prevout = input.previous_output();
 
 #ifdef BITPRIM_DB_SPENDS
         spends_->store(prevout, inpoint);
@@ -767,7 +757,7 @@ void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const inp
                 bool output_is_coinbase;
 
 #if defined(BITPRIM_DB_NEW)
-                auto const entry = utxo_db->get(prevout);
+                auto const entry = utxo_db->get_utxo(prevout);
                 if (entry.is_valid()) {
                     for (auto const& address : entry.output().addresses()) {
                         history_->add_input(address.hash(), inpoint, height, prevout);
@@ -793,9 +783,9 @@ void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const inp
 #ifdef BITPRIM_DB_HISTORY
 void data_base::push_outputs(const hash_digest& tx_hash, size_t height, const output::list& outputs) {
     for (uint32_t index = 0; index < outputs.size(); ++index) {
-        const auto outpoint = output_point {tx_hash, index};
-        const auto& output = outputs[index];
-        const auto value = output.value();
+        auto const outpoint = output_point {tx_hash, index};
+        auto const& output = outputs[index];
+        auto const value = output.value();
 
         // Standard outputs contain unambiguous address data.
         for (auto const& address : output.addresses()) {
@@ -812,11 +802,11 @@ void data_base::push_stealth(hash_digest const& tx_hash, size_t height, const ou
 
     // Stealth outputs are paired by convention.
     for (size_t index = 0; index < (outputs.size() - 1); ++index) {
-        const auto& ephemeral_script = outputs[index].script();
-        const auto& payment_output = outputs[index + 1];
+        auto const& ephemeral_script = outputs[index].script();
+        auto const& payment_output = outputs[index + 1];
 
         // Try to extract the payment address from the second output.
-        const auto address = payment_output.address();
+        auto const address = payment_output.address();
         if (!address)
             continue;
 
@@ -845,7 +835,7 @@ void data_base::push_stealth(hash_digest const& tx_hash, size_t height, const ou
 // A false return implies store corruption.
 bool data_base::pop(block& out_block) {
     
-    const auto start_time = asio::steady_clock::now();
+    auto const start_time = asio::steady_clock::now();
 
 #ifdef BITPRIM_DB_NEW
 
@@ -865,18 +855,18 @@ bool data_base::pop(block& out_block) {
     }
 
     // This should never become invalid if this call is protected.
-    const auto block = blocks_->get(height);
+    auto const block = blocks_->get(height);
     if ( ! block) {
         return false;
     }
 
-    const auto count = block.transaction_count();
+    auto const count = block.transaction_count();
     transaction::list transactions;
     transactions.reserve(count);
 
     for (size_t position = 0; position < count; ++position) {
         auto tx_hash = block.transaction_hash(position);
-        const auto tx = transactions_->get(tx_hash, height, true);
+        auto const tx = transactions_->get(tx_hash, height, true);
 
         if ( ! tx || (tx.height() != height) || (tx.position() != position))
             return false;
@@ -888,7 +878,7 @@ bool data_base::pop(block& out_block) {
 
     // Remove txs, then outputs, then inputs (also reverse order).
     // Loops txs backwards even though they may have been added asynchronously.
-    for (const auto& tx: reverse(transactions)) {
+    for (auto const& tx: reverse(transactions)) {
         if ( ! transactions_->unconfirm(tx.hash())) {
             return false;
         }
@@ -928,7 +918,7 @@ bool data_base::pop(block& out_block) {
 // A false return implies store corruption.
 bool data_base::pop_inputs(const input::list& inputs, size_t height) {
     // Loop in reverse.
-    for (const auto& input: reverse(inputs)) {
+    for (auto const& input: reverse(inputs)) {
 
 #ifdef BITPRIM_DB_LEGACY
         if ( ! transactions_->unspend(input.previous_output())) {
@@ -965,7 +955,7 @@ bool data_base::pop_outputs(const output::list& outputs, size_t height) {
 
 #ifdef BITPRIM_DB_HISTORY
     // Loop in reverse.
-    for (const auto output : reverse(outputs)) {
+    for (auto const output : reverse(outputs)) {
         // Delete can fail if index start has been changed between restarts.
         for (auto const& address : output.addresses()) {
             /* bool */ history_->delete_last_row(address.hash());
@@ -999,8 +989,8 @@ void data_base::push_next(const code& ec, block_const_ptr_list_const_ptr blocks,
         return;
     }
 
-    const auto block = (*blocks)[index];
-    const auto median_time_past = block->header().validation.median_time_past;
+    auto const block = (*blocks)[index];
+    auto const median_time_past = block->header().validation.median_time_past;
 
     // Set push start time for the block.
     block->validation.start_push = asio::steady_clock::now();
@@ -1030,18 +1020,18 @@ void data_base::do_push(block_const_ptr block, size_t height, uint32_t median_ti
     result_handler block_complete = std::bind(&data_base::handle_push_transactions, this, _1, block, height, handler);
 
     // This ensures linkage and that the there is at least one tx.
-    const auto ec = verify_push(*block, height);
+    auto const ec = verify_push(*block, height);
 
     if (ec) {
         block_complete(ec);
         return;
     }
 
-    const auto threads = dispatch.size();
-    const auto buckets = std::min(threads, block->transactions().size());
+    auto const threads = dispatch.size();
+    auto const buckets = std::min(threads, block->transactions().size());
     BITCOIN_ASSERT(buckets != 0);
 
-    const auto join_handler = bc::synchronize(std::move(block_complete), buckets, NAME "_do_push");
+    auto const join_handler = bc::synchronize(std::move(block_complete), buckets, NAME "_do_push");
 
     for (size_t bucket = 0; bucket < buckets; ++bucket) {
         dispatch.concurrent(&data_base::do_push_transactions, this, block, height, median_time_past, bucket, buckets, join_handler);
@@ -1050,7 +1040,7 @@ void data_base::do_push(block_const_ptr block, size_t height, uint32_t median_ti
 }
 
 void data_base::do_push_transactions(block_const_ptr block, size_t height, uint32_t median_time_past, size_t bucket, size_t buckets, result_handler handler) {
-    const auto result = push_transactions(*block, height, median_time_past, bucket, buckets);
+    auto const result = push_transactions(*block, height, median_time_past, bucket, buckets);
     handler(result ? error::success : error::operation_failed_7);
 }
 
@@ -1082,13 +1072,13 @@ void data_base::handle_push_transactions(const code& ec, block_const_ptr block, 
 // TODO: make async and concurrency as appropriate.
 // This precludes popping the genesis block.
 void data_base::pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest& fork_hash, dispatcher&, result_handler handler) {
-    size_t top;
     out_blocks->clear();
 
 #ifdef BITPRIM_DB_NEW
 
-    const auto header_result = utxo_db_->get_header(fork_hash);
+    auto const header_result = utxo_db_->get_header(fork_hash);
 
+    uint32_t top;
     // The fork point does not exist or failed to get it or the top, fail.
     if ( ! header_result.first.is_valid() ||  utxo_db_->get_last_height(top) != utxo_code::success) {
         //**--**
@@ -1096,12 +1086,13 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest
         return;
     }
 
-    const auto fork = result.second;
+    auto const fork = header_result.second;
     
 #endif
 
 #ifdef BITPRIM_DB_LEGACY
-    const auto result = blocks_->get(fork_hash);
+    size_t top;
+    auto const result = blocks_->get(fork_hash);
 
     // The fork point does not exist or failed to get it or the top, fail.
     if ( ! result || ! blocks_->top(top)) {
@@ -1110,11 +1101,11 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest
         return;
     }
 
-    const auto fork = result.height();
+    auto const fork = result.height();
 
 #endif // BITPRIM_DB_LEGACY
 
-    const auto size = top - fork;
+    auto const size = top - fork;
 
     // The fork is at the top of the chain, nothing to pop.
     if (size == 0) {
@@ -1146,7 +1137,7 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest
 
 // This is designed for write exclusivity and read concurrency.
 void data_base::reorganize(const checkpoint& fork_point, block_const_ptr_list_const_ptr incoming_blocks, block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch, result_handler handler) {
-    const auto next_height = safe_add(fork_point.height(), size_t(1));
+    auto const next_height = safe_add(fork_point.height(), size_t(1));
     const result_handler pop_handler = std::bind(&data_base::handle_pop, this, _1, incoming_blocks, next_height, std::ref(dispatch), handler);
 
 

@@ -22,7 +22,8 @@
 
 #include <cstddef>
 #include <cstdint>
-// #include <bitcoin/bitcoin.hpp>
+
+#include <boost/range/adaptor/reversed.hpp>
 
 #ifdef BITPRIM_UTXO_4BYTES_INDEX
 #define BITPRIM_UXTO_WIRE true
@@ -30,16 +31,15 @@
 #define BITPRIM_UXTO_WIRE false
 #endif
 
-
 namespace libbitcoin { 
 namespace database {
 
-constexpr char utxo_database::block_header_db_name[]; //key: block height, value: block header
-constexpr char utxo_database::block_header_by_hash_db_name[]; // key: block hash, value: block height
-constexpr char utxo_database::utxo_db_name[]; //key: point, value: output
-constexpr char utxo_database::reorg_pool_name[]; //key: key: point, value: output
-constexpr char utxo_database::reorg_index_name[]; //key: block height, value: point list
-constexpr char utxo_database::reorg_block_name[]; //key: block height, value: block
+constexpr char utxo_database::block_header_db_name[];           //key: block height, value: block header
+constexpr char utxo_database::block_header_by_hash_db_name[];   //key: block hash, value: block height
+constexpr char utxo_database::utxo_db_name[];                   //key: point, value: output
+constexpr char utxo_database::reorg_pool_name[];                //key: key: point, value: output
+constexpr char utxo_database::reorg_index_name[];               //key: block height, value: point list
+constexpr char utxo_database::reorg_block_name[];               //key: block height, value: block
 
 // static
 bool utxo_database::succeed(utxo_code code) {
@@ -49,14 +49,17 @@ bool utxo_database::succeed(utxo_code code) {
 // Constructors.
 // ----------------------------------------------------------------------------
 
-utxo_database::utxo_database(path const& db_dir, std::chrono::seconds limit)
-    : db_dir_(db_dir), limit_(limit)
+utxo_database::utxo_database(path const& db_dir, uint32_t reorg_pool_limit)
+    : db_dir_(db_dir)
+    , reorg_pool_limit_(reorg_pool_limit)
+    , limit_(blocks_to_seconds(reorg_pool_limit))
 {}
 
 utxo_database::~utxo_database() {
     close();
 }
 
+//private
 bool utxo_database::is_old_block(chain::block const& block) const {
     return is_old_block_(block, limit_);
 }
@@ -64,6 +67,7 @@ bool utxo_database::is_old_block(chain::block const& block) const {
 // Create.
 // ----------------------------------------------------------------------------
 
+//private
 bool utxo_database::create_and_open_environment() {
 
     if (mdb_env_create(&env_) != MDB_SUCCESS) {
@@ -180,7 +184,6 @@ bool utxo_database::open() {
 // Close files.
 bool utxo_database::close() {
     if (db_created_) {
-        
         mdb_dbi_close(env_, dbi_block_header_);
         mdb_dbi_close(env_, dbi_block_header_by_hash_);
 
@@ -199,57 +202,6 @@ bool utxo_database::close() {
 
     return true;
 }
-
-
-
-/*
-Block 1                                                                                         Utxo        Reorg Pool          Reorg Index
-    Transaccion 1 (Coinbase)   
-        Sólo Outputs (1 o más)                      0 -> Insertar (Point, Output)                       <-   (h1, p1)*        500, ...
-
-Block 2
-    Transaccion 1 (Coinbase)
-        Sólo Outputs (1 o más)                      5 -> Insertar (Point, Output)                 *
-
-Block 3
-    Transaccion 1 (Coinbase)
-        Sólo Outputs (1 o más)                      10 -> Insertar (Point, Output)                *
-
-...
-
-Block 500
-    Transaccion 1 (Coinbase)
-        Sólo Outputs (1 o más)                      0 -> Insertar (Point, Output)                 *
-
-    Transaccion 2
-        Inputs (1 o mas)                            Apunta al output del Bloque 1
-        Outputs (1 o más)                                                                         *#
-
-
-BORRAR Block 500
-    Transaccion 2
-        Outputs (1 o más)                                                                         #  
-        Inputs (1 o mas)                            Apunta al output del Bloque 1 (hash, pos)
-
-    Transaccion 1 (Coinbase)
-        Sólo Outputs (1 o más)                      0 -> Insertar (Point, Output)                 *
-
-    
-*/
-
-// template <std::size_t N>
-// std::size_t SizeOf(uint8_t(&)[N]) {
-// 	return S;
-// }
-
-
-// std::array<uint8_t, size(uint32_t)> uint32_to_bytes(uint32_t x) {
-// 	return { (x >> 0)  & 0xFF,
-//              (x >> 8)  & 0xFF,
-//              (x >> 16) & 0xFF,
-//              (x >> 24) & 0xFF};
-// }
-
 
 // private
 utxo_code utxo_database::insert_reorg_pool(uint32_t height, MDB_val& key, MDB_txn* db_txn) {
@@ -438,7 +390,7 @@ utxo_code utxo_database::push_block_reorg(chain::block const& block, uint32_t he
     auto valuearr = block.to_data(false);
     MDB_val key {sizeof(height), &height};
     MDB_val value {valuearr.size(), valuearr.data()};
-    auto res = mdb_put(db_txn, dbi_block_reorg_, &key, &value, MDB_NOOVERWRITE);
+    auto res = mdb_put(db_txn, dbi_reorg_block_, &key, &value, MDB_NOOVERWRITE);
     if (res == MDB_KEYEXIST) {
         LOG_INFO(LOG_DATABASE) << "utxo_database::push_block_header - mdb_put(0) " << res;
         return utxo_code::duplicated_key;
@@ -460,8 +412,9 @@ utxo_code utxo_database::push_block(chain::block const& block, uint32_t height, 
         return res;
     }
 
-    if ( insert_reorg )
-    {
+    if ( insert_reorg ) {
+        //prune 
+
         res = push_block_reorg(block, height, db_txn);
         if (res != utxo_code::success) {
             return res;
@@ -495,23 +448,11 @@ utxo_code utxo_database::push_genesis(chain::block const& block, MDB_txn* db_txn
 
 // Remove functions ------------------------------------------------------
 
-// // private
-// utxo_code utxo_database::remove_transaction(chain::transaction const& tx, MDB_txn* db_txn) {
-//     auto res = remove_inputs(tx.inputs(), db_txn);
-    
-//     if (res == utxo_code::key_not_found) {
-//         //TODO(fernando): log and continue
-//         return utxo_code::success;
-//     }
-//     return res;
-// }
-
-
 // private
 utxo_code utxo_database::remove_outputs(hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn) {
     uint32_t pos = outputs.size() - 1;
-    for (auto const& output: reverse(outputs)) {
-        output_point const point {txid, pos};
+    for (auto const& output: boost::adaptors::reverse(outputs)) {
+        chain::output_point const point {txid, pos};
         auto res = remove(0, point, false, db_txn);
         if (res != utxo_code::success) {
             return res;
@@ -563,7 +504,7 @@ utxo_code utxo_database::insert_output_from_reorg_and_remove(chain::output_point
 
 // private
 utxo_code utxo_database::insert_inputs(chain::input::list const& inputs, MDB_txn* db_txn) {
-    for (auto const& input: reverse(inputs)) {
+    for (auto const& input: boost::adaptors::reverse(inputs)) {
         auto const& point = input.previous_output();
 
         auto res = insert_output_from_reorg_and_remove(point, db_txn);
@@ -636,7 +577,7 @@ utxo_code utxo_database::remove_block_header(hash_digest const& hash, uint32_t h
 utxo_code utxo_database::remove_block_reorg(uint32_t height, MDB_txn* db_txn) {
 
     MDB_val key {sizeof(height), &height};
-    auto res = mdb_del(db_txn, dbi_block_reorg_, &key, NULL);
+    auto res = mdb_del(db_txn, dbi_reorg_block_, &key, NULL);
     if (res == MDB_NOTFOUND) {
         LOG_INFO(LOG_DATABASE) << "utxo_database::remove_block_reorg - mdb_del: " << res;
         return utxo_code::key_not_found;
@@ -688,7 +629,7 @@ utxo_code utxo_database::remove_block(chain::block const& block, uint32_t height
         return res;
     }
 
-    res = remove_header(block.hash(), height, db_txn);
+    res = remove_block_header(block.hash(), height, db_txn);
     if (res != utxo_code::success) {
         return res;
     }
@@ -755,7 +696,7 @@ utxo_code utxo_database::push_genesis(chain::block const& block) {
     return res;
 }
 
-utxo_entry utxo_database::get(chain::output_point const& point) const {
+utxo_entry utxo_database::get_utxo(chain::output_point const& point) const {
     MDB_txn* db_txn;
     if (mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) != MDB_SUCCESS) {
         return utxo_entry{};
@@ -901,35 +842,7 @@ chain::block utxo_database::get_block_reorg(uint32_t height) const {
     return res;
 }
 
-utxo_code utxo_database::pop_block(chain::block& out_block)
-{
-    size_t height;
-
-    //TODO: (Mario) add overload with tx
-    // The blockchain is empty (nothing to pop, not even genesis).
-    if (get_last_height(height) != utxo_code::success ) {
-        return false;
-    }
-
-    //TODO: (Mario) add overload with tx
-    // This should never become invalid if this call is protected.
-    const auto block = get_block_reorg(height);
-    if ( ! block.is_valid()) {
-        return false;
-    }
-
-    if ( remove_block(block) != utxo_code::success )
-    {
-        return false;        
-    }
-
-    transaction::list transactions; 
-    out_block = chain::block(block.header(), std::move(transactions));
-
-    return true;
-}
-
-utxo_code utxo_database::remove_block(chain::block const& block) {
+utxo_code utxo_database::remove_block(chain::block const& block, uint32_t height) {
 
     MDB_txn* db_txn;
     auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
@@ -937,7 +850,7 @@ utxo_code utxo_database::remove_block(chain::block const& block) {
         return utxo_code::other;
     }
 
-    auto res = remove_block(block, db_txn);
+    auto res = remove_block(block, height, db_txn);
     if (res != utxo_code::success) {
         mdb_txn_abort(db_txn);
         return res;
@@ -947,6 +860,130 @@ utxo_code utxo_database::remove_block(chain::block const& block) {
     if (res2 != MDB_SUCCESS) {
         return utxo_code::other;
     }
+    return utxo_code::success;
+}
+
+utxo_code utxo_database::pop_block(chain::block& out_block) {
+    uint32_t height;
+
+    //TODO: (Mario) add overload with tx
+    // The blockchain is empty (nothing to pop, not even genesis).
+    auto res = get_last_height(height);
+    if (res != utxo_code::success ) {
+        return res;
+    }
+
+    //TODO: (Mario) add overload with tx
+    // This should never become invalid if this call is protected.
+    out_block = get_block_reorg(height);
+    if ( ! out_block.is_valid()) {
+        return utxo_code::key_not_found;
+    }
+
+    res = remove_block(out_block, height);
+    if (res != utxo_code::success) {
+        return res;
+    }
+
+    return utxo_code::success;
+}
+
+
+//private
+utxo_code utxo_database::prune_reorg_block(uint32_t remove_until, MDB_txn* db_txn) {
+    MDB_cursor* cursor;
+    if (mdb_cursor_open(db_txn, dbi_reorg_block_, &cursor) != MDB_SUCCESS) {
+        return utxo_code::other;
+    }
+
+    MDB_val key;
+    MDB_val value;
+    int rc;
+    while ((rc = mdb_cursor_get(cursor, &key, nullptr, MDB_NEXT)) == MDB_SUCCESS) {
+        auto current_height = *static_cast<uint32_t*>(key.mv_data);
+
+        if (current_height <= remove_until) {
+            if (mdb_cursor_del(cursor, 0) != MDB_SUCCESS) {
+                mdb_cursor_close(cursor);
+                return utxo_code::other;
+            }
+        } else {
+            break;
+        }
+    }
+    
+    mdb_cursor_close(cursor);
+    return utxo_code::success;
+}
+
+//private
+utxo_code utxo_database::prune_reorg_index(uint32_t remove_until, MDB_txn* db_txn) {
+    MDB_cursor* cursor;
+    if (mdb_cursor_open(db_txn, dbi_reorg_index_, &cursor) != MDB_SUCCESS) {
+        return utxo_code::other;
+    }
+
+    MDB_val key;
+    MDB_val value;
+    int rc;
+    while ((rc = mdb_cursor_get(cursor, &key, &value, MDB_NEXT)) == MDB_SUCCESS) {
+        auto current_height = *static_cast<uint32_t*>(key.mv_data);
+        if (current_height <= remove_until) {
+            auto res = mdb_del(db_txn, dbi_reorg_pool_, &value, NULL);
+            if (res == MDB_NOTFOUND) {
+                LOG_INFO(LOG_DATABASE) << "utxo_database::prune_reorg_index - mdb_del: " << res;
+                return utxo_code::key_not_found;
+            }
+            if (res != MDB_SUCCESS) {
+                LOG_INFO(LOG_DATABASE) << "utxo_database::prune_reorg_index - mdb_del: " << res;
+                return utxo_code::other;
+            }
+
+            if (mdb_cursor_del(cursor, 0) != MDB_SUCCESS) {
+                mdb_cursor_close(cursor);
+                return utxo_code::other;
+            }
+        } else {
+            break;
+        }
+    }
+    
+    mdb_cursor_close(cursor);
+    return utxo_code::success;
+}
+
+utxo_code utxo_database::prune() {
+
+    //TODO: (Mario) add overload with tx
+    uint32_t height;
+    auto res = get_last_height(height);
+    if (res != utxo_code::success ) {
+        return res;
+    }
+    
+    auto remove_until = height - reorg_pool_limit_;
+
+    MDB_txn* db_txn;
+    if (mdb_txn_begin(env_, NULL, 0, &db_txn) != MDB_SUCCESS) {
+        return utxo_code::other;
+    }
+
+    res = prune_reorg_block(remove_until, db_txn);
+    if (res != utxo_code::success) {
+        mdb_txn_abort(db_txn);
+        return res;
+    }
+
+    res = prune_reorg_index(remove_until, db_txn);
+    if (res != utxo_code::success) {
+        mdb_txn_abort(db_txn);
+        return res;
+    }
+
+    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+        return utxo_code::other;
+    }
+
     return utxo_code::success;
 }
 

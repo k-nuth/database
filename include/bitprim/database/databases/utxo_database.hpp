@@ -54,6 +54,13 @@ bool is_old_block_(chain::block const& block, std::chrono::seconds limit) {
     return is_old_block_(block.header().timestamp(), limit);
 }
 
+//TODO(fernando): move to an util/tools file
+constexpr 
+std::chrono::seconds blocks_to_seconds(uint32_t blocks) {
+    // uint32_t const target_spacing_seconds = 10 * 60;
+    return std::chrono::seconds(blocks * target_spacing_seconds);
+}
+
 enum class utxo_code {
     success = 0,
     success_duplicate_coinbase = 1,
@@ -62,6 +69,22 @@ enum class utxo_code {
     db_empty = 4,
     other = 5
 };
+
+/*
+    - llega un bloque por la red
+    - valido el bloque
+    - si bloque que llego es valido
+        - guardar bloque
+
+        - freno todos los equipos de mineria
+        - obtengo get block template
+        - enciendo equipos de mineria
+
+    - prunear
+    - otras cosas
+
+*/
+
 
 class BCD_API utxo_database {
 public:
@@ -77,7 +100,7 @@ public:
     constexpr static char reorg_block_name[] = "reorg_block";
 
     /// Construct the database.
-    utxo_database(path const& db_dir, std::chrono::seconds limit);
+    utxo_database(path const& db_dir, uint32_t reorg_pool_limit);
 
     /// Close the database.
     ~utxo_database();
@@ -102,7 +125,7 @@ public:
     utxo_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past);
     
     /// TODO comment
-    utxo_entry get(chain::output_point const& key) const;
+    utxo_entry get_utxo(chain::output_point const& point) const;
 
     /// TODO comment
     utxo_code get_last_height(uint32_t& out_height) const;
@@ -114,6 +137,8 @@ public:
     std::pair<chain::header, uint32_t> get_header(hash_digest const& hash) const;
 
     utxo_code pop_block(chain::block& out_block);
+
+    utxo_code prune();
 
 private:
     bool create_and_open_environment();
@@ -140,11 +165,29 @@ private:
 
     chain::header get_header(uint32_t height, MDB_txn* db_txn) const;
 
+
+    // Remove functions --------------------------------
+    utxo_code insert_inputs(chain::input::list const& inputs, MDB_txn* db_txn);
+
+    utxo_code insert_output_from_reorg_and_remove(chain::output_point const& point, MDB_txn* db_txn);
+
+    utxo_code remove_outputs(hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn);
+
+    utxo_code remove_transaction_non_coinbase(chain::transaction const& tx, MDB_txn* db_txn);
+
     template <typename I>
     utxo_code remove_transactions_non_coinbase(I f, I l, MDB_txn* db_txn);
 
-    utxo_code remove_block(chain::block const& block, MDB_txn* db_txn);
-    utxo_code remove_block(chain::block const& block);
+    utxo_code remove_block_header(hash_digest const& hash, uint32_t height, MDB_txn* db_txn);
+
+    utxo_code remove_block_reorg(uint32_t height, MDB_txn* db_txn);
+
+    utxo_code remove_reorg_index(uint32_t height, MDB_txn* db_txn);
+
+    utxo_code remove_block(chain::block const& block, uint32_t height, MDB_txn* db_txn);
+    utxo_code remove_block(chain::block const& block, uint32_t height);
+
+    // -------------------------------------------------
 
     utxo_code push_block_reorg(chain::block const& block, uint32_t height, MDB_txn* db_txn);
     chain::block get_block_reorg(uint32_t height, MDB_txn* db_txn) const;
@@ -152,8 +195,16 @@ private:
 
     bool is_old_block(chain::block const& block) const;
 
+    // -------------------------------------------------
+
+    utxo_code prune_reorg_block(uint32_t remove_until, MDB_txn* db_txn);
+    utxo_code prune_reorg_index(uint32_t remove_until, MDB_txn* db_txn);
+
+    // -------------------------------------------------
+
 
     path const db_dir_;
+    uint32_t reorg_pool_limit_;     //TODO(fernando): check if uint32_max is needed for NO-LIMIT???
     std::chrono::seconds const limit_;
     bool env_created_ = false;
     bool db_created_ = false;

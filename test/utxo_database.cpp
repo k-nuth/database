@@ -37,7 +37,7 @@ struct utxo_database_directory_setup_fixture {
         remove_all(DIRECTORY, ec);
         BOOST_REQUIRE(create_directories(DIRECTORY, ec));
 
-        utxo_database db(DIRECTORY "/utxo_db");
+        utxo_database db(DIRECTORY "/utxo_db", 100);
         BOOST_REQUIRE(db.create());
         // BOOST_REQUIRE(db.close());
         // BOOST_REQUIRE(db.open());
@@ -79,6 +79,28 @@ chain::block get_genesis() {
     return get_block(genesis_enc);
 }
 
+chain::block get_fake_genesis() {
+    std::string genesis_enc =
+        "02000000"                                                              // 4     version
+        "0000000000000000000000000000000000000000000000000000000000000000"      //32     Previous Block Hash
+        "3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a"      //32     Merkle root
+        "29ab5f49"                                                              // 4     Timestamp
+        "ffff001d"                                                              // 4
+        "1dac2b7c"                                                              // 4
+        "01"                                                                    // 1
+        "01000000"                                                              // 4
+        "01"                                                                    // 1
+        "0000000000000000000000000000000000000000000000000000000000000000ffffffff" //36
+        "4d"
+        "04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73" //77
+        "ffffffff"
+        "01"
+        "00f2052a01000000"
+        "43"
+        "4104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac"
+        "00000000";
+    return get_block(genesis_enc);
+}
 
 
 std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi> open_dbs() {
@@ -262,14 +284,14 @@ BOOST_FIXTURE_TEST_SUITE(utxo_tests, utxo_database_directory_setup_fixture)
 // #ifdef BITPRIM_DB_NEW
 
 BOOST_AUTO_TEST_CASE(utxo_database__open) {
-    utxo_database db(DIRECTORY "/utxo_db");
+    utxo_database db(DIRECTORY "/utxo_db", 100);
     BOOST_REQUIRE(db.open());
 }
 
 BOOST_AUTO_TEST_CASE(utxo_database__insert_genesis) {
     auto const genesis = get_genesis();
 
-    utxo_database db(DIRECTORY "/utxo_db");
+    utxo_database db(DIRECTORY "/utxo_db", 100);
     BOOST_REQUIRE(db.open());
     BOOST_REQUIRE(db.push_block(genesis, 0, 1) == utxo_code::success);  //TODO(fernando): median_time_past
 
@@ -277,7 +299,7 @@ BOOST_AUTO_TEST_CASE(utxo_database__insert_genesis) {
     std::string txid_enc = "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b";
     BOOST_REQUIRE(decode_hash(txid, txid_enc));
 
-    auto entry = db.get(output_point{txid, 0});
+    auto entry = db.get_utxo(output_point{txid, 0});
     BOOST_REQUIRE(entry.is_valid());
 
     BOOST_REQUIRE(entry.height() == 0);
@@ -292,10 +314,10 @@ BOOST_AUTO_TEST_CASE(utxo_database__insert_genesis) {
     BOOST_REQUIRE(encode_base16(output.to_data(true)) == output_enc);
 }
 
-BOOST_AUTO_TEST_CASE(utxo_database__insert_success_duplicate_coinbase) {
+BOOST_AUTO_TEST_CASE(utxo_database__insert_duplicate_block) {
     auto const genesis = get_genesis();
 
-    utxo_database db(DIRECTORY "/utxo_db");
+    utxo_database db(DIRECTORY "/utxo_db", 100);
     BOOST_REQUIRE(db.open());
     auto res = db.push_block(genesis, 0, 1);       //TODO(fernando): median_time_past
     
@@ -303,13 +325,45 @@ BOOST_AUTO_TEST_CASE(utxo_database__insert_success_duplicate_coinbase) {
     BOOST_REQUIRE(utxo_database::succeed(res));
     
     res = db.push_block(genesis, 0, 1);            //TODO(fernando): median_time_past
+    BOOST_REQUIRE(res == utxo_code::duplicated_key);
+    BOOST_REQUIRE( ! utxo_database::succeed(res));
+}
+
+BOOST_AUTO_TEST_CASE(utxo_database__insert_duplicate_block_by_hash) {
+    auto const genesis = get_genesis();
+
+    utxo_database db(DIRECTORY "/utxo_db", 100);
+    BOOST_REQUIRE(db.open());
+    auto res = db.push_block(genesis, 0, 1);       //TODO(fernando): median_time_past
+    
+    BOOST_REQUIRE(res == utxo_code::success);
+    BOOST_REQUIRE(utxo_database::succeed(res));
+    
+    res = db.push_block(genesis, 1, 1);            //TODO(fernando): median_time_past
+    BOOST_REQUIRE(res == utxo_code::duplicated_key);
+    BOOST_REQUIRE( ! utxo_database::succeed(res));
+}
+
+
+BOOST_AUTO_TEST_CASE(utxo_database__insert_success_duplicate_coinbase) {
+    auto const genesis = get_genesis();
+    auto const fake = get_fake_genesis();
+
+    utxo_database db(DIRECTORY "/utxo_db", 100);
+    BOOST_REQUIRE(db.open());
+    auto res = db.push_block(genesis, 0, 1);       //TODO(fernando): median_time_past
+    
+    BOOST_REQUIRE(res == utxo_code::success);
+    BOOST_REQUIRE(utxo_database::succeed(res));
+    
+    res = db.push_block(fake, 1, 1);            //TODO(fernando): median_time_past
     BOOST_REQUIRE(res == utxo_code::success_duplicate_coinbase);
     BOOST_REQUIRE(utxo_database::succeed(res));
 }
 
 BOOST_AUTO_TEST_CASE(utxo_database__key_not_found) {
     auto const spender = get_block("01000000ba8b9cda965dd8e536670f9ddec10e53aab14b20bacad27b9137190000000000190760b278fe7b8565fda3b968b918d5fd997f993b23674c0af3b6fde300b38f33a5914ce6ed5b1b01e32f570201000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b014effffffff0100f2052a01000000434104b68a50eaa0287eff855189f949c1c6e5f58b37c88231373d8a59809cbae83059cc6469d65c665ccfd1cfeb75c6e8e19413bba7fbff9bc762419a76d87b16086eac000000000100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000");
-    utxo_database db(DIRECTORY "/utxo_db");
+    utxo_database db(DIRECTORY "/utxo_db", 100);
     BOOST_REQUIRE(db.open());
     BOOST_REQUIRE(db.push_block(spender, 1, 1) == utxo_code::key_not_found);        //TODO(fernando): median_time_past
 }
@@ -323,7 +377,7 @@ BOOST_AUTO_TEST_CASE(utxo_database__insert_duplicate) {
     // std::cout << encode_hash(spender.hash()) << std::endl;
 
 
-    utxo_database db(DIRECTORY "/utxo_db");
+    utxo_database db(DIRECTORY "/utxo_db", 100);
     BOOST_REQUIRE(db.open());
     BOOST_REQUIRE(db.push_block(orig, 0, 1) == utxo_code::success);                 //TODO(fernando): median_time_past
     BOOST_REQUIRE(db.push_block(spender, 1, 1) == utxo_code::success);              //TODO(fernando): median_time_past
@@ -336,14 +390,14 @@ BOOST_AUTO_TEST_CASE(utxo_database__spend) {
     //80000
     auto const spender = get_block("01000000ba8b9cda965dd8e536670f9ddec10e53aab14b20bacad27b9137190000000000190760b278fe7b8565fda3b968b918d5fd997f993b23674c0af3b6fde300b38f33a5914ce6ed5b1b01e32f570201000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b014effffffff0100f2052a01000000434104b68a50eaa0287eff855189f949c1c6e5f58b37c88231373d8a59809cbae83059cc6469d65c665ccfd1cfeb75c6e8e19413bba7fbff9bc762419a76d87b16086eac000000000100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000");
 
-    utxo_database db(DIRECTORY "/utxo_db");
+    utxo_database db(DIRECTORY "/utxo_db", 100);
     BOOST_REQUIRE(db.open());
     BOOST_REQUIRE(db.push_block(orig, 0, 1) == utxo_code::success);         //TODO(fernando): median_time_past
 
     hash_digest txid;
     std::string txid_enc = "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6";
     BOOST_REQUIRE(decode_hash(txid, txid_enc));
-    auto entry = db.get(output_point{txid, 0});
+    auto entry = db.get_utxo(output_point{txid, 0});
     BOOST_REQUIRE(entry.is_valid());
 
     BOOST_REQUIRE(entry.height() == 0);
@@ -361,13 +415,13 @@ BOOST_AUTO_TEST_CASE(utxo_database__spend) {
     // --------------------------------------------------------------------------------------------------------------------------
     BOOST_REQUIRE(db.push_block(spender, 1, 1) == utxo_code::success);          //TODO(fernando): median_time_past
 
-    entry = db.get(output_point{txid, 0});
+    entry = db.get_utxo(output_point{txid, 0});
     output = entry.output();
     BOOST_REQUIRE(! output.is_valid());
 
     txid_enc = "c06fbab289f723c6261d3030ddb6be121f7d2508d77862bb1e484f5cd7f92b25";
     BOOST_REQUIRE(decode_hash(txid, txid_enc));
-    entry = db.get(output_point{txid, 0});
+    entry = db.get_utxo(output_point{txid, 0});
     BOOST_REQUIRE(entry.is_valid());
     BOOST_REQUIRE(entry.height() == 1);
     BOOST_REQUIRE(entry.median_time_past() == 1);
@@ -380,7 +434,7 @@ BOOST_AUTO_TEST_CASE(utxo_database__spend) {
 
     txid_enc = "5a4ebf66822b0b2d56bd9dc64ece0bc38ee7844a23ff1d7320a88c5fdb2ad3e2";
     BOOST_REQUIRE(decode_hash(txid, txid_enc));
-    entry = db.get(output_point{txid, 0});
+    entry = db.get_utxo(output_point{txid, 0});
     BOOST_REQUIRE(entry.is_valid());
     BOOST_REQUIRE(entry.height() == 1);
     BOOST_REQUIRE(entry.median_time_past() == 1);
@@ -401,7 +455,7 @@ BOOST_AUTO_TEST_CASE(utxo_database__reorg) {
     auto const spender = get_block("01000000ba8b9cda965dd8e536670f9ddec10e53aab14b20bacad27b9137190000000000190760b278fe7b8565fda3b968b918d5fd997f993b23674c0af3b6fde300b38f33a5914ce6ed5b1b01e32f570201000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b014effffffff0100f2052a01000000434104b68a50eaa0287eff855189f949c1c6e5f58b37c88231373d8a59809cbae83059cc6469d65c665ccfd1cfeb75c6e8e19413bba7fbff9bc762419a76d87b16086eac000000000100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000");
 
     {
-        utxo_database db(DIRECTORY "/utxo_db");
+        utxo_database db(DIRECTORY "/utxo_db", 100);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.push_block(orig, 0, 1) == utxo_code::success);     //TODO(fernando): median_time_past
         BOOST_REQUIRE(db.push_block(spender, 1, 1) == utxo_code::success);     //TODO(fernando): median_time_past
@@ -444,7 +498,7 @@ BOOST_AUTO_TEST_CASE(utxo_database__reorg_index) {
 
 
     {
-        utxo_database db(DIRECTORY "/utxo_db");
+        utxo_database db(DIRECTORY "/utxo_db", 100);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.push_block(b0, 0, 1) == utxo_code::success);           //TODO(fernando): median_time_past
         BOOST_REQUIRE(db.push_block(b1, 1, 1) == utxo_code::success);              
@@ -506,7 +560,7 @@ BOOST_AUTO_TEST_CASE(utxo_database__reorg_index2) {
 
 
     {
-        utxo_database db(DIRECTORY "/utxo_db");
+        utxo_database db(DIRECTORY "/utxo_db", 100);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.push_block(b0, 0, 1) == utxo_code::success);              //TODO(fernando): median_time_past
         BOOST_REQUIRE(db.push_block(b1, 1, 1) == utxo_code::success);
