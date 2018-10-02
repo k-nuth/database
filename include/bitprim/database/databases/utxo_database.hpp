@@ -71,8 +71,10 @@ public:
     constexpr static char block_header_by_hash_db_name[] = "block_header_by_hash";
 
     constexpr static char utxo_db_name[] = "utxo_db";
+
     constexpr static char reorg_pool_name[] = "reorg_pool";
     constexpr static char reorg_index_name[] = "reorg_index";
+    constexpr static char reorg_block_name[] = "reorg_block";
 
     /// Construct the database.
     utxo_database(path const& db_dir, std::chrono::seconds limit);
@@ -98,10 +100,7 @@ public:
 
     /// Remove all the previous outputs and insert all the new outputs atomically.
     utxo_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past);
-
-    // /// TODO comment
-    // utxo_code remove_block(chain::block const& block);
-
+    
     /// TODO comment
     utxo_entry get(chain::output_point const& key) const;
 
@@ -110,8 +109,11 @@ public:
 
     /// TODO comment
     chain::header get_header(uint32_t height) const;
+
     /// TODO comment
     std::pair<chain::header, uint32_t> get_header(hash_digest const& hash) const;
+
+    utxo_code pop_block(chain::block& out_block);
 
 private:
     bool create_and_open_environment();
@@ -138,15 +140,17 @@ private:
 
     chain::header get_header(uint32_t height, MDB_txn* db_txn) const;
 
-    // utxo_code remove_transaction(chain::transaction const& tx, MDB_txn* db_txn);
-    // utxo_code remove_transaction_non_coinbase(chain::transaction const& tx, MDB_txn* db_txn);
-    // template <typename I>
-    // utxo_code remove_transactions_non_coinbase(I f, I l, MDB_txn* db_txn);
-    // utxo_code remove_block(chain::block const& block, MDB_txn* db_txn);
+    template <typename I>
+    utxo_code remove_transactions_non_coinbase(I f, I l, MDB_txn* db_txn);
 
+    utxo_code remove_block(chain::block const& block, MDB_txn* db_txn);
+    utxo_code remove_block(chain::block const& block);
+
+    utxo_code push_block_reorg(chain::block const& block, uint32_t height, MDB_txn* db_txn);
+    chain::block get_block_reorg(uint32_t height, MDB_txn* db_txn) const;
+    chain::block get_block_reorg(uint32_t height) const;
 
     bool is_old_block(chain::block const& block) const;
-
 
 
     path const db_dir_;
@@ -160,6 +164,7 @@ private:
     MDB_dbi dbi_utxo_;
     MDB_dbi dbi_reorg_pool_;
     MDB_dbi dbi_reorg_index_;
+    MDB_dbi dbi_reorg_block_;
 };
 
 } // namespace database

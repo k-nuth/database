@@ -844,11 +844,21 @@ void data_base::push_stealth(hash_digest const& tx_hash, size_t height, const ou
 
 // A false return implies store corruption.
 bool data_base::pop(block& out_block) {
+    
+    const auto start_time = asio::steady_clock::now();
+
+#ifdef BITPRIM_DB_NEW
+
+    if ( utxo_db_->pop_block(out_block) != utxo_code::success )
+    {
+        return false;
+    }
+   
+#endif
 
 #ifdef BITPRIM_DB_LEGACY
     size_t height;
-    const auto start_time = asio::steady_clock::now();
-
+    
     // The blockchain is empty (nothing to pop, not even genesis).
     if ( ! blocks_->top(height)) {
         return false;
@@ -904,16 +914,15 @@ bool data_base::pop(block& out_block) {
 
     // Synchronise everything that was changed.
     synchronize();
-
-    // Return the block (with header/block metadata and pop start time).
+   
+    // Return the block (with header/block metadata and pop start time). 
     out_block = chain::block(block.header(), std::move(transactions));
+
+#endif // BITPRIM_DB_LEGACY
+
     out_block.validation.error = error::success;
     out_block.validation.start_pop = start_time;
     return true;
-
-#else
-    return false;
-#endif // BITPRIM_DB_LEGACY
 }
 
 // A false return implies store corruption.
@@ -1076,6 +1085,21 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest
     size_t top;
     out_blocks->clear();
 
+#ifdef BITPRIM_DB_NEW
+
+    const auto header_result = utxo_db_->get_header(fork_hash);
+
+    // The fork point does not exist or failed to get it or the top, fail.
+    if ( ! header_result.first.is_valid() ||  utxo_db_->get_last_height(top) != utxo_code::success) {
+        //**--**
+        handler(error::operation_failed_9);
+        return;
+    }
+
+    const auto fork = result.second;
+    
+#endif
+
 #ifdef BITPRIM_DB_LEGACY
     const auto result = blocks_->get(fork_hash);
 
@@ -1087,6 +1111,9 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest
     }
 
     const auto fork = result.height();
+
+#endif // BITPRIM_DB_LEGACY
+
     const auto size = top - fork;
 
     // The fork is at the top of the chain, nothing to pop.
@@ -1113,8 +1140,6 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest
         auto block = std::make_shared<const message::block>(std::move(next));
         out_blocks->insert(out_blocks->begin(), block);
     }
-
-#endif // BITPRIM_DB_LEGACY
 
     handler(error::success);
 }
