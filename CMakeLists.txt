@@ -374,7 +374,7 @@ set(bitprim_database_sources_just_bitprim
 if (DB_NEW)
     set(bitprim_database_sources_just_bitprim 
         ${bitprim_database_sources_just_bitprim}
-        src/bitprim/databases/utxo_database.cpp
+        # src/bitprim/databases/utxo_database.cpp
         src/bitprim/databases/utxo_entry.cpp
     )
 endif()
