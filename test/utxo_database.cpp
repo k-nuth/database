@@ -1132,13 +1132,6 @@ BOOST_AUTO_TEST_CASE(utxo_database__reorg_1) {
 
 
 
-
-
-
-
-
-
-
 BOOST_AUTO_TEST_CASE(utxo_database__prune) {
 
     // Block 0
@@ -1173,32 +1166,11 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune) {
                               "0100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000";
     auto const spender80000 = get_block(spender_enc);
 
-    // std::cout << encode_hash(spender80000b.hash()) << std::endl;
-    // std::cout << spender80000b.header().version() << std::endl;
-
-    // spender80000b.header().set_version(2);
-    // std::cout << spender80000b.header().version() << std::endl;
-    // std::cout << encode_hash(spender80000b.hash()) << std::endl;
-
-    // std::cout << encode_hash(spender80000b.transactions()[0].hash()) << std::endl;
-    // spender80000b.transactions()[0].set_version(2);
-    // std::cout << encode_hash(spender80000b.transactions()[0].hash()) << std::endl;
-    // std::cout << encode_hash(spender80000b.hash()) << std::endl;
-
-    // std::cout << encode_hash(spender80000b.transactions()[1].inputs()[0].previous_output().hash()) << std::endl;
-
-
-    // hash_digest txid;
-    // BOOST_REQUIRE(decode_hash(txid, "0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098"));
-    // spender80000b.transactions()[1].inputs()[0].previous_output().set_hash(txid);
-
-
-    // std::cout << encode_hash(spender80000b.transactions()[1].inputs()[0].previous_output().hash()) << std::endl;
-
+    // Dummy blocks to spend 
     auto spender80000b = spender80000;
-    spender80000b.header().set_version(2);
+    spender80000b.header().set_version(2);  //To change the block hash
     spender80000b.header().set_timestamp(spender80000b.header().timestamp() + 600 * 1);
-    spender80000b.transactions()[0].set_version(2);
+    spender80000b.transactions()[0].set_version(2); //To change the coinbase tx hash
     {
         hash_digest txid;
         BOOST_REQUIRE(decode_hash(txid, "0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098"));
@@ -1385,7 +1357,306 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 11);
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 
+    {
+        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86);
+        BOOST_REQUIRE(db.open());
+        BOOST_REQUIRE(db.prune() == utxo_code::success);    //TODO(fernando): 2nd success state to indicate no prune
+    }   //close() implicit
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+    {
+        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 11);
+        BOOST_REQUIRE(db.open());
+        BOOST_REQUIRE(db.prune() == utxo_code::success);
+    }   //close() implicit
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+    {
+        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 10);
+        BOOST_REQUIRE(db.open());
+        BOOST_REQUIRE(db.prune() == utxo_code::success);
+    }   //close() implicit
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+    {
+        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 5);
+        BOOST_REQUIRE(db.open());
+        BOOST_REQUIRE(db.prune() == utxo_code::success);
+    }   //close() implicit
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+    {
+        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 4);
+        BOOST_REQUIRE(db.open());
+        BOOST_REQUIRE(db.prune() == utxo_code::success);
+    }   //close() implicit
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 4);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 4);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 4);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+    {
+        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 0);
+        BOOST_REQUIRE(db.open());
+        BOOST_REQUIRE(db.prune() == utxo_code::success);
+    }   //close() implicit
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
 }
+
+
+
+
+BOOST_AUTO_TEST_CASE(utxo_database__prune_2) {
+
+    // Block 0
+    auto const genesis = get_genesis();
+
+    // Block 1 - 00000000839a8e6886ab5951d76f411475428afc90947ee320161bbf18eb6048
+    auto const b1 = get_block("010000006fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000982051fd1e4ba744bbbe680e1fee14677ba1a3c3540bf7b1cdb606e857233e0e61bc6649ffff001d01e362990101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704ffff001d0104ffffffff0100f2052a0100000043410496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52da7589379515d4e0a604f8141781e62294721166bf621e73a82cbf2342c858eeac00000000");
+
+    // Block 2 - 000000006a625f06636b8bb6ac7b960a8d03705d1ace08b1a19da3fdcc99ddbd
+    auto const b2 = get_block("010000004860eb18bf1b1620e37e9490fc8a427514416fd75159ab86688e9a8300000000d5fdcc541e25de1c7a5addedf24858b8bb665c9f36ef744ee42c316022c90f9bb0bc6649ffff001d08d2bd610101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704ffff001d010bffffffff0100f2052a010000004341047211a824f55b505228e4c3d5194c1fcfaa15a456abdf37f9b9d97a4040afc073dee6c89064984f03385237d92167c13e236446b417ab79a0fcae412ae3316b77ac00000000");
+
+    // Block 3 - 0000000082b5015589a3fdf2d4baff403e6f0be035a5d9742c1cae6295464449
+    auto const b3 = get_block("01000000bddd99ccfda39da1b108ce1a5d70038d0a967bacb68b6b63065f626a0000000044f672226090d85db9a9f2fbfe5f0f9609b387af7be5b7fbb7a1767c831c9e995dbe6649ffff001d05e0ed6d0101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704ffff001d010effffffff0100f2052a0100000043410494b9d3e76c5b1629ecf97fff95d7a4bbdac87cc26099ada28066c6ff1eb9191223cd897194a08d0c2726c5747f1db49e8cf90e75dc3e3550ae9b30086f3cd5aaac00000000");
+
+    // Block 4 - 000000004ebadb55ee9096c9a2f8880e09da59c0d68b1c228da88e48844a1485
+    auto const b4 = get_block("010000004944469562ae1c2c74d9a535e00b6f3e40ffbad4f2fda3895501b582000000007a06ea98cd40ba2e3288262b28638cec5337c1456aaf5eedc8e9e5a20f062bdf8cc16649ffff001d2bfee0a90101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704ffff001d011affffffff0100f2052a01000000434104184f32b212815c6e522e66686324030ff7e5bf08efb21f8b00614fb7690e19131dd31304c54f37baa40db231c918106bb9fd43373e37ae31a0befc6ecaefb867ac00000000");
+
+    // Block 79880 - 00000000002e872c6fbbcf39c93ef0d89e33484ebf457f6829cbf4b561f3af5a - timestamp = 1284561413 - Sep 15, 2010 11:36:53 AM
+    auto const b79880 = get_block("01000000a594fda9d85f69e762e498650d6fdb54d838657cea7841915203170000000000a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f505da904ce6ed5b1b017fe8070101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b015cffffffff0100f2052a01000000434104283338ffd784c198147f99aed2cc16709c90b1522e3b3637b312a6f9130e0eda7081e373a96d36be319710cd5c134aaffba81ff08650d7de8af332fe4d8cde20ac00000000");
+
+    // Spender blocks ....
+
+    //Block 80000 - 000000000043a8c0fd1d6f726790caa2a406010d19efd2780db27bdbbd93baf6
+    // timestamp = 1284613427 
+    //             Sep 16, 2010 2:03:47 AM
+
+    std::string spender_enc = "01000000ba8b9cda965dd8e536670f9ddec10e53aab14b20bacad27b9137190000000000190760b278fe7b8565fda3b968b918d5fd997f993b23674c0af3b6fde300b38f"
+                              "33a5914c"
+                              "e6ed5b1b01e32f57"
+                              "02"
+                              "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b014effffffff0100f2052a01000000434104b68a50eaa0287eff855189f949c1c6e5f58b37c88231373d8a59809cbae83059cc6469d65c665ccfd1cfeb75c6e8e19413bba7fbff9bc762419a76d87b16086eac00000000"
+                              "0100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000";
+    auto const spender80000 = get_block(spender_enc);
+
+    // Dummy blocks to spend 
+    auto spender80000b = spender80000;
+    spender80000b.header().set_version(2);  //To change the block hash
+    spender80000b.header().set_timestamp(spender80000b.header().timestamp() + 600 * 1);
+    spender80000b.transactions()[0].set_version(2); //To change the coinbase tx hash
+    {
+        spender80000b.transactions()[1].inputs().push_back(spender80000b.transactions()[1].inputs()[0]);
+        spender80000b.transactions()[1].inputs().push_back(spender80000b.transactions()[1].inputs()[0]);
+        spender80000b.transactions()[1].inputs().push_back(spender80000b.transactions()[1].inputs()[0]);
+
+        hash_digest txid;
+        BOOST_REQUIRE(decode_hash(txid, "0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098"));
+        spender80000b.transactions()[1].inputs()[0].previous_output().set_hash(txid);
+        BOOST_REQUIRE(decode_hash(txid, "9b0fc92260312ce44e74ef369f5c66bbb85848f2eddd5a7a1cde251e54ccfdd5"));
+        spender80000b.transactions()[1].inputs()[1].previous_output().set_hash(txid);
+        BOOST_REQUIRE(decode_hash(txid, "999e1c837c76a1b7fbb7e57baf87b309960f5ffefbf2a9b95dd890602272f644"));
+        spender80000b.transactions()[1].inputs()[2].previous_output().set_hash(txid);
+        BOOST_REQUIRE(decode_hash(txid, "df2b060fa2e5e9c8ed5eaf6a45c13753ec8c63282b2688322eba40cd98ea067a"));
+        spender80000b.transactions()[1].inputs()[3].previous_output().set_hash(txid);
+
+    }
+    std::cout << encode_hash(spender80000b.transactions()[1].inputs()[0].previous_output().hash()) << std::endl;
+   
+
+    using my_clock = dummy_clock<1284613427>;
+
+    MDB_env* env_;
+    MDB_dbi dbi_utxo_;
+    MDB_dbi dbi_reorg_pool_;
+    MDB_dbi dbi_reorg_index_;
+    MDB_dbi dbi_reorg_block_;
+    MDB_dbi dbi_block_header_;
+    MDB_dbi dbi_block_header_by_hash_;
+    MDB_txn* db_txn;
+    
+    {
+        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        BOOST_REQUIRE(db.open());
+
+        BOOST_REQUIRE(db.push_block(genesis, 0, 1) == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(b1, 1, 1)      == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(b2, 2, 1)      == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(b3, 3, 1)      == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(b4, 4, 1)      == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(b79880, 5, 1)  == utxo_code::success);         //TODO(fernando): median_time_past
+
+    }   //close() implicit
+
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
+
+    BOOST_REQUIRE(db_count_items(env_, dbi_utxo_) == 6);
+    BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 6);
+    BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 6);
+
+    // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+
+
+
+    // ------------------------------------------------------------------------------------
+    {
+        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        BOOST_REQUIRE(db.open());
+
+        BOOST_REQUIRE(db.push_block(spender80000, 6, 1) == utxo_code::success);         //TODO(fernando): median_time_past
+
+    }   //close() implicit
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 1);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 1);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 1);
+
+    BOOST_REQUIRE(db_count_items(env_, dbi_utxo_) == 7);
+    BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 7);
+    BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 7);
+
+    // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+
+    // ------------------------------------------------------------------------------------
+    {
+        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        BOOST_REQUIRE(db.open());
+
+        BOOST_REQUIRE(db.push_block(spender80000b, 7, 1) == utxo_code::success);         //TODO(fernando): median_time_past
+
+    }   //close() implicit
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 2);
+
+    BOOST_REQUIRE(db_count_items(env_, dbi_utxo_) == 8);
+    BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 8);
+    BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 8);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+    {
+        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86);
+        BOOST_REQUIRE(db.open());
+        BOOST_REQUIRE(db.prune() == utxo_code::success);    //TODO(fernando): 2nd success state to indicate no prune
+    }   //close() implicit
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+    {
+        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 11);
+        BOOST_REQUIRE(db.open());
+        BOOST_REQUIRE(db.prune() == utxo_code::success);
+    }   //close() implicit
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+    {
+        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 10);
+        BOOST_REQUIRE(db.open());
+        BOOST_REQUIRE(db.prune() == utxo_code::success);
+    }   //close() implicit
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+    {
+        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 5);
+        BOOST_REQUIRE(db.open());
+        BOOST_REQUIRE(db.prune() == utxo_code::success);
+    }   //close() implicit
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+    {
+        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 4);
+        BOOST_REQUIRE(db.open());
+        BOOST_REQUIRE(db.prune() == utxo_code::success);
+    }   //close() implicit
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 4);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 4);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 4);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+    {
+        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 0);
+        BOOST_REQUIRE(db.open());
+        BOOST_REQUIRE(db.prune() == utxo_code::success);
+    }   //close() implicit
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
+    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+}
+
+
+
+
+// BOOST_AUTO_TEST_CASE(utxo_database__prune_empty) {
+//     {
+//         utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 4);
+//         BOOST_REQUIRE(db.open());
+//         BOOST_REQUIRE(db.prune() == utxo_code::success);
+//     }   //close() implicit
+// }
 
 
 

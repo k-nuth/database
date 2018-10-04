@@ -258,10 +258,9 @@ public:
         }
 
         MDB_val key;
-        MDB_val value;
+        // MDB_val value;
         int rc;
 
-        // if ((rc = mdb_cursor_get(cursor, &key, &value, MDB_LAST)) != MDB_SUCCESS) {
         if ((rc = mdb_cursor_get(cursor, &key, nullptr, MDB_LAST)) != MDB_SUCCESS) {
             return utxo_code::db_empty;  
         }
@@ -346,28 +345,79 @@ public:
         return utxo_code::success;
     }
     
+
+    utxo_code get_first_reorg_block_height(uint32_t& out_height) const {
+        MDB_txn* db_txn;
+        if (mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) != MDB_SUCCESS) {
+            return utxo_code::other;
+        }
+
+        MDB_cursor* cursor;
+        if (mdb_cursor_open(db_txn, dbi_reorg_block_, &cursor) != MDB_SUCCESS) {
+            return utxo_code::other;
+        }
+
+        MDB_val key;
+        int rc;
+
+        if ((rc = mdb_cursor_get(cursor, &key, nullptr, MDB_FIRST)) != MDB_SUCCESS) {
+            return utxo_code::db_empty;  
+        }
+
+        // assert key.mv_size == 4;
+        out_height = *static_cast<uint32_t*>(key.mv_data);
+        
+        mdb_cursor_close(cursor);
+
+        // mdb_txn_abort(db_txn);
+        if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+            return utxo_code::other;
+        }
+
+        return utxo_code::success;
+    }
+
     utxo_code prune() {
         //TODO: (Mario) add overload with tx
-        uint32_t height;
-        auto res = get_last_height(height);
+        uint32_t last_height;
+        auto res = get_last_height(last_height);
         if (res != utxo_code::success ) {
             return res;
         }
         
-        auto remove_until = height - reorg_pool_limit_;
+        if (last_height < reorg_pool_limit_) {
+            return utxo_code::success;            
+        }
+
+        uint32_t first_height;
+        res = get_first_reorg_block_height(first_height);
+        if (res != utxo_code::success ) {
+            return res;
+        }
+
+        if (first_height > last_height) {
+            return utxo_code::success;  //TODO(fernando): base corrupta??            
+        }
+
+        auto reorg_count = last_height - first_height + 1;
+        if (reorg_count <= reorg_pool_limit_) {
+            return utxo_code::success;            
+        }
+
+        auto amount_to_delete = reorg_count - reorg_pool_limit_;
 
         MDB_txn* db_txn;
         if (mdb_txn_begin(env_, NULL, 0, &db_txn) != MDB_SUCCESS) {
             return utxo_code::other;
         }
 
-        res = prune_reorg_block(remove_until, db_txn);
+        res = prune_reorg_block(amount_to_delete, db_txn);
         if (res != utxo_code::success) {
             mdb_txn_abort(db_txn);
             return res;
         }
 
-        res = prune_reorg_index(remove_until, db_txn);
+        res = prune_reorg_index(amount_to_delete, db_txn);
         if (res != utxo_code::success) {
             mdb_txn_abort(db_txn);
             return res;
@@ -941,61 +991,60 @@ private:
         return utxo_code::success;
     }
 
-    utxo_code prune_reorg_index(uint32_t remove_until, MDB_txn* db_txn) {
+    utxo_code prune_reorg_index(uint32_t amount_to_delete, MDB_txn* db_txn) {
         MDB_cursor* cursor;
         if (mdb_cursor_open(db_txn, dbi_reorg_index_, &cursor) != MDB_SUCCESS) {
             return utxo_code::other;
         }
 
-        MDB_val key;
+        // MDB_val key;
         MDB_val value;
         int rc;
-        while ((rc = mdb_cursor_get(cursor, &key, &value, MDB_NEXT)) == MDB_SUCCESS) {
-            auto current_height = *static_cast<uint32_t*>(key.mv_data);
-            if (current_height <= remove_until) {
-                auto res = mdb_del(db_txn, dbi_reorg_pool_, &value, NULL);
-                if (res == MDB_NOTFOUND) {
-                    LOG_INFO(LOG_DATABASE) << "utxo_database_basis::prune_reorg_index - mdb_del: " << res;
-                    return utxo_code::key_not_found;
-                }
-                if (res != MDB_SUCCESS) {
-                    LOG_INFO(LOG_DATABASE) << "utxo_database_basis::prune_reorg_index - mdb_del: " << res;
-                    return utxo_code::other;
-                }
-
-                if (mdb_cursor_del(cursor, 0) != MDB_SUCCESS) {
-                    mdb_cursor_close(cursor);
-                    return utxo_code::other;
-                }
-            } else {
-                break;
+        // while ((rc = mdb_cursor_get(cursor, &key, &value, MDB_NEXT)) == MDB_SUCCESS) {
+        while ((rc = mdb_cursor_get(cursor, nullptr, &value, MDB_NEXT)) == MDB_SUCCESS) {
+            // auto current_height = *static_cast<uint32_t*>(key.mv_data);
+            auto res = mdb_del(db_txn, dbi_reorg_pool_, &value, NULL);
+            if (res == MDB_NOTFOUND) {
+                LOG_INFO(LOG_DATABASE) << "utxo_database_basis::prune_reorg_index - mdb_del: " << res;
+                return utxo_code::key_not_found;
             }
+            if (res != MDB_SUCCESS) {
+                LOG_INFO(LOG_DATABASE) << "utxo_database_basis::prune_reorg_index - mdb_del: " << res;
+                return utxo_code::other;
+            }
+
+            if (mdb_cursor_del(cursor, 0) != MDB_SUCCESS) {
+                mdb_cursor_close(cursor);
+                return utxo_code::other;
+            }
+
+            if (--amount_to_delete == 0) break;
         }
         
         mdb_cursor_close(cursor);
         return utxo_code::success;
     }
 
-    utxo_code prune_reorg_block(uint32_t remove_until, MDB_txn* db_txn) {
+    utxo_code prune_reorg_block(uint32_t amount_to_delete, MDB_txn* db_txn) {
+        //precondition: amount_to_delete >= 1
+
         MDB_cursor* cursor;
         if (mdb_cursor_open(db_txn, dbi_reorg_block_, &cursor) != MDB_SUCCESS) {
             return utxo_code::other;
         }
 
         MDB_val key;
-        MDB_val value;
         int rc;
-        while ((rc = mdb_cursor_get(cursor, &key, nullptr, MDB_NEXT)) == MDB_SUCCESS) {
-            auto current_height = *static_cast<uint32_t*>(key.mv_data);
+        // while ((rc = mdb_cursor_get(cursor, &key, nullptr, MDB_NEXT)) == MDB_SUCCESS) {
+        while ((rc = mdb_cursor_get(cursor, nullptr, nullptr, MDB_NEXT)) == MDB_SUCCESS) {
+            // auto current_height = *static_cast<uint32_t*>(key.mv_data);
 
-            if (current_height <= remove_until) {
-                if (mdb_cursor_del(cursor, 0) != MDB_SUCCESS) {
-                    mdb_cursor_close(cursor);
-                    return utxo_code::other;
-                }
-            } else {
-                break;
+            if (mdb_cursor_del(cursor, 0) != MDB_SUCCESS) {
+                mdb_cursor_close(cursor);
+                return utxo_code::other;
             }
+
+            if (--amount_to_delete == 0) break;
         }
         
         mdb_cursor_close(cursor);
