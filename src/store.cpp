@@ -39,7 +39,7 @@ using namespace bc::database;
 #endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_NEW
-#define UTXO_DIR "utxo_db"
+#define INTERNAL_DB_DIR "internal_db"
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
@@ -104,7 +104,7 @@ store::store(const path& prefix, bool with_indexes, bool flush_each_write)
 #endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_NEW
-    : utxo_dir(prefix / UTXO_DIR)
+    : internal_db_dir(prefix / INTERNAL_DB_DIR)
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED

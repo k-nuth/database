@@ -31,7 +31,7 @@
 #endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_NEW
-#include <bitprim/database/databases/utxo_database.hpp>
+#include <bitprim/database/databases/internal_database.hpp>
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_SPENDS
@@ -106,7 +106,7 @@ public:
 #endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_NEW
-    utxo_database const& utxo_db() const;
+    internal_database const& internal_db() const;
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
@@ -182,7 +182,7 @@ protected:
 #endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_NEW
-    std::shared_ptr<utxo_database> utxo_db_;
+    std::shared_ptr<internal_database> internal_db_;
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED

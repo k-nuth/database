@@ -109,7 +109,7 @@ bool data_base::create(const block& genesis) {
 #endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_NEW
-                && utxo_db_->create()
+                && internal_db_->create()
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
@@ -159,11 +159,6 @@ bool data_base::open() {
 
     start();
 
-// #ifdef BITPRIM_DB_NEW
-//     auto xxx = utxo_db_->open();
-//     std::cout << "xxx: " << xxx << std::endl;
-// #endif // BITPRIM_DB_NEW
-
     auto opened = true
 #ifdef BITPRIM_DB_LEGACY
                 && blocks_->open() 
@@ -171,7 +166,7 @@ bool data_base::open() {
 #endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_NEW
-                && utxo_db_->open() 
+                && internal_db_->open() 
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
@@ -217,7 +212,7 @@ bool data_base::close() {
 #endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_NEW
-                && utxo_db_->close() 
+                && internal_db_->close() 
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
@@ -266,8 +261,7 @@ void data_base::start() {
 #endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_NEW
-    // utxo_db_ = std::make_shared<utxo_database>(utxo_dir, blocks_to_seconds(settings_.reorg_pool_limit));
-    utxo_db_ = std::make_shared<utxo_database>(utxo_dir, settings_.reorg_pool_limit);
+    internal_db_ = std::make_shared<internal_database>(internal_db_dir, settings_.reorg_pool_limit, settings_.db_max_size);
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
@@ -387,8 +381,8 @@ const transaction_database& data_base::transactions() const {
 #endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_NEW
-utxo_database const& data_base::utxo_db() const {
-    return *utxo_db_;
+internal_database const& data_base::internal_db() const {
+    return *internal_db_;
 }
 #endif // BITPRIM_DB_NEW
 
@@ -504,10 +498,9 @@ code data_base::insert(const chain::block& block, size_t height) {
     // std::cout << "data_base::insert - median_time_past: " << median_time_past << std::endl;
 
 #ifdef BITPRIM_DB_NEW
-    auto res = utxo_db_->push_block(block, height, median_time_past);
-    // if ( ! utxo_database::succeed(res)) {
+    auto res = internal_db_->push_block(block, height, median_time_past);
     if ( ! succeed(res)) {
-        return error::operation_failed_1;   //TODO(fernando_utxo): create a new operation_failed
+        return error::operation_failed_1;   //TODO(fernando): create a new operation_failed
     }
 #endif // BITPRIM_DB_NEW
 
@@ -623,7 +616,7 @@ code data_base::push(block const& block, size_t height) {
     auto const median_time_past = block.header().validation.median_time_past;
 
 #ifdef BITPRIM_DB_NEW
-    auto res = utxo_db_->push_block(block, height, median_time_past);
+    auto res = internal_db_->push_block(block, height, median_time_past);
     if ( ! succeed(res)) {
         return error::operation_failed_6;   //TODO(fernando): create a new operation_failed
     }
@@ -641,7 +634,7 @@ code data_base::push(block const& block, size_t height) {
 code data_base::push_genesis(block const& block) {
 
 #ifdef BITPRIM_DB_NEW
-    auto res = utxo_db_->push_genesis(block);
+    auto res = internal_db_->push_genesis(block);
     if ( ! succeed(res)) {
         return error::operation_failed_6;   //TODO(fernando): create a new operation_failed
     }
@@ -758,7 +751,7 @@ void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const inp
                 bool output_is_coinbase;
 
 #if defined(BITPRIM_DB_NEW)
-                auto const entry = utxo_db->get_utxo(prevout);
+                auto const entry = internal_db->get_utxo(prevout);
                 if (entry.is_valid()) {
                     for (auto const& address : entry.output().addresses()) {
                         history_->add_input(address.hash(), inpoint, height, prevout);
@@ -839,12 +832,9 @@ bool data_base::pop(block& out_block) {
     auto const start_time = asio::steady_clock::now();
 
 #ifdef BITPRIM_DB_NEW
-
-    if ( utxo_db_->pop_block(out_block) != utxo_code::success )
-    {
+    if (internal_db_->pop_block(out_block) != result_code::success) {
         return false;
     }
-   
 #endif
 
 #ifdef BITPRIM_DB_LEGACY
@@ -1004,10 +994,9 @@ void data_base::push_next(const code& ec, block_const_ptr_list_const_ptr blocks,
 
 void data_base::do_push(block_const_ptr block, size_t height, uint32_t median_time_past, dispatcher& dispatch, result_handler handler) {
 
-
 #ifdef BITPRIM_DB_NEW
     // LOG_DEBUG(LOG_DATABASE) << "Write flushed to disk: " << ec.message();
-    auto res = utxo_db_->push_block(*block, height, median_time_past);
+    auto res = internal_db_->push_block(*block, height, median_time_past);
     if ( ! succeed(res)) {
         handler(error::operation_failed_7); //TODO(fernando): create a new operation_failed
         return;
@@ -1076,12 +1065,11 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest
     out_blocks->clear();
 
 #ifdef BITPRIM_DB_NEW
-
-    auto const header_result = utxo_db_->get_header(fork_hash);
+    auto const header_result = internal_db_->get_header(fork_hash);
 
     uint32_t top;
     // The fork point does not exist or failed to get it or the top, fail.
-    if ( ! header_result.first.is_valid() ||  utxo_db_->get_last_height(top) != utxo_code::success) {
+    if ( ! header_result.first.is_valid() ||  internal_db_->get_last_height(top) != result_code::success) {
         //**--**
         handler(error::operation_failed_9);
         return;

@@ -102,32 +102,27 @@ void utxo_entry::to_data_fixed(writer& sink, uint32_t height, uint32_t median_ti
     sink.write_byte(coinbase);
 }
 
-
-
-// Serialization.
-//-----------------------------------------------------------------------------
-
 // static
-data_chunk utxo_entry::to_data_pepe(chain::output const& output, data_chunk const& fixed) {
+data_chunk utxo_entry::to_data_with_fixed(chain::output const& output, data_chunk const& fixed) {
     //TODO(fernando):  reuse fixed vector (do not create a new one)
     data_chunk data;
     auto const size = output.serialized_size(false) + fixed.size();
     data.reserve(size);
     data_sink ostream(data);
-    to_data_pepe(ostream, output, fixed);
+    to_data_with_fixed(ostream, output, fixed);
     ostream.flush();
     BITCOIN_ASSERT(data.size() == size);
     return data;
 }
 
 // static
-void utxo_entry::to_data_pepe(std::ostream& stream, chain::output const& output, data_chunk const& fixed) {
+void utxo_entry::to_data_with_fixed(std::ostream& stream, chain::output const& output, data_chunk const& fixed) {
     ostream_writer sink(stream);
-    to_data_pepe(sink, output, fixed);
+    to_data_with_fixed(sink, output, fixed);
 }
 
 // static
-void utxo_entry::to_data_pepe(writer& sink, chain::output const& output, data_chunk const& fixed) {
+void utxo_entry::to_data_with_fixed(writer& sink, chain::output const& output, data_chunk const& fixed) {
     output.to_data(sink, false);
     sink.write_bytes(fixed);
 }

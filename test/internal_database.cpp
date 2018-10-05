@@ -28,22 +28,24 @@ using namespace bc;
 using namespace bc::chain;
 using namespace bc::database;
 
-#define DIRECTORY "utxo_database"
+#define DIRECTORY "internal_database"
 
-struct utxo_database_directory_setup_fixture {
-    utxo_database_directory_setup_fixture() {
-        // std::cout << "utxo_database_directory_setup_fixture" << std::endl;
+constexpr uint64_t one_hundred_gib = uint64_t(10485760) * 1024 * 10; //100 * (uint64_t(1) << 30);
+
+struct internal_database_directory_setup_fixture {
+    internal_database_directory_setup_fixture() {
+        // std::cout << "internal_database_directory_setup_fixture" << std::endl;
         error_code ec;
         remove_all(DIRECTORY, ec);
         BOOST_REQUIRE(create_directories(DIRECTORY, ec));
 
-        utxo_database db(DIRECTORY "/utxo_db", 10000000);
+        internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
         BOOST_REQUIRE(db.create());
         // BOOST_REQUIRE(db.close());
         // BOOST_REQUIRE(db.open());
     }
 
-    ////~utxo_database_directory_setup_fixture()
+    ////~internal_database_directory_setup_fixture()
     ////{
     ////    error_code ec;
     ////    remove_all(DIRECTORY, ec);
@@ -132,7 +134,7 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi> open_
     BOOST_REQUIRE(mdb_env_create(&env_) == MDB_SUCCESS);
     BOOST_REQUIRE(mdb_env_set_mapsize(env_, size_t(10485760) * 1024 * 10) == MDB_SUCCESS);
     BOOST_REQUIRE(mdb_env_set_maxdbs(env_, 6) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_env_open(env_, "utxo_database/utxo_db", MDB_NORDAHEAD | MDB_NOSYNC, 0664) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_env_open(env_, "internal_database/utxo_db", MDB_NORDAHEAD | MDB_NOSYNC, 0664) == MDB_SUCCESS);
     BOOST_REQUIRE(mdb_txn_begin(env_, NULL, 0, &db_txn) == MDB_SUCCESS);
     
 
@@ -302,33 +304,8 @@ size_t db_count_index_by_height(MDB_env *env, MDB_dbi dbi, size_t height) {
 
 
     if ((rc = mdb_cursor_get(cursor, &height_key, &data, MDB_SET)) == 0) {
-
-        auto xxx_height = *static_cast<uint32_t*>(height_key.mv_data);
-        std::cout << "db_count_index_by_height - xxx_height(1): " << xxx_height << std::endl;
-
-        // data_chunk key_bytes {static_cast<uint8_t*>(height_key.mv_data), static_cast<uint8_t*>(height_key.mv_data) + height_key.mv_size};
-        // std::reverse(begin(key_bytes), end(key_bytes));
-        // std::cout << encode_base16(key_bytes) << std::endl;
-
-        // data_chunk value_bytes {static_cast<uint8_t*>(data.mv_data), static_cast<uint8_t*>(data.mv_data) + data.mv_size};
-        // std::reverse(begin(value_bytes), end(value_bytes));
-        // std::cout << encode_base16(value_bytes) << std::endl;
-
         ++count;
-
         while ((rc = mdb_cursor_get(cursor, &height_key, &data, MDB_NEXT_DUP)) == 0) {
-
-            auto xxx_height = *static_cast<uint32_t*>(height_key.mv_data);
-            std::cout << "db_count_index_by_height - xxx_height(2): " << xxx_height << std::endl;
-
-            // data_chunk key_bytes {static_cast<uint8_t*>(height_key.mv_data), static_cast<uint8_t*>(height_key.mv_data) + height_key.mv_size};
-            // std::reverse(begin(key_bytes), end(key_bytes));
-            // std::cout << encode_base16(key_bytes) << std::endl;
-
-            // data_chunk value_bytes {static_cast<uint8_t*>(data.mv_data), static_cast<uint8_t*>(data.mv_data) + data.mv_size};
-            // std::reverse(begin(value_bytes), end(value_bytes));
-            // std::cout << encode_base16(value_bytes) << std::endl;
-
             ++count;
         }
     } else {
@@ -387,11 +364,11 @@ struct dummy_clock {
 
 // ---------------------------------------------------------------------------------
 
-BOOST_FIXTURE_TEST_SUITE(utxo_tests, utxo_database_directory_setup_fixture)
+BOOST_FIXTURE_TEST_SUITE(internal_db, internal_database_directory_setup_fixture)
 
 // #ifdef BITPRIM_DB_NEW
 
-BOOST_AUTO_TEST_CASE(utxo_database__dummy_clock) {
+BOOST_AUTO_TEST_CASE(internal_database__dummy_clock) {
     auto start = dummy_clock<200>::now();
     auto end = dummy_clock<200>::now();
     // std::cout << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "us.\n";    
@@ -399,17 +376,17 @@ BOOST_AUTO_TEST_CASE(utxo_database__dummy_clock) {
 }
 
 
-BOOST_AUTO_TEST_CASE(utxo_database__open) {
-    utxo_database db(DIRECTORY "/utxo_db", 10000000);
+BOOST_AUTO_TEST_CASE(internal_database__open) {
+    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
     BOOST_REQUIRE(db.open());
 }
 
-BOOST_AUTO_TEST_CASE(utxo_database__insert_genesis) {
+BOOST_AUTO_TEST_CASE(internal_database__insert_genesis) {
     auto const genesis = get_genesis();
 
-    utxo_database db(DIRECTORY "/utxo_db", 10000000);
+    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
     BOOST_REQUIRE(db.open());
-    BOOST_REQUIRE(db.push_block(genesis, 0, 1) == utxo_code::success);  //TODO(fernando): median_time_past
+    BOOST_REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);  
 
     BOOST_REQUIRE(db.get_header(genesis.hash()).first.is_valid());
     BOOST_REQUIRE(db.get_header(genesis.hash()).first.hash() == genesis.hash());
@@ -436,61 +413,61 @@ BOOST_AUTO_TEST_CASE(utxo_database__insert_genesis) {
     BOOST_REQUIRE(encode_base16(output.to_data(true)) == output_enc);
 }
 
-BOOST_AUTO_TEST_CASE(utxo_database__insert_duplicate_block) {
+BOOST_AUTO_TEST_CASE(internal_database__insert_duplicate_block) {
     auto const genesis = get_genesis();
 
-    utxo_database db(DIRECTORY "/utxo_db", 10000000);
+    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
     BOOST_REQUIRE(db.open());
-    auto res = db.push_block(genesis, 0, 1);       //TODO(fernando): median_time_past
+    auto res = db.push_block(genesis, 0, 1);
     
-    BOOST_REQUIRE(res == utxo_code::success);
+    BOOST_REQUIRE(res == result_code::success);
     BOOST_REQUIRE(succeed(res));
     
-    res = db.push_block(genesis, 0, 1);            //TODO(fernando): median_time_past
-    BOOST_REQUIRE(res == utxo_code::duplicated_key);
+    res = db.push_block(genesis, 0, 1);     
+    BOOST_REQUIRE(res == result_code::duplicated_key);
     BOOST_REQUIRE( ! succeed(res));
 }
 
-BOOST_AUTO_TEST_CASE(utxo_database__insert_duplicate_block_by_hash) {
+BOOST_AUTO_TEST_CASE(internal_database__insert_duplicate_block_by_hash) {
     auto const genesis = get_genesis();
 
-    utxo_database db(DIRECTORY "/utxo_db", 10000000);
+    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
     BOOST_REQUIRE(db.open());
-    auto res = db.push_block(genesis, 0, 1);       //TODO(fernando): median_time_past
+    auto res = db.push_block(genesis, 0, 1);
     
-    BOOST_REQUIRE(res == utxo_code::success);
+    BOOST_REQUIRE(res == result_code::success);
     BOOST_REQUIRE(succeed(res));
     
-    res = db.push_block(genesis, 1, 1);            //TODO(fernando): median_time_past
-    BOOST_REQUIRE(res == utxo_code::duplicated_key);
+    res = db.push_block(genesis, 1, 1);     
+    BOOST_REQUIRE(res == result_code::duplicated_key);
     BOOST_REQUIRE( ! succeed(res));
 }
 
 
-BOOST_AUTO_TEST_CASE(utxo_database__insert_success_duplicate_coinbase) {
+BOOST_AUTO_TEST_CASE(internal_database__insert_success_duplicate_coinbase) {
     auto const genesis = get_genesis();
     auto const fake = get_fake_genesis();
 
-    utxo_database db(DIRECTORY "/utxo_db", 10000000);
+    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
     BOOST_REQUIRE(db.open());
-    auto res = db.push_block(genesis, 0, 1);       //TODO(fernando): median_time_past
+    auto res = db.push_block(genesis, 0, 1);
     
-    BOOST_REQUIRE(res == utxo_code::success);
+    BOOST_REQUIRE(res == result_code::success);
     BOOST_REQUIRE(succeed(res));
     
-    res = db.push_block(fake, 1, 1);            //TODO(fernando): median_time_past
-    BOOST_REQUIRE(res == utxo_code::success_duplicate_coinbase);
+    res = db.push_block(fake, 1, 1);     
+    BOOST_REQUIRE(res == result_code::success_duplicate_coinbase);
     BOOST_REQUIRE(succeed(res));
 }
 
-BOOST_AUTO_TEST_CASE(utxo_database__key_not_found) {
+BOOST_AUTO_TEST_CASE(internal_database__key_not_found) {
     auto const spender = get_block("01000000ba8b9cda965dd8e536670f9ddec10e53aab14b20bacad27b9137190000000000190760b278fe7b8565fda3b968b918d5fd997f993b23674c0af3b6fde300b38f33a5914ce6ed5b1b01e32f570201000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b014effffffff0100f2052a01000000434104b68a50eaa0287eff855189f949c1c6e5f58b37c88231373d8a59809cbae83059cc6469d65c665ccfd1cfeb75c6e8e19413bba7fbff9bc762419a76d87b16086eac000000000100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000");
-    utxo_database db(DIRECTORY "/utxo_db", 10000000);
+    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
     BOOST_REQUIRE(db.open());
-    BOOST_REQUIRE(db.push_block(spender, 1, 1) == utxo_code::key_not_found);        //TODO(fernando): median_time_past
+    BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::key_not_found); 
 }
 
-BOOST_AUTO_TEST_CASE(utxo_database__insert_duplicate) {
+BOOST_AUTO_TEST_CASE(internal_database__insert_duplicate) {
     auto const orig = get_block("01000000a594fda9d85f69e762e498650d6fdb54d838657cea7841915203170000000000a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f505da904ce6ed5b1b017fe8070101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b015cffffffff0100f2052a01000000434104283338ffd784c198147f99aed2cc16709c90b1522e3b3637b312a6f9130e0eda7081e373a96d36be319710cd5c134aaffba81ff08650d7de8af332fe4d8cde20ac00000000");
     auto const spender = get_block("01000000ba8b9cda965dd8e536670f9ddec10e53aab14b20bacad27b9137190000000000190760b278fe7b8565fda3b968b918d5fd997f993b23674c0af3b6fde300b38f33a5914ce6ed5b1b01e32f570201000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b014effffffff0100f2052a01000000434104b68a50eaa0287eff855189f949c1c6e5f58b37c88231373d8a59809cbae83059cc6469d65c665ccfd1cfeb75c6e8e19413bba7fbff9bc762419a76d87b16086eac000000000100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000");
 
@@ -498,14 +475,14 @@ BOOST_AUTO_TEST_CASE(utxo_database__insert_duplicate) {
     // std::cout << encode_hash(orig.hash()) << std::endl;
     // std::cout << encode_hash(spender.hash()) << std::endl;
 
-    utxo_database db(DIRECTORY "/utxo_db", 10000000);
+    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
     BOOST_REQUIRE(db.open());
-    BOOST_REQUIRE(db.push_block(orig, 0, 1) == utxo_code::success);                 //TODO(fernando): median_time_past
-    BOOST_REQUIRE(db.push_block(spender, 1, 1) == utxo_code::success);              //TODO(fernando): median_time_past
-    BOOST_REQUIRE(db.push_block(spender, 1, 1) == utxo_code::duplicated_key);        //TODO(fernando): median_time_past
+    BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);          
+    BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);       
+    BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::duplicated_key); 
 }
 
-BOOST_AUTO_TEST_CASE(utxo_database__insert_double_spend_block) {
+BOOST_AUTO_TEST_CASE(internal_database__insert_double_spend_block) {
     auto const orig = get_block("01000000a594fda9d85f69e762e498650d6fdb54d838657cea7841915203170000000000a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f505da904ce6ed5b1b017fe8070101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b015cffffffff0100f2052a01000000434104283338ffd784c198147f99aed2cc16709c90b1522e3b3637b312a6f9130e0eda7081e373a96d36be319710cd5c134aaffba81ff08650d7de8af332fe4d8cde20ac00000000");
     auto const spender0 = get_block("01000000ba8b9cda965dd8e536670f9ddec10e53aab14b20bacad27b9137190000000000190760b278fe7b8565fda3b968b918d5fd997f993b23674c0af3b6fde300b38f33a5914ce6ed5b1b01e32f570201000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b014effffffff0100f2052a01000000434104b68a50eaa0287eff855189f949c1c6e5f58b37c88231373d8a59809cbae83059cc6469d65c665ccfd1cfeb75c6e8e19413bba7fbff9bc762419a76d87b16086eac000000000100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000");
     auto const spender1 = get_block("02000000ba8b9cda965dd8e536670f9ddec10e53aab14b20bacad27b9137190000000000190760b278fe7b8565fda3b968b918d5fd997f993b23674c0af3b6fde300b38f33a5914ce6ed5b1b01e32f570201000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b014effffffff0100f2052a01000000434104b68a50eaa0287eff855189f949c1c6e5f58b37c88231373d8a59809cbae83059cc6469d65c665ccfd1cfeb75c6e8e19413bba7fbff9bc762419a76d87b16086eac000000000100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000");
@@ -514,22 +491,22 @@ BOOST_AUTO_TEST_CASE(utxo_database__insert_double_spend_block) {
     // std::cout << encode_hash(orig.hash()) << std::endl;
     // std::cout << encode_hash(spender.hash()) << std::endl;
 
-    utxo_database db(DIRECTORY "/utxo_db", 10000000);
+    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
     BOOST_REQUIRE(db.open());
-    BOOST_REQUIRE(db.push_block(orig, 0, 1) == utxo_code::success);                 //TODO(fernando): median_time_past
-    BOOST_REQUIRE(db.push_block(spender0, 1, 1) == utxo_code::success);              //TODO(fernando): median_time_past
-    BOOST_REQUIRE(db.push_block(spender1, 2, 1) == utxo_code::key_not_found);        //TODO(fernando): median_time_past
+    BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);          
+    BOOST_REQUIRE(db.push_block(spender0, 1, 1) == result_code::success);       
+    BOOST_REQUIRE(db.push_block(spender1, 2, 1) == result_code::key_not_found); 
 }
 
-BOOST_AUTO_TEST_CASE(utxo_database__spend) {
+BOOST_AUTO_TEST_CASE(internal_database__spend) {
     //79880
     auto const orig = get_block("01000000a594fda9d85f69e762e498650d6fdb54d838657cea7841915203170000000000a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f505da904ce6ed5b1b017fe8070101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b015cffffffff0100f2052a01000000434104283338ffd784c198147f99aed2cc16709c90b1522e3b3637b312a6f9130e0eda7081e373a96d36be319710cd5c134aaffba81ff08650d7de8af332fe4d8cde20ac00000000");
     //80000
     auto const spender = get_block("01000000ba8b9cda965dd8e536670f9ddec10e53aab14b20bacad27b9137190000000000190760b278fe7b8565fda3b968b918d5fd997f993b23674c0af3b6fde300b38f33a5914ce6ed5b1b01e32f570201000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b014effffffff0100f2052a01000000434104b68a50eaa0287eff855189f949c1c6e5f58b37c88231373d8a59809cbae83059cc6469d65c665ccfd1cfeb75c6e8e19413bba7fbff9bc762419a76d87b16086eac000000000100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000");
 
-    utxo_database db(DIRECTORY "/utxo_db", 10000000);
+    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
     BOOST_REQUIRE(db.open());
-    BOOST_REQUIRE(db.push_block(orig, 0, 1) == utxo_code::success);         //TODO(fernando): median_time_past
+    BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);  
 
     hash_digest txid;
     std::string txid_enc = "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6";
@@ -550,7 +527,7 @@ BOOST_AUTO_TEST_CASE(utxo_database__spend) {
 
 
     // --------------------------------------------------------------------------------------------------------------------------
-    BOOST_REQUIRE(db.push_block(spender, 1, 1) == utxo_code::success);          //TODO(fernando): median_time_past
+    BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);   
 
     entry = db.get_utxo(output_point{txid, 0});
     output = entry.output();
@@ -585,7 +562,7 @@ BOOST_AUTO_TEST_CASE(utxo_database__spend) {
 }
 
 
-BOOST_AUTO_TEST_CASE(utxo_database__reorg) {
+BOOST_AUTO_TEST_CASE(internal_database__reorg) {
     //79880 - 00000000002e872c6fbbcf39c93ef0d89e33484ebf457f6829cbf4b561f3af5a
     std::string orig_enc = "01000000a594fda9d85f69e762e498650d6fdb54d838657cea7841915203170000000000a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f505da904ce6ed5b1b017fe8070101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b015cffffffff0100f2052a01000000434104283338ffd784c198147f99aed2cc16709c90b1522e3b3637b312a6f9130e0eda7081e373a96d36be319710cd5c134aaffba81ff08650d7de8af332fe4d8cde20ac00000000";
     auto const orig = get_block(orig_enc);
@@ -594,10 +571,10 @@ BOOST_AUTO_TEST_CASE(utxo_database__reorg) {
     auto const spender = get_block(spender_enc);
 
     {
-        utxo_database db(DIRECTORY "/utxo_db", 10000000);
+        internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.push_block(orig, 0, 1) == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(spender, 1, 1) == utxo_code::success);      //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);  
+        BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);      
     }   //close() implicit
 
     MDB_env* env_;
@@ -618,7 +595,7 @@ BOOST_AUTO_TEST_CASE(utxo_database__reorg) {
 }
 
 
-BOOST_AUTO_TEST_CASE(utxo_database__old_blocks_0) {
+BOOST_AUTO_TEST_CASE(internal_database__old_blocks_0) {
     //79880 - 00000000002e872c6fbbcf39c93ef0d89e33484ebf457f6829cbf4b561f3af5a
     // timestamp = 1284561413 
     //             Sep 15, 2010 11:36:53 AM
@@ -634,10 +611,10 @@ BOOST_AUTO_TEST_CASE(utxo_database__old_blocks_0) {
     using my_clock = dummy_clock<1284613427>;
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.push_block(orig, 0, 1) == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(spender, 1, 1) == utxo_code::success);      //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);  
+        BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);      
     }   //close() implicit
 
     MDB_env* env_;
@@ -657,7 +634,7 @@ BOOST_AUTO_TEST_CASE(utxo_database__old_blocks_0) {
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 }
 
-BOOST_AUTO_TEST_CASE(utxo_database__old_blocks_1) {
+BOOST_AUTO_TEST_CASE(internal_database__old_blocks_1) {
     //79880 - 00000000002e872c6fbbcf39c93ef0d89e33484ebf457f6829cbf4b561f3af5a
     // timestamp = 1284561413 
     //             Sep 15, 2010 11:36:53 AM
@@ -673,10 +650,10 @@ BOOST_AUTO_TEST_CASE(utxo_database__old_blocks_1) {
     using my_clock = dummy_clock<1284613427>;
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 87);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 87, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.push_block(orig, 0, 1) == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(spender, 1, 1) == utxo_code::success);      //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);  
+        BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);      
     }   //close() implicit
 
     MDB_env* env_;
@@ -697,7 +674,7 @@ BOOST_AUTO_TEST_CASE(utxo_database__old_blocks_1) {
 }
 
 
-BOOST_AUTO_TEST_CASE(utxo_database__old_blocks_2) {
+BOOST_AUTO_TEST_CASE(internal_database__old_blocks_2) {
     //79880 - 00000000002e872c6fbbcf39c93ef0d89e33484ebf457f6829cbf4b561f3af5a
     // timestamp = 1284561413 
     //             Sep 15, 2010 11:36:53 AM
@@ -713,10 +690,10 @@ BOOST_AUTO_TEST_CASE(utxo_database__old_blocks_2) {
     using my_clock = dummy_clock<1284613427 + 600>;
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 1);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.push_block(orig, 0, 1) == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(spender, 1, 1) == utxo_code::success);      //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);  
+        BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);      
     }   //close() implicit
 
     MDB_env* env_;
@@ -740,7 +717,7 @@ BOOST_AUTO_TEST_CASE(utxo_database__old_blocks_2) {
 
 
 
-BOOST_AUTO_TEST_CASE(utxo_database__reorg_index) {
+BOOST_AUTO_TEST_CASE(internal_database__reorg_index) {
 
     // Block #4334
     // BlockHash 000000009cdad3c55df9c9bc88265329254a6c8ca810fa7f0e953c947df86dc7
@@ -765,14 +742,14 @@ BOOST_AUTO_TEST_CASE(utxo_database__reorg_index) {
 
 
     {
-        utxo_database db(DIRECTORY "/utxo_db", 10000000);
+        internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.push_block(b0, 0, 1) == utxo_code::success);           //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(b1, 1, 1) == utxo_code::success);              
-        BOOST_REQUIRE(db.push_block(b2, 2, 1) == utxo_code::success);
-        BOOST_REQUIRE(db.push_block(b3, 3, 1) == utxo_code::success);
-        BOOST_REQUIRE(db.push_block(b4, 4, 1)      == utxo_code::success);
-        BOOST_REQUIRE(db.push_block(spender0, 5, 1) == utxo_code::success);
+        BOOST_REQUIRE(db.push_block(b0, 0, 1) == result_code::success);    
+        BOOST_REQUIRE(db.push_block(b1, 1, 1) == result_code::success);              
+        BOOST_REQUIRE(db.push_block(b2, 2, 1) == result_code::success);
+        BOOST_REQUIRE(db.push_block(b3, 3, 1) == result_code::success);
+        BOOST_REQUIRE(db.push_block(b4, 4, 1)      == result_code::success);
+        BOOST_REQUIRE(db.push_block(spender0, 5, 1) == result_code::success);
     }   //close() implicit
 
 
@@ -802,7 +779,7 @@ BOOST_AUTO_TEST_CASE(utxo_database__reorg_index) {
 }
  
 
-BOOST_AUTO_TEST_CASE(utxo_database__reorg_index2) {
+BOOST_AUTO_TEST_CASE(internal_database__reorg_index2) {
 
     // Block #4334
     // BlockHash 000000009cdad3c55df9c9bc88265329254a6c8ca810fa7f0e953c947df86dc7
@@ -834,16 +811,16 @@ BOOST_AUTO_TEST_CASE(utxo_database__reorg_index2) {
 
 
     {
-        utxo_database db(DIRECTORY "/utxo_db", 10000000);
+        internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.push_block(b0, 0, 1) == utxo_code::success);              //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(b1, 1, 1) == utxo_code::success);
-        BOOST_REQUIRE(db.push_block(b2, 2, 1) == utxo_code::success);
-        BOOST_REQUIRE(db.push_block(b3, 3, 1) == utxo_code::success);
-        BOOST_REQUIRE(db.push_block(b4, 4, 1)      == utxo_code::success);
-        BOOST_REQUIRE(db.push_block(b5, 5, 1)      == utxo_code::success);
-        BOOST_REQUIRE(db.push_block(spender0, 6, 1) == utxo_code::success);
-        BOOST_REQUIRE(db.push_block(spender1, 7, 1) == utxo_code::success);
+        BOOST_REQUIRE(db.push_block(b0, 0, 1) == result_code::success);       
+        BOOST_REQUIRE(db.push_block(b1, 1, 1) == result_code::success);
+        BOOST_REQUIRE(db.push_block(b2, 2, 1) == result_code::success);
+        BOOST_REQUIRE(db.push_block(b3, 3, 1) == result_code::success);
+        BOOST_REQUIRE(db.push_block(b4, 4, 1)      == result_code::success);
+        BOOST_REQUIRE(db.push_block(b5, 5, 1)      == result_code::success);
+        BOOST_REQUIRE(db.push_block(spender0, 6, 1) == result_code::success);
+        BOOST_REQUIRE(db.push_block(spender1, 7, 1) == result_code::success);
     }   //close() implicit
 
 
@@ -876,7 +853,7 @@ BOOST_AUTO_TEST_CASE(utxo_database__reorg_index2) {
 
 
 
-BOOST_AUTO_TEST_CASE(utxo_database__reorg_0) {
+BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     //79880 - 00000000002e872c6fbbcf39c93ef0d89e33484ebf457f6829cbf4b561f3af5a
     // timestamp = 1284561413 
     //             Sep 15, 2010 11:36:53 AM
@@ -910,11 +887,11 @@ BOOST_AUTO_TEST_CASE(utxo_database__reorg_0) {
     
     // Insert the First Block
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         //State A ------------------------------------------------------------
-        BOOST_REQUIRE(db.push_block(orig, 0, 1) == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);  
 
         auto entry = db.get_utxo(output_point{txid, 0});
         BOOST_REQUIRE(entry.is_valid());
@@ -928,11 +905,11 @@ BOOST_AUTO_TEST_CASE(utxo_database__reorg_0) {
 
     // Insert the Spender Block
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         //State B ------------------------------------------------------------
-        BOOST_REQUIRE(db.push_block(spender, 1, 1) == utxo_code::success);      //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);      
 
         auto entry = db.get_utxo(output_point{txid, 0});
         BOOST_REQUIRE( ! entry.is_valid());
@@ -970,12 +947,12 @@ BOOST_AUTO_TEST_CASE(utxo_database__reorg_0) {
 
     // Remove the Spender Block
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         //State C ------------------------------------------------------------
         chain::block out_block;
-        BOOST_REQUIRE(db.pop_block(out_block) == utxo_code::success);
+        BOOST_REQUIRE(db.pop_block(out_block) == result_code::success);
 
         BOOST_REQUIRE(out_block.is_valid());
         BOOST_REQUIRE(out_block.hash() == spender.hash());
@@ -1010,11 +987,11 @@ BOOST_AUTO_TEST_CASE(utxo_database__reorg_0) {
 
     // Insert the Spender Block, again
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         //State B ------------------------------------------------------------
-        BOOST_REQUIRE(db.push_block(spender, 1, 1) == utxo_code::success);      //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);      
 
         auto entry = db.get_utxo(output_point{txid, 0});
         BOOST_REQUIRE( ! entry.is_valid());
@@ -1051,7 +1028,7 @@ BOOST_AUTO_TEST_CASE(utxo_database__reorg_0) {
 
 }
 
-BOOST_AUTO_TEST_CASE(utxo_database__reorg_1) {
+BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
     //79880 - 00000000002e872c6fbbcf39c93ef0d89e33484ebf457f6829cbf4b561f3af5a
     // timestamp = 1284561413 
     //             Sep 15, 2010 11:36:53 AM
@@ -1085,11 +1062,11 @@ BOOST_AUTO_TEST_CASE(utxo_database__reorg_1) {
     
     // Insert the First Block
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 1);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, one_hundred_gib);
         BOOST_REQUIRE(db.open());
 
         //State A ------------------------------------------------------------
-        BOOST_REQUIRE(db.push_block(orig, 0, 1) == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);  
 
         auto entry = db.get_utxo(output_point{txid, 0});
         BOOST_REQUIRE(entry.is_valid());
@@ -1103,11 +1080,11 @@ BOOST_AUTO_TEST_CASE(utxo_database__reorg_1) {
 
     // Insert the Spender Block
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 1);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, one_hundred_gib);
         BOOST_REQUIRE(db.open());
 
         //State B ------------------------------------------------------------
-        BOOST_REQUIRE(db.push_block(spender, 1, 1) == utxo_code::success);      //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);      
 
         auto entry = db.get_utxo(output_point{txid, 0});
         BOOST_REQUIRE( ! entry.is_valid());
@@ -1145,18 +1122,18 @@ BOOST_AUTO_TEST_CASE(utxo_database__reorg_1) {
 
     // Remove the Spender Block
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 1);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, one_hundred_gib);
         BOOST_REQUIRE(db.open());
 
         //State C ------------------------------------------------------------
         chain::block out_block;
-        BOOST_REQUIRE(db.pop_block(out_block) == utxo_code::key_not_found);
+        BOOST_REQUIRE(db.pop_block(out_block) == result_code::key_not_found);
     }   //close() implicit
 }
 
 
 
-BOOST_AUTO_TEST_CASE(utxo_database__prune) {
+BOOST_AUTO_TEST_CASE(internal_database__prune) {
 
     // Block 0
     auto const genesis = get_genesis();
@@ -1249,15 +1226,15 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune) {
     MDB_txn* db_txn;
     
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
-        BOOST_REQUIRE(db.push_block(genesis, 0, 1) == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(b1, 1, 1)      == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(b2, 2, 1)      == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(b3, 3, 1)      == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(b4, 4, 1)      == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(b79880, 5, 1)  == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);  
+        BOOST_REQUIRE(db.push_block(b1, 1, 1)      == result_code::success);  
+        BOOST_REQUIRE(db.push_block(b2, 2, 1)      == result_code::success);  
+        BOOST_REQUIRE(db.push_block(b3, 3, 1)      == result_code::success);  
+        BOOST_REQUIRE(db.push_block(b4, 4, 1)      == result_code::success);  
+        BOOST_REQUIRE(db.push_block(b79880, 5, 1)  == result_code::success);  
 
     }   //close() implicit
 
@@ -1279,10 +1256,10 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune) {
 
     // ------------------------------------------------------------------------------------
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
-        BOOST_REQUIRE(db.push_block(spender80000, 6, 1) == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(spender80000, 6, 1) == result_code::success);  
 
     }   //close() implicit
 
@@ -1301,10 +1278,10 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune) {
 
     // ------------------------------------------------------------------------------------
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
-        BOOST_REQUIRE(db.push_block(spender80000b, 7, 1) == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(spender80000b, 7, 1) == result_code::success);  
 
     }   //close() implicit
 
@@ -1322,10 +1299,10 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune) {
 
     // ------------------------------------------------------------------------------------
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
-        BOOST_REQUIRE(db.push_block(spender80000c, 8, 1) == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(spender80000c, 8, 1) == result_code::success);  
 
     }   //close() implicit
 
@@ -1343,10 +1320,10 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune) {
 
     // ------------------------------------------------------------------------------------
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
-        BOOST_REQUIRE(db.push_block(spender80000d, 9, 1) == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(spender80000d, 9, 1) == result_code::success);  
 
     }   //close() implicit
 
@@ -1364,10 +1341,10 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune) {
 
     // ------------------------------------------------------------------------------------
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
-        BOOST_REQUIRE(db.push_block(spender80000e, 10, 1) == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(spender80000e, 10, 1) == result_code::success);  
 
     }   //close() implicit
 
@@ -1382,9 +1359,9 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune) {
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == utxo_code::no_data_to_prune);
+        BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
@@ -1394,9 +1371,9 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune) {
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 11);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 11, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == utxo_code::no_data_to_prune);
+        BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
@@ -1406,9 +1383,9 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune) {
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 10);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 10, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == utxo_code::no_data_to_prune);
+        BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
@@ -1418,9 +1395,9 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune) {
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 5);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 5, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == utxo_code::no_data_to_prune);
+        BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
@@ -1430,9 +1407,9 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune) {
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 4);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 4, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == utxo_code::success);
+        BOOST_REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
@@ -1442,9 +1419,9 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune) {
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 0);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == utxo_code::success);
+        BOOST_REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
@@ -1458,7 +1435,7 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune) {
 
 
 
-BOOST_AUTO_TEST_CASE(utxo_database__prune_2) {
+BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
 
     // Block 0
     auto const genesis = get_genesis();
@@ -1528,15 +1505,15 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_2) {
     MDB_txn* db_txn;
     
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
-        BOOST_REQUIRE(db.push_block(genesis, 0, 1) == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(b1, 1, 1)      == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(b2, 2, 1)      == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(b3, 3, 1)      == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(b4, 4, 1)      == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(b79880, 5, 1)  == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);  
+        BOOST_REQUIRE(db.push_block(b1, 1, 1)      == result_code::success);  
+        BOOST_REQUIRE(db.push_block(b2, 2, 1)      == result_code::success);  
+        BOOST_REQUIRE(db.push_block(b3, 3, 1)      == result_code::success);  
+        BOOST_REQUIRE(db.push_block(b4, 4, 1)      == result_code::success);  
+        BOOST_REQUIRE(db.push_block(b79880, 5, 1)  == result_code::success);  
 
     }   //close() implicit
 
@@ -1558,10 +1535,10 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_2) {
 
     // ------------------------------------------------------------------------------------
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
-        BOOST_REQUIRE(db.push_block(spender80000, 6, 1) == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(spender80000, 6, 1) == result_code::success);  
 
     }   //close() implicit
 
@@ -1580,10 +1557,10 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_2) {
 
     // ------------------------------------------------------------------------------------
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
-        BOOST_REQUIRE(db.push_block(spender80000b, 7, 1) == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(spender80000b, 7, 1) == result_code::success);  
 
     }   //close() implicit
 
@@ -1608,9 +1585,9 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_2) {
     // ------------------------------------------------------------------------------------
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == utxo_code::no_data_to_prune);
+        BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
@@ -1625,9 +1602,9 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_2) {
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 11);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 11, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == utxo_code::no_data_to_prune);
+        BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
@@ -1642,9 +1619,9 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_2) {
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 10);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 10, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == utxo_code::no_data_to_prune);
+        BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
@@ -1659,9 +1636,9 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_2) {
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 5);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 5, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == utxo_code::no_data_to_prune);
+        BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
@@ -1676,9 +1653,9 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_2) {
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 4);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 4, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == utxo_code::no_data_to_prune);
+        BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
@@ -1692,9 +1669,9 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_2) {
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 1);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == utxo_code::success);
+        BOOST_REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
@@ -1709,9 +1686,9 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_2) {
 
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 0);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == utxo_code::success);
+        BOOST_REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
@@ -1728,7 +1705,7 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_2) {
 
 
 
-BOOST_AUTO_TEST_CASE(utxo_database__prune_3) {
+BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
 
     // Block 0
     auto const genesis = get_genesis();
@@ -1798,15 +1775,15 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_3) {
     MDB_txn* db_txn;
     
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
-        BOOST_REQUIRE(db.push_block(genesis, 0, 1) == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(b1, 1, 1)      == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(b2, 2, 1)      == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(b3, 3, 1)      == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(b4, 4, 1)      == utxo_code::success);         //TODO(fernando): median_time_past
-        BOOST_REQUIRE(db.push_block(b79880, 5, 1)  == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);  
+        BOOST_REQUIRE(db.push_block(b1, 1, 1)      == result_code::success);  
+        BOOST_REQUIRE(db.push_block(b2, 2, 1)      == result_code::success);  
+        BOOST_REQUIRE(db.push_block(b3, 3, 1)      == result_code::success);  
+        BOOST_REQUIRE(db.push_block(b4, 4, 1)      == result_code::success);  
+        BOOST_REQUIRE(db.push_block(b79880, 5, 1)  == result_code::success);  
 
     }   //close() implicit
 
@@ -1827,10 +1804,10 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_3) {
 
     // ------------------------------------------------------------------------------------
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
-        BOOST_REQUIRE(db.push_block(spender80000b, 6, 1) == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(spender80000b, 6, 1) == result_code::success);  
 
     }   //close() implicit
 
@@ -1851,10 +1828,10 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_3) {
 
     // ------------------------------------------------------------------------------------
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 86); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
-        BOOST_REQUIRE(db.push_block(spender80000, 7, 1) == utxo_code::success);         //TODO(fernando): median_time_past
+        BOOST_REQUIRE(db.push_block(spender80000, 7, 1) == result_code::success);  
 
     }   //close() implicit
 
@@ -1876,9 +1853,9 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_3) {
     // ------------------------------------------------------------------------------------
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 1);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == utxo_code::success);
+        BOOST_REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
@@ -1893,9 +1870,9 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_3) {
 
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 0);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == utxo_code::success);
+        BOOST_REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
@@ -1909,40 +1886,40 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_3) {
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 }
 
-BOOST_AUTO_TEST_CASE(utxo_database__prune_empty_blockchain) {
+BOOST_AUTO_TEST_CASE(internal_database__prune_empty_blockchain) {
     using my_clock = dummy_clock<1284613427>;
-    utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 4);
+    internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 4, one_hundred_gib);
     BOOST_REQUIRE(db.open());
-    BOOST_REQUIRE(db.prune() == utxo_code::no_data_to_prune);
+    BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
 }
 
-BOOST_AUTO_TEST_CASE(utxo_database__prune_empty_reorg_pool) {
+BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool) {
     using my_clock = dummy_clock<1284613427>;
-    utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 1000);
+    internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1000, one_hundred_gib);
     BOOST_REQUIRE(db.open());
-    BOOST_REQUIRE(db.push_block(get_genesis(), 0, 1) == utxo_code::success);
-    BOOST_REQUIRE(db.prune() == utxo_code::no_data_to_prune);
+    BOOST_REQUIRE(db.push_block(get_genesis(), 0, 1) == result_code::success);
+    BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
 }
 
 
-BOOST_AUTO_TEST_CASE(utxo_database__prune_empty_reorg_pool_2) {
+BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool_2) {
     using my_clock = dummy_clock<1284613427>;
-    utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 0);
+    internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, one_hundred_gib);
     BOOST_REQUIRE(db.open());
-    BOOST_REQUIRE(db.push_block(get_genesis(), 0, 1) == utxo_code::success);
-    BOOST_REQUIRE(db.prune() == utxo_code::no_data_to_prune);
+    BOOST_REQUIRE(db.push_block(get_genesis(), 0, 1) == result_code::success);
+    BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
 }
 
-BOOST_AUTO_TEST_CASE(utxo_database__prune_empty_reorg_pool_3) {
+BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool_3) {
     using my_clock = dummy_clock<1284613427>;
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 10000000);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.push_block(get_genesis(), 0, 1) == utxo_code::success);
+        BOOST_REQUIRE(db.push_block(get_genesis(), 0, 1) == result_code::success);
 
         // Block 1 - 00000000839a8e6886ab5951d76f411475428afc90947ee320161bbf18eb6048
         auto const b1 = get_block("010000006fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000982051fd1e4ba744bbbe680e1fee14677ba1a3c3540bf7b1cdb606e857233e0e61bc6649ffff001d01e362990101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704ffff001d0104ffffffff0100f2052a0100000043410496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52da7589379515d4e0a604f8141781e62294721166bf621e73a82cbf2342c858eeac00000000");
-        BOOST_REQUIRE(db.push_block(b1, 1, 1) == utxo_code::success);
+        BOOST_REQUIRE(db.push_block(b1, 1, 1) == result_code::success);
 
 
         std::string spender_enc = "01000000ba8b9cda965dd8e536670f9ddec10e53aab14b20bacad27b9137190000000000190760b278fe7b8565fda3b968b918d5fd997f993b23674c0af3b6fde300b38f"
@@ -1965,7 +1942,7 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_empty_reorg_pool_3) {
         BOOST_REQUIRE(decode_hash(txid, "0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098"));
         spender80000b.transactions()[1].inputs()[1].previous_output().set_hash(txid);
 
-        BOOST_REQUIRE(db.push_block(spender80000b, 2, 1) == utxo_code::success);
+        BOOST_REQUIRE(db.push_block(spender80000b, 2, 1) == result_code::success);
     }
 
 
@@ -1985,9 +1962,9 @@ BOOST_AUTO_TEST_CASE(utxo_database__prune_empty_reorg_pool_3) {
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 
     {
-        utxo_database_basis<my_clock> db(DIRECTORY "/utxo_db", 3);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 3, one_hundred_gib);
         BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == utxo_code::no_data_to_prune);
+        BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }
 }
 

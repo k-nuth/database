@@ -374,7 +374,6 @@ set(bitprim_database_sources_just_bitprim
 if (DB_NEW)
     set(bitprim_database_sources_just_bitprim 
         ${bitprim_database_sources_just_bitprim}
-        # src/bitprim/databases/utxo_database.cpp
         src/bitprim/databases/utxo_entry.cpp
     )
 endif()
@@ -485,7 +484,7 @@ if (WITH_TESTS)
             # test/spend_database.cpp
             # test/structure.cpp
             # test/transaction_database.cpp
-            test/utxo_database.cpp
+            test/internal_database.cpp
             )
     target_link_libraries(bitprim_database_test PUBLIC bitprim-database)
 
@@ -505,7 +504,7 @@ if (WITH_TESTS)
 
     if (DB_NEW)
         _add_tests(bitprim_database_test
-                utxo_tests
+            utxo
         )
     endif()
 

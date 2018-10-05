@@ -32,7 +32,7 @@
 #endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_NEW
-#include <bitprim/database/databases/utxo_database.hpp>
+#include <bitprim/database/databases/internal_database.hpp>
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_HISTORY

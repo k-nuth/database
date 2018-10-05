@@ -68,11 +68,11 @@ public:
     void to_data_fixed(writer& sink, uint32_t height, uint32_t median_time_past, bool coinbase);
 
     static
-    data_chunk to_data_pepe(chain::output const& output, data_chunk const& fixed);
+    data_chunk to_data_with_fixed(chain::output const& output, data_chunk const& fixed);
     static
-    void to_data_pepe(std::ostream& stream, chain::output const& output, data_chunk const& fixed);
+    void to_data_with_fixed(std::ostream& stream, chain::output const& output, data_chunk const& fixed);
     static
-    void to_data_pepe(writer& sink, chain::output const& output, data_chunk const& fixed);
+    void to_data_with_fixed(writer& sink, chain::output const& output, data_chunk const& fixed);
 
 private:
     void reset();
