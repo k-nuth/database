@@ -134,7 +134,9 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi> open_
     BOOST_REQUIRE(mdb_env_create(&env_) == MDB_SUCCESS);
     BOOST_REQUIRE(mdb_env_set_mapsize(env_, size_t(10485760) * 1024 * 10) == MDB_SUCCESS);
     BOOST_REQUIRE(mdb_env_set_maxdbs(env_, 6) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_env_open(env_, "internal_database/utxo_db", MDB_NORDAHEAD | MDB_NOSYNC, 0664) == MDB_SUCCESS);
+    auto qqq = mdb_env_open(env_, DIRECTORY "/internal_db", MDB_NORDAHEAD | MDB_NOSYNC, 0664);
+    
+    BOOST_REQUIRE(qqq == MDB_SUCCESS);
     BOOST_REQUIRE(mdb_txn_begin(env_, NULL, 0, &db_txn) == MDB_SUCCESS);
     
 
@@ -364,7 +366,7 @@ struct dummy_clock {
 
 // ---------------------------------------------------------------------------------
 
-BOOST_FIXTURE_TEST_SUITE(internal_db, internal_database_directory_setup_fixture)
+BOOST_FIXTURE_TEST_SUITE(internal_db_tests, internal_database_directory_setup_fixture)
 
 // #ifdef BITPRIM_DB_NEW
 
@@ -373,6 +375,11 @@ BOOST_AUTO_TEST_CASE(internal_database__dummy_clock) {
     auto end = dummy_clock<200>::now();
     // std::cout << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "us.\n";    
     BOOST_REQUIRE(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() == 0);
+}
+
+BOOST_AUTO_TEST_CASE(internal_database__adjust_db_size) {
+    internal_database db(DIRECTORY "/internal_db", 10000000, 1);
+    BOOST_REQUIRE(db.open());
 }
 
 

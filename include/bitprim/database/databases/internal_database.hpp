@@ -21,6 +21,7 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/range/adaptor/reversed.hpp>
+#include <boost/interprocess/mapped_region.hpp>
 
 #include <lmdb.h>
 
@@ -333,18 +334,18 @@ private:
     }
 
     size_t get_db_page_size() const {
-        // precondition: env_ have to be created (mdb_env_create)
-        MDB_stat mst;
-        mdb_env_stat(env_, &mst);
-        return mst.ms_psize;
+        return boost::interprocess::mapped_region::get_page_size();
     }
 
     size_t adjust_db_size(size_t size) const {
         // precondition: env_ have to be created (mdb_env_create)
         // The mdb_env_set_mapsize should be a multiple of the OS page size.
         size_t const page_size = get_db_page_size();
-        size_t const mod = size % page_size;
-        return size + (mod != 0) ? (page_size - mod) : 0;
+        auto res = size_t(std::ceil(double(size) / page_size)) * page_size;
+        return res;
+
+        // size_t const mod = size % page_size;
+        // return size + (mod != 0) ? (page_size - mod) : 0;
     }    
 
     bool create_and_open_environment() {
@@ -365,6 +366,7 @@ private:
         if (res != MDB_SUCCESS) {
             return false;
         }
+
 
         res = mdb_env_set_maxdbs(env_, max_dbs_);
         if (res != MDB_SUCCESS) {

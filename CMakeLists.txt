@@ -504,7 +504,7 @@ if (WITH_TESTS)
 
     if (DB_NEW)
         _add_tests(bitprim_database_test
-            utxo
+            internal_db_tests
         )
     endif()
 
