@@ -23,7 +23,9 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <type_traits>
 #include <utility>
+
 #include <boost/filesystem.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <bitcoin/bitcoin.hpp>
@@ -1122,6 +1124,17 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest
     }
 
     handler(error::success);
+}
+
+code data_base::prune_reorg() {
+#ifdef BITPRIM_DB_NEW
+    auto res = internal_db_->prune();
+    if (res != result_code::success) {
+        LOG_ERROR(LOG_DATABASE) << "Error pruning the reorganization pool, code: " << static_cast<std::underlying_type<result_code>::type>(res);
+        return error::unknown;
+    }
+#endif // BITPRIM_DB_NEW
+    return error::success;
 }
 
 // This is designed for write exclusivity and read concurrency.

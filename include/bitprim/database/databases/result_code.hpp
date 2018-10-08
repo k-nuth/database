@@ -30,7 +30,8 @@ enum class result_code {
     db_empty = 4,
     no_data_to_prune = 5,
     db_corrupt = 6,
-    other = 7
+    prune_error = 7,
+    other = 8
 };
 
 inline

@@ -152,7 +152,7 @@ public:
     /// Returns store_block_invalid_height if height is not the current top + 1.
     code push(chain::block const& block, size_t height);
 
-
+    code prune_reorg();
 
     // Asynchronous writers.
     // ------------------------------------------------------------------------
