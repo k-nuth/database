@@ -163,7 +163,8 @@ public:
         MDB_val value;
 
         MDB_txn* db_txn;
-        if (mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) != MDB_SUCCESS) {
+        auto zzz = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+        if (zzz != MDB_SUCCESS) {
             return utxo_entry{};
         }
 
@@ -185,7 +186,8 @@ public:
     
     result_code get_last_height(uint32_t& out_height) const {
         MDB_txn* db_txn;
-        if (mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) != MDB_SUCCESS) {
+        auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+        if (res != MDB_SUCCESS) {
             return result_code::other;
         }
 
@@ -217,7 +219,8 @@ public:
         MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
 
         MDB_txn* db_txn;
-        if (mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) != MDB_SUCCESS) {
+        auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+        if (res != MDB_SUCCESS) {
             return {};
         }
 
@@ -242,7 +245,8 @@ public:
     
     chain::header get_header(uint32_t height) const {
         MDB_txn* db_txn;
-        if (mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) != MDB_SUCCESS) {
+        auto zzz = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+        if (zzz != MDB_SUCCESS) {
             return chain::header{};
         }
 
@@ -302,7 +306,8 @@ public:
         auto remove_until = first_height + amount_to_delete;
 
         MDB_txn* db_txn;
-        if (mdb_txn_begin(env_, NULL, 0, &db_txn) != MDB_SUCCESS) {
+        auto zzz = mdb_txn_begin(env_, NULL, 0, &db_txn);
+        if (zzz != MDB_SUCCESS) {
             return result_code::other;
         }
 
@@ -377,17 +382,18 @@ private:
         // if (db_flags & DBF_FASTEST)
         //     mdb_flags |= MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC;
 
-        res = mdb_env_open(env_, db_dir_.c_str(), MDB_NORDAHEAD | MDB_NOSYNC, env_open_mode_);
+        res = mdb_env_open(env_, db_dir_.c_str(), MDB_NORDAHEAD | MDB_NOSYNC | MDB_NOTLS, env_open_mode_);
         return res == MDB_SUCCESS;
     }
 
     bool open_databases() {
         MDB_txn* db_txn;
-        if (mdb_txn_begin(env_, NULL, 0, &db_txn) != MDB_SUCCESS) {
+        auto res = mdb_txn_begin(env_, NULL, 0, &db_txn);
+        if (res != MDB_SUCCESS) {
             return false;
         }
 
-        auto res = mdb_dbi_open(db_txn, block_header_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_header_);
+        res = mdb_dbi_open(db_txn, block_header_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_header_);
         if (res != MDB_SUCCESS) {
             return false;
         }
@@ -851,7 +857,8 @@ private:
 
     chain::block get_block_reorg(uint32_t height) const {
         MDB_txn* db_txn;
-        if (mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) != MDB_SUCCESS) {
+        auto zzz = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+        if (zzz != MDB_SUCCESS) {
             return chain::block{};
         }
 
@@ -943,7 +950,8 @@ private:
 
     result_code get_first_reorg_block_height(uint32_t& out_height) const {
         MDB_txn* db_txn;
-        if (mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) != MDB_SUCCESS) {
+        auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+        if (res != MDB_SUCCESS) {
             return result_code::other;
         }
 
