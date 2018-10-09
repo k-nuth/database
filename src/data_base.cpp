@@ -1129,7 +1129,7 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest
 code data_base::prune_reorg() {
 #ifdef BITPRIM_DB_NEW
     auto res = internal_db_->prune();
-    if (res != result_code::success) {
+    if ( ! succeed_prune(res)) {
         LOG_ERROR(LOG_DATABASE) << "Error pruning the reorganization pool, code: " << static_cast<std::underlying_type<result_code>::type>(res);
         return error::unknown;
     }
