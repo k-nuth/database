@@ -150,6 +150,8 @@ public:
         return res;
     }
 
+    //TODO(fernando): optimization: consider passing a list of outputs to insert and a list of inputs to delete instead of an entire Block.
+    //                  avoiding inserting and erasing internal spenders
     result_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past) {
 
         MDB_txn* db_txn;
