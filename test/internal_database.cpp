@@ -30,7 +30,7 @@ using namespace bc::database;
 
 #define DIRECTORY "internal_database"
 
-constexpr uint64_t one_hundred_gib = uint64_t(10485760) * 1024 * 10; //100 * (uint64_t(1) << 30);
+constexpr uint64_t one_hundred_gib = uint64_t(10485760) * 10; //100 * (uint64_t(1) << 30);
 
 struct internal_database_directory_setup_fixture {
     internal_database_directory_setup_fixture() {
@@ -132,7 +132,7 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi> open_
     char reorg_block_name[] = "reorg_block";
 
     BOOST_REQUIRE(mdb_env_create(&env_) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_env_set_mapsize(env_, size_t(10485760) * 1024 * 10) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_env_set_mapsize(env_, one_hundred_gib) == MDB_SUCCESS);
     BOOST_REQUIRE(mdb_env_set_maxdbs(env_, 6) == MDB_SUCCESS);
     auto qqq = mdb_env_open(env_, DIRECTORY "/internal_db", MDB_NORDAHEAD | MDB_NOSYNC, 0664);
     
@@ -383,6 +383,7 @@ BOOST_AUTO_TEST_CASE(internal_database__adjust_db_size) {
 }
 
 
+
 BOOST_AUTO_TEST_CASE(internal_database__open) {
     internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
     BOOST_REQUIRE(db.open());
@@ -599,6 +600,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg) {
 
     check_reorg_block(env_, dbi_reorg_block_, 0, orig_enc);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
+
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 }
 
 
@@ -639,6 +642,8 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_0) {
 
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 0);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
+
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 }
 
 BOOST_AUTO_TEST_CASE(internal_database__old_blocks_1) {
@@ -678,6 +683,8 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_1) {
 
     check_reorg_block(env_, dbi_reorg_block_, 0, orig_enc);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
+
+       close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 }
 
 
@@ -719,6 +726,8 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_2) {
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 0);
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 1);
     // check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
+
+       close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 }
 
 
@@ -783,6 +792,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index) {
     BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 8) == 0);
 
     check_index_and_pool(env_, dbi_reorg_index_, dbi_reorg_pool_);
+
+       close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 }
  
 
@@ -856,6 +867,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index2) {
     BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 8) == 0);
 
     check_index_and_pool(env_, dbi_reorg_index_, dbi_reorg_pool_);
+
+       close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 }
 
 
