@@ -38,22 +38,6 @@
 #define BITPRIM_INTERNAL_DB_WIRE false
 #endif
 
-extern std::atomic<size_t> global_get_utxo_2a;
-extern std::atomic<size_t> global_get_utxo_2b;
-extern std::atomic<size_t> global_get_utxo_2c;
-extern std::atomic<size_t> global_get_utxo_3;
-extern std::atomic<size_t> global_get_utxo_4;
-extern std::atomic<size_t> global_get_utxo_5;
-extern std::atomic<size_t> global_get_utxo_6;
-extern std::atomic<size_t> global_get_utxo_7;
-extern std::atomic<size_t> global_get_utxo_8;
-
-extern std::atomic<size_t> get_utxo_count_0;
-extern std::atomic<size_t> get_utxo_count_1;
-extern std::atomic<size_t> get_utxo_count_2;
-extern std::atomic<size_t> get_utxo_count_3;
-
-
 namespace libbitcoin {
 namespace database {
 
@@ -157,7 +141,7 @@ public:
         MDB_txn* db_txn;
         auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
         if (res0 != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "internal_database_basis::push_block - mdb_txn_begin " << res0;
+            LOG_INFO(LOG_DATABASE) << "Error begining LMDB Transaction [push_block] " << res0;
             return result_code::other;
         }
 
@@ -176,68 +160,35 @@ public:
     }
     
     utxo_entry get_utxo(chain::output_point const& point) const {
-        auto t0 = std::chrono::high_resolution_clock::now();
-
+        
         auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);
         MDB_val key {keyarr.size(), keyarr.data()};
         MDB_val value;
 
-        auto t1 = std::chrono::high_resolution_clock::now();
-
         MDB_txn* db_txn;
         auto zzz = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
         if (zzz != MDB_SUCCESS) {
-            auto t2 = std::chrono::high_resolution_clock::now();
-            global_get_utxo_2a += static_cast<size_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count());
-            global_get_utxo_7 += static_cast<size_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t0).count());
-
-            LOG_DEBUG(LOG_DATABASE) << "internal_database_basis::get_utxo() - mdb_txn_begin: " << zzz;        
-            get_utxo_count_0++;
+            LOG_INFO(LOG_DATABASE) << "Error begining LMDB Transaction [get_utxo] " << zzz;
             return utxo_entry{};
         }
 
         zzz = mdb_get(db_txn, dbi_utxo_, &key, &value);
         if (zzz != MDB_SUCCESS) {
-            auto t2 = std::chrono::high_resolution_clock::now();
-            global_get_utxo_2b += static_cast<size_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count());
-            global_get_utxo_8 += static_cast<size_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t0).count());
-
-
-            // LOG_DEBUG(LOG_DATABASE) << "internal_database_basis::get_utxo() - mdb_get - res:" << zzz;
-            // LOG_DEBUG(LOG_DATABASE) << "internal_database_basis::get_utxo() - mdb_get - point.hash:  " << encode_hash(point.hash());
-            // LOG_DEBUG(LOG_DATABASE) << "internal_database_basis::get_utxo() - mdb_get - point.index: " << point.index();
+          
             mdb_txn_commit(db_txn);
-            // mdb_txn_abort(db_txn);
-            get_utxo_count_1++;
+            // mdb_txn_abort(db_txn);  
             return utxo_entry{};
         }
 
-        auto t2 = std::chrono::high_resolution_clock::now();
-
         auto data = db_value_to_data_chunk(value);
-
-        auto t3 = std::chrono::high_resolution_clock::now();
 
         zzz = mdb_txn_commit(db_txn);
         if (zzz != MDB_SUCCESS) {
             LOG_DEBUG(LOG_DATABASE) << "internal_database_basis::get_utxo() - mdb_txn_commit: " << zzz;        
-            get_utxo_count_2++;
             return utxo_entry{};
         }
 
-        auto t4 = std::chrono::high_resolution_clock::now();
-
         auto res = utxo_entry::factory_from_data(data);
-
-        auto t5 = std::chrono::high_resolution_clock::now();
-
-        global_get_utxo_2c += static_cast<size_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count());
-        global_get_utxo_3  += static_cast<size_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t0).count());
-        global_get_utxo_4  += static_cast<size_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(t3 - t0).count());
-        global_get_utxo_5  += static_cast<size_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(t4 - t0).count());
-        global_get_utxo_6  += static_cast<size_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(t5 - t0).count());
-        
-        get_utxo_count_3++;
 
         return res;
     }
@@ -799,22 +750,22 @@ private:
         MDB_val key {sizeof(height), &height};
         auto res = mdb_del(db_txn, dbi_block_header_, &key, NULL);
         if (res == MDB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE) << "internal_database_basis::remove_block_header - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE) << "Key not found deleting block header in LMDB [remove_block_header] - mdb_del: " << res;
             return result_code::key_not_found;
         }
         if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "internal_database_basis::remove_block_header - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE) << "Erro deleting block header in LMDB [remove_block_header] - mdb_del: " << res;
             return result_code::other;
         }
 
         MDB_val key_hash {hash.size(), const_cast<hash_digest&>(hash).data()};
         res = mdb_del(db_txn, dbi_block_header_by_hash_, &key_hash, NULL);
         if (res == MDB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE) << "internal_database_basis::remove_block_header - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE) << "Key not found deleting block header by hash in LMDB [remove_block_header] - mdb_del: " << res;
             return result_code::key_not_found;
         }
         if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "internal_database_basis::remove_block_header - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE) << "Erro deleting block header by hash in LMDB [remove_block_header] - mdb_del: " << res;
             return result_code::other;
         }
 
@@ -826,11 +777,11 @@ private:
         MDB_val key {sizeof(height), &height};
         auto res = mdb_del(db_txn, dbi_reorg_block_, &key, NULL);
         if (res == MDB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE) << "internal_database_basis::remove_block_reorg - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE) << "Key not found deleting reorg block in LMDB [remove_block_reorg] - mdb_del: " << res;
             return result_code::key_not_found;
         }
         if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "internal_database_basis::remove_block_reorg - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE) << "Error deleting reorg block in LMDB [remove_block_reorg] - mdb_del: " << res;
             return result_code::other;
         }
         return result_code::success;
@@ -841,11 +792,11 @@ private:
         MDB_val key {sizeof(height), &height};
         auto res = mdb_del(db_txn, dbi_reorg_index_, &key, NULL);
         if (res == MDB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE) << "internal_database_basis::remove_reorg_index - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE) << "Key not found deleting reorg index in LMDB [remove_reorg_index] - mdb_del: " << res;
             return result_code::key_not_found;
         }
         if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "internal_database_basis::remove_reorg_index - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE) << "Error deleting reorg index in LMDB [remove_reorg_index] - mdb_del: " << res;
             return result_code::other;
         }
         return result_code::success;
@@ -964,11 +915,11 @@ private:
 
                 auto res = mdb_del(db_txn, dbi_reorg_pool_, &value, NULL);
                 if (res == MDB_NOTFOUND) {
-                    LOG_INFO(LOG_DATABASE) << "internal_database_basis::prune_reorg_index - mdb_del: " << res;
+                    LOG_INFO(LOG_DATABASE) << "Key not found deleting reorg pool in LMDB [prune_reorg_index] - mdb_del: " << res;
                     return result_code::key_not_found;
                 }
                 if (res != MDB_SUCCESS) {
-                    LOG_INFO(LOG_DATABASE) << "internal_database_basis::prune_reorg_index - mdb_del: " << res;
+                    LOG_INFO(LOG_DATABASE) << "Error deleting reorg pool in LMDB [prune_reorg_index] - mdb_del: " << res;
                     return result_code::other;
                 }
 
