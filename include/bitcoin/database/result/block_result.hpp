@@ -16,8 +16,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBBITCOIN_DATABASE_BLOCK_RESULT_HPP
-#define LIBBITCOIN_DATABASE_BLOCK_RESULT_HPP
+#ifndef LIBBITCOIN_DATABASE_BLOCK_RESULT_HPP_
+#define LIBBITCOIN_DATABASE_BLOCK_RESULT_HPP_
+
+#ifdef BITPRIM_DB_LEGACY
 
 #include <cstdint>
 #include <cstddef>
@@ -82,4 +84,6 @@ private:
 } // namespace database
 } // namespace libbitcoin
 
-#endif
+#endif // BITPRIM_DB_LEGACY
+
+#endif // LIBBITCOIN_DATABASE_BLOCK_RESULT_HPP_

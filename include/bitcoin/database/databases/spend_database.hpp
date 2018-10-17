@@ -16,8 +16,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBBITCOIN_DATABASE_SPEND_DATABASE_HPP
-#define LIBBITCOIN_DATABASE_SPEND_DATABASE_HPP
+#ifndef LIBBITCOIN_DATABASE_SPEND_DATABASE_HPP_
+#define LIBBITCOIN_DATABASE_SPEND_DATABASE_HPP_
+
+#ifdef BITPRIM_DB_SPENDS
 
 #include <cstddef>
 #include <memory>
@@ -99,4 +101,6 @@ private:
 } // namespace database
 } // namespace libbitcoin
 
-#endif
+#endif // BITPRIM_DB_SPENDS
+
+#endif // LIBBITCOIN_DATABASE_SPEND_DATABASE_HPP_

@@ -47,6 +47,7 @@ public:
 
 BOOST_FIXTURE_TEST_SUITE(database_tests, transaction_database_directory_setup_fixture)
 
+#ifdef BITPRIM_DB_LEGACY
 BOOST_AUTO_TEST_CASE(transaction_database__test)
 {
     data_chunk wire_tx1;
@@ -80,5 +81,6 @@ BOOST_AUTO_TEST_CASE(transaction_database__test)
 
     db.synchronize();
 }
+#endif // BITPRIM_DB_LEGACY
 
 BOOST_AUTO_TEST_SUITE_END()

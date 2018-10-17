@@ -16,8 +16,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBBITCOIN_DATABASE_TRANSACTION_RESULT_HPP
-#define LIBBITCOIN_DATABASE_TRANSACTION_RESULT_HPP
+#ifndef LIBBITCOIN_DATABASE_TRANSACTION_RESULT_HPP_
+#define LIBBITCOIN_DATABASE_TRANSACTION_RESULT_HPP_
+
+#ifdef BITPRIM_DB_LEGACY
 
 #include <cstddef>
 #include <cstdint>
@@ -32,8 +34,7 @@ namespace database {
 using position_t = uint32_t;
 #else 
 using position_t = uint16_t;
-#endif    
-
+#endif
 
 /// Deferred read transaction result.
 class BCD_API transaction_result {
@@ -68,7 +69,7 @@ public:
     chain::output output(uint32_t index) const;
 
     /// The transaction, optionally including witness.
-    chain::transaction transaction(bool witness=true) const;
+    chain::transaction transaction(bool witness = true) const;
 
 private:
     memory_ptr slab_;
@@ -81,4 +82,6 @@ private:
 } // namespace database
 } // namespace libbitcoin
 
-#endif
+#endif // BITPRIM_DB_LEGACY
+
+#endif // LIBBITCOIN_DATABASE_TRANSACTION_RESULT_HPP_

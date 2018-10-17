@@ -16,6 +16,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifdef BITPRIM_DB_LEGACY
+
 #include <bitcoin/database/result/transaction_result.hpp>
 
 #include <cstddef>
@@ -32,15 +34,7 @@ using namespace bc::chain;
 
 static constexpr auto value_size = sizeof(uint64_t);
 static constexpr auto height_size = sizeof(uint32_t);
-
-// #ifdef BITPRIM_CURRENCY_BCH
-// static constexpr auto position_size = sizeof(uint32_t);
-// #else 
-// static constexpr auto position_size = sizeof(uint16_t);
-// #endif    
-
 static constexpr auto position_size = sizeof(position_t);
-
 static constexpr auto median_time_past_size = sizeof(uint32_t);
 static constexpr auto metadata_size = height_size + position_size + median_time_past_size;
 
@@ -131,8 +125,9 @@ chain::output transaction_result::output(uint32_t index) const {
     const auto outputs = deserial.read_size_little_endian();
     BITCOIN_ASSERT(deserial);
 
-    if (index >= outputs)
-        return{};
+    if (index >= outputs) {
+        return {};
+    }
 
     // Skip outputs until the target output.
     for (uint32_t output = 0; output < index; ++output) {
@@ -188,3 +183,5 @@ chain::transaction transaction_result::transaction(bool witness) const
 }
 
 }} // namespace libbitcoin::database
+
+#endif // BITPRIM_DB_LEGACY

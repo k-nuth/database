@@ -16,8 +16,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBBITCOIN_DATABASE_TRANSACTION_DATABASE_HPP
-#define LIBBITCOIN_DATABASE_TRANSACTION_DATABASE_HPP
+#ifndef LIBBITCOIN_DATABASE_TRANSACTION_DATABASE_HPP_
+#define LIBBITCOIN_DATABASE_TRANSACTION_DATABASE_HPP_
+
+#ifdef BITPRIM_DB_LEGACY
 
 #include <cstddef>
 #include <memory>
@@ -28,7 +30,10 @@
 #include <bitcoin/database/result/transaction_result.hpp>
 #include <bitcoin/database/primitives/slab_hash_table.hpp>
 #include <bitcoin/database/primitives/slab_manager.hpp>
+
+#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
 #include <bitcoin/database/unspent_outputs.hpp>
+#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
 
 namespace libbitcoin {
 namespace database {
@@ -116,8 +121,10 @@ public:
     slab_manager lookup_manager_;
     slab_map lookup_map_;
 
+#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
     // This is thread safe, and as a cache is mutable.
     mutable unspent_outputs cache_;
+#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
 
     // This provides atomicity for height and position.
     mutable shared_mutex metadata_mutex_;
@@ -126,4 +133,6 @@ public:
 } // namespace database
 } // namespace libbitcoin
 
-#endif
+#endif // BITPRIM_DB_LEGACY
+
+#endif // LIBBITCOIN_DATABASE_TRANSACTION_DATABASE_HPP_

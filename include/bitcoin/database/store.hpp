@@ -24,25 +24,35 @@
 #include <bitcoin/bitcoin.hpp>
 #include <bitcoin/database/define.hpp>
 
+#if defined(BITPRIM_DB_LEGACY) && (defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY) || defined(BITPRIM_DB_STEALTH))
+#define BITPRIM_DB_WITH_INDEXES
+#endif
+
 namespace libbitcoin {
 namespace database {
 
-class BCD_API store
-{
+class BCD_API store {
 public:
-    typedef boost::filesystem::path path;
-    typedef sequential_lock::handle handle;
+    using path = boost::filesystem::path;
+    using handle = sequential_lock::handle;
 
-    static const size_t without_indexes;
+    static 
+    size_t const without_indexes;
 
+
+#ifdef BITPRIM_DB_LEGACY
     /// Create a single file with one byte of arbitrary data.
-    static bool create(const path& file_path);
+    static 
+    bool create(path const& file_path);
+#endif // BITPRIM_DB_LEGACY
 
     // Construct.
     // ------------------------------------------------------------------------
 
-    store(const path& prefix, bool with_indexes, bool flush_each_write=false);
+    store(path const& prefix, bool with_indexes, bool flush_each_write = false);
 
+
+#ifdef BITPRIM_DB_LEGACY
     // Open and close.
     // ------------------------------------------------------------------------
 
@@ -67,6 +77,7 @@ public:
     /// Check the write state of the handle.
     bool is_write_locked(handle handle) const;
 
+
     /// Start sequence write with optional flush lock.
     bool begin_write() const;
 
@@ -78,33 +89,58 @@ public:
 
     /// Optionally end flush lock scope.
     bool flush_unlock() const;
+#endif // BITPRIM_DB_LEGACY
 
     // File names.
     // ------------------------------------------------------------------------
 
     /// Content store.
-    const path block_table;
-    const path block_index;
-    const path transaction_table;
-    const path transaction_unconfirmed_table;
+#ifdef BITPRIM_DB_LEGACY
+    path const block_table;
+    path const block_index;
+    path const transaction_table;
+#endif // BITPRIM_DB_LEGACY
+
+#ifdef BITPRIM_DB_NEW
+    path const internal_db_dir;
+#endif // BITPRIM_DB_NEW
+
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+    path const transaction_unconfirmed_table;
+#endif // BITPRIM_DB_STEALTH        
 
     /// Optional indexes.
-    const path spend_table;
-    // const path unspent_table;
-    const path history_table;
-    const path history_rows;
-    const path stealth_rows;
+#ifdef BITPRIM_DB_SPENDS
+    path const spend_table;
+#endif // BITPRIM_DB_SPENDS
+
+#ifdef BITPRIM_DB_HISTORY
+    path const history_table;
+    path const history_rows;
+#endif // BITPRIM_DB_HISTORY
+
+#ifdef BITPRIM_DB_STEALTH
+    path const stealth_rows;
+#endif // BITPRIM_DB_STEALTH
 
 protected:
+#ifdef BITPRIM_DB_LEGACY
     virtual bool flush() const = 0;
-
-    const bool use_indexes;
+#endif
 
 private:
-    const bool flush_each_write_;
+#ifdef BITPRIM_DB_LEGACY
+    bool const flush_each_write_;
     mutable bc::flush_lock flush_lock_;
     mutable interprocess_lock exclusive_lock_;
     mutable sequential_lock sequential_lock_;
+#endif
+
+protected:
+#ifdef BITPRIM_DB_WITH_INDEXES
+    bool const use_indexes_;
+#endif    
+    bool use_indexes() const;
 };
 
 } // namespace database

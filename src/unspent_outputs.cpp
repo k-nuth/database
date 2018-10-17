@@ -16,6 +16,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
+
 #include <bitcoin/database/unspent_outputs.hpp>
 
 #include <cstddef>
@@ -250,3 +253,5 @@ bool unspent_outputs::get_is_confirmed(output& out_output, size_t& out_height,
 
 } // namespace database
 } // namespace libbitcoin
+
+#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN

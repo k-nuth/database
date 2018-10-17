@@ -30,10 +30,12 @@ using namespace bc::wallet;
 using namespace boost::system;
 using namespace boost::filesystem;
 
-void test_block_exists(const data_base& interface, size_t height,
-    const block& block0, bool indexed)
-{
+#ifdef BITPRIM_DB_LEGACY
+void test_block_exists(const data_base& interface, size_t height, const block& block0, bool indexed) {
+#ifdef BITPRIM_DB_HISTORY
     const auto& history_store = interface.history();
+#endif // BITPRIM_DB_HISTORY
+
     const auto block_hash = block0.hash();
     auto r0 = interface.blocks().get(height);
     auto r0_byhash = interface.blocks().get(block_hash);
@@ -71,10 +73,12 @@ void test_block_exists(const data_base& interface, size_t height,
                 input_point spend{ tx_hash, j };
                 BOOST_REQUIRE_EQUAL(spend.index(), j);
 
+#ifdef BITPRIM_DB_SPENDS
                 auto r0_spend = interface.spends().get(input.previous_output());
                 BOOST_REQUIRE(r0_spend.is_valid());
                 BOOST_REQUIRE(r0_spend.hash() == spend.hash());
                 BOOST_REQUIRE_EQUAL(r0_spend.index(), spend.index());
+#endif // BITPRIM_DB_SPENDS
 
                 if (!indexed)
                     continue;
@@ -83,7 +87,8 @@ void test_block_exists(const data_base& interface, size_t height,
                 ////const auto& prevout = input.previous_output();
                 ////const auto address = prevout.validation.cache.addresses();
 
-                for (const auto& address: addresses)
+#ifdef BITPRIM_DB_HISTORY
+                for (auto const& address : addresses)
                 {
                     auto history = history_store.get(address.hash(), 0, 0);
                     auto found = false;
@@ -100,6 +105,7 @@ void test_block_exists(const data_base& interface, size_t height,
 
                     BOOST_REQUIRE(found);
                 }
+#endif // BITPRIM_DB_HISTORY                
             }
         }
 
@@ -112,7 +118,8 @@ void test_block_exists(const data_base& interface, size_t height,
             output_point outpoint{ tx_hash, static_cast<uint32_t>(j) };
             const auto addresses = output.addresses();
 
-            for (const auto& address: addresses)
+#ifdef BITPRIM_DB_HISTORY
+            for (auto const& address : addresses)
             {
                 auto history = history_store.get(address.hash(), 0, 0);
                 auto found = false;
@@ -132,14 +139,19 @@ void test_block_exists(const data_base& interface, size_t height,
 
                 BOOST_REQUIRE(found);
             }
+#endif // BITPRIM_DB_HISTORY
+
         }
     }
 }
 
+
 void test_block_not_exists(const data_base& interface, const block& block0,
     bool indexed)
 {
+#ifdef BITPRIM_DB_HISTORY
     const auto& history_store = interface.history();
+#endif // BITPRIM_DB_HISTORY
 
     ////const auto r0_byhash = interface.blocks().get(block0.hash());
     ////BOOST_REQUIRE(!r0_byhash);
@@ -154,8 +166,11 @@ void test_block_not_exists(const data_base& interface, const block& block0,
             {
                 const auto& input = tx.inputs()[j];
                 input_point spend{ tx_hash, static_cast<uint32_t>(j) };
+
+#ifdef BITPRIM_DB_SPENDS                
                 auto r0_spend = interface.spends().get(input.previous_output());
                 BOOST_REQUIRE(!r0_spend.is_valid());
+#endif // BITPRIM_DB_SPENDS
 
                 if (!indexed)
                     continue;
@@ -164,7 +179,8 @@ void test_block_not_exists(const data_base& interface, const block& block0,
                 ////const auto& prevout = input.previous_output();
                 ////const auto address = prevout.validation.cache.addresses();
 
-                for (const auto& address: addresses)
+#ifdef BITPRIM_DB_HISTORY
+                for (auto const& address : addresses)
                 {
                     auto history = history_store.get(address.hash(), 0, 0);
                     auto found = false;
@@ -180,6 +196,7 @@ void test_block_not_exists(const data_base& interface, const block& block0,
 
                     BOOST_REQUIRE(!found);
                 }
+#endif // BITPRIM_DB_HISTORY                
             }
         }
 
@@ -192,7 +209,8 @@ void test_block_not_exists(const data_base& interface, const block& block0,
             output_point outpoint{ tx_hash, static_cast<uint32_t>(j) };
             const auto addresses = output.addresses();
 
-            for (const auto& address: addresses)
+#ifdef BITPRIM_DB_HISTORY
+            for (auto const& address : addresses)
             {
                 auto history = history_store.get(address.hash(), 0, 0);
                 auto found = false;
@@ -208,9 +226,11 @@ void test_block_not_exists(const data_base& interface, const block& block0,
 
                 BOOST_REQUIRE(!found);
             }
+#endif // BITPRIM_DB_HISTORY            
         }
     }
 }
+#endif // BITPRIM_DB_LEGACY
 
 block read_block(const std::string hex)
 {
@@ -309,6 +329,7 @@ static code pop_above_result(data_base_accessor& instance,
     return promise.get_future().get();
 }
 
+#ifdef BITPRIM_DB_LEGACY
 BOOST_AUTO_TEST_CASE(data_base__pushpop__test)
 {
     std::cout << "begin data_base push/pop test" << std::endl;
@@ -319,11 +340,24 @@ BOOST_AUTO_TEST_CASE(data_base__pushpop__test)
     settings.flush_writes = false;
     settings.file_growth_rate = 42;
     settings.index_start_height = 0;
+
+#ifdef BITPRIM_DB_LEGACY
     settings.block_table_buckets = 42;
     settings.transaction_table_buckets = 42;
+#endif // BITPRIM_DB_LEGACY
+
+#ifdef BITPRIM_DB_SPENDS
     settings.spend_table_buckets = 42;
+#endif // BITPRIM_DB_SPENDS
+
+#ifdef BITPRIM_DB_HISTORY
     settings.history_table_buckets = 42;
+#endif // BITPRIM_DB_HISTORY
+
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     settings.transaction_unconfirmed_table_buckets = 42;
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
+     
 
     // If index_height is set to anything other than 0 or max it can cause
     // false negatives since it excludes entries below the specified height.
@@ -405,5 +439,6 @@ BOOST_AUTO_TEST_CASE(data_base__pushpop__test)
 
     std::cout << "end push/pop test" << std::endl;
 }
+#endif // BITPRIM_DB_LEGACY
 
 BOOST_AUTO_TEST_SUITE_END()

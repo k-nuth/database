@@ -16,6 +16,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+
 #include <bitcoin/database/databases/transaction_unconfirmed_database.hpp>
 
 #include <cstddef>
@@ -193,3 +196,5 @@ bool transaction_unconfirmed_database::unlink_if_exists(hash_digest const& hash)
 }
 
 }} // namespace libbitcoin::database
+
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED

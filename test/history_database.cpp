@@ -47,6 +47,7 @@ public:
 
 BOOST_FIXTURE_TEST_SUITE(database_tests, history_database_directory_setup_fixture)
 
+#ifdef BITPRIM_DB_HISTORY
 BOOST_AUTO_TEST_CASE(history_database__test)
 {
     const short_hash key1 = base16_literal("a006500b7ddfd568e2b036c65a4f4d6aaa0cbd9b");
@@ -195,6 +196,7 @@ BOOST_AUTO_TEST_CASE(history_database__test)
 
     db.synchronize();
 }
+#endif // BITPRIM_DB_HISTORY
 
 BOOST_AUTO_TEST_SUITE_END()
 

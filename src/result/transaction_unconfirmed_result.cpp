@@ -16,6 +16,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+
 #include <bitcoin/database/result/transaction_unconfirmed_result.hpp>
 
 #include <cstddef>
@@ -145,3 +147,5 @@ chain::transaction transaction_unconfirmed_result::transaction(bool witness) con
 }
 } // namespace database
 } // namespace libbitcoin
+
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED

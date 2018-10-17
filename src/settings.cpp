@@ -26,18 +26,37 @@ namespace database {
 using namespace boost::filesystem;
 
 settings::settings()
-  : directory("blockchain"),
-    flush_writes(false),
-    file_growth_rate(50),
-    index_start_height(0),
+    : directory("blockchain")
+    , flush_writes(false)
+    , file_growth_rate(50)
+    , index_start_height(0)
+
+
+#ifdef BITPRIM_DB_NEW
+    , reorg_pool_limit(100)                                 //TODO(fernando): look for a good default
+    , db_max_size(100 * (uint64_t(1) << 30))  //100 GiB     //TODO(fernando): look for a good default
+#endif // BITPRIM_DB_NEW
 
     // Hash table sizes (must be configured).
-    block_table_buckets(0),
-    transaction_table_buckets(0),
-    transaction_unconfirmed_table_buckets(0),
-    spend_table_buckets(0),
-    history_table_buckets(0),
-    cache_capacity(0)
+#ifdef BITPRIM_DB_LEGACY
+    , block_table_buckets(0)
+    , transaction_table_buckets(0)
+#endif // BITPRIM_DB_LEGACY
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+    , transaction_unconfirmed_table_buckets(0)
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
+
+#ifdef BITPRIM_DB_SPENDS
+    , spend_table_buckets(0)
+#endif // BITPRIM_DB_SPENDS
+
+#ifdef BITPRIM_DB_HISTORY
+    , history_table_buckets(0)
+#endif // BITPRIM_DB_HISTORY    
+
+// #ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
+    , cache_capacity(0)
+// #endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
 {}
 
 settings::settings(config::settings context)
@@ -45,20 +64,43 @@ settings::settings(config::settings context)
 {
     switch (context) {
         case config::settings::mainnet: {
+#ifdef BITPRIM_DB_LEGACY
             block_table_buckets = 650000;
             transaction_table_buckets = 110000000;
+#endif // BITPRIM_DB_LEGACY
+
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
             transaction_unconfirmed_table_buckets = 10000;
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
+
+#ifdef BITPRIM_DB_SPENDS
             spend_table_buckets = 250000000;
+#endif // BITPRIM_DB_SPENDS
+
+#ifdef BITPRIM_DB_HISTORY
             history_table_buckets = 107000000;
+#endif // BITPRIM_DB_HISTORY    
             break;
         }
         case config::settings::testnet: {
             // TODO: optimize for testnet.
+#ifdef BITPRIM_DB_LEGACY
             block_table_buckets = 650000;
             transaction_table_buckets = 110000000;
+#endif // BITPRIM_DB_LEGACY
+
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
             transaction_unconfirmed_table_buckets = 10000;
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
+
+#ifdef BITPRIM_DB_SPENDS
             spend_table_buckets = 250000000;
+#endif // BITPRIM_DB_SPENDS
+
+#ifdef BITPRIM_DB_HISTORY
             history_table_buckets = 107000000;
+#endif // BITPRIM_DB_HISTORY    
+
             break;
         }
         default:

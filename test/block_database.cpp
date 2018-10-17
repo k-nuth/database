@@ -55,6 +55,7 @@ public:
 
 BOOST_FIXTURE_TEST_SUITE(database_tests, block_database_directory_setup_fixture)
 
+#ifdef BITPRIM_DB_LEGACY
 BOOST_AUTO_TEST_CASE(block_database__test)
 {
     auto block0 = block::genesis_mainnet();
@@ -216,5 +217,6 @@ BOOST_AUTO_TEST_CASE(block_database__test)
         db.synchronize();
     }
 }
+#endif // BITPRIM_DB_LEGACY
 
 BOOST_AUTO_TEST_SUITE_END()
