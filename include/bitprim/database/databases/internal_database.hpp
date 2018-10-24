@@ -217,6 +217,8 @@ public:
         if (res != MDB_SUCCESS) {
             return result_code::other;
         }
+
+        return result_code::success;
     }
 
     utxo_entry get_utxo(chain::output_point const& point) const {
