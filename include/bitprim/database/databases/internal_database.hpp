@@ -202,19 +202,23 @@ public:
         MDB_txn* db_txn;
         auto res = mdb_txn_begin(env_block_, NULL, 0, &db_txn);
         if (res != MDB_SUCCESS) {
+            LOG_INFO(LOG_DATABASE) << "Error open transaction LMDB Block [push_block_db] " << res;
             return result_code::other;
         }
 
         res = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_NOOVERWRITE);
         if (res == MDB_KEYEXIST) {
+            LOG_INFO(LOG_DATABASE) << "Duplicate key in LMDB Block [push_block_db] " << res;
             return result_code::duplicated_key;
         }
         if (res != MDB_SUCCESS) {
+            LOG_INFO(LOG_DATABASE) << "Error in put LMDB Block [push_block_db] " << res;
             return result_code::other;
         }
 
         res = mdb_txn_commit(db_txn);
         if (res != MDB_SUCCESS) {
+            LOG_INFO(LOG_DATABASE) << "Error commiting transaction LMDB Block [push_block_db] " << res;
             return result_code::other;
         }
 
