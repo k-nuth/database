@@ -168,6 +168,14 @@ public:
             LOG_INFO(LOG_DATABASE) << "Error commiting LMDB Transaction [push_block] " << res2;
             return result_code::other;
         }
+
+        auto res3 = push_block_db(block, height);
+        if (res3 != result_code::success) 
+        {
+            LOG_INFO(LOG_DATABASE) << "Error saving LMDB Block [push_block] " << res3;
+            return res3;
+        }
+
         return res;
     }
     
@@ -186,7 +194,7 @@ public:
         //     throw0(DB_ERROR(lmdb_error("Failed to set max number of readers: ", result).c_str()));
         // ----------------------------------------------------------------------------------------------------------------
 
-        auto res = mdb_env_set_mapsize(env_block_, adjust_db_size(db_max_size_));
+        auto res = mdb_env_set_mapsize(env_block_, adjust_db_size(db_max_size_*2));
         if (res != MDB_SUCCESS) {
             return result_code::other;
         }
@@ -208,7 +216,7 @@ public:
 
 
         MDB_txn* db_txn;
-        auto res = mdb_txn_begin(env_block_, NULL, 0, &db_txn);
+        res = mdb_txn_begin(env_block_, NULL, 0, &db_txn);
         if (res != MDB_SUCCESS) {
             return result_code::other;
         }
