@@ -172,7 +172,7 @@ public:
         auto res3 = push_block_db(block, height);
         if (res3 != result_code::success) 
         {
-            LOG_INFO(LOG_DATABASE) << "Error saving LMDB Block [push_block] " << res3;
+            LOG_INFO(LOG_DATABASE) << "Error saving LMDB Block [push_block] " << static_cast<int>(res3);
             return res3;
         }
 
