@@ -1147,6 +1147,11 @@ constexpr char internal_database_basis<Clock>::reorg_index_name[];              
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::reorg_block_name[];               //key: block height, value: block
 
+template <typename Clock>
+constexpr char internal_database_basis<Clock>::block_db_name[];               //key: block height, value: block
+
+
+
 using internal_database = internal_database_basis<std::chrono::system_clock>;
 
 } // namespace database
