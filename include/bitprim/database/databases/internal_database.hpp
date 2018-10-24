@@ -57,6 +57,9 @@ public:
     constexpr static char reorg_index_name[] = "reorg_index";
     constexpr static char reorg_block_name[] = "reorg_block";
   
+    //Blocks DB
+    constexpr static char block_db_name[] = "blocks";
+
     internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size)
         : db_dir_(db_dir)
         , db_dir_blocks_(db_dir / "_blocks")
@@ -104,7 +107,12 @@ public:
         if ( ! create_and_open_environment()) {
             return false;
         }
-        return open_databases();
+
+        if ( ! create_and_open_environment_blocks_db()) {
+            return false;
+        }
+
+        return open_databases() && open_databases_blocks_db();
     }
 
     bool close() {
@@ -115,11 +123,17 @@ public:
             mdb_dbi_close(env_, dbi_reorg_pool_);
             mdb_dbi_close(env_, dbi_reorg_index_);
             mdb_dbi_close(env_, dbi_reorg_block_);
+            
+            mdb_dbi_close(env_block_, dbi_block_db_);
+            
             db_opened_ = false;
         }
 
         if (env_created_) {
             mdb_env_close(env_);
+            
+            mdb_env_close(env_block_);    
+    
             env_created_ = false;
         }
 
@@ -180,57 +194,16 @@ public:
     }
     
     result_code push_block_db(chain::block const& block, uint32_t height) {
-        MDB_env* env_block_;
-        MDB_dbi dbi_block_db_;
-
-        if (mdb_env_create(&env_block_) != MDB_SUCCESS) {
-            return result_code::other;
-        }
         
-        // TODO(fernando): see what to do with mdb_env_set_maxreaders ----------------------------------------------
-        // int threads = tools::get_max_concurrency();
-        // if (threads > 110 &&	/* maxreaders default is 126, leave some slots for other read processes */
-        //     (result = mdb_env_set_maxreaders(m_env, threads+16)))
-        //     throw0(DB_ERROR(lmdb_error("Failed to set max number of readers: ", result).c_str()));
-        // ----------------------------------------------------------------------------------------------------------------
-
-        auto res = mdb_env_set_mapsize(env_block_, adjust_db_size(db_max_size_*2));
-        if (res != MDB_SUCCESS) {
-            return result_code::other;
-        }
-
-        res = mdb_env_set_maxdbs(env_block_, 1);
-        if (res != MDB_SUCCESS) {
-            return result_code::other;
-        }
-
-        //TODO(fernando): check if we can apply the following flags
-        // if (db_flags & DBF_FASTEST)
-        //     mdb_flags |= MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC;
-
-        res = mdb_env_open(env_block_, db_dir_blocks_.string().c_str() , MDB_NORDAHEAD | MDB_NOSYNC | MDB_NOTLS, env_open_mode_);
-     
-        if (res != MDB_SUCCESS) {
-            return result_code::other;
-        }
-
+        auto valuearr = block.to_data(false);               
+        MDB_val key {sizeof(height), &height};         
+        MDB_val value {valuearr.size(), valuearr.data()};
 
         MDB_txn* db_txn;
-        res = mdb_txn_begin(env_block_, NULL, 0, &db_txn);
+        auto res = mdb_txn_begin(env_block_, NULL, 0, &db_txn);
         if (res != MDB_SUCCESS) {
             return result_code::other;
         }
-        
-        constexpr static char block_db_name[] = "blocks";
-
-        res = mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_db_);
-        if (res != MDB_SUCCESS) {
-            return result_code::other;
-        }
-
-        auto valuearr = block.to_data(false);               //TODO(fernando): podría estar afuera de la DBTx
-        MDB_val key {sizeof(height), &height};              //TODO(fernando): podría estar afuera de la DBTx
-        MDB_val value {valuearr.size(), valuearr.data()};
 
         res = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_NOOVERWRITE);
         if (res == MDB_KEYEXIST) {
@@ -244,9 +217,6 @@ public:
         if (res != MDB_SUCCESS) {
             return result_code::other;
         }
-
-        mdb_dbi_close(env_block_, dbi_block_db_);
-        mdb_env_close(env_block_);
     }
 
     utxo_entry get_utxo(chain::output_point const& point) const {
@@ -484,6 +454,42 @@ private:
         return res == MDB_SUCCESS;
     }
 
+    bool create_and_open_environment_blocks_db() {
+
+        if (mdb_env_create(&env_block_) != MDB_SUCCESS) {
+            return false;
+        }
+        
+        // TODO(fernando): see what to do with mdb_env_set_maxreaders ----------------------------------------------
+        // int threads = tools::get_max_concurrency();
+        // if (threads > 110 &&	/* maxreaders default is 126, leave some slots for other read processes */
+        //     (result = mdb_env_set_maxreaders(m_env, threads+16)))
+        //     throw0(DB_ERROR(lmdb_error("Failed to set max number of readers: ", result).c_str()));
+        // ----------------------------------------------------------------------------------------------------------------
+
+        auto res = mdb_env_set_mapsize(env_block_, adjust_db_size(db_max_size_*2));
+        if (res != MDB_SUCCESS) {
+            return false;
+        }
+
+        res = mdb_env_set_maxdbs(env_block_, 1);
+        if (res != MDB_SUCCESS) {
+            return false;
+        }
+
+        //TODO(fernando): check if we can apply the following flags
+        // if (db_flags & DBF_FASTEST)
+        //     mdb_flags |= MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC;
+
+        res = mdb_env_open(env_block_, db_dir_blocks_.string().c_str() , MDB_NORDAHEAD | MDB_NOSYNC | MDB_NOTLS, env_open_mode_);
+     
+        if (res != MDB_SUCCESS) {
+            return false;
+        }
+
+        return true;
+    }
+
     bool open_databases() {
         MDB_txn* db_txn;
         auto res = mdb_txn_begin(env_, NULL, 0, &db_txn);
@@ -522,6 +528,28 @@ private:
 
         db_opened_ = mdb_txn_commit(db_txn) == MDB_SUCCESS;
         return db_opened_;
+    }
+
+    bool open_databases_blocks_db() {
+        
+        MDB_txn* db_txn;
+        auto res = mdb_txn_begin(env_block_, NULL, 0, &db_txn);
+        if (res != MDB_SUCCESS) {
+            return false;
+        }
+        
+        res = mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_db_);
+        if (res != MDB_SUCCESS) {
+            return false;
+        }
+
+        res = mdb_txn_commit(db_txn);
+        if (res != MDB_SUCCESS) {
+            return false;
+        }
+
+        return true;
+
     }
 
     result_code insert_reorg_pool(uint32_t height, MDB_val& key, MDB_txn* db_txn) {
@@ -1094,6 +1122,11 @@ private:
     MDB_dbi dbi_reorg_pool_;
     MDB_dbi dbi_reorg_index_;
     MDB_dbi dbi_reorg_block_;
+
+    //Blocks DB
+    MDB_env* env_block_;
+    MDB_dbi dbi_block_db_;
+
 };
 
 template <typename Clock>
