@@ -41,7 +41,7 @@
 namespace libbitcoin {
 namespace database {
 
-constexpr size_t max_dbs_ = 6;
+constexpr size_t max_dbs_ = 7;
 constexpr size_t env_open_mode_ = 0664;
 constexpr int directory_exists = 0;
 
