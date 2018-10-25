@@ -146,6 +146,10 @@ public:
     //                  avoiding inserting and erasing internal spenders
     result_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past) {
 
+        auto valuearr = block.to_data(false);               
+        MDB_val key {sizeof(height), &height};         
+        MDB_val value {valuearr.size(), valuearr.data()};
+        
         MDB_txn* db_txn;
         auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
         if (res0 != MDB_SUCCESS) {
@@ -158,6 +162,12 @@ public:
             mdb_txn_abort(db_txn);
             return res;
         }
+       
+        auto res_block = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_NOOVERWRITE);
+        if (res_block == MDB_KEYEXIST) {
+            LOG_INFO(LOG_DATABASE) << "Duplicate key in LMDB Block [push_block] " << res_block;
+            return result_code::duplicated_key;
+        }
 
         auto res2 = mdb_txn_commit(db_txn);
         if (res2 != MDB_SUCCESS) {
@@ -165,46 +175,7 @@ public:
             return result_code::other;
         }
 
-        auto res3 = push_block_db(block, height);
-        if (res3 != result_code::success) 
-        {
-            LOG_INFO(LOG_DATABASE) << "Error saving LMDB Block [push_block] " << static_cast<int>(res3);
-            return res3;
-        }
-
         return res;
-    }
-    
-    result_code push_block_db(chain::block const& block, uint32_t height) {
-        
-        auto valuearr = block.to_data(false);               
-        MDB_val key {sizeof(height), &height};         
-        MDB_val value {valuearr.size(), valuearr.data()};
-
-        MDB_txn* db_txn;
-        auto res = mdb_txn_begin(env_, NULL, 0, &db_txn);
-        if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error open transaction LMDB Block [push_block_db] " << res;
-            return result_code::other;
-        }
-
-        res = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_NOOVERWRITE);
-        if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicate key in LMDB Block [push_block_db] " << res;
-            return result_code::duplicated_key;
-        }
-        if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error in put LMDB Block [push_block_db] " << res;
-            return result_code::other;
-        }
-
-        res = mdb_txn_commit(db_txn);
-        if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error commiting transaction LMDB Block [push_block_db] " << res;
-            return result_code::other;
-        }
-
-        return result_code::success;
     }
 
     utxo_entry get_utxo(chain::output_point const& point) const {
