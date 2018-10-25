@@ -41,7 +41,11 @@
 namespace libbitcoin {
 namespace database {
 
+#ifdef BITPRIM_DB_NEW_BLOCKS
 constexpr size_t max_dbs_ = 7;
+#else
+constexpr size_t max_dbs_ = 6;
+#endif
 constexpr size_t env_open_mode_ = 0664;
 constexpr int directory_exists = 0;
 
@@ -57,8 +61,10 @@ public:
     constexpr static char reorg_index_name[] = "reorg_index";
     constexpr static char reorg_block_name[] = "reorg_block";
   
+    #ifdef BITPRIM_DB_NEW_BLOCKS
     //Blocks DB
     constexpr static char block_db_name[] = "blocks";
+    #endif
 
     internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size)
         : db_dir_(db_dir)
@@ -107,9 +113,11 @@ public:
             mdb_dbi_close(env_, dbi_reorg_pool_);
             mdb_dbi_close(env_, dbi_reorg_index_);
             mdb_dbi_close(env_, dbi_reorg_block_);
-            
+
+            #ifdef BITPRIM_DB_NEW_BLOCKS 
             mdb_dbi_close(env_, dbi_block_db_);
-            
+            #endif
+
             db_opened_ = false;
         }
 
@@ -146,10 +154,12 @@ public:
     //                  avoiding inserting and erasing internal spenders
     result_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past) {
 
+        #ifdef BITPRIM_DB_NEW_BLOCKS
         auto valuearr = block.to_data(false);               
         MDB_val key {sizeof(height), &height};         
         MDB_val value {valuearr.size(), valuearr.data()};
-        
+        #endif
+
         MDB_txn* db_txn;
         auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
         if (res0 != MDB_SUCCESS) {
@@ -163,11 +173,14 @@ public:
             return res;
         }
        
+        #ifdef BITPRIM_DB_NEW_BLOCKS
         auto res_block = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_NOOVERWRITE);
         if (res_block == MDB_KEYEXIST) {
             LOG_INFO(LOG_DATABASE) << "Duplicate key in LMDB Block [push_block] " << res_block;
             return result_code::duplicated_key;
         }
+        #endif
+
 
         auto res2 = mdb_txn_commit(db_txn);
         if (res2 != MDB_SUCCESS) {
@@ -449,11 +462,12 @@ private:
             return false;
         }
 
-
+        #ifdef BITPRIM_DB_NEW_BLOCKS
         res = mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_db_);
         if (res != MDB_SUCCESS) {
             return false;
         }
+        #endif
 
 
         db_opened_ = mdb_txn_commit(db_txn) == MDB_SUCCESS;
@@ -1030,9 +1044,10 @@ private:
     MDB_dbi dbi_reorg_index_;
     MDB_dbi dbi_reorg_block_;
 
+    #ifdef BITPRIM_DB_NEW_BLOCKS
     //Blocks DB
     MDB_dbi dbi_block_db_;
-
+    #endif
 };
 
 template <typename Clock>
@@ -1053,9 +1068,10 @@ constexpr char internal_database_basis<Clock>::reorg_index_name[];              
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::reorg_block_name[];               //key: block height, value: block
 
+#ifdef BITPRIM_DB_NEW_BLOCKS
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::block_db_name[];               //key: block height, value: block
-
+#endif
 
 
 using internal_database = internal_database_basis<std::chrono::system_clock>;
