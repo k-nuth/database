@@ -136,6 +136,13 @@ if (DB_NEW)
   add_definitions(-DBITPRIM_DB_NEW)
 endif()
 
+# Implement and declare DB_NEW_BLOCKS.
+#------------------------------------------------------------------------------
+option(DB_NEW_BLOCKS "DB Blocks New enabled." OFF)
+if (DB_NEW_BLOCKS)
+  message(STATUS "Bitprim: DB Blocks New enabled")
+  add_definitions(-DBITPRIM_DB_NEW_BLOCKS)
+endif()
 
 # Implement --JUST_BITPRIM_SOURCES for linting.
 #------------------------------------------------------------------------------
@@ -513,7 +520,7 @@ if (WITH_TESTS)
 
     if (DB_NEW)
         _add_tests(bitprim_database_test
-            internal_db_tests
+            internal_ftests
         )
     endif()
 
