@@ -50,6 +50,7 @@ class BitprimDatabaseConan(BitprimConanFile):
                "db_unspent_libbitcoin": [True, False],
                "db_legacy": [True, False],
                "db_new": [True, False],
+               "db_new_blocks": [True, False],
                "cxxflags": "ANY",
                "cflags": "ANY",
     }
@@ -71,6 +72,7 @@ class BitprimDatabaseConan(BitprimConanFile):
         "db_unspent_libbitcoin=True", \
         "db_legacy=True", \
         "db_new=False", \
+        "db_new_blocks=False", \
         "cxxflags=_DUMMY_", \
         "cflags=_DUMMY_"
 
@@ -152,6 +154,7 @@ class BitprimDatabaseConan(BitprimConanFile):
         cmake.definitions["DB_UNSPENT_LIBBITCOIN"] = option_on_off(self.options.db_unspent_libbitcoin)
         cmake.definitions["DB_LEGACY"] = option_on_off(self.options.db_legacy)
         cmake.definitions["DB_NEW"] = option_on_off(self.options.db_new)
+        cmake.definitions["DB_NEW_BLOCKS"] = option_on_off(self.options.db_new_blocks)
 
 
         if self.settings.compiler != "Visual Studio":
