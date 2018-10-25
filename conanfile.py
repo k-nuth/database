@@ -134,41 +134,41 @@ class BitprimDatabaseConan(BitprimConanFile):
         cmake.definitions["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
 
         if self.options.db == "legacy":
-            cmake.definitions["DB_TRANSACTION_UNCONFIRMED"] = "OFF"
-            cmake.definitions["DB_SPENDS"] = "OFF"
-            cmake.definitions["DB_HISTORY"] = "OFF"
-            cmake.definitions["DB_STEALTH"] = "OFF"
-            cmake.definitions["DB_UNSPENT_LIBBITCOIN"] = "ON" # ???
-            cmake.definitions["DB_LEGACY"] = "ON"
-            cmake.definitions["DB_NEW"] = "OFF"
-            cmake.definitions["DB_NEW_BLOCKS"] = "OFF"
+            cmake.definitions["DB_TRANSACTION_UNCONFIRMED"] = option_on_off(False)
+            cmake.definitions["DB_SPENDS"] = option_on_off(False)
+            cmake.definitions["DB_HISTORY"] = option_on_off(False)
+            cmake.definitions["DB_STEALTH"] = option_on_off(False)
+            cmake.definitions["DB_UNSPENT_LIBBITCOIN"] = option_on_off(True) # ???
+            cmake.definitions["DB_LEGACY"] = option_on_off(True)
+            cmake.definitions["DB_NEW"] = option_on_off(False)
+            cmake.definitions["DB_NEW_BLOCKS"] = option_on_off(False)
         elif self.options.db == "legacy_full":
-            cmake.definitions["DB_TRANSACTION_UNCONFIRMED"] = "ON"
-            cmake.definitions["DB_SPENDS"] = "ON"
-            cmake.definitions["DB_HISTORY"] = "ON"
-            cmake.definitions["DB_STEALTH"] = "ON"
-            cmake.definitions["DB_UNSPENT_LIBBITCOIN"] = "ON" 
-            cmake.definitions["DB_LEGACY"] = "ON"
-            cmake.definitions["DB_NEW"] = "OFF"
-            cmake.definitions["DB_NEW_BLOCKS"] = "OFF"
+            cmake.definitions["DB_TRANSACTION_UNCONFIRMED"] = option_on_off(True)
+            cmake.definitions["DB_SPENDS"] = option_on_off(True)
+            cmake.definitions["DB_HISTORY"] = option_on_off(True)
+            cmake.definitions["DB_STEALTH"] = option_on_off(True)
+            cmake.definitions["DB_UNSPENT_LIBBITCOIN"] = option_on_off(True)
+            cmake.definitions["DB_LEGACY"] = option_on_off(True)
+            cmake.definitions["DB_NEW"] = option_on_off(False)
+            cmake.definitions["DB_NEW_BLOCKS"] = option_on_off(False)
         elif self.options.db == "new":
-            cmake.definitions["DB_TRANSACTION_UNCONFIRMED"] = "OFF"
-            cmake.definitions["DB_SPENDS"] = "OFF"
-            cmake.definitions["DB_HISTORY"] = "OFF"
-            cmake.definitions["DB_STEALTH"] = "OFF"
-            cmake.definitions["DB_UNSPENT_LIBBITCOIN"] = "OFF"
-            cmake.definitions["DB_LEGACY"] = "OFF"
-            cmake.definitions["DB_NEW"] = "ON"
-            cmake.definitions["DB_NEW_BLOCKS"] = "OFF"
+            cmake.definitions["DB_TRANSACTION_UNCONFIRMED"] = option_on_off(False)
+            cmake.definitions["DB_SPENDS"] = option_on_off(False)
+            cmake.definitions["DB_HISTORY"] = option_on_off(False)
+            cmake.definitions["DB_STEALTH"] = option_on_off(False)
+            cmake.definitions["DB_UNSPENT_LIBBITCOIN"] = option_on_off(False)
+            cmake.definitions["DB_LEGACY"] = option_on_off(False)
+            cmake.definitions["DB_NEW"] = option_on_off(True)
+            cmake.definitions["DB_NEW_BLOCKS"] = option_on_off(False)
         elif self.options.db == "new_with_blocks":
-            cmake.definitions["DB_TRANSACTION_UNCONFIRMED"] = "OFF"
-            cmake.definitions["DB_SPENDS"] = "OFF"
-            cmake.definitions["DB_HISTORY"] = "OFF"
-            cmake.definitions["DB_STEALTH"] = "OFF"
-            cmake.definitions["DB_UNSPENT_LIBBITCOIN"] = "OFF"
-            cmake.definitions["DB_LEGACY"] = "OFF"
-            cmake.definitions["DB_NEW"] = "ON"
-            cmake.definitions["DB_NEW_BLOCKS"] = "ON"
+            cmake.definitions["DB_TRANSACTION_UNCONFIRMED"] = option_on_off(False)
+            cmake.definitions["DB_SPENDS"] = option_on_off(False)
+            cmake.definitions["DB_HISTORY"] = option_on_off(False)
+            cmake.definitions["DB_STEALTH"] = option_on_off(False)
+            cmake.definitions["DB_UNSPENT_LIBBITCOIN"] = option_on_off(False)
+            cmake.definitions["DB_LEGACY"] = option_on_off(False)
+            cmake.definitions["DB_NEW"] = option_on_off(True)
+            cmake.definitions["DB_NEW_BLOCKS"] = option_on_off(True)
 
         if self.settings.compiler != "Visual Studio":
             # cmake.definitions["CONAN_CXX_FLAGS"] += " -Wno-deprecated-declarations"
