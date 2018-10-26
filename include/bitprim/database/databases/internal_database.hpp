@@ -370,8 +370,13 @@ public:
         return result_code::success;
     }
 
+    std::pair<chain::block, uint32_t> get_block(hash_digest const& hash) const {
+        return {chain::block{}, 10} ;
+    }
 
-
+    chain::block get_block(uint32_t height) const { 
+        return chain::block{};
+    }
 
 private:
     bool is_old_block(chain::block const& block) const {
