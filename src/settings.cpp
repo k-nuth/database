@@ -33,9 +33,16 @@ settings::settings()
 
 
 #ifdef BITPRIM_DB_NEW
-    , reorg_pool_limit(100)                                 //TODO(fernando): look for a good default
-    , db_max_size(200 * (uint64_t(1) << 30))  //100 GiB     //TODO(fernando): look for a good default
+    , reorg_pool_limit(100)                                  //TODO(fernando): look for a good default
+#ifdef BITPRIM_DB_NEW_BLOCKS
+    , db_max_size(200 * (uint64_t(1) << 30))  //200 GiB     //TODO(fernando): look for a good default
+#else                                                         
+    , db_max_size(100 * (uint64_t(1) << 30))  //100 GiB     //TODO(fernando): look for a good default
+#endif // BITPRIM_DB_NEW_BLOCKS
+    
+    
 #endif // BITPRIM_DB_NEW
+
 
     // Hash table sizes (must be configured).
 #ifdef BITPRIM_DB_LEGACY

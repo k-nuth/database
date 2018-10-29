@@ -370,13 +370,52 @@ public:
         return result_code::success;
     }
 
+    #ifdef BITPRIM_DB_NEW_BLOCKS
     std::pair<chain::block, uint32_t> get_block(hash_digest const& hash) const {
-        return {chain::block{}, 10} ;
+        MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
+
+        MDB_txn* db_txn;
+        auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+        if (res != MDB_SUCCESS) {
+            return {};
+        }
+
+        MDB_val value;
+        if (mdb_get(db_txn, dbi_block_header_by_hash_, &key, &value) != MDB_SUCCESS) {
+            mdb_txn_commit(db_txn);
+            // mdb_txn_abort(db_txn);
+            return {};
+        }
+
+        // assert value.mv_size == 4;
+        auto height = *static_cast<uint32_t*>(value.mv_data);
+
+        auto block = get_block(height, db_txn);
+
+        if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+            return {};
+        }
+
+        return {block, height};
     }
 
     chain::block get_block(uint32_t height) const { 
-        return chain::block{};
+        
+        MDB_txn* db_txn;
+        auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+        if (res != MDB_SUCCESS) {
+            return chain::header{};
+        }
+
+        auto block = get_block(height, db_txn);
+
+        if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+            return chain::block{};
+        }
+
+        return block;
     }
+    #endif //BITPRIM_DB_NEW_BLOCKS
 
 private:
     bool is_old_block(chain::block const& block) const {
@@ -894,6 +933,21 @@ private:
         auto res = chain::header::factory_from_data(data);
         return res;
     }
+
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    chain::block get_block(uint32_t height, MDB_txn* db_txn) const {
+        MDB_val key {sizeof(height), &height};
+        MDB_val value;
+
+        if (mdb_get(db_txn, dbi_block_db_, &key, &value) != MDB_SUCCESS) {
+            return chain::block{};
+        }
+
+        auto data = db_value_to_data_chunk(value);
+        auto res = chain::block::factory_from_data(data);
+        return res;
+    }
+    #endif
 
     chain::block get_block_reorg(uint32_t height, MDB_txn* db_txn) const {
         MDB_val key {sizeof(height), &height};
