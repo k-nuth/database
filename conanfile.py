@@ -70,7 +70,7 @@ class BitprimDatabaseConan(BitprimConanFile):
     build_policy = "missing"
 
     def requirements(self):
-        self.requires("boost/1.66.0@bitprim/stable")
+        self.requires("boost/1.68.0@bitprim/stable")
         
         if self.options.db == "new" or self.options.db == "new_with_blocks":
             self.requires("lmdb/0.9.22@bitprim/stable")
