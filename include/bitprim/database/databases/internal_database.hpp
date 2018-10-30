@@ -131,6 +131,14 @@ public:
     }
 
     result_code push_genesis(chain::block const& block) {
+        
+        #ifdef BITPRIM_DB_NEW_BLOCKS
+        uint32_t height = 0;
+        auto valuearr = block.to_data(false);               
+        MDB_val key {sizeof(height), &height};         
+        MDB_val value {valuearr.size(), valuearr.data()};
+        #endif
+
         MDB_txn* db_txn;
         auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
         if (res0 != MDB_SUCCESS) {
@@ -142,6 +150,14 @@ public:
             mdb_txn_abort(db_txn);
             return res;
         }
+
+        #ifdef BITPRIM_DB_NEW_BLOCKS
+        auto res_block = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_NOOVERWRITE);
+        if (res_block == MDB_KEYEXIST) {
+            LOG_INFO(LOG_DATABASE) << "Duplicate key in LMDB Block [push_genesis] " << res_block;
+            return result_code::duplicated_key;
+        }
+        #endif
 
         auto res2 = mdb_txn_commit(db_txn);
         if (res2 != MDB_SUCCESS) {
@@ -556,7 +572,7 @@ private:
         return result_code::success;
     }
 
-    result_code remove(uint32_t height, chain::output_point const& point, bool insert_reorg, MDB_txn* db_txn) {
+    result_code remove_utxo(uint32_t height, chain::output_point const& point, bool insert_reorg, MDB_txn* db_txn) {
         auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);      //TODO(fernando): podría estar afuera de la DBTx
         MDB_val key {keyarr.size(), keyarr.data()};                 //TODO(fernando): podría estar afuera de la DBTx
 
@@ -567,11 +583,11 @@ private:
 
         auto res = mdb_del(db_txn, dbi_utxo_, &key, NULL);
         if (res == MDB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE) << "Key not found deleting UTXO [remove] " << res;
+            LOG_INFO(LOG_DATABASE) << "Key not found deleting UTXO [remove_utxo] " << res;
             return result_code::key_not_found;
         }
         if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error deleting UTXO [remove] " << res;
+            LOG_INFO(LOG_DATABASE) << "Error deleting UTXO [remove_utxo] " << res;
             return result_code::other;
         }
         return result_code::success;
@@ -599,7 +615,7 @@ private:
 
     result_code remove_inputs(uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
         for (auto const& input: inputs) {
-            auto res = remove(height, input.previous_output(), insert_reorg, db_txn);
+            auto res = remove_utxo(height, input.previous_output(), insert_reorg, db_txn);
             if (res != result_code::success) {
                 return res;
             }
@@ -743,7 +759,7 @@ private:
         uint32_t pos = outputs.size() - 1;
         for (auto const& output: boost::adaptors::reverse(outputs)) {
             chain::output_point const point {txid, pos};
-            auto res = remove(0, point, false, db_txn);
+            auto res = remove_utxo(0, point, false, db_txn);
             if (res != result_code::success) {
                 return res;
             }
@@ -885,6 +901,23 @@ private:
         return result_code::success;
     }
 
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    result_code remove_blocks_db(uint32_t height, MDB_txn* db_txn) {
+
+        MDB_val key {sizeof(height), &height};
+        auto res = mdb_del(db_txn, dbi_block_db_, &key, NULL);
+        if (res == MDB_NOTFOUND) {
+            LOG_INFO(LOG_DATABASE) << "Key not found deleting blocks DB in LMDB [remove_blocks_db] - mdb_del: " << res;
+            return result_code::key_not_found;
+        }
+        if (res != MDB_SUCCESS) {
+            LOG_INFO(LOG_DATABASE) << "Error deleting blocks DB in LMDB [remove_blocks_db] - mdb_del: " << res;
+            return result_code::other;
+        }
+        return result_code::success;
+    }
+    #endif
+
     result_code remove_block(chain::block const& block, uint32_t height, MDB_txn* db_txn) {
         //precondition: block.transactions().size() >= 1
 
@@ -917,6 +950,13 @@ private:
         if (res != result_code::success) {
             return res;
         }
+
+        #ifdef BITPRIM_DB_NEW_BLOCKS
+        res = remove_blocks_db(height, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
+        #endif
 
         return result_code::success;
     }

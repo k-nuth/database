@@ -104,17 +104,30 @@ chain::block get_fake_genesis() {
     return get_block(genesis_enc);
 }
 
-void close_everything(MDB_env* e, MDB_dbi& db0, MDB_dbi& db1, MDB_dbi& db2, MDB_dbi& db3, MDB_dbi& db4, MDB_dbi& db5) {
+void close_everything(MDB_env* e, MDB_dbi& db0, MDB_dbi& db1, MDB_dbi& db2, MDB_dbi& db3, MDB_dbi& db4, MDB_dbi& db5
+#ifdef BITPRIM_DB_NEW_BLOCKS
+, MDB_dbi& db6
+#endif
+) {
     mdb_dbi_close(e, db0);
     mdb_dbi_close(e, db1);
     mdb_dbi_close(e, db2);
     mdb_dbi_close(e, db3);
     mdb_dbi_close(e, db4);
     mdb_dbi_close(e, db5);
+
+#ifdef BITPRIM_DB_NEW_BLOCKS
+    mdb_dbi_close(e, db6);
+#endif
+
     mdb_env_close(e);
 }
 
-std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi> open_dbs() {
+std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi
+#ifdef BITPRIM_DB_NEW_BLOCKS
+, MDB_dbi
+#endif
+> open_dbs() {
     MDB_env* env_;
     MDB_dbi dbi_utxo_;
     MDB_dbi dbi_reorg_pool_;
@@ -122,6 +135,11 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi> open_
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
     MDB_dbi dbi_reorg_block_;
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    MDB_dbi dbi_block_db_;
+    #endif
+    
     MDB_txn* db_txn;
 
     char block_header_db_name[] = "block_header";
@@ -131,10 +149,22 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi> open_
     char reorg_index_name[] = "reorg_index";
     char reorg_block_name[] = "reorg_block";
 
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    //Blocks DB
+    char block_db_name[] = "blocks";
+    #endif
+
+
     BOOST_REQUIRE(mdb_env_create(&env_) == MDB_SUCCESS);
     BOOST_REQUIRE(mdb_env_set_mapsize(env_, one_hundred_gib) == MDB_SUCCESS);
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    BOOST_REQUIRE(mdb_env_set_maxdbs(env_, 7) == MDB_SUCCESS);
+    #else
     BOOST_REQUIRE(mdb_env_set_maxdbs(env_, 6) == MDB_SUCCESS);
-    auto qqq = mdb_env_open(env_, DIRECTORY "/internal_db", MDB_NORDAHEAD | MDB_NOSYNC, 0664);
+    #endif
+    
+    auto qqq = mdb_env_open(env_, DIRECTORY "/internal_db", MDB_NORDAHEAD | MDB_NOSYNC | MDB_NOTLS, 0664);
     
     BOOST_REQUIRE(qqq == MDB_SUCCESS);
     BOOST_REQUIRE(mdb_txn_begin(env_, NULL, 0, &db_txn) == MDB_SUCCESS);
@@ -147,9 +177,17 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi> open_
     BOOST_REQUIRE(mdb_dbi_open(db_txn, reorg_index_name, MDB_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED, &dbi_reorg_index_) == MDB_SUCCESS);
     BOOST_REQUIRE(mdb_dbi_open(db_txn, reorg_block_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_reorg_block_) == MDB_SUCCESS);
 
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_db_) == MDB_SUCCESS);
+    #endif
+
     BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
 
-    return {env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_};
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        return {env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_, dbi_block_db_};
+    #else
+        return {env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_};
+    #endif
 }
 
 
@@ -203,6 +241,45 @@ void check_reorg_output_doesnt_exists(MDB_env* env_, MDB_dbi& dbi_reorg_pool_, s
     BOOST_REQUIRE(mdb_get(db_txn, dbi_reorg_pool_, &key, &value) == MDB_NOTFOUND);
     BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
 }
+
+void check_blocks_db(MDB_env* env_, MDB_dbi& dbi_blocks_db_, uint32_t height) {
+    MDB_txn* db_txn;
+
+    MDB_val key {sizeof(height), &height};
+    MDB_val value;
+
+    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_get(db_txn, dbi_blocks_db_, &key, &value) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+
+    data_chunk data {static_cast<uint8_t*>(value.mv_data), static_cast<uint8_t*>(value.mv_data) + value.mv_size};
+    auto block = chain::block::factory_from_data(data, false);
+
+    BOOST_REQUIRE(block.is_valid());
+}
+
+void check_blocks_db_just_existence(MDB_env* env_, MDB_dbi& dbi_blocks_db_, uint32_t height) {
+    MDB_txn* db_txn;
+
+    MDB_val key {sizeof(height), &height};
+    MDB_val value;
+
+    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_get(db_txn, dbi_blocks_db_, &key, &value) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+}
+
+void check_blocks_db_doesnt_exists(MDB_env* env_, MDB_dbi& dbi_blocks_db_, uint32_t height) {
+    MDB_txn* db_txn;
+
+    MDB_val key {sizeof(height), &height};
+    MDB_val value;
+
+    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_get(db_txn, dbi_blocks_db_, &key, &value) == MDB_NOTFOUND);
+    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+}
+
 
 void check_reorg_index(MDB_env* env_, MDB_dbi& dbi_reorg_index_, std::string txid_enc, uint32_t pos, uint32_t height) {
     MDB_txn* db_txn;
@@ -402,6 +479,10 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_genesis) {
     BOOST_REQUIRE(db.get_header(0).is_valid());
     BOOST_REQUIRE(db.get_header(0).hash() == genesis.hash());
 
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    BOOST_REQUIRE(db.get_block(0).header().hash() == genesis.hash());
+    #endif 
+    
     hash_digest txid;
     std::string txid_enc = "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b";
     BOOST_REQUIRE(decode_hash(txid, txid_enc));
@@ -435,6 +516,21 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_duplicate_block) {
     BOOST_REQUIRE(res == result_code::duplicated_key);
     BOOST_REQUIRE( ! succeed(res));
 }
+
+ BOOST_AUTO_TEST_CASE(internal_database__insert_block_genesis_duplicate) {
+    auto const genesis = get_genesis();
+
+    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
+    BOOST_REQUIRE(db.open());
+    auto res = db.push_genesis(genesis);
+    
+    BOOST_REQUIRE(res == result_code::success);
+    BOOST_REQUIRE(succeed(res));
+    
+    res = db.push_genesis(genesis);     
+    BOOST_REQUIRE(res == result_code::duplicated_key);
+    BOOST_REQUIRE( ! succeed(res));
+} 
 
 BOOST_AUTO_TEST_CASE(internal_database__insert_duplicate_block_by_hash) {
     auto const genesis = get_genesis();
@@ -592,8 +688,17 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg) {
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
     MDB_dbi dbi_reorg_block_;
+
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    MDB_dbi dbi_block_db_;
+    #endif
+
     MDB_txn* db_txn;
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
 
     check_reorg_output(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0, "00f2052a01000000434104283338ffd784c198147f99aed2cc16709c90b1522e3b3637b312a6f9130e0eda7081e373a96d36be319710cd5c134aaffba81ff08650d7de8af332fe4d8cde20ac");
     check_reorg_index(env_, dbi_reorg_index_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0, 1);
@@ -601,7 +706,17 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg) {
     check_reorg_block(env_, dbi_reorg_block_, 0, orig_enc);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    #endif 
+
+
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 }
 
 
@@ -634,8 +749,18 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_0) {
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
     MDB_dbi dbi_reorg_block_;
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    MDB_dbi dbi_block_db_;
+    #endif
+
     MDB_txn* db_txn;
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
 
     check_reorg_output(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0, "00f2052a01000000434104283338ffd784c198147f99aed2cc16709c90b1522e3b3637b312a6f9130e0eda7081e373a96d36be319710cd5c134aaffba81ff08650d7de8af332fe4d8cde20ac");
     check_reorg_index(env_, dbi_reorg_index_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0, 1);
@@ -643,7 +768,16 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_0) {
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 0);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    #endif 
+
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 }
 
 BOOST_AUTO_TEST_CASE(internal_database__old_blocks_1) {
@@ -675,8 +809,17 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_1) {
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
     MDB_dbi dbi_reorg_block_;
+
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    MDB_dbi dbi_block_db_;
+    #endif
+
     MDB_txn* db_txn;
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
 
     check_reorg_output(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0, "00f2052a01000000434104283338ffd784c198147f99aed2cc16709c90b1522e3b3637b312a6f9130e0eda7081e373a96d36be319710cd5c134aaffba81ff08650d7de8af332fe4d8cde20ac");
     check_reorg_index(env_, dbi_reorg_index_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0, 1);
@@ -684,7 +827,16 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_1) {
     check_reorg_block(env_, dbi_reorg_block_, 0, orig_enc);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
-       close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    #endif 
+
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 }
 
 
@@ -717,8 +869,16 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_2) {
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
     MDB_dbi dbi_reorg_block_;
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    MDB_dbi dbi_block_db_;
+    #endif
+
     MDB_txn* db_txn;
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
 
     check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
     check_reorg_index_doesnt_exists(env_, dbi_reorg_index_, 1);
@@ -727,10 +887,17 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_2) {
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 1);
     // check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
-       close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    #endif
+
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 }
-
-
 
 
 BOOST_AUTO_TEST_CASE(internal_database__reorg_index) {
@@ -755,8 +922,6 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index) {
     // BlockHash 0000000025075f093c42a0393c844bc59f90024b18a9f588f6fa3fc37487c3c2
     auto const spender0 = get_block("01000000944bb801c604dda3d51758f292afdca8d973288434c8fe4bf0b5982d000000008a7d204ffe05282b05f280459401b59be41b089cefc911f4fb5641f90309d942b929a149ffff001d1b8d847f0301000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0804ffff001d02c500ffffffff0100f2052a01000000434104f4af426e464d972012256f4cbe5df528aa99b1ceb489968a56cf6b295e6fad1473be89f66fbd3d16adf3dfba7c5253517d11d1d188fe858720497c4fc0a1ef9dac00000000010000000465dabdbdb83e9820e4f666f3634d88308909789f7ae29e730812784a96485e3c000000004948304502204c52c2301dcc3f6af7a3ef2ad118185ca2d52a7ae90013332ad53732a085b8d4022100f074ab99e77d5d4c54eb6bfc82c42a094d7d7eaf632d52897ef058c617a2bb2301ffffffffb7404d6a9c451a9f527a7fbeb54839c2bca2eac7b138cdd700be19d733efa0fc000000004847304402206c55518aa596824d1e760afcfeb7b0103a1a82ea8dcd4c3474becc8246ba823702205009cbc40affa3414f9a139f38a86f81a401193f759fb514b9b1d4e2e49f82a401ffffffffcc07817ab589551d698ba7eb2a6efd6670d6951792ad52e2bd5832bf2f4930ec0000000049483045022100b485b4daa4af75b7b34b4f2338e7b96809c75fab5577905ade0789c7f821a69e022010d73d2a3c7fcfc6db911dead795b0aa7d5448447ad5efc7e516699955a18ac801fffffffff61fefef8ee758b273ee64e1bf5c07485dd74cd065a5ce0d59827e0700cad0d9000000004a493046022100bc6e89ee580d1c721b15c36d0a1218c9e78f6f7537616553341bbd1199fe615a02210093062f2c1a1c87f55b710011976a03dff57428e38dd640f6fbdef0fa52ad462d01ffffffff0100c817a80400000043410408998c08bbe6bba756e9b864722fe76ca403929382db2b120f9f621966b00af48f4b014b458bccd4f2acf63b1487ecb9547bc87bdecb08e9c4d08c138c76439aac00000000010000000115327dc99375fc1fdc02e15394369daa6e23ad4dc27e7c1c4af21606add5b068000000004a49304602210086b55b7f2fa5395d1e90a85115ada930afa01b86116d6bbeeecd8e2b97eefbac022100d653846d378845df2ced4b4923dcae4b6ddd5e8434b25e1602928235054c8d5301ffffffff0100f2052a01000000434104b68b035858a00051ca70dd4ba297168d9a3720b642c2e0cd08846bfbb144233b11b24c4b8565353b579bd7109800e42a1fc1e20dbdfbba6a12d0089aab313181ac00000000");
 
-
-
     {
         internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
         BOOST_REQUIRE(db.open());
@@ -777,13 +942,31 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index) {
     MDB_dbi dbi_block_header_by_hash_;
     MDB_dbi dbi_reorg_block_;
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    MDB_dbi dbi_block_db_;
+    #endif
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
 
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "3c5e48964a781208739ee27a9f78098930884d63f366f6e420983eb8bdbdda65", 0);
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "fca0ef33d719be00d7cd38b1c7eaa2bcc23948b5be7f7a529f1a459c6a4d40b7", 0);
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "ec30492fbf3258bde252ad921795d67066fd6e2aeba78b691d5589b57a8107cc", 0);
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "d9d0ca00077e82590dcea565d04cd75d48075cbfe164ee73b258e78eefef1ff6", 0);
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "68b0d5ad0616f24a1c7c7ec24dad236eaa9d369453e102dc1ffc7593c97d3215", 0);
+
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    #endif
+
 
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
@@ -793,7 +976,11 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index) {
 
     check_index_and_pool(env_, dbi_reorg_index_, dbi_reorg_pool_);
 
-       close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 }
  
 
@@ -849,7 +1036,16 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index2) {
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
     MDB_dbi dbi_reorg_block_;
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    MDB_dbi dbi_block_db_;
+    #endif
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
 
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "3c5e48964a781208739ee27a9f78098930884d63f366f6e420983eb8bdbdda65", 0);
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "fca0ef33d719be00d7cd38b1c7eaa2bcc23948b5be7f7a529f1a459c6a4d40b7", 0);
@@ -858,6 +1054,18 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index2) {
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "68b0d5ad0616f24a1c7c7ec24dad236eaa9d369453e102dc1ffc7593c97d3215", 0);
 
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "0437cd7f8525ceed2324359c2d0ba26006d92d856a9c20fa0241106ee5a597c9", 0);
+
+
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    #endif
 
     // BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 6);
     // BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 6);
@@ -868,7 +1076,11 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index2) {
 
     check_index_and_pool(env_, dbi_reorg_index_, dbi_reorg_pool_);
 
-       close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 }
 
 
@@ -905,6 +1117,10 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     MDB_dbi dbi_reorg_block_;
     MDB_txn* db_txn;
     
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    MDB_dbi dbi_block_db_;
+    #endif
+
     // Insert the First Block
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
@@ -917,11 +1133,26 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         BOOST_REQUIRE(entry.is_valid());
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
+
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    #endif
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     // Insert the Spender Block
     {
@@ -954,7 +1185,12 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
 
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 1);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 1);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 1);
@@ -962,8 +1198,17 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     check_reorg_index(env_, dbi_reorg_index_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0, 1);
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 0);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,1);
+    #endif
+
+
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     // Remove the Spender Block
     {
@@ -996,14 +1241,29 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         BOOST_REQUIRE(! db.get_header(1).is_valid());
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db_doesnt_exists(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,0);
+    #endif
 
 
-
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     // Insert the Spender Block, again
     {
@@ -1036,7 +1296,13 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
 
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
+    
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 1);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 1);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 1);
@@ -1044,8 +1310,18 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     check_reorg_index(env_, dbi_reorg_index_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0, 1);
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 0);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    #endif
 
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 }
 
 BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
@@ -1080,6 +1356,10 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
     MDB_dbi dbi_reorg_block_;
     MDB_txn* db_txn;
     
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    MDB_dbi dbi_block_db_;
+    #endif
+
     // Insert the First Block
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, one_hundred_gib);
@@ -1092,12 +1372,27 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
         BOOST_REQUIRE(entry.is_valid());
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
-
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    #endif
+    
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
+    
     // Insert the Spender Block
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, one_hundred_gib);
@@ -1129,7 +1424,12 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
 
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
@@ -1137,8 +1437,17 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
     check_reorg_index_doesnt_exists(env_, dbi_reorg_index_, 1);
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 0);
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 1);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    #endif
 
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     // Remove the Spender Block
     {
@@ -1149,6 +1458,26 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
         chain::block out_block;
         BOOST_REQUIRE(db.pop_block(out_block) == result_code::key_not_found);
     }   //close() implicit
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
+
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    #endif
+
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
+
+
 }
 
 
@@ -1243,6 +1572,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     MDB_dbi dbi_reorg_block_;
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    MDB_dbi dbi_block_db_;
+    #endif
+
     MDB_txn* db_txn;
     
     {
@@ -1259,7 +1593,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     }   //close() implicit
 
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
@@ -1268,11 +1607,22 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 6);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 6);
 
+
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    #endif
+
     // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
-
-
-
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     // ------------------------------------------------------------------------------------
     {
@@ -1283,7 +1633,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
 
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 1);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 1);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 1);
@@ -1292,9 +1647,22 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 7);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 7);
 
-    // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    #endif
 
+    // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     // ------------------------------------------------------------------------------------
     {
@@ -1305,7 +1673,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
 
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 2);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 2);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 2);
@@ -1313,8 +1686,23 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_utxo_) == 8);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 8);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 8);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
-
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    #endif
+    
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
 
     // ------------------------------------------------------------------------------------
@@ -1326,7 +1714,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
 
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 3);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 3);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 3);
@@ -1334,8 +1727,25 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_utxo_) == 9);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 9);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 9);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
-
+    
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    check_blocks_db(env_, dbi_block_db_,8);
+    #endif
+    
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
 
     // ------------------------------------------------------------------------------------
@@ -1347,7 +1757,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
 
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 4);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 4);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 4);
@@ -1355,8 +1770,25 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_utxo_) == 10);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 10);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 10);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
-
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    check_blocks_db(env_, dbi_block_db_,8);
+    check_blocks_db(env_, dbi_block_db_,9);
+    #endif
+    
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
 
     // ------------------------------------------------------------------------------------
@@ -1368,7 +1800,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
 
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
@@ -1376,7 +1813,27 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_utxo_) == 11);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 11);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 11);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    check_blocks_db(env_, dbi_block_db_,8);
+    check_blocks_db(env_, dbi_block_db_,9);
+    check_blocks_db(env_, dbi_block_db_,10);
+    #endif
+    
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib);
@@ -1384,11 +1841,37 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    check_blocks_db(env_, dbi_block_db_,8);
+    check_blocks_db(env_, dbi_block_db_,9);
+    check_blocks_db(env_, dbi_block_db_,10);
+    #endif
+    
+    
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 11, one_hundred_gib);
@@ -1396,11 +1879,36 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    check_blocks_db(env_, dbi_block_db_,8);
+    check_blocks_db(env_, dbi_block_db_,9);
+    check_blocks_db(env_, dbi_block_db_,10);
+    #endif
+    
+    
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 10, one_hundred_gib);
@@ -1408,11 +1916,36 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    check_blocks_db(env_, dbi_block_db_,8);
+    check_blocks_db(env_, dbi_block_db_,9);
+    check_blocks_db(env_, dbi_block_db_,10);
+    #endif
+    
+    
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 5, one_hundred_gib);
@@ -1420,11 +1953,36 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    check_blocks_db(env_, dbi_block_db_,8);
+    check_blocks_db(env_, dbi_block_db_,9);
+    check_blocks_db(env_, dbi_block_db_,10);
+    #endif
+    
+    
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 4, one_hundred_gib);
@@ -1432,11 +1990,36 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
         BOOST_REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 4);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 4);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 4);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    check_blocks_db(env_, dbi_block_db_,8);
+    check_blocks_db(env_, dbi_block_db_,9);
+    check_blocks_db(env_, dbi_block_db_,10);
+    #endif
+    
+    
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, one_hundred_gib);
@@ -1444,11 +2027,36 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
         BOOST_REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    check_blocks_db(env_, dbi_block_db_,8);
+    check_blocks_db(env_, dbi_block_db_,9);
+    check_blocks_db(env_, dbi_block_db_,10);
+    #endif
+    
+    
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
 }
 
@@ -1522,6 +2130,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     MDB_dbi dbi_reorg_block_;
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    MDB_dbi dbi_block_db_;
+    #endif
+
+
     MDB_txn* db_txn;
     
     {
@@ -1538,7 +2152,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     }   //close() implicit
 
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
@@ -1547,8 +2166,24 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 6);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 6);
 
+
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    #endif
+    
+
+
     // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
 
 
@@ -1562,7 +2197,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
 
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 1);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 1);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 1);
@@ -1572,7 +2212,24 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_count_items(env_, dbi_utxo_) == 7);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 7);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 7);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    #endif
+    
+    
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
 
     // ------------------------------------------------------------------------------------
@@ -1584,7 +2241,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
 
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 2);
@@ -1596,7 +2258,23 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 8);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 8);
 
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    #endif
+
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
 
 
@@ -1610,7 +2288,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 2);
@@ -1619,7 +2302,24 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 4);
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    #endif
+
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 11, one_hundred_gib);
@@ -1627,7 +2327,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 2);
@@ -1636,7 +2341,23 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 4);
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    #endif
+
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 10, one_hundred_gib);
@@ -1644,7 +2365,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 2);
@@ -1653,7 +2379,23 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 4);
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    #endif
+
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 5, one_hundred_gib);
@@ -1661,7 +2403,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 2);
@@ -1670,7 +2417,23 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 4);
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    #endif
+
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 4, one_hundred_gib);
@@ -1678,7 +2441,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 2);
@@ -1686,7 +2454,25 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 6));
     BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 4);
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    #endif
+    
+    
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, one_hundred_gib);
@@ -1694,7 +2480,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
         BOOST_REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 4);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 4);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 1);
@@ -1702,7 +2493,25 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(! db_exists_height(env_, dbi_reorg_block_, 6));
     BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 4);
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    #endif
+    
+    
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
 
     {
@@ -1711,7 +2520,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
         BOOST_REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
@@ -1719,10 +2533,27 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(! db_exists_height(env_, dbi_reorg_block_, 6));
     BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 0);
     BOOST_REQUIRE(! db_exists_height(env_, dbi_reorg_block_, 7));
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    #endif
+
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
+
 }
-
-
 
 
 BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
@@ -1792,6 +2623,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     MDB_dbi dbi_reorg_block_;
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    MDB_dbi dbi_block_db_;
+    #endif
+
     MDB_txn* db_txn;
     
     {
@@ -1808,7 +2644,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     }   //close() implicit
 
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
@@ -1817,9 +2658,23 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 6);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 6);
 
-    // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
 
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    #endif
+
+
+    // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
 
     // ------------------------------------------------------------------------------------
@@ -1831,7 +2686,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
 
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 4);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 4);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 1);
@@ -1842,8 +2702,22 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     BOOST_REQUIRE(db_count_items(env_, dbi_utxo_) == 4);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 7);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 7);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
-
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    #endif
+    
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
 
     // ------------------------------------------------------------------------------------
@@ -1855,7 +2729,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
 
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 2);
@@ -1866,7 +2745,23 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     BOOST_REQUIRE(db_count_items(env_, dbi_utxo_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 8);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 8);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    #endif
+
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     // ------------------------------------------------------------------------------------
     // Prunes
@@ -1878,7 +2773,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
         BOOST_REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 1);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 1);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 1);
@@ -1886,7 +2786,23 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     BOOST_REQUIRE(! db_exists_height(env_, dbi_reorg_block_, 6));
     BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 1);
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    #endif
+
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
 
     {
@@ -1895,7 +2811,12 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
         BOOST_REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
@@ -1903,7 +2824,24 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     BOOST_REQUIRE(! db_exists_height(env_, dbi_reorg_block_, 6));
     BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 0);
     BOOST_REQUIRE(! db_exists_height(env_, dbi_reorg_block_, 7));
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    #endif
+    
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
+
 }
 
 BOOST_AUTO_TEST_CASE(internal_database__prune_empty_blockchain) {
@@ -1973,13 +2911,34 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool_3) {
     MDB_dbi dbi_reorg_block_;
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
-    
 
-    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_) = open_dbs();
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    MDB_dbi dbi_block_db_;
+    #endif
+
+
+    std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    , dbi_block_db_
+    #endif
+    ) = open_dbs();
+
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 2);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 2);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 3);
-    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_);
+    
+    
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    #endif
+    
+    close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+        , dbi_block_db_
+    #endif
+    );
 
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 3, one_hundred_gib);
@@ -1987,10 +2946,6 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool_3) {
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }
 }
-
-
-
-
 
 
 
