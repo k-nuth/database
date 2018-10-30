@@ -404,7 +404,7 @@ public:
         MDB_txn* db_txn;
         auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
         if (res != MDB_SUCCESS) {
-            return chain::header{};
+            return chain::block{};
         }
 
         auto block = get_block(height, db_txn);
