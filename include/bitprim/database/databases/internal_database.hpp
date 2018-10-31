@@ -41,7 +41,11 @@
 namespace libbitcoin {
 namespace database {
 
+#ifdef BITPRIM_DB_NEW_BLOCKS
+constexpr size_t max_dbs_ = 7;
+#else
 constexpr size_t max_dbs_ = 6;
+#endif
 constexpr size_t env_open_mode_ = 0664;
 constexpr int directory_exists = 0;
 
@@ -57,6 +61,11 @@ public:
     constexpr static char reorg_index_name[] = "reorg_index";
     constexpr static char reorg_block_name[] = "reorg_block";
   
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    //Blocks DB
+    constexpr static char block_db_name[] = "blocks";
+    #endif
+
     internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size)
         : db_dir_(db_dir)
         , reorg_pool_limit_(reorg_pool_limit)
@@ -92,6 +101,7 @@ public:
         if ( ! create_and_open_environment()) {
             return false;
         }
+
         return open_databases();
     }
 
@@ -103,11 +113,17 @@ public:
             mdb_dbi_close(env_, dbi_reorg_pool_);
             mdb_dbi_close(env_, dbi_reorg_index_);
             mdb_dbi_close(env_, dbi_reorg_block_);
+
+            #ifdef BITPRIM_DB_NEW_BLOCKS 
+            mdb_dbi_close(env_, dbi_block_db_);
+            #endif
+
             db_opened_ = false;
         }
 
         if (env_created_) {
             mdb_env_close(env_);
+            
             env_created_ = false;
         }
 
@@ -115,6 +131,14 @@ public:
     }
 
     result_code push_genesis(chain::block const& block) {
+        
+        #ifdef BITPRIM_DB_NEW_BLOCKS
+        uint32_t height = 0;
+        auto valuearr = block.to_data(false);               
+        MDB_val key {sizeof(height), &height};         
+        MDB_val value {valuearr.size(), valuearr.data()};
+        #endif
+
         MDB_txn* db_txn;
         auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
         if (res0 != MDB_SUCCESS) {
@@ -127,6 +151,14 @@ public:
             return res;
         }
 
+        #ifdef BITPRIM_DB_NEW_BLOCKS
+        auto res_block = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_NOOVERWRITE);
+        if (res_block == MDB_KEYEXIST) {
+            LOG_INFO(LOG_DATABASE) << "Duplicate key in LMDB Block [push_genesis] " << res_block;
+            return result_code::duplicated_key;
+        }
+        #endif
+
         auto res2 = mdb_txn_commit(db_txn);
         if (res2 != MDB_SUCCESS) {
             return result_code::other;
@@ -137,6 +169,12 @@ public:
     //TODO(fernando): optimization: consider passing a list of outputs to insert and a list of inputs to delete instead of an entire Block.
     //                  avoiding inserting and erasing internal spenders
     result_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past) {
+
+        #ifdef BITPRIM_DB_NEW_BLOCKS
+        auto valuearr = block.to_data(false);               
+        MDB_val key {sizeof(height), &height};         
+        MDB_val value {valuearr.size(), valuearr.data()};
+        #endif
 
         MDB_txn* db_txn;
         auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
@@ -150,15 +188,25 @@ public:
             mdb_txn_abort(db_txn);
             return res;
         }
+       
+        #ifdef BITPRIM_DB_NEW_BLOCKS
+        auto res_block = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_NOOVERWRITE);
+        if (res_block == MDB_KEYEXIST) {
+            LOG_INFO(LOG_DATABASE) << "Duplicate key in LMDB Block [push_block] " << res_block;
+            return result_code::duplicated_key;
+        }
+        #endif
+
 
         auto res2 = mdb_txn_commit(db_txn);
         if (res2 != MDB_SUCCESS) {
             LOG_INFO(LOG_DATABASE) << "Error commiting LMDB Transaction [push_block] " << res2;
             return result_code::other;
         }
+
         return res;
     }
-    
+
     utxo_entry get_utxo(chain::output_point const& point) const {
         
         auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);
@@ -338,8 +386,52 @@ public:
         return result_code::success;
     }
 
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    std::pair<chain::block, uint32_t> get_block(hash_digest const& hash) const {
+        MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
 
+        MDB_txn* db_txn;
+        auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+        if (res != MDB_SUCCESS) {
+            return {};
+        }
 
+        MDB_val value;
+        if (mdb_get(db_txn, dbi_block_header_by_hash_, &key, &value) != MDB_SUCCESS) {
+            mdb_txn_commit(db_txn);
+            // mdb_txn_abort(db_txn);
+            return {};
+        }
+
+        // assert value.mv_size == 4;
+        auto height = *static_cast<uint32_t*>(value.mv_data);
+
+        auto block = get_block(height, db_txn);
+
+        if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+            return {};
+        }
+
+        return {block, height};
+    }
+
+    chain::block get_block(uint32_t height) const { 
+        
+        MDB_txn* db_txn;
+        auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+        if (res != MDB_SUCCESS) {
+            return chain::block{};
+        }
+
+        auto block = get_block(height, db_txn);
+
+        if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+            return chain::block{};
+        }
+
+        return block;
+    }
+    #endif //BITPRIM_DB_NEW_BLOCKS
 
 private:
     bool is_old_block(chain::block const& block) const {
@@ -430,6 +522,14 @@ private:
             return false;
         }
 
+        #ifdef BITPRIM_DB_NEW_BLOCKS
+        res = mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_db_);
+        if (res != MDB_SUCCESS) {
+            return false;
+        }
+        #endif
+
+
         db_opened_ = mdb_txn_commit(db_txn) == MDB_SUCCESS;
         return db_opened_;
     }
@@ -448,7 +548,7 @@ private:
 
         res = mdb_put(db_txn, dbi_reorg_pool_, &key, &value, MDB_NOOVERWRITE);
         if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicated key inserting in reorg pool [insert_reorg_pool] " << res;        
+            LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in reorg pool [insert_reorg_pool] " << res;        
             return result_code::duplicated_key;
         }
         if (res != MDB_SUCCESS) {
@@ -461,7 +561,7 @@ private:
         res = mdb_put(db_txn, dbi_reorg_index_, &key_index, &value_index, 0);
         
         if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicated key inserting in reorg index [insert_reorg_pool] " << res;
+            LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in reorg index [insert_reorg_pool] " << res;
             return result_code::duplicated_key;
         }
         if (res != MDB_SUCCESS) {
@@ -472,7 +572,7 @@ private:
         return result_code::success;
     }
 
-    result_code remove(uint32_t height, chain::output_point const& point, bool insert_reorg, MDB_txn* db_txn) {
+    result_code remove_utxo(uint32_t height, chain::output_point const& point, bool insert_reorg, MDB_txn* db_txn) {
         auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);      //TODO(fernando): podría estar afuera de la DBTx
         MDB_val key {keyarr.size(), keyarr.data()};                 //TODO(fernando): podría estar afuera de la DBTx
 
@@ -483,11 +583,11 @@ private:
 
         auto res = mdb_del(db_txn, dbi_utxo_, &key, NULL);
         if (res == MDB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE) << "Key not found deleting UTXO [remove] " << res;
+            LOG_INFO(LOG_DATABASE) << "Key not found deleting UTXO [remove_utxo] " << res;
             return result_code::key_not_found;
         }
         if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error deleting UTXO [remove] " << res;
+            LOG_INFO(LOG_DATABASE) << "Error deleting UTXO [remove_utxo] " << res;
             return result_code::other;
         }
         return result_code::success;
@@ -503,11 +603,11 @@ private:
         auto res = mdb_put(db_txn, dbi_utxo_, &key, &value, MDB_NOOVERWRITE);
 
         if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicated Key inserting UTXO [insert] " << res;        
+            LOG_INFO(LOG_DATABASE) << "Duplicate Key inserting UTXO [insert_utxo] " << res;        
             return result_code::duplicated_key;
         }
         if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error inserting UTXO [insert] " << res;        
+            LOG_INFO(LOG_DATABASE) << "Error inserting UTXO [insert_utxo] " << res;        
             return result_code::other;
         }
         return result_code::success;
@@ -515,7 +615,7 @@ private:
 
     result_code remove_inputs(uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
         for (auto const& input: inputs) {
-            auto res = remove(height, input.previous_output(), insert_reorg, db_txn);
+            auto res = remove_utxo(height, input.previous_output(), insert_reorg, db_txn);
             if (res != result_code::success) {
                 return res;
             }
@@ -577,7 +677,7 @@ private:
         auto res = mdb_put(db_txn, dbi_block_header_, &key, &value, MDB_NOOVERWRITE);
         if (res == MDB_KEYEXIST) {
             //TODO(fernando): El logging en general no está bueno que esté en la DbTx.
-            LOG_INFO(LOG_DATABASE) << "Duplicated key inserting block header [push_block_header] " << res;        //TODO(fernando): podría estar afuera de la DBTx. 
+            LOG_INFO(LOG_DATABASE) << "Duplicate key inserting block header [push_block_header] " << res;        //TODO(fernando): podría estar afuera de la DBTx. 
             return result_code::duplicated_key;
         }
         if (res != MDB_SUCCESS) {
@@ -589,7 +689,7 @@ private:
         MDB_val key_by_hash {key_by_hash_arr.size(), key_by_hash_arr.data()};   //TODO(fernando): podría estar afuera de la DBTx
         res = mdb_put(db_txn, dbi_block_header_by_hash_, &key_by_hash, &key, MDB_NOOVERWRITE);
         if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicated key inserting block header by hash [push_block_header] " << res;        
+            LOG_INFO(LOG_DATABASE) << "Duplicate key inserting block header by hash [push_block_header] " << res;        
             return result_code::duplicated_key;
         }
         if (res != MDB_SUCCESS) {
@@ -607,7 +707,7 @@ private:
         MDB_val value {valuearr.size(), valuearr.data()};   //TODO(fernando): podría estar afuera de la DBTx
         auto res = mdb_put(db_txn, dbi_reorg_block_, &key, &value, MDB_NOOVERWRITE);
         if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicated key inserting in reorg block [push_block_reorg] " << res;
+            LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in reorg block [push_block_reorg] " << res;
             return result_code::duplicated_key;
         }
         if (res != MDB_SUCCESS) {
@@ -659,7 +759,7 @@ private:
         uint32_t pos = outputs.size() - 1;
         for (auto const& output: boost::adaptors::reverse(outputs)) {
             chain::output_point const point {txid, pos};
-            auto res = remove(0, point, false, db_txn);
+            auto res = remove_utxo(0, point, false, db_txn);
             if (res != result_code::success) {
                 return res;
             }
@@ -685,7 +785,7 @@ private:
 
         res = mdb_put(db_txn, dbi_utxo_, &key, &value, MDB_NOOVERWRITE);
         if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicated key inserting in UTXO [insert_output_from_reorg_and_remove] " << res;        
+            LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in UTXO [insert_output_from_reorg_and_remove] " << res;        
             return result_code::duplicated_key;
         }
         if (res != MDB_SUCCESS) {
@@ -801,6 +901,23 @@ private:
         return result_code::success;
     }
 
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    result_code remove_blocks_db(uint32_t height, MDB_txn* db_txn) {
+
+        MDB_val key {sizeof(height), &height};
+        auto res = mdb_del(db_txn, dbi_block_db_, &key, NULL);
+        if (res == MDB_NOTFOUND) {
+            LOG_INFO(LOG_DATABASE) << "Key not found deleting blocks DB in LMDB [remove_blocks_db] - mdb_del: " << res;
+            return result_code::key_not_found;
+        }
+        if (res != MDB_SUCCESS) {
+            LOG_INFO(LOG_DATABASE) << "Error deleting blocks DB in LMDB [remove_blocks_db] - mdb_del: " << res;
+            return result_code::other;
+        }
+        return result_code::success;
+    }
+    #endif
+
     result_code remove_block(chain::block const& block, uint32_t height, MDB_txn* db_txn) {
         //precondition: block.transactions().size() >= 1
 
@@ -834,6 +951,13 @@ private:
             return res;
         }
 
+        #ifdef BITPRIM_DB_NEW_BLOCKS
+        res = remove_blocks_db(height, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
+        #endif
+
         return result_code::success;
     }
 
@@ -849,6 +973,21 @@ private:
         auto res = chain::header::factory_from_data(data);
         return res;
     }
+
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    chain::block get_block(uint32_t height, MDB_txn* db_txn) const {
+        MDB_val key {sizeof(height), &height};
+        MDB_val value;
+
+        if (mdb_get(db_txn, dbi_block_db_, &key, &value) != MDB_SUCCESS) {
+            return chain::block{};
+        }
+
+        auto data = db_value_to_data_chunk(value);
+        auto res = chain::block::factory_from_data(data);
+        return res;
+    }
+    #endif
 
     chain::block get_block_reorg(uint32_t height, MDB_txn* db_txn) const {
         MDB_val key {sizeof(height), &height};
@@ -1003,6 +1142,11 @@ private:
     MDB_dbi dbi_reorg_pool_;
     MDB_dbi dbi_reorg_index_;
     MDB_dbi dbi_reorg_block_;
+
+    #ifdef BITPRIM_DB_NEW_BLOCKS
+    //Blocks DB
+    MDB_dbi dbi_block_db_;
+    #endif
 };
 
 template <typename Clock>
@@ -1022,6 +1166,12 @@ constexpr char internal_database_basis<Clock>::reorg_index_name[];              
 
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::reorg_block_name[];               //key: block height, value: block
+
+#ifdef BITPRIM_DB_NEW_BLOCKS
+template <typename Clock>
+constexpr char internal_database_basis<Clock>::block_db_name[];               //key: block height, value: block
+#endif
+
 
 using internal_database = internal_database_basis<std::chrono::system_clock>;
 
