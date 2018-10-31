@@ -548,7 +548,7 @@ private:
 
         res = mdb_put(db_txn, dbi_reorg_pool_, &key, &value, MDB_NOOVERWRITE);
         if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicated key inserting in reorg pool [insert_reorg_pool] " << res;        
+            LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in reorg pool [insert_reorg_pool] " << res;        
             return result_code::duplicated_key;
         }
         if (res != MDB_SUCCESS) {
@@ -561,7 +561,7 @@ private:
         res = mdb_put(db_txn, dbi_reorg_index_, &key_index, &value_index, 0);
         
         if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicated key inserting in reorg index [insert_reorg_pool] " << res;
+            LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in reorg index [insert_reorg_pool] " << res;
             return result_code::duplicated_key;
         }
         if (res != MDB_SUCCESS) {
@@ -603,11 +603,11 @@ private:
         auto res = mdb_put(db_txn, dbi_utxo_, &key, &value, MDB_NOOVERWRITE);
 
         if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicated Key inserting UTXO [insert] " << res;        
+            LOG_INFO(LOG_DATABASE) << "Duplicate Key inserting UTXO [insert_utxo] " << res;        
             return result_code::duplicated_key;
         }
         if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error inserting UTXO [insert] " << res;        
+            LOG_INFO(LOG_DATABASE) << "Error inserting UTXO [insert_utxo] " << res;        
             return result_code::other;
         }
         return result_code::success;
@@ -677,7 +677,7 @@ private:
         auto res = mdb_put(db_txn, dbi_block_header_, &key, &value, MDB_NOOVERWRITE);
         if (res == MDB_KEYEXIST) {
             //TODO(fernando): El logging en general no está bueno que esté en la DbTx.
-            LOG_INFO(LOG_DATABASE) << "Duplicated key inserting block header [push_block_header] " << res;        //TODO(fernando): podría estar afuera de la DBTx. 
+            LOG_INFO(LOG_DATABASE) << "Duplicate key inserting block header [push_block_header] " << res;        //TODO(fernando): podría estar afuera de la DBTx. 
             return result_code::duplicated_key;
         }
         if (res != MDB_SUCCESS) {
@@ -689,7 +689,7 @@ private:
         MDB_val key_by_hash {key_by_hash_arr.size(), key_by_hash_arr.data()};   //TODO(fernando): podría estar afuera de la DBTx
         res = mdb_put(db_txn, dbi_block_header_by_hash_, &key_by_hash, &key, MDB_NOOVERWRITE);
         if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicated key inserting block header by hash [push_block_header] " << res;        
+            LOG_INFO(LOG_DATABASE) << "Duplicate key inserting block header by hash [push_block_header] " << res;        
             return result_code::duplicated_key;
         }
         if (res != MDB_SUCCESS) {
@@ -707,7 +707,7 @@ private:
         MDB_val value {valuearr.size(), valuearr.data()};   //TODO(fernando): podría estar afuera de la DBTx
         auto res = mdb_put(db_txn, dbi_reorg_block_, &key, &value, MDB_NOOVERWRITE);
         if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicated key inserting in reorg block [push_block_reorg] " << res;
+            LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in reorg block [push_block_reorg] " << res;
             return result_code::duplicated_key;
         }
         if (res != MDB_SUCCESS) {
@@ -785,7 +785,7 @@ private:
 
         res = mdb_put(db_txn, dbi_utxo_, &key, &value, MDB_NOOVERWRITE);
         if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicated key inserting in UTXO [insert_output_from_reorg_and_remove] " << res;        
+            LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in UTXO [insert_output_from_reorg_and_remove] " << res;        
             return result_code::duplicated_key;
         }
         if (res != MDB_SUCCESS) {
