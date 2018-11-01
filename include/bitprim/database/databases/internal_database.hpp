@@ -43,9 +43,12 @@ namespace database {
 
 #ifdef BITPRIM_DB_NEW_BLOCKS
 constexpr size_t max_dbs_ = 7;
+#elif BITPRIM_DB_NEW_FULL
+constexpr size_t max_dbs_ = 8;
 #else
 constexpr size_t max_dbs_ = 6;
 #endif
+
 constexpr size_t env_open_mode_ = 0664;
 constexpr int directory_exists = 0;
 
@@ -61,12 +64,12 @@ public:
     constexpr static char reorg_index_name[] = "reorg_index";
     constexpr static char reorg_block_name[] = "reorg_block";
   
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #ifdef BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL
     //Blocks DB
     constexpr static char block_db_name[] = "blocks";
-    #elif BITPRIM_DB_NEW_FULL
-    //Blocks DB
-    constexpr static char block_db_name[] = "blocks";
+    #endif
+    
+    #ifdef BITPRIM_DB_NEW_FULL
     //Transactions
     constexpr static char transaction_db_name[] = "transactions";
     #endif 
@@ -119,10 +122,11 @@ public:
             mdb_dbi_close(env_, dbi_reorg_index_);
             mdb_dbi_close(env_, dbi_reorg_block_);
 
-            #ifdef BITPRIM_DB_NEW_BLOCKS 
+            #ifdef BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL 
             mdb_dbi_close(env_, dbi_block_db_);
-            #elif BITPRIM_DB_NEW_FULL
-            mdb_dbi_close(env_, dbi_block_db_);
+            #endif
+            
+            #ifdef BITPRIM_DB_NEW_FULL
             mdb_dbi_close(env_, dbi_transaction_db_);
             #endif
 
@@ -504,24 +508,19 @@ private:
             return false;
         }
 
-        #ifdef BITPRIM_DB_NEW_BLOCKS
+        #ifdef BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL 
         res = mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_db_);
         if (res != MDB_SUCCESS) {
             return false;
         }
-        #elif BITPRIM_DB_NEW_FULL
-        res = mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_db_);
-        if (res != MDB_SUCCESS) {
-            return false;
-        }
+        #endif
 
+        #ifdef BITPRIM_DB_NEW_FULL
         res = mdb_dbi_open(db_txn, transaction_db_name, MDB_CREATE, &dbi_transaction_db_);
         if (res != MDB_SUCCESS) {
             return false;
         }
-
         #endif
-
 
         db_opened_ = mdb_txn_commit(db_txn) == MDB_SUCCESS;
         return db_opened_;
@@ -769,7 +768,7 @@ private:
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
     
         MDB_val key {sizeof(height), &height};
-        auto const hashes = block.to_hashes(true);
+        auto hashes = block.to_hashes(true);
         MDB_val value {hashes.size(), hashes.data()};
 
         auto res_block = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_NOOVERWRITE);
@@ -826,13 +825,11 @@ private:
             return res;
         }
 
-        #ifdef BITPRIM_DB_NEW_BLOCKS
+        #ifdef BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL
         res = insert_block(block, height, db_txn);        
-        #elif BITPRIM_DB_NEW_FULL
-        res = insert_block(block, height, db_txn);
         #endif
 
-        return res0;
+        return res;
     }
 
     result_code push_genesis(chain::block const& block, MDB_txn* db_txn) {
@@ -841,9 +838,7 @@ private:
             return res;
         }
 
-        #ifdef BITPRIM_DB_NEW_BLOCKS
-        res = insert_block(block, 0, db_txn);
-        #elif BITPRIM_DB_NEW_FULL
+        #ifdef BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL
         res = insert_block(block, 0, db_txn);
         #endif
 
@@ -1279,11 +1274,12 @@ private:
     MDB_dbi dbi_reorg_index_;
     MDB_dbi dbi_reorg_block_;
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #ifdef BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL
     //Blocks DB
     MDB_dbi dbi_block_db_;
-    #elif BITPRIM_DB_NEW_FULL
-    MDB_dbi dbi_block_db_;
+    #endif
+
+    #ifdef BITPRIM_DB_NEW_FULL
     MDB_dbi dbi_transaction_db_;
     #endif
 };
@@ -1306,15 +1302,12 @@ constexpr char internal_database_basis<Clock>::reorg_index_name[];              
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::reorg_block_name[];               //key: block height, value: block
 
-#ifdef BITPRIM_DB_NEW_BLOCKS
+#ifdef BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::block_db_name[];                  //key: block height, value: block
 #endif
 
 #ifdef BITPRIM_DB_NEW_FULL
-
-template <typename Clock>
-constexpr char internal_database_basis<Clock>::block_db_name[];                  //key: block height, value: block
 
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::transaction_db_name[];            //key: tx hash, value: tx
