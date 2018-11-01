@@ -43,7 +43,7 @@ namespace database {
 
 #ifdef BITPRIM_DB_NEW_BLOCKS
 constexpr size_t max_dbs_ = 7;
-#elif BITPRIM_DB_NEW_FULL
+#elif defined(BITPRIM_DB_NEW_FULL)
 constexpr size_t max_dbs_ = 8;
 #else
 constexpr size_t max_dbs_ = 6;
@@ -64,7 +64,7 @@ public:
     constexpr static char reorg_index_name[] = "reorg_index";
     constexpr static char reorg_block_name[] = "reorg_block";
   
-    #ifdef BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     //Blocks DB
     constexpr static char block_db_name[] = "blocks";
     #endif
@@ -122,7 +122,7 @@ public:
             mdb_dbi_close(env_, dbi_reorg_index_);
             mdb_dbi_close(env_, dbi_reorg_block_);
 
-            #ifdef BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL 
+            #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL) 
             mdb_dbi_close(env_, dbi_block_db_);
             #endif
             
@@ -369,7 +369,7 @@ public:
         return result_code::success;
     }
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     std::pair<chain::block, uint32_t> get_block(hash_digest const& hash) const {
         MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
 
@@ -508,7 +508,7 @@ private:
             return false;
         }
 
-        #ifdef BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL 
+        #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL) 
         res = mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_db_);
         if (res != MDB_SUCCESS) {
             return false;
@@ -719,14 +719,14 @@ private:
 
         auto res_block = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_NOOVERWRITE);
         if (res_block == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicate key in LMDB Block [insert_block] " << res_block;
+            LOG_INFO(LOG_DATABASE) << "Duplicate key in Block DB [insert_block] " << res_block;
             return result_code::duplicated_key;
         }
 
         return result_code::success;
     }
     
-    #elif BITPRIM_DB_NEW_FULL
+    #elif defined(BITPRIM_DB_NEW_FULL)
     
     result_code insert_transaction(chain::transaction const& tx, MDB_txn* db_txn) {
 
@@ -738,12 +738,12 @@ private:
 
         auto res = mdb_put(db_txn, dbi_transaction_db_, &key, &value, MDB_NOOVERWRITE);
         if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicate key in LMDB Block [insert_transaction] " << res;
+            LOG_INFO(LOG_DATABASE) << "Duplicate key in Transaction DB [insert_transaction] " << res;
             return result_code::duplicated_key;
         }        
     
         if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error saving in LMDB Block [insert_transaction] " << res;
+            LOG_INFO(LOG_DATABASE) << "Error saving in Transaction DB [insert_transaction] " << res;
             return result_code::other;
         }
 
@@ -751,7 +751,7 @@ private:
     }
 
     template <typename I>
-    result_code insert_transactions( I f, I l, MDB_txn* db_txn) {
+    result_code insert_transactions(I f, I l, MDB_txn* db_txn) {
         // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
 
         while (f != l) {
@@ -769,16 +769,16 @@ private:
     
         MDB_val key {sizeof(height), &height};
         auto hashes = block.to_hashes(true);
-        MDB_val value {hashes.size(), hashes.data()};
+        MDB_val value {hashes.size() * libbitcoin::hash_size, hashes.data()};
 
         auto res_block = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_NOOVERWRITE);
         if (res_block == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicate key in LMDB Block [insert_block] " << res_block;
+            LOG_INFO(LOG_DATABASE) << "Duplicate key in Block DB [insert_block] " << res_block;
             return result_code::duplicated_key;
         }        
     
         if (res_block != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error saving in LMDB Block [insert_block] " << res_block;
+            LOG_INFO(LOG_DATABASE) << "Error saving in Block DB [insert_block] " << res_block;
             return result_code::other;
         }
 
@@ -819,17 +819,20 @@ private:
             return res0;
         }
 
-        fixed.back() = 0;   //The last byte equal to 0 means NonCoinbaseTx
+        fixed.back() = 0;   //The last byte equal to 0 means NonCoinbaseTx    
         res = push_transactions_non_coinbase(height, fixed, txs.begin() + 1, txs.end(), insert_reorg, db_txn);
         if (res != result_code::success) {
             return res;
         }
 
-        #ifdef BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL
+        #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         res = insert_block(block, height, db_txn);        
+        if (res != result_code::success) {
+            return res;
+        }
         #endif
 
-        return res;
+        return res0;
     }
 
     result_code push_genesis(chain::block const& block, MDB_txn* db_txn) {
@@ -838,7 +841,7 @@ private:
             return res;
         }
 
-        #ifdef BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL
+        #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         res = insert_block(block, 0, db_txn);
         #endif
 
@@ -1041,6 +1044,7 @@ private:
             return res;
         }
 
+        //TODO add transactions removal
         #ifdef BITPRIM_DB_NEW_BLOCKS
         res = remove_blocks_db(height, db_txn);
         if (res != result_code::success) {
@@ -1078,10 +1082,10 @@ private:
         return res;
     }
 
-    #elif BITPRIM_DB_NEW_FULL
+    #elif defined(BITPRIM_DB_NEW_FULL)
 
-    chain::transaction get_transaction(hash_digest hash, MDB_txn* db_txn) {
-        MDB_val key {hash.size(), hash.data()};
+    chain::transaction get_transaction(hash_digest const& hash, MDB_txn* db_txn) const {
+        MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
         MDB_val value;
 
         if (mdb_get(db_txn, dbi_transaction_db_, &key, &value) != MDB_SUCCESS) {
@@ -1097,7 +1101,7 @@ private:
         MDB_val value;
 
         auto header = get_header(height, db_txn);
-        if (!header.is_Valid())
+        if (!header.is_valid())
         {
             return chain::block{};
         }
@@ -1106,13 +1110,25 @@ private:
             return chain::block{};
         }
 
-        auto txs_hashes = static_cast<hash_list>(*value); 
+        auto n = value.mv_size;
+        auto f = static_cast<uint8_t*>(value.mv_data); 
+        //precondition: mv_size es multiplo de 32
+        
         chain::transaction::list tx_list;
-        tx_list.reserve(txs_hashes.size()); 
-    
-        for (auto const& hash: txs_hashes) {        
-            auto tx = get_transaction(hash, db_txn);
-            tx_list.insert(tx);
+        tx_list.reserve(n/libbitcoin::hash_size);
+        
+        while (n != 0) {
+            hash_digest h;
+            std::copy(f, f + libbitcoin::hash_size, h.data());
+            
+            auto tx = get_transaction(h, db_txn);
+            if (!tx.is_valid()) {
+                return chain::block{};
+            }
+            tx_list.push_back(tx);
+
+            n -= libbitcoin::hash_size;
+            f += libbitcoin::hash_size;
         }
         
         return chain::block{header, tx_list};
@@ -1274,7 +1290,7 @@ private:
     MDB_dbi dbi_reorg_index_;
     MDB_dbi dbi_reorg_block_;
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     //Blocks DB
     MDB_dbi dbi_block_db_;
     #endif
@@ -1302,7 +1318,7 @@ constexpr char internal_database_basis<Clock>::reorg_index_name[];              
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::reorg_block_name[];               //key: block height, value: block
 
-#ifdef BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::block_db_name[];                  //key: block height, value: block
 #endif

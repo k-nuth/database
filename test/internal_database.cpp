@@ -30,7 +30,7 @@ using namespace bc::database;
 
 #define DIRECTORY "internal_database"
 
-constexpr uint64_t one_hundred_gib = uint64_t(10485760) * 10; //100 * (uint64_t(1) << 30);
+constexpr uint64_t db_size = uint64_t(10485760) * 10; //100 * (uint64_t(1) << 30);
 
 struct internal_database_directory_setup_fixture {
     internal_database_directory_setup_fixture() {
@@ -39,7 +39,7 @@ struct internal_database_directory_setup_fixture {
         remove_all(DIRECTORY, ec);
         BOOST_REQUIRE(create_directories(DIRECTORY, ec));
 
-        internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
+        internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
         BOOST_REQUIRE(db.create());
         // BOOST_REQUIRE(db.close());
         // BOOST_REQUIRE(db.open());
@@ -105,9 +105,13 @@ chain::block get_fake_genesis() {
 }
 
 void close_everything(MDB_env* e, MDB_dbi& db0, MDB_dbi& db1, MDB_dbi& db2, MDB_dbi& db3, MDB_dbi& db4, MDB_dbi& db5
-#ifdef BITPRIM_DB_NEW_BLOCKS
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL) 
 , MDB_dbi& db6
 #endif
+#ifdef BITPRIM_DB_NEW_FULL
+, MDB_dbi& db7
+#endif
+
 ) {
     mdb_dbi_close(e, db0);
     mdb_dbi_close(e, db1);
@@ -116,15 +120,23 @@ void close_everything(MDB_env* e, MDB_dbi& db0, MDB_dbi& db1, MDB_dbi& db2, MDB_
     mdb_dbi_close(e, db4);
     mdb_dbi_close(e, db5);
 
-#ifdef BITPRIM_DB_NEW_BLOCKS
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     mdb_dbi_close(e, db6);
+#endif
+
+#ifdef BITPRIM_DB_NEW_FULL
+    mdb_dbi_close(e, db7);
 #endif
 
     mdb_env_close(e);
 }
 
 std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi
-#ifdef BITPRIM_DB_NEW_BLOCKS
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+, MDB_dbi
+#endif
+
+#ifdef BITPRIM_DB_NEW_FULL
 , MDB_dbi
 #endif
 > open_dbs() {
@@ -136,10 +148,14 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi
     MDB_dbi dbi_block_header_by_hash_;
     MDB_dbi dbi_reorg_block_;
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_block_db_;
     #endif
     
+    #if defined(BITPRIM_DB_NEW_FULL)
+    MDB_dbi dbi_transaction_db_;
+    #endif
+
     MDB_txn* db_txn;
 
     char block_header_db_name[] = "block_header";
@@ -149,17 +165,22 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi
     char reorg_index_name[] = "reorg_index";
     char reorg_block_name[] = "reorg_block";
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     //Blocks DB
     char block_db_name[] = "blocks";
     #endif
 
+    #ifdef BITPRIM_DB_NEW_FULL
+    char transaction_db_name[] = "transactions";
+    #endif
 
     BOOST_REQUIRE(mdb_env_create(&env_) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_env_set_mapsize(env_, one_hundred_gib) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_env_set_mapsize(env_, db_size) == MDB_SUCCESS);
     
     #ifdef BITPRIM_DB_NEW_BLOCKS
     BOOST_REQUIRE(mdb_env_set_maxdbs(env_, 7) == MDB_SUCCESS);
+    #elif BITPRIM_DB_NEW_FULL
+    BOOST_REQUIRE(mdb_env_set_maxdbs(env_, 8) == MDB_SUCCESS);
     #else
     BOOST_REQUIRE(mdb_env_set_maxdbs(env_, 6) == MDB_SUCCESS);
     #endif
@@ -177,14 +198,20 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi
     BOOST_REQUIRE(mdb_dbi_open(db_txn, reorg_index_name, MDB_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED, &dbi_reorg_index_) == MDB_SUCCESS);
     BOOST_REQUIRE(mdb_dbi_open(db_txn, reorg_block_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_reorg_block_) == MDB_SUCCESS);
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     BOOST_REQUIRE(mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_db_) == MDB_SUCCESS);
+    #endif
+
+    #ifdef BITPRIM_DB_NEW_FULL
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, transaction_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_transaction_db_) == MDB_SUCCESS);
     #endif
 
     BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
 
     #ifdef BITPRIM_DB_NEW_BLOCKS
         return {env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_, dbi_block_db_};
+    #elif BITPRIM_DB_NEW_FULL
+        return {env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_, dbi_block_db_, dbi_transaction_db_};
     #else
         return {env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_};
     #endif
@@ -462,16 +489,18 @@ BOOST_AUTO_TEST_CASE(internal_database__adjust_db_size) {
 
 
 BOOST_AUTO_TEST_CASE(internal_database__open) {
-    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
+    internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
     BOOST_REQUIRE(db.open());
 }
 
 BOOST_AUTO_TEST_CASE(internal_database__insert_genesis) {
     auto const genesis = get_genesis();
 
-    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
+    internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
     BOOST_REQUIRE(db.open());
-    BOOST_REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);  
+    auto res = db.push_block(genesis, 0, 1);
+    std::cout << "aaaaaaaaaaaaaaa" << static_cast<uint32_t>(res) << "\n"; 
+    //BOOST_REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);  
 
     BOOST_REQUIRE(db.get_header(genesis.hash()).first.is_valid());
     BOOST_REQUIRE(db.get_header(genesis.hash()).first.hash() == genesis.hash());
@@ -479,7 +508,7 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_genesis) {
     BOOST_REQUIRE(db.get_header(0).is_valid());
     BOOST_REQUIRE(db.get_header(0).hash() == genesis.hash());
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     BOOST_REQUIRE(db.get_block(0).header().hash() == genesis.hash());
     #endif 
     
@@ -505,7 +534,7 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_genesis) {
 BOOST_AUTO_TEST_CASE(internal_database__insert_duplicate_block) {
     auto const genesis = get_genesis();
 
-    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
+    internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
     BOOST_REQUIRE(db.open());
     auto res = db.push_block(genesis, 0, 1);
     
@@ -520,7 +549,7 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_duplicate_block) {
  BOOST_AUTO_TEST_CASE(internal_database__insert_block_genesis_duplicate) {
     auto const genesis = get_genesis();
 
-    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
+    internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
     BOOST_REQUIRE(db.open());
     auto res = db.push_genesis(genesis);
     
@@ -535,7 +564,7 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_duplicate_block) {
 BOOST_AUTO_TEST_CASE(internal_database__insert_duplicate_block_by_hash) {
     auto const genesis = get_genesis();
 
-    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
+    internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
     BOOST_REQUIRE(db.open());
     auto res = db.push_block(genesis, 0, 1);
     
@@ -552,7 +581,7 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_success_duplicate_coinbase) {
     auto const genesis = get_genesis();
     auto const fake = get_fake_genesis();
 
-    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
+    internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
     BOOST_REQUIRE(db.open());
     auto res = db.push_block(genesis, 0, 1);
     
@@ -566,7 +595,7 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_success_duplicate_coinbase) {
 
 BOOST_AUTO_TEST_CASE(internal_database__key_not_found) {
     auto const spender = get_block("01000000ba8b9cda965dd8e536670f9ddec10e53aab14b20bacad27b9137190000000000190760b278fe7b8565fda3b968b918d5fd997f993b23674c0af3b6fde300b38f33a5914ce6ed5b1b01e32f570201000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b014effffffff0100f2052a01000000434104b68a50eaa0287eff855189f949c1c6e5f58b37c88231373d8a59809cbae83059cc6469d65c665ccfd1cfeb75c6e8e19413bba7fbff9bc762419a76d87b16086eac000000000100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000");
-    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
+    internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
     BOOST_REQUIRE(db.open());
     BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::key_not_found); 
 }
@@ -579,7 +608,7 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_duplicate) {
     // std::cout << encode_hash(orig.hash()) << std::endl;
     // std::cout << encode_hash(spender.hash()) << std::endl;
 
-    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
+    internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
     BOOST_REQUIRE(db.open());
     BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);          
     BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);       
@@ -595,7 +624,7 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_double_spend_block) {
     // std::cout << encode_hash(orig.hash()) << std::endl;
     // std::cout << encode_hash(spender.hash()) << std::endl;
 
-    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
+    internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
     BOOST_REQUIRE(db.open());
     BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);          
     BOOST_REQUIRE(db.push_block(spender0, 1, 1) == result_code::success);       
@@ -608,7 +637,7 @@ BOOST_AUTO_TEST_CASE(internal_database__spend) {
     //80000
     auto const spender = get_block("01000000ba8b9cda965dd8e536670f9ddec10e53aab14b20bacad27b9137190000000000190760b278fe7b8565fda3b968b918d5fd997f993b23674c0af3b6fde300b38f33a5914ce6ed5b1b01e32f570201000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b014effffffff0100f2052a01000000434104b68a50eaa0287eff855189f949c1c6e5f58b37c88231373d8a59809cbae83059cc6469d65c665ccfd1cfeb75c6e8e19413bba7fbff9bc762419a76d87b16086eac000000000100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000");
 
-    internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
+    internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
     BOOST_REQUIRE(db.open());
     BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);  
 
@@ -675,7 +704,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg) {
     auto const spender = get_block(spender_enc);
 
     {
-        internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
+        internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);  
         BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);      
@@ -689,14 +718,21 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg) {
     MDB_dbi dbi_block_header_by_hash_;
     MDB_dbi dbi_reorg_block_;
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_block_db_;
+    #endif
+
+    #if defined(BITPRIM_DB_NEW_FULL)
+    MDB_dbi dbi_transaction_db_;
     #endif
 
     MDB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -706,15 +742,18 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg) {
     check_reorg_block(env_, dbi_reorg_block_, 0, orig_enc);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     #endif 
 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 }
@@ -736,7 +775,7 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_0) {
     using my_clock = dummy_clock<1284613427>;
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);  
         BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);      
@@ -750,14 +789,21 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_0) {
     MDB_dbi dbi_block_header_by_hash_;
     MDB_dbi dbi_reorg_block_;
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_block_db_;
+    #endif
+
+    #if defined(BITPRIM_DB_NEW_FULL)
+    MDB_dbi dbi_transaction_db_;
     #endif
 
     MDB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -768,14 +814,17 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_0) {
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 0);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     #endif 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 }
@@ -796,7 +845,7 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_1) {
     using my_clock = dummy_clock<1284613427>;
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 87, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 87, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);  
         BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);      
@@ -810,14 +859,21 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_1) {
     MDB_dbi dbi_block_header_by_hash_;
     MDB_dbi dbi_reorg_block_;
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_block_db_;
+    #endif
+
+    #if defined(BITPRIM_DB_NEW_FULL)
+    MDB_dbi dbi_transaction_db_;
     #endif
 
     MDB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -827,14 +883,17 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_1) {
     check_reorg_block(env_, dbi_reorg_block_, 0, orig_enc);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     #endif 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 }
@@ -856,7 +915,7 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_2) {
     using my_clock = dummy_clock<1284613427 + 600>;
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);  
         BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);      
@@ -869,14 +928,21 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_2) {
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
     MDB_dbi dbi_reorg_block_;
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_block_db_;
+    #endif
+
+    #if defined(BITPRIM_DB_NEW_FULL)
+    MDB_dbi dbi_transaction_db_;
     #endif
 
     MDB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -887,14 +953,17 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_2) {
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 1);
     // check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 }
@@ -923,7 +992,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index) {
     auto const spender0 = get_block("01000000944bb801c604dda3d51758f292afdca8d973288434c8fe4bf0b5982d000000008a7d204ffe05282b05f280459401b59be41b089cefc911f4fb5641f90309d942b929a149ffff001d1b8d847f0301000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0804ffff001d02c500ffffffff0100f2052a01000000434104f4af426e464d972012256f4cbe5df528aa99b1ceb489968a56cf6b295e6fad1473be89f66fbd3d16adf3dfba7c5253517d11d1d188fe858720497c4fc0a1ef9dac00000000010000000465dabdbdb83e9820e4f666f3634d88308909789f7ae29e730812784a96485e3c000000004948304502204c52c2301dcc3f6af7a3ef2ad118185ca2d52a7ae90013332ad53732a085b8d4022100f074ab99e77d5d4c54eb6bfc82c42a094d7d7eaf632d52897ef058c617a2bb2301ffffffffb7404d6a9c451a9f527a7fbeb54839c2bca2eac7b138cdd700be19d733efa0fc000000004847304402206c55518aa596824d1e760afcfeb7b0103a1a82ea8dcd4c3474becc8246ba823702205009cbc40affa3414f9a139f38a86f81a401193f759fb514b9b1d4e2e49f82a401ffffffffcc07817ab589551d698ba7eb2a6efd6670d6951792ad52e2bd5832bf2f4930ec0000000049483045022100b485b4daa4af75b7b34b4f2338e7b96809c75fab5577905ade0789c7f821a69e022010d73d2a3c7fcfc6db911dead795b0aa7d5448447ad5efc7e516699955a18ac801fffffffff61fefef8ee758b273ee64e1bf5c07485dd74cd065a5ce0d59827e0700cad0d9000000004a493046022100bc6e89ee580d1c721b15c36d0a1218c9e78f6f7537616553341bbd1199fe615a02210093062f2c1a1c87f55b710011976a03dff57428e38dd640f6fbdef0fa52ad462d01ffffffff0100c817a80400000043410408998c08bbe6bba756e9b864722fe76ca403929382db2b120f9f621966b00af48f4b014b458bccd4f2acf63b1487ecb9547bc87bdecb08e9c4d08c138c76439aac00000000010000000115327dc99375fc1fdc02e15394369daa6e23ad4dc27e7c1c4af21606add5b068000000004a49304602210086b55b7f2fa5395d1e90a85115ada930afa01b86116d6bbeeecd8e2b97eefbac022100d653846d378845df2ced4b4923dcae4b6ddd5e8434b25e1602928235054c8d5301ffffffff0100f2052a01000000434104b68b035858a00051ca70dd4ba297168d9a3720b642c2e0cd08846bfbb144233b11b24c4b8565353b579bd7109800e42a1fc1e20dbdfbba6a12d0089aab313181ac00000000");
 
     {
-        internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
+        internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.push_block(b0, 0, 1) == result_code::success);    
         BOOST_REQUIRE(db.push_block(b1, 1, 1) == result_code::success);              
@@ -942,13 +1011,20 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index) {
     MDB_dbi dbi_block_header_by_hash_;
     MDB_dbi dbi_reorg_block_;
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_block_db_;
     #endif
 
+    #if defined(BITPRIM_DB_NEW_FULL)
+    MDB_dbi dbi_transaction_db_;
+    #endif
+
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -958,7 +1034,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index) {
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "d9d0ca00077e82590dcea565d04cd75d48075cbfe164ee73b258e78eefef1ff6", 0);
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "68b0d5ad0616f24a1c7c7ec24dad236eaa9d369453e102dc1ffc7593c97d3215", 0);
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -977,8 +1053,11 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index) {
     check_index_and_pool(env_, dbi_reorg_index_, dbi_reorg_pool_);
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 }
@@ -1016,7 +1095,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index2) {
 
 
     {
-        internal_database db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
+        internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.push_block(b0, 0, 1) == result_code::success);       
         BOOST_REQUIRE(db.push_block(b1, 1, 1) == result_code::success);
@@ -1037,13 +1116,20 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index2) {
     MDB_dbi dbi_block_header_by_hash_;
     MDB_dbi dbi_reorg_block_;
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_block_db_;
     #endif
 
+    #if defined(BITPRIM_DB_NEW_FULL)
+    MDB_dbi dbi_transaction_db_;
+    #endif
+
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -1056,7 +1142,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index2) {
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "0437cd7f8525ceed2324359c2d0ba26006d92d856a9c20fa0241106ee5a597c9", 0);
 
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -1077,8 +1163,11 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index2) {
     check_index_and_pool(env_, dbi_reorg_index_, dbi_reorg_pool_);
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 }
@@ -1117,13 +1206,19 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     MDB_dbi dbi_reorg_block_;
     MDB_txn* db_txn;
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_block_db_;
     #endif
 
+
+    #if defined(BITPRIM_DB_NEW_FULL)
+    MDB_dbi dbi_transaction_db_;
+    #endif
+
+
     // Insert the First Block
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         //State A ------------------------------------------------------------
@@ -1134,13 +1229,16 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     #endif
 
@@ -1149,14 +1247,17 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
     // Insert the Spender Block
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         //State B ------------------------------------------------------------
@@ -1186,8 +1287,11 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -1199,20 +1303,23 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 0);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,1);
     #endif
 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
     // Remove the Spender Block
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         //State C ------------------------------------------------------------
@@ -1243,8 +1350,11 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
 
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -1253,21 +1363,24 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
     
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db_doesnt_exists(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,0);
     #endif
 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
     // Insert the Spender Block, again
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         //State B ------------------------------------------------------------
@@ -1297,8 +1410,11 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -1312,14 +1428,17 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
     
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 }
@@ -1356,13 +1475,17 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
     MDB_dbi dbi_reorg_block_;
     MDB_txn* db_txn;
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_block_db_;
+    #endif
+
+    #if defined(BITPRIM_DB_NEW_FULL)
+    MDB_dbi dbi_transaction_db_;
     #endif
 
     // Insert the First Block
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, db_size);
         BOOST_REQUIRE(db.open());
 
         //State A ------------------------------------------------------------
@@ -1373,8 +1496,11 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -1383,19 +1509,22 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     #endif
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
     
     // Insert the Spender Block
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, db_size);
         BOOST_REQUIRE(db.open());
 
         //State B ------------------------------------------------------------
@@ -1425,8 +1554,11 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -1438,20 +1570,23 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 0);
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 1);
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
     // Remove the Spender Block
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, db_size);
         BOOST_REQUIRE(db.open());
 
         //State C ------------------------------------------------------------
@@ -1460,20 +1595,26 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
@@ -1573,14 +1714,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_block_db_;
+    #endif
+
+    #if defined(BITPRIM_DB_NEW_FULL)
+    MDB_dbi dbi_transaction_db_;
     #endif
 
     MDB_txn* db_txn;
     
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         BOOST_REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);  
@@ -1594,8 +1739,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
 
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -1608,7 +1756,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 6);
 
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -1619,14 +1767,17 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
 
     // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
     // ------------------------------------------------------------------------------------
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         BOOST_REQUIRE(db.push_block(spender80000, 6, 1) == result_code::success);  
@@ -1634,8 +1785,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -1647,7 +1801,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 7);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 7);
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -1659,14 +1813,17 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
 
     // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
     // ------------------------------------------------------------------------------------
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         BOOST_REQUIRE(db.push_block(spender80000b, 7, 1) == result_code::success);  
@@ -1674,8 +1831,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -1687,7 +1847,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 8);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 8);
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -1699,15 +1859,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     #endif
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
 
     // ------------------------------------------------------------------------------------
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         BOOST_REQUIRE(db.push_block(spender80000c, 8, 1) == result_code::success);  
@@ -1715,8 +1878,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -1729,7 +1895,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 9);
     
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -1742,15 +1908,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     #endif
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
 
     // ------------------------------------------------------------------------------------
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         BOOST_REQUIRE(db.push_block(spender80000d, 9, 1) == result_code::success);  
@@ -1758,8 +1927,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -1771,7 +1943,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 10);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 10);
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -1785,15 +1957,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     #endif
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
 
     // ------------------------------------------------------------------------------------
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         BOOST_REQUIRE(db.push_block(spender80000e, 10, 1) == result_code::success);  
@@ -1801,8 +1976,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -1815,7 +1993,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 11);
     
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -1830,20 +2008,26 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     #endif
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -1852,7 +2036,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
     
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -1868,20 +2052,26 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 11, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 11, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -1889,7 +2079,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -1905,20 +2095,26 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 10, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 10, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -1926,7 +2122,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -1942,20 +2138,26 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 5, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 5, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -1963,7 +2165,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -1979,20 +2181,26 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 4, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 4, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -2000,7 +2208,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 4);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 4);
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2016,20 +2224,26 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -2037,7 +2251,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2053,8 +2267,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
@@ -2131,15 +2348,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_block_db_;
     #endif
 
+    #if defined(BITPRIM_DB_NEW_FULL)
+    MDB_dbi dbi_transaction_db_;
+    #endif
 
     MDB_txn* db_txn;
     
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         BOOST_REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);  
@@ -2153,8 +2373,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
 
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -2167,7 +2390,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 6);
 
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2180,8 +2403,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
 
     // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
@@ -2190,7 +2416,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
 
     // ------------------------------------------------------------------------------------
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         BOOST_REQUIRE(db.push_block(spender80000, 6, 1) == result_code::success);  
@@ -2198,8 +2424,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -2214,7 +2443,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 7);
     
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2226,15 +2455,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
 
     // ------------------------------------------------------------------------------------
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         BOOST_REQUIRE(db.push_block(spender80000b, 7, 1) == result_code::success);  
@@ -2242,8 +2474,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -2259,7 +2494,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 8);
 
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2271,8 +2506,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
@@ -2283,14 +2521,17 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     // ------------------------------------------------------------------------------------
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -2304,7 +2545,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
 
 
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2316,20 +2557,26 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 11, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 11, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -2342,7 +2589,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2354,20 +2601,26 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 10, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 10, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -2380,7 +2633,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2392,20 +2645,26 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 5, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 5, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -2418,7 +2677,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2430,20 +2689,26 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 4, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 4, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -2456,7 +2721,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
     
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2469,20 +2734,26 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -2495,7 +2766,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
     
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2508,21 +2779,27 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -2536,7 +2813,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
 
 
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2548,8 +2825,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
@@ -2624,14 +2904,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_block_db_;
+    #endif
+
+    #if defined(BITPRIM_DB_NEW_FULL)
+    MDB_dbi dbi_transaction_db_;
     #endif
 
     MDB_txn* db_txn;
     
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         BOOST_REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);  
@@ -2645,8 +2929,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
 
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -2659,7 +2946,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 6);
 
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2671,15 +2958,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
 
     // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
 
     // ------------------------------------------------------------------------------------
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         BOOST_REQUIRE(db.push_block(spender80000b, 6, 1) == result_code::success);  
@@ -2687,8 +2977,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -2703,7 +2996,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 7);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 7);
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2714,15 +3007,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     #endif
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
 
     // ------------------------------------------------------------------------------------
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, one_hundred_gib); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
         BOOST_REQUIRE(db.open());
 
         BOOST_REQUIRE(db.push_block(spender80000, 7, 1) == result_code::success);  
@@ -2730,8 +3026,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -2746,7 +3045,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 8);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 8);
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2758,8 +3057,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
@@ -2768,14 +3070,17 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     // ------------------------------------------------------------------------------------
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -2787,7 +3092,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 1);
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2799,21 +3104,27 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -2825,7 +3136,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 0);
     BOOST_REQUIRE(! db_exists_height(env_, dbi_reorg_block_, 7));
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2837,8 +3148,11 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     #endif
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
@@ -2846,14 +3160,14 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
 
 BOOST_AUTO_TEST_CASE(internal_database__prune_empty_blockchain) {
     using my_clock = dummy_clock<1284613427>;
-    internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 4, one_hundred_gib);
+    internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 4, db_size);
     BOOST_REQUIRE(db.open());
     BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
 }
 
 BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool) {
     using my_clock = dummy_clock<1284613427>;
-    internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1000, one_hundred_gib);
+    internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1000, db_size);
     BOOST_REQUIRE(db.open());
     BOOST_REQUIRE(db.push_block(get_genesis(), 0, 1) == result_code::success);
     BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
@@ -2862,7 +3176,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool) {
 
 BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool_2) {
     using my_clock = dummy_clock<1284613427>;
-    internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, one_hundred_gib);
+    internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, db_size);
     BOOST_REQUIRE(db.open());
     BOOST_REQUIRE(db.push_block(get_genesis(), 0, 1) == result_code::success);
     BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
@@ -2871,7 +3185,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool_2) {
 BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool_3) {
     using my_clock = dummy_clock<1284613427>;
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 10000000, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 10000000, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.push_block(get_genesis(), 0, 1) == result_code::success);
 
@@ -2912,14 +3226,20 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool_3) {
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_block_db_;
     #endif
 
+    #if defined(BITPRIM_DB_NEW_FULL)
+    MDB_dbi dbi_transaction_db_;
+    #endif
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
+    #endif
+    #ifdef BITPRIM_DB_NEW_FULL
+    , dbi_transaction_db_
     #endif
     ) = open_dbs();
 
@@ -2928,20 +3248,23 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool_3) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 3);
     
     
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
     #endif
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
+    #endif
+     #ifdef BITPRIM_DB_NEW_FULL
+        , dbi_transaction_db_
     #endif
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 3, one_hundred_gib);
+        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 3, db_size);
         BOOST_REQUIRE(db.open());
         BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
     }
