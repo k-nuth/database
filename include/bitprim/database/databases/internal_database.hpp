@@ -822,7 +822,7 @@ private:
 #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
             res = insert_block(block, height, db_txn);        
             if (! succeed(res)) {
-                std::cout << "ccc" << static_cast<uint32_t>(res) << "\n";
+                //std::cout << "ccc" << static_cast<uint32_t>(res) << "\n";
                 return res;
             }
 #endif
@@ -840,18 +840,18 @@ private:
         auto fixed = utxo_entry::to_data_fixed(height, median_time_past, true);                                     //TODO(fernando): podría estar afuera de la DBTx
         auto res0 = insert_outputs_error_treatment(height, fixed, coinbase.hash(), coinbase.outputs(), db_txn);     //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
         if ( ! succeed(res0)) {
-            std::cout << "aaaaaaaaaaaaaaa" << static_cast<uint32_t>(res0) << "\n";
+            //std::cout << "aaaaaaaaaaaaaaa" << static_cast<uint32_t>(res0) << "\n";
             return res0;
         }
 
         fixed.back() = 0;   //The last byte equal to 0 means NonCoinbaseTx    
         res = push_transactions_non_coinbase(height, fixed, txs.begin() + 1, txs.end(), insert_reorg, db_txn);
         if (res != result_code::success) {
-            std::cout << "bbb" << static_cast<uint32_t>(res) << "\n";
+            //std::cout << "bbb" << static_cast<uint32_t>(res) << "\n";
             return res;
         }
 
-        std::cout << "ddd" << static_cast<uint32_t>(res0) << "\n";
+        //std::cout << "ddd" << static_cast<uint32_t>(res0) << "\n";
         
         if (res == result_code::success_duplicate_coinbase)
             return res;

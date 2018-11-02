@@ -341,6 +341,30 @@ void check_blocks_db(MDB_env* env_, MDB_dbi& dbi_blocks_db_, MDB_dbi& dbi_block_
     BOOST_REQUIRE(block.is_valid());
 }
 
+
+void check_transactions_db_just_existence(MDB_env* env_, MDB_dbi& dbi_transaction_db_, hash_digest& hash) {
+    MDB_txn* db_txn;
+
+    MDB_val key {hash.size(), hash.data()};
+    MDB_val value;
+
+    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_get(db_txn, dbi_transaction_db_, &key, &value) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+}
+
+void check_transactions_db_doesnt_exists(MDB_env* env_, MDB_dbi& dbi_transaction_db_, hash_digest& hash) {
+    MDB_txn* db_txn;
+
+    MDB_val key {hash.size(), hash.data()};
+    MDB_val value;
+
+    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_get(db_txn, dbi_transaction_db_, &key, &value) == MDB_NOTFOUND);
+    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+}
+
+
 #endif
 
 
