@@ -733,7 +733,7 @@ private:
         auto key_arr = tx.hash();                                    //TODO(fernando): podría estar afuera de la DBTx
         MDB_val key {key_arr.size(), key_arr.data()};
                 
-        auto value_arr = tx.to_data();                                //TODO(fernando): podría estar afuera de la DBTx
+        auto value_arr = tx.to_data(true,true);                                //TODO(fernando): podría estar afuera de la DBTx
         MDB_val value {value_arr.size(), value_arr.data()}; 
 
         auto res = mdb_put(db_txn, dbi_transaction_db_, &key, &value, MDB_NOOVERWRITE);
@@ -752,24 +752,40 @@ private:
 
     template <typename I>
     result_code insert_transactions(I f, I l, MDB_txn* db_txn) {
-        // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
-
+    
         while (f != l) {
             auto const& tx = *f;
             auto res = insert_transaction(tx, db_txn);
-            if (res != result_code::success) {
+            if (res != result_code::success) {    
                 return res;
             }
             ++f;
         }
+
+        return result_code::success;
+    }
+
+
+    data_chunk serialize_txs(chain::block const& block) {
+        
+        data_chunk ret;
+        auto txs = block.transactions();
+        ret.reserve(txs.size() * libbitcoin::hash_size);
+
+        for (auto const& tx : txs) {
+            auto hash = tx.hash();
+            ret.insert(ret.end(), hash.begin(), hash.end());
+        }
+        
+        return ret;
     }
 
     result_code insert_block(chain::block const& block, uint32_t height, MDB_txn* db_txn) {
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
     
         MDB_val key {sizeof(height), &height};
-        auto hashes = block.to_hashes(true);
-        MDB_val value {hashes.size() * libbitcoin::hash_size, hashes.data()};
+        auto hashes = serialize_txs(block);
+        MDB_val value {hashes.size(), hashes.data()};
 
         auto res_block = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_NOOVERWRITE);
         if (res_block == MDB_KEYEXIST) {
@@ -784,11 +800,11 @@ private:
 
         auto const& txs = block.transactions();
         auto res = insert_transactions(txs.begin(), txs.end(), db_txn);
-        if (res != result_code::success) {
-            return res;
+        if (res == result_code::duplicated_key) {
+            return result_code::success_duplicate_coinbase;
         }
-
-        return result_code::success;
+        
+        return res;
     }
 
 
@@ -803,6 +819,14 @@ private:
             return res;
         }
 
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+            res = insert_block(block, height, db_txn);        
+            if (! succeed(res)) {
+                std::cout << "ccc" << static_cast<uint32_t>(res) << "\n";
+                return res;
+            }
+#endif
+
         if ( insert_reorg ) {
             res = push_block_reorg(block, height, db_txn);
             if (res != result_code::success) {
@@ -816,22 +840,22 @@ private:
         auto fixed = utxo_entry::to_data_fixed(height, median_time_past, true);                                     //TODO(fernando): podría estar afuera de la DBTx
         auto res0 = insert_outputs_error_treatment(height, fixed, coinbase.hash(), coinbase.outputs(), db_txn);     //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
         if ( ! succeed(res0)) {
+            std::cout << "aaaaaaaaaaaaaaa" << static_cast<uint32_t>(res0) << "\n";
             return res0;
         }
 
         fixed.back() = 0;   //The last byte equal to 0 means NonCoinbaseTx    
         res = push_transactions_non_coinbase(height, fixed, txs.begin() + 1, txs.end(), insert_reorg, db_txn);
         if (res != result_code::success) {
+            std::cout << "bbb" << static_cast<uint32_t>(res) << "\n";
             return res;
         }
 
-        #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
-        res = insert_block(block, height, db_txn);        
-        if (res != result_code::success) {
+        std::cout << "ddd" << static_cast<uint32_t>(res0) << "\n";
+        
+        if (res == result_code::success_duplicate_coinbase)
             return res;
-        }
-        #endif
-
+        
         return res0;
     }
 
@@ -994,9 +1018,51 @@ private:
         return result_code::success;
     }
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+
+    #if defined(BITPRIM_DB_NEW_FULL)
+    result_code remove_transactions(uint32_t height, MDB_txn* db_txn) {
+        MDB_val key {sizeof(height), &height};
+
+        if (mdb_get(db_txn, dbi_block_db_, &key, &value) != MDB_SUCCESS) {
+            return result_code::other;
+        }
+
+        auto n = value.mv_size;
+        auto f = static_cast<uint8_t*>(value.mv_data); 
+        //precondition: mv_size es multiplo de 32
+        
+        while (n != 0) {
+            hash_digest h;
+            std::copy(f, f + libbitcoin::hash_size, h.data());
+            
+            MDB_val key_tx {h.size(), h.data()};
+            auto res = mdb_del(db_txn, dbi_transaction_db_, &key_tx, NULL);
+            if (res == MDB_NOTFOUND) {
+                LOG_INFO(LOG_DATABASE) << "Key not found deleting transaction DB in LMDB [remove_blocks_db] - mdb_del: " << res;
+                return result_code::key_not_found;
+            }
+            if (res != MDB_SUCCESS) {
+                LOG_INFO(LOG_DATABASE) << "Error deleting transaction DB in LMDB [remove_blocks_db] - mdb_del: " << res;
+                return result_code::other;
+            }
+        
+            n -= libbitcoin::hash_size;
+            f += libbitcoin::hash_size;
+        }
+
+        return result_code::success;
+    }
+
+    #endif
+
+    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    
     result_code remove_blocks_db(uint32_t height, MDB_txn* db_txn) {
 
+        #if defined(BITPRIM_DB_NEW_FULLTprim)
+        remove_transactions(height,db_txn);
+        #endif
+        
         MDB_val key {sizeof(height), &height};
         auto res = mdb_del(db_txn, dbi_block_db_, &key, NULL);
         if (res == MDB_NOTFOUND) {
@@ -1044,8 +1110,8 @@ private:
             return res;
         }
 
-        //TODO add transactions removal
-        #ifdef BITPRIM_DB_NEW_BLOCKS
+        
+        #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         res = remove_blocks_db(height, db_txn);
         if (res != result_code::success) {
             return res;
@@ -1085,6 +1151,7 @@ private:
     #elif defined(BITPRIM_DB_NEW_FULL)
 
     chain::transaction get_transaction(hash_digest const& hash, MDB_txn* db_txn) const {
+        
         MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
         MDB_val value;
 
@@ -1093,15 +1160,17 @@ private:
         }
 
         auto data = db_value_to_data_chunk(value);
-        auto res = chain::transaction::factory_from_data(data);
+        auto res = chain::transaction::factory_from_data(data,true,true);
+        return res;
     }
+
 
     chain::block get_block(uint32_t height, MDB_txn* db_txn) const {
         MDB_val key {sizeof(height), &height};
         MDB_val value;
 
         auto header = get_header(height, db_txn);
-        if (!header.is_valid())
+        if ( ! header.is_valid() )
         {
             return chain::block{};
         }
@@ -1115,23 +1184,24 @@ private:
         //precondition: mv_size es multiplo de 32
         
         chain::transaction::list tx_list;
-        tx_list.reserve(n/libbitcoin::hash_size);
+        tx_list.reserve(n / libbitcoin::hash_size);
         
         while (n != 0) {
             hash_digest h;
             std::copy(f, f + libbitcoin::hash_size, h.data());
             
             auto tx = get_transaction(h, db_txn);
-            if (!tx.is_valid()) {
+            if ( ! tx.is_valid() ) {
                 return chain::block{};
             }
-            tx_list.push_back(tx);
+
+            tx_list.push_back(std::move(tx));
 
             n -= libbitcoin::hash_size;
             f += libbitcoin::hash_size;
         }
         
-        return chain::block{header, tx_list};
+        return chain::block{header, std::move(tx_list)};
     }
 
     #endif

@@ -269,6 +269,8 @@ void check_reorg_output_doesnt_exists(MDB_env* env_, MDB_dbi& dbi_reorg_pool_, s
     BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
 }
 
+#if defined(BITPRIM_DB_NEW_BLOCKS)
+
 void check_blocks_db(MDB_env* env_, MDB_dbi& dbi_blocks_db_, uint32_t height) {
     MDB_txn* db_txn;
 
@@ -284,6 +286,64 @@ void check_blocks_db(MDB_env* env_, MDB_dbi& dbi_blocks_db_, uint32_t height) {
 
     BOOST_REQUIRE(block.is_valid());
 }
+
+#endif
+
+#if defined(BITPRIM_DB_NEW_FULL)
+
+void check_blocks_db(MDB_env* env_, MDB_dbi& dbi_blocks_db_, MDB_dbi& dbi_block_header_, MDB_dbi& dbi_transaction_db_, uint32_t height) {
+    MDB_txn* db_txn;
+ 
+    MDB_val key {sizeof(height), &height};
+    MDB_val value;
+
+    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
+    
+    BOOST_REQUIRE(mdb_get(db_txn, dbi_block_header_, &key, &value) == MDB_SUCCESS);      
+
+    data_chunk data_header {static_cast<uint8_t*>(value.mv_data), static_cast<uint8_t*>(value.mv_data) + value.mv_size};
+    auto header = chain::header::factory_from_data(data_header);
+    BOOST_REQUIRE(header.is_valid());
+
+    BOOST_REQUIRE(mdb_get(db_txn, dbi_blocks_db_, &key, &value) == MDB_SUCCESS);
+    
+    auto n = value.mv_size;
+    auto f = static_cast<uint8_t*>(value.mv_data); 
+    //precondition: mv_size es multiplo de 32
+    
+    chain::transaction::list tx_list;
+    tx_list.reserve(n / libbitcoin::hash_size);
+    
+    while (n != 0) {
+        hash_digest h;
+        std::copy(f, f + libbitcoin::hash_size, h.data());
+        
+        MDB_val key_tx {h.size(), const_cast<hash_digest&>(h).data()};
+        MDB_val value_tx;
+
+        BOOST_REQUIRE(mdb_get(db_txn, dbi_transaction_db_, &key_tx, &value_tx) == MDB_SUCCESS);
+           
+        data_chunk data_tx {static_cast<uint8_t*>(value_tx.mv_data), static_cast<uint8_t*>(value_tx.mv_data) + value_tx.mv_size};
+        auto tx = chain::transaction::factory_from_data(data_tx,true,true);
+        
+        BOOST_REQUIRE(tx.is_valid());
+
+        tx_list.push_back(std::move(tx));
+
+        n -= libbitcoin::hash_size;
+        f += libbitcoin::hash_size;
+    }
+        
+    chain::block block{header, std::move(tx_list)};
+    
+    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+
+    BOOST_REQUIRE(block.is_valid());
+}
+
+#endif
+
+
 
 void check_blocks_db_just_existence(MDB_env* env_, MDB_dbi& dbi_blocks_db_, uint32_t height) {
     MDB_txn* db_txn;
@@ -498,9 +558,9 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_genesis) {
 
     internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
     BOOST_REQUIRE(db.open());
-    auto res = db.push_block(genesis, 0, 1);
-    std::cout << "aaaaaaaaaaaaaaa" << static_cast<uint32_t>(res) << "\n"; 
-    //BOOST_REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);  
+    //auto res = db.push_block(genesis, 0, 1);
+    //std::cout << "aaaaaaaaaaaaaaa" << static_cast<uint32_t>(res) << "\n"; 
+    BOOST_REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);  
 
     BOOST_REQUIRE(db.get_header(genesis.hash()).first.is_valid());
     BOOST_REQUIRE(db.get_header(genesis.hash()).first.hash() == genesis.hash());
@@ -726,7 +786,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg) {
     MDB_dbi dbi_transaction_db_;
     #endif
 
-    MDB_txn* db_txn;
+    //MDB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
@@ -742,10 +802,13 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg) {
     check_reorg_block(env_, dbi_reorg_block_, 0, orig_enc);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    #endif 
+#if defined(BITPRIM_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, 1);
+#elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_ ,  0);
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
+#endif 
 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
@@ -797,7 +860,7 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_0) {
     MDB_dbi dbi_transaction_db_;
     #endif
 
-    MDB_txn* db_txn;
+    //MDB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
@@ -814,10 +877,13 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_0) {
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 0);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    #endif 
+#if defined(BITPRIM_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, 1);
+#elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_ ,  0);
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
+#endif 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
@@ -867,7 +933,7 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_1) {
     MDB_dbi dbi_transaction_db_;
     #endif
 
-    MDB_txn* db_txn;
+    //MDB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
@@ -883,10 +949,13 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_1) {
     check_reorg_block(env_, dbi_reorg_block_, 0, orig_enc);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    #endif 
+ #if defined(BITPRIM_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, 1);
+#elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_ ,  0);
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
+#endif 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
@@ -936,7 +1005,7 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_2) {
     MDB_dbi dbi_transaction_db_;
     #endif
 
-    MDB_txn* db_txn;
+    //MDB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     , dbi_block_db_
@@ -953,10 +1022,13 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_2) {
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 1);
     // check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    #endif
+#if defined(BITPRIM_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, 1);
+#elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_ ,  0);
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
+#endif 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
@@ -1003,7 +1075,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index) {
     }   //close() implicit
 
 
-    MDB_env* env_; MDB_txn* db_txn;
+    MDB_env* env_; 
+    //MDB_txn* db_txn;
     MDB_dbi dbi_utxo_;
     MDB_dbi dbi_reorg_pool_;
     MDB_dbi dbi_reorg_index_;
@@ -1034,14 +1107,21 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index) {
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "d9d0ca00077e82590dcea565d04cd75d48075cbfe164ee73b258e78eefef1ff6", 0);
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "68b0d5ad0616f24a1c7c7ec24dad236eaa9d369453e102dc1ffc7593c97d3215", 0);
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    #endif
+#if defined(BITPRIM_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, 5);
+#elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_ ,  0);
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 5);
+#endif 
 
 
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
@@ -1108,7 +1188,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index2) {
     }   //close() implicit
 
 
-    MDB_env* env_; MDB_txn* db_txn;
+    MDB_env* env_; 
+    //MDB_txn* db_txn;
     MDB_dbi dbi_utxo_;
     MDB_dbi dbi_reorg_pool_;
     MDB_dbi dbi_reorg_index_;
@@ -1142,16 +1223,27 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index2) {
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "0437cd7f8525ceed2324359c2d0ba26006d92d856a9c20fa0241106ee5a597c9", 0);
 
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-    #endif
+    
+#if defined(BITPRIM_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, 7);
+#elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_ ,  0);
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 7);
+#endif 
+
 
     // BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 6);
     // BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 6);
@@ -1204,7 +1296,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
     MDB_dbi dbi_reorg_block_;
-    MDB_txn* db_txn;
+    //MDB_txn* db_txn;
     
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_block_db_;
@@ -1238,9 +1330,12 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     ) = open_dbs();
 
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
-    check_blocks_db(env_, dbi_block_db_,0);
-    #endif
+#if defined(BITPRIM_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_, 0);
+#elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 0);
+#endif 
+
 
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
@@ -1303,9 +1398,12 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 0);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
-    check_blocks_db(env_, dbi_block_db_,1);
-    #endif
+#if defined(BITPRIM_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_, 1);
+#elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
+#endif 
+
 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
@@ -1363,9 +1461,12 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
     
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    #if defined(BITPRIM_DB_NEW_BLOCKS)
     check_blocks_db_doesnt_exists(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,0);
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db_doesnt_exists(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     #endif
 
 
@@ -1428,9 +1529,12 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
     
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
@@ -1473,7 +1577,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
     MDB_dbi dbi_reorg_block_;
-    MDB_txn* db_txn;
+    //MDB_txn* db_txn;
     
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_block_db_;
@@ -1509,8 +1613,10 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     #endif
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
@@ -1570,9 +1676,12 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 0);
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 1);
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    #if defined(BITPRIM_DB_NEW_BLOCKS)
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_,1);
     #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
@@ -1604,9 +1713,12 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
     ) = open_dbs();
 
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_,0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_,1);
     #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
@@ -1722,7 +1834,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     MDB_dbi dbi_transaction_db_;
     #endif
 
-    MDB_txn* db_txn;
+    //MDB_txn* db_txn;
     
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
@@ -1756,13 +1868,20 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 6);
 
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
     check_blocks_db(env_, dbi_block_db_,3);
     check_blocks_db(env_, dbi_block_db_,4);
     check_blocks_db(env_, dbi_block_db_,5);
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
     #endif
 
     // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
@@ -1801,7 +1920,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 7);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 7);
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -1809,6 +1928,14 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     check_blocks_db(env_, dbi_block_db_,4);
     check_blocks_db(env_, dbi_block_db_,5);
     check_blocks_db(env_, dbi_block_db_,6);
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
     #endif
 
     // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
@@ -1847,7 +1974,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 8);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 8);
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -1856,6 +1984,15 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     check_blocks_db(env_, dbi_block_db_,5);
     check_blocks_db(env_, dbi_block_db_,6);
     check_blocks_db(env_, dbi_block_db_,7);
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
     #endif
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
@@ -1895,7 +2032,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 9);
     
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -1905,6 +2042,16 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     check_blocks_db(env_, dbi_block_db_,6);
     check_blocks_db(env_, dbi_block_db_,7);
     check_blocks_db(env_, dbi_block_db_,8);
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 8);
     #endif
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
@@ -1943,7 +2090,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 10);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 10);
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -1954,8 +2102,19 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     check_blocks_db(env_, dbi_block_db_,7);
     check_blocks_db(env_, dbi_block_db_,8);
     check_blocks_db(env_, dbi_block_db_,9);
-    #endif
-    
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 8);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 9);
+    #endif    
+
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
@@ -1992,8 +2151,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 11);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 11);
     
-    
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2005,7 +2163,20 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     check_blocks_db(env_, dbi_block_db_,8);
     check_blocks_db(env_, dbi_block_db_,9);
     check_blocks_db(env_, dbi_block_db_,10);
-    #endif
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 8);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 9);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 10);
+    #endif    
+    
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
@@ -2036,7 +2207,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
     
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2048,7 +2220,19 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     check_blocks_db(env_, dbi_block_db_,8);
     check_blocks_db(env_, dbi_block_db_,9);
     check_blocks_db(env_, dbi_block_db_,10);
-    #endif
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 8);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 9);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 10);
+    #endif    
     
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
@@ -2079,7 +2263,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2091,7 +2275,19 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     check_blocks_db(env_, dbi_block_db_,8);
     check_blocks_db(env_, dbi_block_db_,9);
     check_blocks_db(env_, dbi_block_db_,10);
-    #endif
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 8);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 9);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 10);
+    #endif    
     
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
@@ -2122,7 +2318,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2134,7 +2330,19 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     check_blocks_db(env_, dbi_block_db_,8);
     check_blocks_db(env_, dbi_block_db_,9);
     check_blocks_db(env_, dbi_block_db_,10);
-    #endif
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 8);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 9);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 10);
+    #endif    
     
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
@@ -2165,7 +2373,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2177,7 +2385,19 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     check_blocks_db(env_, dbi_block_db_,8);
     check_blocks_db(env_, dbi_block_db_,9);
     check_blocks_db(env_, dbi_block_db_,10);
-    #endif
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 8);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 9);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 10);
+    #endif    
     
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
@@ -2208,7 +2428,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 4);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 4);
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2220,8 +2440,19 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     check_blocks_db(env_, dbi_block_db_,8);
     check_blocks_db(env_, dbi_block_db_,9);
     check_blocks_db(env_, dbi_block_db_,10);
-    #endif
-    
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 8);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 9);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 10);
+    #endif    
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
@@ -2251,7 +2482,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2263,8 +2494,19 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     check_blocks_db(env_, dbi_block_db_,8);
     check_blocks_db(env_, dbi_block_db_,9);
     check_blocks_db(env_, dbi_block_db_,10);
-    #endif
-    
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 8);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 9);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 10);
+    #endif    
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
@@ -2356,7 +2598,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     MDB_dbi dbi_transaction_db_;
     #endif
 
-    MDB_txn* db_txn;
+    //MDB_txn* db_txn;
     
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
@@ -2390,14 +2632,21 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 6);
 
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
     check_blocks_db(env_, dbi_block_db_,3);
     check_blocks_db(env_, dbi_block_db_,4);
     check_blocks_db(env_, dbi_block_db_,5);
-    #endif
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    #endif    
     
 
 
@@ -2443,7 +2692,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 7);
     
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2451,7 +2701,15 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     check_blocks_db(env_, dbi_block_db_,4);
     check_blocks_db(env_, dbi_block_db_,5);
     check_blocks_db(env_, dbi_block_db_,6);
-    #endif
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    #endif    
     
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
@@ -2494,7 +2752,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 8);
 
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2503,7 +2762,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     check_blocks_db(env_, dbi_block_db_,5);
     check_blocks_db(env_, dbi_block_db_,6);
     check_blocks_db(env_, dbi_block_db_,7);
-    #endif
+    
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    
+    #endif    
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
@@ -2545,7 +2815,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
 
 
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2554,7 +2824,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     check_blocks_db(env_, dbi_block_db_,5);
     check_blocks_db(env_, dbi_block_db_,6);
     check_blocks_db(env_, dbi_block_db_,7);
-    #endif
+    
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    
+    #endif    
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
@@ -2589,7 +2870,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2598,7 +2879,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     check_blocks_db(env_, dbi_block_db_,5);
     check_blocks_db(env_, dbi_block_db_,6);
     check_blocks_db(env_, dbi_block_db_,7);
-    #endif
+    
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    
+    #endif    
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
@@ -2633,7 +2925,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2642,7 +2934,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     check_blocks_db(env_, dbi_block_db_,5);
     check_blocks_db(env_, dbi_block_db_,6);
     check_blocks_db(env_, dbi_block_db_,7);
-    #endif
+    
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    
+    #endif    
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
@@ -2677,7 +2980,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2686,7 +2989,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     check_blocks_db(env_, dbi_block_db_,5);
     check_blocks_db(env_, dbi_block_db_,6);
     check_blocks_db(env_, dbi_block_db_,7);
-    #endif
+    
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    
+    #endif    
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
@@ -2721,7 +3035,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
     
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2730,8 +3044,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     check_blocks_db(env_, dbi_block_db_,5);
     check_blocks_db(env_, dbi_block_db_,6);
     check_blocks_db(env_, dbi_block_db_,7);
-    #endif
     
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    
+    #endif    
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
@@ -2766,7 +3090,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
     
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2775,8 +3099,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     check_blocks_db(env_, dbi_block_db_,5);
     check_blocks_db(env_, dbi_block_db_,6);
     check_blocks_db(env_, dbi_block_db_,7);
-    #endif
     
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    
+    #endif    
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
@@ -2813,7 +3147,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
 
 
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -2822,8 +3156,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     check_blocks_db(env_, dbi_block_db_,5);
     check_blocks_db(env_, dbi_block_db_,6);
     check_blocks_db(env_, dbi_block_db_,7);
-    #endif
-
+    
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    
+    #endif    
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
@@ -2912,7 +3256,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     MDB_dbi dbi_transaction_db_;
     #endif
 
-    MDB_txn* db_txn;
+    //MDB_txn* db_txn;
     
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size); // 1 to 86 no entra el primero
@@ -2946,15 +3290,23 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 6);
 
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
     check_blocks_db(env_, dbi_block_db_,3);
     check_blocks_db(env_, dbi_block_db_,4);
     check_blocks_db(env_, dbi_block_db_,5);
-    #endif
-
+    
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    
+    #endif    
 
     // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
@@ -2996,7 +3348,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 7);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 7);
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -3004,7 +3357,17 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     check_blocks_db(env_, dbi_block_db_,4);
     check_blocks_db(env_, dbi_block_db_,5);
     check_blocks_db(env_, dbi_block_db_,6);
-    #endif
+    
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    
+    #endif    
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
@@ -3045,7 +3408,7 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 8);
     BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 8);
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -3054,8 +3417,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     check_blocks_db(env_, dbi_block_db_,5);
     check_blocks_db(env_, dbi_block_db_,6);
     check_blocks_db(env_, dbi_block_db_,7);
-    #endif
-
+    
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    
+    #endif    
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
@@ -3092,7 +3465,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 1);
     BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -3101,7 +3475,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     check_blocks_db(env_, dbi_block_db_,5);
     check_blocks_db(env_, dbi_block_db_,6);
     check_blocks_db(env_, dbi_block_db_,7);
-    #endif
+    
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    
+    #endif    
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
@@ -3136,7 +3521,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 0);
     BOOST_REQUIRE(! db_exists_height(env_, dbi_reorg_block_, 7));
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
@@ -3145,8 +3531,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     check_blocks_db(env_, dbi_block_db_,5);
     check_blocks_db(env_, dbi_block_db_,6);
     check_blocks_db(env_, dbi_block_db_,7);
-    #endif
     
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+    
+    #endif    
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         , dbi_block_db_
@@ -3248,11 +3644,18 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool_3) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 3);
     
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    
+     #if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,2);
-    #endif
+    
+    #elif defined(BITPRIM_DB_NEW_FULL)
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
+    
+    #endif    
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
