@@ -1022,6 +1022,7 @@ private:
     #if defined(BITPRIM_DB_NEW_FULL)
     result_code remove_transactions(uint32_t height, MDB_txn* db_txn) {
         MDB_val key {sizeof(height), &height};
+        MDB_val value;
 
         if (mdb_get(db_txn, dbi_block_db_, &key, &value) != MDB_SUCCESS) {
             return result_code::other;
