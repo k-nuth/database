@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2017 Bitprim Inc.
+ * Copyright (c) 2016-2018 Bitprim Inc.
  *
  * This file is part of Bitprim.
  *
@@ -44,7 +44,7 @@ namespace database {
 #ifdef BITPRIM_DB_NEW_BLOCKS
 constexpr size_t max_dbs_ = 7;
 #elif defined(BITPRIM_DB_NEW_FULL)
-constexpr size_t max_dbs_ = 8;
+constexpr size_t max_dbs_ = 9;
 #else
 constexpr size_t max_dbs_ = 6;
 #endif
@@ -72,6 +72,7 @@ public:
     #ifdef BITPRIM_DB_NEW_FULL
     //Transactions
     constexpr static char transaction_db_name[] = "transactions";
+    constexpr static char history_db_name[] = "history";
     #endif 
 
     internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size)
@@ -128,6 +129,7 @@ public:
             
             #ifdef BITPRIM_DB_NEW_FULL
             mdb_dbi_close(env_, dbi_transaction_db_);
+            mdb_dbi_close(env_, dbi_history_db_);
             #endif
 
             db_opened_ = false;
@@ -520,6 +522,12 @@ private:
         if (res != MDB_SUCCESS) {
             return false;
         }
+
+        res = mdb_dbi_open(db_txn, history_db_name, MDB_CREATE | MDB_DUPSORT , &dbi_history_db_);
+        if (res != MDB_SUCCESS) {
+            return false;
+        }
+
         #endif
 
         db_opened_ = mdb_txn_commit(db_txn) == MDB_SUCCESS;
@@ -605,23 +613,69 @@ private:
         return result_code::success;
     }
 
-    result_code remove_inputs(uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
+
+
+    result_code insert_input_history() {
+        
+
+        
+        return result_code::success;
+    }
+
+    result_code push_inputs(uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
         for (auto const& input: inputs) {
             auto res = remove_utxo(height, input.previous_output(), insert_reorg, db_txn);
             if (res != result_code::success) {
                 return res;
             }
+
+            #if defined(BITPRIM_DB_NEW_FULL)
+            
+            res = insert_input_history();            
+            if (res != result_code::success) {
+                return res;
+            }
+
+            #endif
+
         }
         return result_code::success;
     }
 
+    result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output ) {
+        
+        auto const outpoint = output_point {tx_hash, index};
+        auto const value = output.value();
+
+        // Standard outputs contain unambiguous address data.
+        for (auto const& address : output.addresses()) {
+            
+            //TODO (Mario): Insert output history    
+            //history_->add_output(address.hash(), outpoint, height, value);
+        }
+
+        return result_code::success;
+    }
+
+
     result_code insert_outputs(hash_digest const& txid, chain::output::list const& outputs, data_chunk const& fixed_data, MDB_txn* db_txn) {
         uint32_t pos = 0;
         for (auto const& output: outputs) {
+            
             auto res = insert_utxo(chain::point{txid, pos}, output, fixed_data, db_txn);
             if (res != result_code::success) {
                 return res;
             }
+
+            #if defined(BITPRIM_DB_NEW_FULL)
+            /*
+            res = insert_output_history();
+            if (res != result_code::success) {
+                return res;
+            }*/
+
+            #endif
+
             ++pos;
         }
         return result_code::success;
@@ -638,7 +692,7 @@ private:
     }
 
     result_code push_transaction_non_coinbase(uint32_t height, data_chunk const& fixed_data, chain::transaction const& tx, bool insert_reorg, MDB_txn* db_txn) {
-        auto res = remove_inputs(height, tx.inputs(), insert_reorg, db_txn);
+        auto res = push_inputs(height, tx.inputs(), insert_reorg, db_txn);
         if (res != result_code::success) {
             return res;
         }
@@ -728,11 +782,13 @@ private:
     
     #elif defined(BITPRIM_DB_NEW_FULL)
     
-    result_code insert_transaction(chain::transaction const& tx, MDB_txn* db_txn) {
+    result_code insert_transaction(chain::transaction const& tx, uint32_t height,  MDB_txn* db_txn) {
 
         auto key_arr = tx.hash();                                    //TODO(fernando): podría estar afuera de la DBTx
         MDB_val key {key_arr.size(), key_arr.data()};
                 
+
+        //TODO (Mario): store height        
         auto value_arr = tx.to_data(true,true);                                //TODO(fernando): podría estar afuera de la DBTx
         MDB_val value {value_arr.size(), value_arr.data()}; 
 
@@ -751,11 +807,11 @@ private:
     }
 
     template <typename I>
-    result_code insert_transactions(I f, I l, MDB_txn* db_txn) {
+    result_code insert_transactions(I f, I l, uint32_t height, MDB_txn* db_txn) {
     
         while (f != l) {
             auto const& tx = *f;
-            auto res = insert_transaction(tx, db_txn);
+            auto res = insert_transaction(tx, height,  db_txn);
             if (res != result_code::success) {    
                 return res;
             }
@@ -764,7 +820,6 @@ private:
 
         return result_code::success;
     }
-
 
     data_chunk serialize_txs(chain::block const& block) {
         
@@ -781,30 +836,23 @@ private:
     }
 
     result_code insert_block(chain::block const& block, uint32_t height, MDB_txn* db_txn) {
-    // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
     
         MDB_val key {sizeof(height), &height};
         auto hashes = serialize_txs(block);
         MDB_val value {hashes.size(), hashes.data()};
 
-        auto res_block = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_NOOVERWRITE);
-        if (res_block == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicate key in Block DB [insert_block] " << res_block;
+        auto res = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_NOOVERWRITE);
+        if (res == MDB_KEYEXIST) {
+            LOG_INFO(LOG_DATABASE) << "Duplicate key in Block DB [insert_block] " << res;
             return result_code::duplicated_key;
         }        
     
-        if (res_block != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error saving in Block DB [insert_block] " << res_block;
+        if (res != MDB_SUCCESS) {
+            LOG_INFO(LOG_DATABASE) << "Error saving in Block DB [insert_block] " << res;
             return result_code::other;
         }
 
-        auto const& txs = block.transactions();
-        auto res = insert_transactions(txs.begin(), txs.end(), db_txn);
-        if (res == result_code::duplicated_key) {
-            return result_code::success_duplicate_coinbase;
-        }
-        
-        return res;
+        return result_code::success;
     }
 
 
@@ -819,12 +867,26 @@ private:
             return res;
         }
 
+        auto const& txs = block.transactions();
+
 #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
             res = insert_block(block, height, db_txn);        
-            if (! succeed(res)) {
-                //std::cout << "ccc" << static_cast<uint32_t>(res) << "\n";
+            if (res != result_code::success) {
                 return res;
             }
+
+#if defined(BITPRIM_DB_NEW_FULL)
+
+            res = insert_transactions(txs.begin(), txs.end(), height,  db_txn);
+            if (res == result_code::duplicated_key) {
+                res = result_code::success_duplicate_coinbase;
+            }
+            else if (res != result_code::success) {
+                return res;
+            }
+
+#endif
+
 #endif
 
         if ( insert_reorg ) {
@@ -834,7 +896,6 @@ private:
             }
         }
         
-        auto const& txs = block.transactions();
         auto const& coinbase = txs.front();
 
         auto fixed = utxo_entry::to_data_fixed(height, median_time_past, true);                                     //TODO(fernando): podría estar afuera de la DBTx
@@ -1060,7 +1121,7 @@ private:
     
     result_code remove_blocks_db(uint32_t height, MDB_txn* db_txn) {
 
-        #if defined(BITPRIM_DB_NEW_FULLTprim)
+        #if defined(BITPRIM_DB_NEW_FULL)
         remove_transactions(height,db_txn);
         #endif
         
@@ -1344,7 +1405,6 @@ private:
         return result_code::success;
     }    
 
-
     // Data members ----------------------------
     path const db_dir_;
     uint32_t reorg_pool_limit_;                 //TODO(fernando): check if uint32_max is needed for NO-LIMIT???
@@ -1368,6 +1428,7 @@ private:
 
     #ifdef BITPRIM_DB_NEW_FULL
     MDB_dbi dbi_transaction_db_;
+    MDB_dbi dbi_history_db_;
     #endif
 };
 
@@ -1392,12 +1453,17 @@ constexpr char internal_database_basis<Clock>::reorg_block_name[];              
 #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::block_db_name[];                  //key: block height, value: block
+                                                                                 //key: block height, value: tx hashes   
 #endif
 
 #ifdef BITPRIM_DB_NEW_FULL
 
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::transaction_db_name[];            //key: tx hash, value: tx
+
+template <typename Clock>
+constexpr char internal_database_basis<Clock>::history_db_name[];            //key: tx hash, value: tx
+
 #endif
 
 using internal_database = internal_database_basis<std::chrono::system_clock>;
