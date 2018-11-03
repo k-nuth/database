@@ -133,6 +133,7 @@ class BitprimDatabaseConan(BitprimConanFile):
 
         cmake.definitions["CURRENCY"] = self.options.currency
         cmake.definitions["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
+        cmake.definitions["USE_DOMAIN"] = option_on_off(self.options.use_domain)
 
         if self.options.db == "legacy":
             cmake.definitions["DB_TRANSACTION_UNCONFIRMED"] = option_on_off(False)

@@ -95,12 +95,14 @@ void utxo_entry::to_data_fixed(std::ostream& stream, uint32_t height, uint32_t m
     to_data_fixed(sink, height, median_time_past, coinbase);
 }
 
+#ifndef BITPRIM_USE_DOMAIN
 // static
 void utxo_entry::to_data_fixed(writer& sink, uint32_t height, uint32_t median_time_past, bool coinbase) {
     sink.write_4_bytes_little_endian(height);
     sink.write_4_bytes_little_endian(median_time_past);
     sink.write_byte(coinbase);
 }
+#endif
 
 // static
 data_chunk utxo_entry::to_data_with_fixed(chain::output const& output, data_chunk const& fixed) {
@@ -121,12 +123,13 @@ void utxo_entry::to_data_with_fixed(std::ostream& stream, chain::output const& o
     to_data_with_fixed(sink, output, fixed);
 }
 
+#ifndef BITPRIM_USE_DOMAIN
 // static
 void utxo_entry::to_data_with_fixed(writer& sink, chain::output const& output, data_chunk const& fixed) {
     output.to_data(sink, false);
     sink.write_bytes(fixed);
 }
-
+#endif
 
 
 // Serialization.
@@ -148,10 +151,12 @@ void utxo_entry::to_data(std::ostream& stream) const {
     to_data(sink);
 }
 
+#ifndef BITPRIM_USE_DOMAIN
 void utxo_entry::to_data(writer& sink) const {
     output_.to_data(sink, false);
     to_data_fixed(sink, height_, median_time_past_, coinbase_);
 }
+#endif
 
 // Deserialization.
 //-----------------------------------------------------------------------------
@@ -168,11 +173,13 @@ utxo_entry utxo_entry::factory_from_data(std::istream& stream) {
     return instance;
 }
 
+#ifndef BITPRIM_USE_DOMAIN
 utxo_entry utxo_entry::factory_from_data(reader& source) {
     utxo_entry instance;
     instance.from_data(source);
     return instance;
 }
+#endif
 
 bool utxo_entry::from_data(const data_chunk& data) {
     data_source istream(data);
@@ -184,6 +191,7 @@ bool utxo_entry::from_data(std::istream& stream) {
     return from_data(source);
 }
 
+#ifndef BITPRIM_USE_DOMAIN
 bool utxo_entry::from_data(reader& source) {
     reset();
     
@@ -199,6 +207,7 @@ bool utxo_entry::from_data(reader& source) {
 
     return source;
 }
+#endif
 
 } // namespace database
 } // namespace libbitcoin

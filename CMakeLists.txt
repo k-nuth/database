@@ -79,6 +79,14 @@ if (WITH_MEASUREMENTS)
   add_definitions(-DWITH_MEASUREMENTS)
 endif()
 
+# Implement --use-domain and declare USE_DOMAIN.
+#------------------------------------------------------------------------------
+option(USE_DOMAIN "Domain enabled." OFF)
+if (USE_DOMAIN)
+  message(STATUS "Bitprim: Using Domain enabled")
+  add_definitions(-DBITPRIM_USE_DOMAIN)
+endif()
+
 
 # Implement and declare DB_TRANSACTION_UNCONFIRMED.
 #------------------------------------------------------------------------------
