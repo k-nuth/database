@@ -101,6 +101,7 @@ public:
 
     static
     data_chunk to_data_fixed(uint32_t height, uint32_t median_time_past, bool coinbase);
+
     static
     void to_data_fixed(std::ostream& stream, uint32_t height, uint32_t median_time_past, bool coinbase);
 
@@ -119,6 +120,7 @@ public:
 
     static
     data_chunk to_data_with_fixed(chain::output const& output, data_chunk const& fixed);
+
     static
     void to_data_with_fixed(std::ostream& stream, chain::output const& output, data_chunk const& fixed);
 
