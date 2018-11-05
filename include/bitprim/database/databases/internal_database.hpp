@@ -69,13 +69,13 @@ public:
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     //Blocks DB
     constexpr static char block_db_name[] = "blocks";
-    #endif
+    #endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     
     #ifdef BITPRIM_DB_NEW_FULL
     //Transactions
     constexpr static char transaction_db_name[] = "transactions";
     constexpr static char history_db_name[] = "history";
-    #endif 
+    #endif  //BITPRIM_DB_NEW_FULL
 
     internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size)
         : db_dir_(db_dir)
@@ -517,7 +517,7 @@ private:
         if (res != MDB_SUCCESS) {
             return false;
         }
-        #endif
+        #endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
 
         #ifdef BITPRIM_DB_NEW_FULL
         res = mdb_dbi_open(db_txn, transaction_db_name, MDB_CREATE, &dbi_transaction_db_);
@@ -530,7 +530,7 @@ private:
             return false;
         }
 
-        #endif
+        #endif //BITPRIM_DB_NEW_FULL
 
         db_opened_ = mdb_txn_commit(db_txn) == MDB_SUCCESS;
         return db_opened_;
@@ -616,6 +616,7 @@ private:
     }
 
 #if defined(BITPRIM_DB_NEW_FULL)
+
     chain::transaction get_transaction(hash_digest const& hash, MDB_txn* db_txn) const {
         
         MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
@@ -891,7 +892,7 @@ private:
         return result_code::success;
     }
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+#if defined(BITPRIM_DB_NEW_BLOCKS)
     result_code insert_block(chain::block const& block, uint32_t height,  MDB_txn* db_txn) {
         
         auto valuearr = block.to_data(false);               
@@ -907,7 +908,7 @@ private:
         return result_code::success;
     }
     
-    #elif defined(BITPRIM_DB_NEW_FULL)
+#elif defined(BITPRIM_DB_NEW_FULL)
     
     result_code insert_transaction(chain::transaction const& tx, uint32_t height,  MDB_txn* db_txn) {
 
@@ -982,8 +983,7 @@ private:
         return result_code::success;
     }
 
-
-    #endif
+#endif
 
 
     result_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg, MDB_txn* db_txn) {
@@ -1003,7 +1003,7 @@ private:
                 return res;
             }
 
-#if defined(BITPRIM_DB_NEW_FULL)
+    #if defined(BITPRIM_DB_NEW_FULL)
 
             res = insert_transactions(txs.begin(), txs.end(), height,  db_txn);
             if (res == result_code::duplicated_key) {
@@ -1015,9 +1015,9 @@ private:
                 return res;
             }
 
-#endif
+    #endif //defined(BITPRIM_DB_NEW_FULL)
 
-#endif
+#endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
 
         if ( insert_reorg ) {
             res = push_block_reorg(block, height, db_txn);
@@ -1058,7 +1058,7 @@ private:
 
         #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
         res = insert_block(block, 0, db_txn);
-        #endif
+        #endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
 
         return res;
     }
@@ -1209,7 +1209,6 @@ private:
         return result_code::success;
     }
 
-
     #if defined(BITPRIM_DB_NEW_FULL)
     result_code remove_transactions(uint32_t height, MDB_txn* db_txn) {
         MDB_val key {sizeof(height), &height};
@@ -1245,9 +1244,9 @@ private:
         return result_code::success;
     }
 
-    #endif
+    #endif //defined(BITPRIM_DB_NEW_FULL)
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     
     result_code remove_blocks_db(uint32_t height, MDB_txn* db_txn) {
 
@@ -1267,7 +1266,7 @@ private:
         }
         return result_code::success;
     }
-    #endif
+#endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
 
     result_code remove_block(chain::block const& block, uint32_t height, MDB_txn* db_txn) {
         //precondition: block.transactions().size() >= 1
@@ -1308,7 +1307,7 @@ private:
         if (res != result_code::success) {
             return res;
         }
-        #endif
+        #endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
 
         return result_code::success;
     }
@@ -1326,7 +1325,7 @@ private:
         return res;
     }
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+#if defined(BITPRIM_DB_NEW_BLOCKS)
     chain::block get_block(uint32_t height, MDB_txn* db_txn) const {
         MDB_val key {sizeof(height), &height};
         MDB_val value;
@@ -1340,10 +1339,7 @@ private:
         return res;
     }
 
-    #elif defined(BITPRIM_DB_NEW_FULL)
-
-
-
+#elif defined(BITPRIM_DB_NEW_FULL)
 
     chain::block get_block(uint32_t height, MDB_txn* db_txn) const {
         MDB_val key {sizeof(height), &height};
@@ -1384,7 +1380,7 @@ private:
         return chain::block{header, std::move(tx_list)};
     }
 
-    #endif
+#endif //defined(BITPRIM_DB_NEW_FULL)
 
     chain::block get_block_reorg(uint32_t height, MDB_txn* db_txn) const {
         MDB_val key {sizeof(height), &height};
@@ -1542,7 +1538,7 @@ private:
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     //Blocks DB
     MDB_dbi dbi_block_db_;
-    #endif
+    #endif 
 
     #ifdef BITPRIM_DB_NEW_FULL
     MDB_dbi dbi_transaction_db_;
