@@ -31,6 +31,8 @@
 #include <bitprim/database/databases/result_code.hpp>
 #include <bitprim/database/databases/tools.hpp>
 #include <bitprim/database/databases/utxo_entry.hpp>
+#include <bitprim/database/databases/history_entry.hpp>
+
 
 #ifdef BITPRIM_INTERNAL_DB_4BYTES_INDEX
 #define BITPRIM_INTERNAL_DB_WIRE true
@@ -614,15 +616,106 @@ private:
     }
 
 
-
-    result_code insert_input_history() {
+    result_code insert_input_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::input const& input, MDB_txn* db_txn) {
         
+        //TODO store inpoint
+        auto const inpoint = input_point {tx_hash, index};
+        auto const& prevout = input.previous_output();
 
-        
+        if (prevout.validation.cache.is_valid()) {
+            // This results in a complete and unambiguous history for the
+            // address since standard outputs contain unambiguous address data.
+            for (auto const& address : prevout.validation.cache.addresses()) {
+                
+                auto key_arr = address.hash();                                    
+                MDB_val key {key_arr.size(), key_arr.data()};   
+
+                auto valuearr = history_entry::factory_to_data(point_kind::spend, height, index, prevout.checksum());
+                MDB_val value {valuearr.size(), valuearr.data()};
+
+                auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, MDB_NOOVERWRITE);
+                if (res == MDB_KEYEXIST) {
+                    LOG_INFO(LOG_DATABASE) << "Duplicate key inserting history [insert_input_history] " << res;        
+                    return result_code::duplicated_key;
+                }
+                if (res != MDB_SUCCESS) {
+                    LOG_INFO(LOG_DATABASE) << "Error inserting history [insert_input_history] " << res;        
+                    return result_code::other;
+                }
+            
+            }
+        } else {
+            // For any p2pk spend this creates no record (insufficient data).
+            // For any p2kh spend this creates the ambiguous p2sh address,
+            // which significantly expands the size of the history store.
+            // These are tradeoffs when no prevout is cached (checkpoint sync).
+            bool valid = true;
+            for (auto const& address : input.addresses()) {
+                if ( ! address) {
+                    valid = false;
+                    break;
+                }
+            }
+            
+            if (valid) {
+                for (auto const& address : input.addresses()) {
+                    
+                    auto key_arr = address.hash();                                    
+                    MDB_val key {key_arr.size(), key_arr.data()};   
+
+                    auto valuearr = history_entry::factory_to_data(point_kind::spend, height, index, prevout.checksum());
+                    MDB_val value {valuearr.size(), valuearr.data()};
+
+                    auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, MDB_NOOVERWRITE);
+                    if (res == MDB_KEYEXIST) {
+                        LOG_INFO(LOG_DATABASE) << "Duplicate key inserting history [insert_input_history] " << res;        
+                        return result_code::duplicated_key;
+                    }
+                    if (res != MDB_SUCCESS) {
+                        LOG_INFO(LOG_DATABASE) << "Error inserting history [insert_input_history] " << res;        
+                        return result_code::other;
+                    }
+
+                }
+            } else {
+                //During an IBD with checkpoints some previous output info is missing.
+                //We can recover it by accessing the database
+                
+                auto const& tx = get_transaction(prevout.hash(), db_txn);
+
+                if (tx.is_valid()) {
+
+                    auto const& out_output = tx.outputs()[prevout.index()];
+
+                    for (auto const& address : out_output.addresses()) {
+
+                        auto key_arr = address.hash();                                    
+                        MDB_val key {key_arr.size(), key_arr.data()};   
+
+                        auto valuearr = history_entry::factory_to_data(point_kind::spend, height, index, prevout.checksum());
+                        MDB_val value {valuearr.size(), valuearr.data()};
+
+                        auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, MDB_NOOVERWRITE);
+                        if (res == MDB_KEYEXIST) {
+                            LOG_INFO(LOG_DATABASE) << "Duplicate key inserting history [insert_input_history] " << res;        
+                            return result_code::duplicated_key;
+                        }
+                        if (res != MDB_SUCCESS) {
+                            LOG_INFO(LOG_DATABASE) << "Error inserting history [insert_input_history] " << res;        
+                            return result_code::other;
+                        }
+                    }
+
+
+                }
+            }
+        }
+
         return result_code::success;
     }
 
-    result_code push_inputs(uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
+    result_code push_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
+        uint32_t pos = 0;
         for (auto const& input: inputs) {
             auto res = remove_utxo(height, input.previous_output(), insert_reorg, db_txn);
             if (res != result_code::success) {
@@ -631,48 +724,63 @@ private:
 
             #if defined(BITPRIM_DB_NEW_FULL)
             
-            res = insert_input_history();            
+            res = insert_input_history(tx_id, height, pos, input, db_txn);            
             if (res != result_code::success) {
                 return res;
             }
 
             #endif
 
+            ++pos;
         }
         return result_code::success;
     }
 
-    result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output ) {
+    result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, MDB_txn* db_txn ) {
         
+        //TODO Store outpoint
         auto const outpoint = output_point {tx_hash, index};
         auto const value = output.value();
 
         // Standard outputs contain unambiguous address data.
         for (auto const& address : output.addresses()) {
             
-            //TODO (Mario): Insert output history    
-            //history_->add_output(address.hash(), outpoint, height, value);
+            auto key_arr = address.hash();                                    
+            MDB_val key {key_arr.size(), key_arr.data()};   
+
+            auto valuearr = history_entry::factory_to_data(point_kind::output, height, index, value);
+            MDB_val value {valuearr.size(), valuearr.data()};
+
+            auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, MDB_NOOVERWRITE);
+            if (res == MDB_KEYEXIST) {
+                LOG_INFO(LOG_DATABASE) << "Duplicate key inserting history [insert_output_history] " << res;        
+                return result_code::duplicated_key;
+            }
+            if (res != MDB_SUCCESS) {
+                LOG_INFO(LOG_DATABASE) << "Error inserting history [insert_output_history] " << res;        
+                return result_code::other;
+            }
         }
 
         return result_code::success;
     }
 
 
-    result_code insert_outputs(hash_digest const& txid, chain::output::list const& outputs, data_chunk const& fixed_data, MDB_txn* db_txn) {
+    result_code insert_outputs(hash_digest const& tx_id, uint32_t height, chain::output::list const& outputs, data_chunk const& fixed_data, MDB_txn* db_txn) {
         uint32_t pos = 0;
         for (auto const& output: outputs) {
             
-            auto res = insert_utxo(chain::point{txid, pos}, output, fixed_data, db_txn);
+            auto res = insert_utxo(chain::point{tx_id, pos}, output, fixed_data, db_txn);
             if (res != result_code::success) {
                 return res;
             }
 
             #if defined(BITPRIM_DB_NEW_FULL)
-            /*
-            res = insert_output_history();
+            
+            res = insert_output_history(tx_id, height, pos, output, db_txn);
             if (res != result_code::success) {
                 return res;
-            }*/
+            }
 
             #endif
 
@@ -682,7 +790,7 @@ private:
     }
 
     result_code insert_outputs_error_treatment(uint32_t height, data_chunk const& fixed_data, hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn) {
-        auto res = insert_outputs(txid, outputs, fixed_data, db_txn);
+        auto res = insert_outputs(txid,height, outputs, fixed_data, db_txn);
         
         if (res == result_code::duplicated_key) {
             //TODO(fernando): log and continue
@@ -692,7 +800,7 @@ private:
     }
 
     result_code push_transaction_non_coinbase(uint32_t height, data_chunk const& fixed_data, chain::transaction const& tx, bool insert_reorg, MDB_txn* db_txn) {
-        auto res = push_inputs(height, tx.inputs(), insert_reorg, db_txn);
+        auto res = push_inputs(tx.hash(), height, tx.inputs(), insert_reorg, db_txn);
         if (res != result_code::success) {
             return res;
         }
