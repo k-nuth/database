@@ -27,29 +27,29 @@
 namespace libbitcoin { 
 namespace database {
 
-history::history(libbitcoin::chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum)
+history_entry::history_entry(libbitcoin::chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum)
     : point_kind_(kind), height_(height), index_(index), value_or_checksum_(value_or_checksum)
 {}
 
-chain::point_kind point_kind() const {
+chain::point_kind history_entry::point_kind() const {
     return point_kind_;
 }
 
-uint32_t history::height() const {
+uint32_t history_entry::height() const {
     return height_;
 }
 
-uint32_t history::index() const {
+uint32_t history_entry::index() const {
     return index_;
 }
 
-uint64_t history::value_or_checksum() const {
+uint64_t history_entry::value_or_checksum() const {
     return value_or_checksum_;
 }
 
 
 // private
-void history::reset() {
+void history_entry::reset() {
     point_kind_ = libbitcoin::chain::point_kind::output;
     height_ = max_uint32;
     index_ = max_uint32;
@@ -57,23 +57,23 @@ void history::reset() {
 }
 
 // Empty scripts are valid, validation relies on not_found only.
-bool history::is_valid() const {
+bool history_entry::is_valid() const {
     return height_ != bc::max_uint32 && index_ != max_uint32 && value_or_checksum_ != max_uint64;
 }
 
 
 // Size.
 //-----------------------------------------------------------------------------
-
-size_t history_entry::serialized_size() const {
-    return sizeof(libbitcoin::chain::point_kind) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint64_t);
+constexpr
+size_t history_entry::serialized_size() {
+    return sizeof(chain::point_kind) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint64_t);
 }
 
 // Serialization.
 //-----------------------------------------------------------------------------
 
 // static
-data_chunk history_entry::factory_to_data(libbitcoin::chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
+data_chunk history_entry::factory_to_data(chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
     data_chunk data;
     auto const size = serialized_size();
     data.reserve(size);
@@ -85,13 +85,13 @@ data_chunk history_entry::factory_to_data(libbitcoin::chain::point_kind kind, ui
 }
 
 // static
-void history_entry::factory_to_data(std::ostream& stream, libbitcoin::chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
+void history_entry::factory_to_data(std::ostream& stream, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
     ostream_writer sink(stream);
     factory_to_data(sink, kind, height, index, value_or_checksum);
 }
 
 // static
-void history_entry::factory_to_data(writer& sink, libbitcoin::chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
+void history_entry::factory_to_data(writer& sink, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
     
     sink.write_byte(static_cast<uint8_t>(kind));
     sink.write_4_bytes_little_endian(height);
@@ -120,27 +120,27 @@ void history_entry::to_data(std::ostream& stream) const {
 }
 
 void history_entry::to_data(writer& sink) const {
-    output_.to_data(sink, false);
-    factory_to_data(sink, height_, index_);
+    //output_.to_data(sink, false);
+    factory_to_data(sink, point_kind_, height_, index_, value_or_checksum_ );
 }
 
 // Deserialization.
 //-----------------------------------------------------------------------------
 
-utxo_entry history_entry::factory_from_data(data_chunk const& data) {
-    utxo_entry instance;
+history_entry history_entry::factory_from_data(data_chunk const& data) {
+    history_entry instance;
     instance.from_data(data);
     return instance;
 }
 
-utxo_entry history_entry::factory_from_data(std::istream& stream) {
-    utxo_entry instance;
+history_entry history_entry::factory_from_data(std::istream& stream) {
+    history_entry instance;
     instance.from_data(stream);
     return instance;
 }
 
-utxo_entry history_entry::factory_from_data(reader& source) {
-    utxo_entry instance;
+history_entry history_entry::factory_from_data(reader& source) {
+    history_entry instance;
     instance.from_data(source);
     return instance;
 }
@@ -158,9 +158,9 @@ bool history_entry::from_data(std::istream& stream) {
 bool history_entry::from_data(reader& source) {
     reset();
     
-    output_.from_data(source, false);
+    //output_.from_data(source, false);
     
-    point_kind_ = static_cast<point_kind>(source.read_byte()),
+    point_kind_ = static_cast<chain::point_kind>(source.read_byte()),
     height_ = source.read_4_bytes_little_endian();
     index_ = source.read_4_bytes_little_endian();
     value_or_checksum_ = source.read_8_bytes_little_endian();
@@ -175,4 +175,3 @@ bool history_entry::from_data(reader& source) {
 } // namespace database
 } // namespace libbitcoin
 
-// #endif // BITPRIM_DB_NEW

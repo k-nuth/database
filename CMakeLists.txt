@@ -388,10 +388,9 @@ if (DB_NEW)
     set(bitprim_database_sources_just_bitprim 
         ${bitprim_database_sources_just_bitprim}
         src/bitprim/databases/utxo_entry.cpp
+        src/bitprim/databases/history_entry.cpp
     )
 endif()
-
-
 
 
 if (NOT JUST_BITPRIM_SOURCES)

@@ -32,17 +32,15 @@ public:
 
     history_entry() = default;
 
-    history_entry(libbitcoin::chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
+    history_entry(chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
 
     // Getters
-    libbitcoin::chain::point_kind point_kind() const;
+    chain::point_kind point_kind() const;
     uint64_t value_or_checksum() const;
     uint32_t height() const;
     uint32_t index() const;
 
     bool is_valid() const;
-
-    size_t serialized_size() const;
 
     data_chunk to_data() const;
     void to_data(std::ostream& stream) const;
@@ -54,23 +52,26 @@ public:
 
 
     static
-    utxo_entry factory_from_data(data_chunk const& data);
+    history_entry factory_from_data(data_chunk const& data);
     static
-    utxo_entry factory_from_data(std::istream& stream);
+    history_entry factory_from_data(std::istream& stream);
     static
-    utxo_entry factory_from_data(reader& source);
+    history_entry factory_from_data(reader& source);
 
     static
-    data_chunk factory_to_data(libbitcoin::chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
+    data_chunk factory_to_data(chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
     static
-    void factory_to_data(std::ostream& stream, libbitcoin::chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
+    void factory_to_data(std::ostream& stream, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
     static
-    void factory_to_data(writer& sink, libbitcoin::chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
+    void factory_to_data(writer& sink, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
 
 private:
     void reset();
 
-    libbitcoin::chain::point_kind point_kind_;
+    constexpr static
+    size_t serialized_size();
+
+    chain::point_kind point_kind_;
     uint32_t height_ = max_uint32;
     uint32_t index_ = max_uint32;
     uint64_t value_or_checksum_ = max_uint64;
