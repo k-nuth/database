@@ -748,7 +748,7 @@ private:
             auto key_arr = address.hash();                                    
             MDB_val key {key_arr.size(), key_arr.data()};   
 
-            auto valuearr = history_entry::factory_to_data(point_kind::output, height, index, value);
+            auto valuearr = history_entry::factory_to_data(libbitcoin::chain::point_kind::output, height, index, value);
             MDB_val value {valuearr.size(), valuearr.data()};
 
             auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, MDB_NOOVERWRITE);
