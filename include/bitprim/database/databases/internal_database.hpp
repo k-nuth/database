@@ -619,7 +619,7 @@ private:
     result_code insert_input_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::input const& input, MDB_txn* db_txn) {
         
         //TODO store inpoint
-        auto const inpoint = input_point {tx_hash, index};
+        auto const inpoint = chain::input_point {tx_hash, index};
         auto const& prevout = input.previous_output();
 
         if (prevout.validation.cache.is_valid()) {
@@ -630,7 +630,7 @@ private:
                 auto key_arr = address.hash();                                    
                 MDB_val key {key_arr.size(), key_arr.data()};   
 
-                auto valuearr = history_entry::factory_to_data(point_kind::spend, height, index, prevout.checksum());
+                auto valuearr = history_entry::factory_to_data(chain::point_kind::spend, height, index, prevout.checksum());
                 MDB_val value {valuearr.size(), valuearr.data()};
 
                 auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, MDB_NOOVERWRITE);
@@ -739,7 +739,7 @@ private:
     result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, MDB_txn* db_txn ) {
         
         //TODO Store outpoint
-        auto const outpoint = output_point {tx_hash, index};
+        auto const outpoint = chain::output_point {tx_hash, index};
         auto const value = output.value();
 
         // Standard outputs contain unambiguous address data.
@@ -748,7 +748,7 @@ private:
             auto key_arr = address.hash();                                    
             MDB_val key {key_arr.size(), key_arr.data()};   
 
-            auto valuearr = history_entry::factory_to_data(libbitcoin::chain::point_kind::output, height, index, value);
+            auto valuearr = history_entry::factory_to_data(chain::point_kind::output, height, index, value);
             MDB_val value {valuearr.size(), valuearr.data()};
 
             auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, MDB_NOOVERWRITE);
