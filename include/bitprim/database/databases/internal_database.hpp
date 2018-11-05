@@ -633,7 +633,7 @@ private:
                 auto valuearr = history_entry::factory_to_data(chain::point_kind::spend, height, index, prevout.checksum());
                 MDB_val value {valuearr.size(), valuearr.data()};
 
-                auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, MDB_NOOVERWRITE);
+                auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, 0);
                 if (res == MDB_KEYEXIST) {
                     LOG_INFO(LOG_DATABASE) << "Duplicate key inserting history [insert_input_history] " << res;        
                     return result_code::duplicated_key;
@@ -666,7 +666,7 @@ private:
                     auto valuearr = history_entry::factory_to_data(chain::point_kind::spend, height, index, prevout.checksum());
                     MDB_val value {valuearr.size(), valuearr.data()};
 
-                    auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, MDB_NOOVERWRITE);
+                    auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, 0);
                     if (res == MDB_KEYEXIST) {
                         LOG_INFO(LOG_DATABASE) << "Duplicate key inserting history [insert_input_history] " << res;        
                         return result_code::duplicated_key;
@@ -695,7 +695,7 @@ private:
                         auto valuearr = history_entry::factory_to_data(chain::point_kind::spend, height, index, prevout.checksum());
                         MDB_val value {valuearr.size(), valuearr.data()};
 
-                        auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, MDB_NOOVERWRITE);
+                        auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, 0);
                         if (res == MDB_KEYEXIST) {
                             LOG_INFO(LOG_DATABASE) << "Duplicate key inserting history [insert_input_history] " << res;        
                             return result_code::duplicated_key;
@@ -751,7 +751,7 @@ private:
             auto valuearr = history_entry::factory_to_data(chain::point_kind::output, height, index, value);
             MDB_val value {valuearr.size(), valuearr.data()};
 
-            auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, MDB_NOOVERWRITE);
+            auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, 0);
             if (res == MDB_KEYEXIST) {
                 LOG_INFO(LOG_DATABASE) << "Duplicate key inserting history [insert_output_history] " << res;        
                 return result_code::duplicated_key;
@@ -793,6 +793,7 @@ private:
         auto res = insert_outputs(txid,height, outputs, fixed_data, db_txn);
         
         if (res == result_code::duplicated_key) {
+            // std::cout << "bbbhhhhhhhhhhh" << static_cast<uint32_t>(res) << "\n";
             //TODO(fernando): log and continue
             return result_code::success_duplicate_coinbase;
         }
@@ -802,6 +803,7 @@ private:
     result_code push_transaction_non_coinbase(uint32_t height, data_chunk const& fixed_data, chain::transaction const& tx, bool insert_reorg, MDB_txn* db_txn) {
         auto res = push_inputs(tx.hash(), height, tx.inputs(), insert_reorg, db_txn);
         if (res != result_code::success) {
+            // std::cout << "yyyyyyyyyyyy" << static_cast<uint32_t>(res) << "\n";
             return res;
         }
         //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
@@ -980,6 +982,7 @@ private:
 #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
             res = insert_block(block, height, db_txn);        
             if (res != result_code::success) {
+                // std::cout << "22222222222222" << static_cast<uint32_t>(res) << "\n";
                 return res;
             }
 
@@ -987,9 +990,11 @@ private:
 
             res = insert_transactions(txs.begin(), txs.end(), height,  db_txn);
             if (res == result_code::duplicated_key) {
+                // std::cout << "33333333" << static_cast<uint32_t>(res) << "\n";
                 res = result_code::success_duplicate_coinbase;
             }
             else if (res != result_code::success) {
+                // std::cout << "44444444" << static_cast<uint32_t>(res) << "\n";
                 return res;
             }
 
@@ -1009,18 +1014,18 @@ private:
         auto fixed = utxo_entry::to_data_fixed(height, median_time_past, true);                                     //TODO(fernando): podría estar afuera de la DBTx
         auto res0 = insert_outputs_error_treatment(height, fixed, coinbase.hash(), coinbase.outputs(), db_txn);     //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
         if ( ! succeed(res0)) {
-            //std::cout << "aaaaaaaaaaaaaaa" << static_cast<uint32_t>(res0) << "\n";
+            // std::cout << "aaaaaaaaaaaaaaa" << static_cast<uint32_t>(res0) << "\n";
             return res0;
         }
 
         fixed.back() = 0;   //The last byte equal to 0 means NonCoinbaseTx    
         res = push_transactions_non_coinbase(height, fixed, txs.begin() + 1, txs.end(), insert_reorg, db_txn);
         if (res != result_code::success) {
-            //std::cout << "bbb" << static_cast<uint32_t>(res) << "\n";
+            // std::cout << "bbb" << static_cast<uint32_t>(res) << "\n";
             return res;
         }
 
-        //std::cout << "ddd" << static_cast<uint32_t>(res0) << "\n";
+        // std::cout << "ddd" << static_cast<uint32_t>(res0) << "\n";
         
         if (res == result_code::success_duplicate_coinbase)
             return res;
