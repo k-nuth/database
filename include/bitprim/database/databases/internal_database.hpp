@@ -615,6 +615,20 @@ private:
         return result_code::success;
     }
 
+#if defined(BITPRIM_DB_NEW_FULL)
+    chain::transaction get_transaction(hash_digest const& hash, MDB_txn* db_txn) const {
+        
+        MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
+        MDB_val value;
+
+        if (mdb_get(db_txn, dbi_transaction_db_, &key, &value) != MDB_SUCCESS) {
+            return chain::transaction{};
+        }
+
+        auto data = db_value_to_data_chunk(value);
+        auto res = chain::transaction::factory_from_data(data,true,true);
+        return res;
+    }
 
     result_code insert_input_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::input const& input, MDB_txn* db_txn) {
         
@@ -714,28 +728,6 @@ private:
         return result_code::success;
     }
 
-    result_code push_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
-        uint32_t pos = 0;
-        for (auto const& input: inputs) {
-            auto res = remove_utxo(height, input.previous_output(), insert_reorg, db_txn);
-            if (res != result_code::success) {
-                return res;
-            }
-
-            #if defined(BITPRIM_DB_NEW_FULL)
-            
-            res = insert_input_history(tx_id, height, pos, input, db_txn);            
-            if (res != result_code::success) {
-                return res;
-            }
-
-            #endif
-
-            ++pos;
-        }
-        return result_code::success;
-    }
-
     result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, MDB_txn* db_txn ) {
         
         //TODO Store outpoint
@@ -762,6 +754,31 @@ private:
             }
         }
 
+        return result_code::success;
+    }
+
+
+#endif //BITPRIM_NEW_DB_FULL
+
+    result_code push_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
+        uint32_t pos = 0;
+        for (auto const& input: inputs) {
+            auto res = remove_utxo(height, input.previous_output(), insert_reorg, db_txn);
+            if (res != result_code::success) {
+                return res;
+            }
+
+            #if defined(BITPRIM_DB_NEW_FULL)
+            
+            res = insert_input_history(tx_id, height, pos, input, db_txn);            
+            if (res != result_code::success) {
+                return res;
+            }
+
+            #endif
+
+            ++pos;
+        }
         return result_code::success;
     }
 
@@ -1325,19 +1342,7 @@ private:
 
     #elif defined(BITPRIM_DB_NEW_FULL)
 
-    chain::transaction get_transaction(hash_digest const& hash, MDB_txn* db_txn) const {
-        
-        MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
-        MDB_val value;
 
-        if (mdb_get(db_txn, dbi_transaction_db_, &key, &value) != MDB_SUCCESS) {
-            return chain::transaction{};
-        }
-
-        auto data = db_value_to_data_chunk(value);
-        auto res = chain::transaction::factory_from_data(data,true,true);
-        return res;
-    }
 
 
     chain::block get_block(uint32_t height, MDB_txn* db_txn) const {
