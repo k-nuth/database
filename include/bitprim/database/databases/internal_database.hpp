@@ -1368,10 +1368,6 @@ private:
     
     result_code remove_blocks_db(uint32_t height, MDB_txn* db_txn) {
 
-        #if defined(BITPRIM_DB_NEW_FULL)
-        remove_transactions(height,db_txn);
-        #endif
-        
         MDB_val key {sizeof(height), &height};
         auto res = mdb_del(db_txn, dbi_block_db_, &key, NULL);
         if (res == MDB_NOTFOUND) {
@@ -1425,6 +1421,15 @@ private:
         if (res != result_code::success) {
             return res;
         }
+
+
+        #if defined(BITPRIM_DB_NEW_FULL)
+        remove_transactions(height,db_txn);
+        
+        //TODO (Mario)
+        //remove_history();
+        #endif
+        
         #endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
 
         return result_code::success;
