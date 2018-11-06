@@ -129,6 +129,69 @@ result_code internal_database_basis<Clock>::insert_output_history(hash_digest co
     return result_code::success;
 }
 
+template <typename Clock>
+chain::history_compact internal_database_basis<Clock>::history_entry_to_history_compact(history_entry const& entry) {
+    return chain::history_compact{entry.point_kind(), entry.point(), entry.height(), entry.value_or_checksum()};
+}
+
+template <typename Clock>
+chain::history_compact::list internal_database_basis<Clock>::get_history(const short_hash& key, size_t limit, size_t from_height) {
+
+    chain::history_compact::list result;
+
+    // Stop once we reach the limit (if specified).
+    if (limit > 0 && result.size() >= limit)
+        return result;
+
+    MDB_txn* db_txn;
+    auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+    if (res != MDB_SUCCESS) {
+        return result;
+    }
+
+    MDB_cursor* cursor;
+    if (mdb_cursor_open(db_txn, dbi_history_db_, &cursor) != MDB_SUCCESS) {
+        return result;
+    }
+
+    MDB_val key_hash{key.size(), key.data()};
+    MDB_val value;
+    int rc;
+    if ((rc = mdb_cursor_get(cursor, &key_hash, &value, MDB_SET)) == 0) {
+       
+        auto data = db_value_to_data_chunk(value);
+        auto entry = history_entry::factory_from_data(data);
+        
+        if (from_height == 0 || entry.height() >= from_height) {
+            result.push_back(history_entry_to_history_compact(entry));
+        }
+
+        while ((rc = mdb_cursor_get(cursor, &key_hash, &value, MDB_NEXT_DUP)) == 0) {
+        
+            if (limit > 0 && result.size() >= limit) {
+                break;
+            }
+
+            auto data = db_value_to_data_chunk(value);
+            auto entry = history_entry::factory_from_data(data);
+
+            if (from_height == 0 || entry.height() >= from_height) {
+                result.push_back(history_entry_to_history_compact(entry));
+            }
+            
+        }
+    } 
+    
+    mdb_cursor_close(cursor);
+
+    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+        return result;;
+    }
+
+    return result;
+}
+
+
 #endif //BITPRIM_NEW_DB_FULL
 
 } // namespace database
