@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef BITPRIM_DATABASE_HISTORY_DATABASE_HPP_
-#define BITPRIM_DATABASE_HISTORY_DATABASE_HPP_
+#ifndef BITPRIM_DATABASE_HISTORY_DATABASE_IPP_
+#define BITPRIM_DATABASE_HISTORY_DATABASE_IPP_
 
 // #include <boost/filesystem.hpp>
 // #include <boost/range/adaptor/reversed.hpp>
@@ -175,4 +175,4 @@ result_code internal_database_basis<Clock>::insert_output_history(hash_digest co
 } // namespace database
 } // namespace libbitcoin
 
-#endif // BITPRIM_DATABASE_HISTORY_DATABASE_HPP_
+#endif // BITPRIM_DATABASE_HISTORY_DATABASE_IPP_
