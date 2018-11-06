@@ -27,9 +27,13 @@
 namespace libbitcoin { 
 namespace database {
 
-history_entry::history_entry(libbitcoin::chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum)
-    : point_kind_(kind), height_(height), index_(index), value_or_checksum_(value_or_checksum)
+history_entry::history_entry(chain::point point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum)
+    : point_(point), point_kind_(kind), height_(height), index_(index), value_or_checksum_(value_or_checksum)
 {}
+
+chain::point history_entry::point() const {
+    return point_;
+}
 
 chain::point_kind history_entry::point_kind() const {
     return point_kind_;
@@ -47,9 +51,9 @@ uint64_t history_entry::value_or_checksum() const {
     return value_or_checksum_;
 }
 
-
 // private
 void history_entry::reset() {
+    point_ = chain::point{};
     point_kind_ = libbitcoin::chain::point_kind::output;
     height_ = max_uint32;
     index_ = max_uint32;
@@ -58,41 +62,40 @@ void history_entry::reset() {
 
 // Empty scripts are valid, validation relies on not_found only.
 bool history_entry::is_valid() const {
-    return height_ != bc::max_uint32 && index_ != max_uint32 && value_or_checksum_ != max_uint64;
+    return point_.is_valid() && height_ != bc::max_uint32 && index_ != max_uint32 && value_or_checksum_ != max_uint64;
 }
-
 
 // Size.
 //-----------------------------------------------------------------------------
 constexpr
 size_t history_entry::serialized_size() {
-    return sizeof(chain::point_kind) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint64_t);
+    return sizeof(chain::point) + sizeof(chain::point_kind) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint64_t);
 }
 
 // Serialization.
 //-----------------------------------------------------------------------------
 
 // static
-data_chunk history_entry::factory_to_data(chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
+data_chunk history_entry::factory_to_data(chain::point point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
     data_chunk data;
     auto const size = serialized_size();
     data.reserve(size);
     data_sink ostream(data);
-    factory_to_data(ostream, kind, height, index, value_or_checksum);
+    factory_to_data(ostream, point, kind, height, index, value_or_checksum);
     ostream.flush();
     BITCOIN_ASSERT(data.size() == size);
     return data;
 }
 
 // static
-void history_entry::factory_to_data(std::ostream& stream, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
+void history_entry::factory_to_data(std::ostream& stream, chain::point point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
     ostream_writer sink(stream);
-    factory_to_data(sink, kind, height, index, value_or_checksum);
+    factory_to_data(sink, point, kind, height, index, value_or_checksum);
 }
 
 // static
-void history_entry::factory_to_data(writer& sink, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
-    
+void history_entry::factory_to_data(writer& sink, chain::point point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
+    point.to_data(sink,false);
     sink.write_byte(static_cast<uint8_t>(kind));
     sink.write_4_bytes_little_endian(height);
     sink.write_4_bytes_little_endian(index);
@@ -121,7 +124,7 @@ void history_entry::to_data(std::ostream& stream) const {
 
 void history_entry::to_data(writer& sink) const {
     //output_.to_data(sink, false);
-    factory_to_data(sink, point_kind_, height_, index_, value_or_checksum_ );
+    factory_to_data(sink, point_, point_kind_, height_, index_, value_or_checksum_ );
 }
 
 // Deserialization.
@@ -158,8 +161,7 @@ bool history_entry::from_data(std::istream& stream) {
 bool history_entry::from_data(reader& source) {
     reset();
     
-    //output_.from_data(source, false);
-    
+    point_.from_data(source, false);
     point_kind_ = static_cast<chain::point_kind>(source.read_byte()),
     height_ = source.read_4_bytes_little_endian();
     index_ = source.read_4_bytes_little_endian();

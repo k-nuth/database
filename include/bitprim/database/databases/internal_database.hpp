@@ -528,7 +528,7 @@ private:
             return false;
         }
 
-        res = mdb_dbi_open(db_txn, history_db_name, MDB_CREATE | MDB_DUPSORT , &dbi_history_db_);
+        res = mdb_dbi_open(db_txn, history_db_name, MDB_CREATE | MDB_DUPSORT | MDB_DUPFIXED , &dbi_history_db_);
         if (res != MDB_SUCCESS) {
             return false;
         }
@@ -652,7 +652,8 @@ private:
     }
 
     result_code insert_input_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::input const& input, MDB_txn* db_txn);
-    result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, MDB_txn* db_txn );
+    result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, MDB_txn* db_txn);
+    result_code insert_history_db (wallet::payment_address const& address, data_chunk const& entry, MDB_txn* db_txn); 
 
 #endif //BITPRIM_NEW_DB_FULL
 
