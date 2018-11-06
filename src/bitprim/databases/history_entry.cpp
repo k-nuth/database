@@ -27,11 +27,11 @@
 namespace libbitcoin { 
 namespace database {
 
-history_entry::history_entry(chain::point point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum)
+history_entry::history_entry(chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum)
     : point_(point), point_kind_(kind), height_(height), index_(index), value_or_checksum_(value_or_checksum)
 {}
 
-chain::point history_entry::point() const {
+chain::point const& history_entry::point() const {
     return point_;
 }
 
@@ -67,18 +67,19 @@ bool history_entry::is_valid() const {
 
 // Size.
 //-----------------------------------------------------------------------------
-constexpr
-size_t history_entry::serialized_size() {
-    return sizeof(chain::point) + sizeof(chain::point_kind) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint64_t);
+// constexpr
+//TODO(fernando): make chain::point::serialized_size() static and constexpr to make this constexpr too
+size_t history_entry::serialized_size(chain::point const& point) {
+    return point.serialized_size(false) + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint64_t);
 }
 
 // Serialization.
 //-----------------------------------------------------------------------------
 
 // static
-data_chunk history_entry::factory_to_data(chain::point point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
+data_chunk history_entry::factory_to_data(chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
     data_chunk data;
-    auto const size = serialized_size();
+    auto const size = serialized_size(point);
     data.reserve(size);
     data_sink ostream(data);
     factory_to_data(ostream, point, kind, height, index, value_or_checksum);
@@ -88,14 +89,14 @@ data_chunk history_entry::factory_to_data(chain::point point, chain::point_kind 
 }
 
 // static
-void history_entry::factory_to_data(std::ostream& stream, chain::point point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
+void history_entry::factory_to_data(std::ostream& stream, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
     ostream_writer sink(stream);
     factory_to_data(sink, point, kind, height, index, value_or_checksum);
 }
 
 // static
-void history_entry::factory_to_data(writer& sink, chain::point point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
-    point.to_data(sink,false);
+void history_entry::factory_to_data(writer& sink, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
+    point.to_data(sink, false);
     sink.write_byte(static_cast<uint8_t>(kind));
     sink.write_4_bytes_little_endian(height);
     sink.write_4_bytes_little_endian(index);
@@ -108,7 +109,7 @@ void history_entry::factory_to_data(writer& sink, chain::point point, chain::poi
 
 data_chunk history_entry::to_data() const {
     data_chunk data;
-    auto const size = serialized_size();
+    auto const size = serialized_size(point_);
     data.reserve(size);
     data_sink ostream(data);
     to_data(ostream);
@@ -123,7 +124,6 @@ void history_entry::to_data(std::ostream& stream) const {
 }
 
 void history_entry::to_data(writer& sink) const {
-    //output_.to_data(sink, false);
     factory_to_data(sink, point_, point_kind_, height_, index_, value_or_checksum_ );
 }
 

@@ -769,13 +769,6 @@ result_code internal_database_basis<Clock>::remove_block(chain::block const& blo
     if (res != result_code::success) {
         return res;
     }
-    
-#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
-    res = remove_blocks_db(height, db_txn);
-    if (res != result_code::success) {
-        return res;
-    }
-#endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
 
 #if defined(BITPRIM_DB_NEW_FULL)
     res = remove_transactions(height, db_txn);
@@ -783,6 +776,14 @@ result_code internal_database_basis<Clock>::remove_block(chain::block const& blo
         return res;
     }
 #endif //defined(BITPRIM_DB_NEW_FULL)
+
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    res = remove_blocks_db(height, db_txn);
+    if (res != result_code::success) {
+        return res;
+    }
+#endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+
 
 
     return result_code::success;

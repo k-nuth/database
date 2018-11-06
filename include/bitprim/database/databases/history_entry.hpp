@@ -32,16 +32,21 @@ public:
 
     history_entry() = default;
 
-    history_entry(chain::point point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
+    history_entry(chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
 
     // Getters
-    chain::point point() const;
+    chain::point const& point() const;
     chain::point_kind point_kind() const;
     uint64_t value_or_checksum() const;
     uint32_t height() const;
     uint32_t index() const;
 
     bool is_valid() const;
+
+    //TODO(fernando): make chain::point::serialized_size() static and constexpr to make this constexpr too
+    // constexpr 
+    static
+    size_t serialized_size(chain::point const& point);
 
     data_chunk to_data() const;
     void to_data(std::ostream& stream) const;
@@ -60,17 +65,15 @@ public:
     history_entry factory_from_data(reader& source);
 
     static
-    data_chunk factory_to_data(chain::point point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
+    data_chunk factory_to_data(chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
     static
-    void factory_to_data(std::ostream& stream,chain::point point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
+    void factory_to_data(std::ostream& stream,chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
     static
-    void factory_to_data(writer& sink, chain::point point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
+    void factory_to_data(writer& sink, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
 
 private:
     void reset();
 
-    constexpr static
-    size_t serialized_size();
 
     chain::point point_;
     chain::point_kind point_kind_;

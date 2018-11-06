@@ -47,7 +47,7 @@ public:
     data_chunk to_data() const;
     void to_data(std::ostream& stream) const;
 
-#ifdef BITPRIM_USE_DOMAIN    
+#ifdef BITPRIM_USE_DOMAIN
     template <Writer W, BITPRIM_IS_WRITER(W)>
     void to_data(W& sink) const {
         output_.to_data(sink, false);
