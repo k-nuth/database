@@ -50,26 +50,80 @@ public:
 
     data_chunk to_data() const;
     void to_data(std::ostream& stream) const;
+
+#ifdef BITPRIM_USE_DOMAIN
+    template <Writer W, BITPRIM_IS_WRITER(W)>
+    void to_data(W& sink) const {
+        factory_to_data(sink, point_, point_kind_, height_, index_, value_or_checksum_ );
+    }
+
+#else
     void to_data(writer& sink) const;
+#endif
+
 
     bool from_data(const data_chunk& data);
     bool from_data(std::istream& stream);
-    bool from_data(reader& source);
 
+#ifdef BITPRIM_USE_DOMAIN
+    template <Reader R, BITPRIM_IS_READER(R)>
+    bool from_data(R& source) {
+        reset();
+        
+        point_.from_data(source, false);
+        point_kind_ = static_cast<chain::point_kind>(source.read_byte()),
+        height_ = source.read_4_bytes_little_endian();
+        index_ = source.read_4_bytes_little_endian();
+        value_or_checksum_ = source.read_8_bytes_little_endian();
+        
+        if ( ! source) {
+            reset();
+        }
+
+        return source;
+    }    
+#else
+    bool from_data(reader& source);
+#endif
 
     static
     history_entry factory_from_data(data_chunk const& data);
     static
     history_entry factory_from_data(std::istream& stream);
+
+
+#ifdef BITPRIM_USE_DOMAIN
+    template <Reader R, BITPRIM_IS_READER(R)>
     static
+    history_entry factory_from_data(R& source) {
+        history_entry instance;
+        instance.from_data(source);
+        return instance;
+    }
+#else
     history_entry factory_from_data(reader& source);
+#endif
 
     static
     data_chunk factory_to_data(chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
     static
     void factory_to_data(std::ostream& stream,chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
+
+
+#ifdef BITPRIM_USE_DOMAIN
+    template <Writer W, BITPRIM_IS_WRITER(W)>
+    static
+    void factory_to_data(W& sink, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
+        point.to_data(sink, false);
+        sink.write_byte(static_cast<uint8_t>(kind));
+        sink.write_4_bytes_little_endian(height);
+        sink.write_4_bytes_little_endian(index);
+        sink.write_8_bytes_little_endian(value_or_checksum);
+    }
+#else
     static
     void factory_to_data(writer& sink, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
+#endif
 
 private:
     void reset();

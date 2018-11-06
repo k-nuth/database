@@ -94,6 +94,8 @@ void history_entry::factory_to_data(std::ostream& stream, chain::point const& po
     factory_to_data(sink, point, kind, height, index, value_or_checksum);
 }
 
+
+#ifndef BITPRIM_USE_DOMAIN
 // static
 void history_entry::factory_to_data(writer& sink, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
     point.to_data(sink, false);
@@ -102,7 +104,7 @@ void history_entry::factory_to_data(writer& sink, chain::point const& point, cha
     sink.write_4_bytes_little_endian(index);
     sink.write_8_bytes_little_endian(value_or_checksum);
 }
-
+#endif
 
 // Serialization.
 //-----------------------------------------------------------------------------
@@ -123,9 +125,11 @@ void history_entry::to_data(std::ostream& stream) const {
     to_data(sink);
 }
 
+#ifndef BITPRIM_USE_DOMAIN
 void history_entry::to_data(writer& sink) const {
     factory_to_data(sink, point_, point_kind_, height_, index_, value_or_checksum_ );
 }
+#endif
 
 // Deserialization.
 //-----------------------------------------------------------------------------
@@ -142,11 +146,13 @@ history_entry history_entry::factory_from_data(std::istream& stream) {
     return instance;
 }
 
+#ifndef BITPRIM_USE_DOMAIN
 history_entry history_entry::factory_from_data(reader& source) {
     history_entry instance;
     instance.from_data(source);
     return instance;
 }
+#endif
 
 bool history_entry::from_data(const data_chunk& data) {
     data_source istream(data);
@@ -158,6 +164,7 @@ bool history_entry::from_data(std::istream& stream) {
     return from_data(source);
 }
 
+#ifndef BITPRIM_USE_DOMAIN
 bool history_entry::from_data(reader& source) {
     reset();
     
@@ -173,6 +180,7 @@ bool history_entry::from_data(reader& source) {
 
     return source;
 }
+#endif
 
 } // namespace database
 } // namespace libbitcoin
