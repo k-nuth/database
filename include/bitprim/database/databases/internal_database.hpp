@@ -43,7 +43,7 @@
 namespace libbitcoin {
 namespace database {
 
-#ifdef BITPRIM_DB_NEW_BLOCKS
+#if defined(BITPRIM_DB_NEW_BLOCKS)
 constexpr size_t max_dbs_ = 7;
 #elif defined(BITPRIM_DB_NEW_FULL)
 constexpr size_t max_dbs_ = 9;
@@ -71,7 +71,7 @@ public:
     constexpr static char block_db_name[] = "blocks";
     #endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     
-    #ifdef BITPRIM_DB_NEW_FULL
+    #if defined(BITPRIM_DB_NEW_FULL)
     //Transactions
     constexpr static char transaction_db_name[] = "transactions";
     constexpr static char history_db_name[] = "history";
@@ -129,7 +129,7 @@ public:
             mdb_dbi_close(env_, dbi_block_db_);
             #endif
             
-            #ifdef BITPRIM_DB_NEW_FULL
+            #if defined(BITPRIM_DB_NEW_FULL)
             mdb_dbi_close(env_, dbi_transaction_db_);
             mdb_dbi_close(env_, dbi_history_db_);
             #endif
@@ -167,7 +167,6 @@ public:
         return res;
     }
 
-    
     //TODO(fernando): optimization: consider passing a list of outputs to insert and a list of inputs to delete instead of an entire Block.
     //                  avoiding inserting and erasing internal spenders
     result_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past) {
@@ -519,7 +518,7 @@ private:
         }
         #endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
 
-        #ifdef BITPRIM_DB_NEW_FULL
+        #if defined(BITPRIM_DB_NEW_FULL)
         res = mdb_dbi_open(db_txn, transaction_db_name, MDB_CREATE, &dbi_transaction_db_);
         if (res != MDB_SUCCESS) {
             return false;
@@ -617,6 +616,23 @@ private:
 
 #if defined(BITPRIM_DB_NEW_FULL)
 
+    
+    template <typename I>
+    result_code insert_transactions(I f, I l, uint32_t height, MDB_txn* db_txn) {
+    
+        while (f != l) {
+            auto const& tx = *f;
+            auto res = insert_transaction(tx, height,  db_txn);
+            if (res != result_code::success) {    
+                return res;
+            }
+            ++f;
+        }
+
+        return result_code::success;
+    }
+    
+    
     chain::transaction get_transaction(hash_digest const& hash, MDB_txn* db_txn) const {
         
         MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
@@ -934,20 +950,7 @@ private:
         return result_code::success;
     }
 
-    template <typename I>
-    result_code insert_transactions(I f, I l, uint32_t height, MDB_txn* db_txn) {
     
-        while (f != l) {
-            auto const& tx = *f;
-            auto res = insert_transaction(tx, height,  db_txn);
-            if (res != result_code::success) {    
-                return res;
-            }
-            ++f;
-        }
-
-        return result_code::success;
-    }
 
     data_chunk serialize_txs(chain::block const& block) {
         
