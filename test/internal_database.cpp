@@ -712,6 +712,10 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_double_spend_block) {
     BOOST_REQUIRE(db.open());
     BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);          
     BOOST_REQUIRE(db.push_block(spender0, 1, 1) == result_code::success);       
+    
+    //auto res = db.push_block(spender1, 2, 1);
+    //std::cout << "aaaaaaaaaaaa" << static_cast<uint32_t>(res) << std::endl;
+
     BOOST_REQUIRE(db.push_block(spender1, 2, 1) == result_code::key_not_found); 
 }
 

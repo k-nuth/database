@@ -52,3 +52,5 @@ cmake-build-debug/
 CMakeSettings.json
 
 .vscode/
+internal_database/internal_db/data.mdb
+internal_database/internal_db/lock.mdb

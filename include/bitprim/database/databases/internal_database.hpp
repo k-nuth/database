@@ -202,13 +202,15 @@ public:
         MDB_txn* db_txn;
         auto res0 = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
         if (res0 != MDB_SUCCESS) {
+            
+            //std::cout << "bbbbbbbbbbbb" << static_cast<uint32_t>(res0) << std::endl;
             LOG_INFO(LOG_DATABASE) << "Error begining LMDB Transaction [get_utxo] " << res0;
             return utxo_entry{};
         }
 
         res0 = mdb_get(db_txn, dbi_utxo_, &key, &value);
         if (res0 != MDB_SUCCESS) {
-          
+          //std::cout << "ccccccccccc" << static_cast<uint32_t>(res0) << std::endl;
             mdb_txn_commit(db_txn);
             // mdb_txn_abort(db_txn);  
             return utxo_entry{};
@@ -218,11 +220,13 @@ public:
 
         res0 = mdb_txn_commit(db_txn);
         if (res0 != MDB_SUCCESS) {
+            //std::cout << "cccc" << static_cast<uint32_t>(res0) << std::endl;
             LOG_DEBUG(LOG_DATABASE) << "Error commiting LMDB Transaction [get_utxo] " << res0;        
             return utxo_entry{};
         }
 
         auto res = utxo_entry::factory_from_data(data);
+        //std::cout << "ddddddddddddddd" << static_cast<uint32_t>(res0) << std::endl;
         return res;
     }
     
@@ -834,29 +838,69 @@ private:
         return res;
     }
 
-    result_code push_transaction_non_coinbase(uint32_t height, data_chunk const& fixed_data, chain::transaction const& tx, bool insert_reorg, MDB_txn* db_txn) {
-        auto res = push_inputs(tx.hash(), height, tx.inputs(), insert_reorg, db_txn);
-        if (res != result_code::success) {
-            // std::cout << "yyyyyyyyyyyy" << static_cast<uint32_t>(res) << "\n";
-            return res;
-        }
-        //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
-        return insert_outputs_error_treatment(height, fixed_data, tx.hash(), tx.outputs(), db_txn);
-    }
+    // result_code push_transaction_non_coinbase(uint32_t height, data_chunk const& fixed_data, chain::transaction const& tx, bool insert_reorg, MDB_txn* db_txn) {
+    //     auto res = remove_inputs(height, tx.inputs(), insert_reorg, db_txn);
+    //     if (res != result_code::success) {
+    //         return res;
+    //     }
+    //     //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
+    //     return insert_outputs_error_treatment(height, fixed_data, tx.hash(), tx.outputs(), db_txn);
+    // }
+
+    // template <typename I>
+    // result_code push_transactions_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, bool insert_reorg, MDB_txn* db_txn) {
+    //     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
+
+    //     while (f != l) {
+    //         auto const& tx = *f;
+    //         auto res = push_transaction_non_coinbase(height, fixed_data, tx, insert_reorg, db_txn);
+    //         if (res != result_code::success) {
+    //             return res;
+    //         }
+    //         ++f;
+    //     }
+    //     return result_code::success;
+    // }
+
 
     template <typename I>
-    result_code push_transactions_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, bool insert_reorg, MDB_txn* db_txn) {
+    result_code push_transactions_outputs_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, MDB_txn* db_txn) {
         // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
 
         while (f != l) {
             auto const& tx = *f;
-            auto res = push_transaction_non_coinbase(height, fixed_data, tx, insert_reorg, db_txn);
+            auto res = insert_outputs_error_treatment(height, fixed_data, tx.hash(), tx.outputs(), db_txn);
             if (res != result_code::success) {
                 return res;
             }
             ++f;
         }
         return result_code::success;
+    }
+
+    template <typename I>
+    result_code remove_transactions_inputs_non_coinbase(uint32_t height, I f, I l, bool insert_reorg, MDB_txn* db_txn) {
+        while (f != l) {
+            auto const& tx = *f;
+            auto res = push_inputs(tx.hash(), height, tx.inputs(), insert_reorg, db_txn);
+            if (res != result_code::success) {
+                return res;
+            }
+            ++f;
+        }
+        return result_code::success;
+    }
+
+    template <typename I>
+    result_code push_transactions_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, bool insert_reorg, MDB_txn* db_txn) {
+        // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
+
+        auto res = push_transactions_outputs_non_coinbase(height, fixed_data, f, l, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
+
+        return remove_transactions_inputs_non_coinbase(height, f, l, insert_reorg, db_txn);
     }
 
     result_code push_block_header(chain::block const& block, uint32_t height, MDB_txn* db_txn) {
@@ -1066,9 +1110,22 @@ private:
         return res;
     }
 
+    // result_code remove_outputs(hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn) {
+    //     uint32_t pos = outputs.size() - 1;
+    //     for (auto const& output: boost::adaptors::reverse(outputs)) {
+    //         chain::output_point const point {txid, pos};
+    //         auto res = remove_utxo(0, point, false, db_txn);
+    //         if (res != result_code::success) {
+    //             return res;
+    //         }
+    //         --pos;
+    //     }
+    //     return result_code::success;
+    // }
+
     result_code remove_outputs(hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn) {
         uint32_t pos = outputs.size() - 1;
-        for (auto const& output: boost::adaptors::reverse(outputs)) {
+        for (auto const& output: outputs) {
             chain::output_point const point {txid, pos};
             auto res = remove_utxo(0, point, false, db_txn);
             if (res != result_code::success) {
@@ -1078,6 +1135,7 @@ private:
         }
         return result_code::success;
     }
+
 
     result_code insert_output_from_reorg_and_remove(chain::output_point const& point, MDB_txn* db_txn) {
         auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);
@@ -1116,8 +1174,20 @@ private:
         return result_code::success;
     }
 
+    // result_code insert_inputs(chain::input::list const& inputs, MDB_txn* db_txn) {
+    //     for (auto const& input: boost::adaptors::reverse(inputs)) {
+    //         auto const& point = input.previous_output();
+
+    //         auto res = insert_output_from_reorg_and_remove(point, db_txn);
+    //         if (res != result_code::success) {
+    //             return res;
+    //         }
+    //     }
+    //     return result_code::success;
+    // }
+
     result_code insert_inputs(chain::input::list const& inputs, MDB_txn* db_txn) {
-        for (auto const& input: boost::adaptors::reverse(inputs)) {
+        for (auto const& input: inputs) {
             auto const& point = input.previous_output();
 
             auto res = insert_output_from_reorg_and_remove(point, db_txn);
@@ -1128,31 +1198,76 @@ private:
         return result_code::success;
     }
 
-    result_code remove_transaction_non_coinbase(chain::transaction const& tx, MDB_txn* db_txn) {
-        //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
-        auto res = remove_outputs(tx.hash(), tx.outputs(), db_txn);
-        if (res != result_code::success) {    
-            return res;
-        }
+    // result_code remove_transaction_non_coinbase(chain::transaction const& tx, MDB_txn* db_txn) {
+    //     //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
+    //     auto res = remove_outputs(tx.hash(), tx.outputs(), db_txn);
+    //     if (res != result_code::success) {    
+    //         return res;
+    //     }
 
-        return insert_inputs(tx.inputs(), db_txn);
+    //     return insert_inputs(tx.inputs(), db_txn);
+    // }
+
+    template <typename I>
+    result_code insert_transactions_inputs_non_coinbase(I f, I l, MDB_txn* db_txn) {
+        // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
+        
+        while (f != l) {
+            auto const& tx = *f;
+            auto res = insert_inputs(tx.inputs(), db_txn);
+            if (res != result_code::success) {
+                return res;
+            }
+            ++f;
+        } 
+
+        return result_code::success;
     }
+
+    template <typename I>
+    result_code remove_transactions_outputs_non_coinbase(I f, I l, MDB_txn* db_txn) {
+        // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
+        
+        while (f != l) {
+            auto const& tx = *f;
+            auto res = remove_outputs(tx.hash(), tx.outputs(), db_txn);
+            if (res != result_code::success) {
+                return res;
+            }
+            ++f;
+        } 
+
+        return result_code::success;
+    }
+
+
+    // template <typename I>
+    // result_code remove_transactions_non_coinbase(I f, I l, MDB_txn* db_txn) {
+    //     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
+        
+    //     // reverse order
+    //     while (f != l) {
+    //         --l;
+    //         auto const& tx = *l;
+    //         auto res = remove_transaction_non_coinbase(tx, db_txn);
+    //         if (res != result_code::success) {
+    //             return res;
+    //         }
+    //     } 
+
+    //     return result_code::success;
+    // }
+
 
     template <typename I>
     result_code remove_transactions_non_coinbase(I f, I l, MDB_txn* db_txn) {
         // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
-        
-        // reverse order
-        while (f != l) {
-            --l;
-            auto const& tx = *l;    
-            auto res = remove_transaction_non_coinbase(tx, db_txn);
-            if (res != result_code::success) {
-                return res;
-            }
-        } 
 
-        return result_code::success;
+        auto res = insert_transactions_inputs_non_coinbase(f, l, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
+        return remove_transactions_outputs_non_coinbase(f, l, db_txn);
     }
 
     result_code remove_block_header(hash_digest const& hash, uint32_t height, MDB_txn* db_txn) {

@@ -70,14 +70,15 @@ class BitprimDatabaseConan(BitprimConanFile):
     build_policy = "missing"
 
     def requirements(self):
-        self.requires("boost/1.66.0@bitprim/stable")
         
         if self.options.db == "new" or self.options.db == "new_with_blocks" or self.options.db == "new_full":
             self.requires("lmdb/0.9.22@bitprim/stable")
 
         if self.options.use_domain:
+            self.requires("boost/1.68.0@bitprim/stable")
             self.requires("bitprim-domain/0.X@%s/%s" % (self.user, self.channel))
         else:
+            self.requires("boost/1.66.0@bitprim/stable")
             self.requires("bitprim-core/0.X@%s/%s" % (self.user, self.channel))
 
     def config_options(self):
@@ -132,6 +133,7 @@ class BitprimDatabaseConan(BitprimConanFile):
 
         cmake.definitions["CURRENCY"] = self.options.currency
         cmake.definitions["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
+        cmake.definitions["USE_DOMAIN"] = option_on_off(self.options.use_domain)
 
         if self.options.db == "legacy":
             cmake.definitions["DB_TRANSACTION_UNCONFIRMED"] = option_on_off(False)
