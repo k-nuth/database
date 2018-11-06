@@ -129,7 +129,8 @@ private:
     result_code insert_transactions(I f, I l, uint32_t height, MDB_txn* db_txn);
     chain::transaction get_transaction(hash_digest const& hash, MDB_txn* db_txn) const;
     result_code insert_input_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::input const& input, MDB_txn* db_txn);
-    result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, MDB_txn* db_txn );
+    result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, MDB_txn* db_txn);
+    result_code insert_history_db (wallet::payment_address const& address, data_chunk const& entry, MDB_txn* db_txn); 
 #endif //BITPRIM_NEW_DB_FULL
 
     result_code push_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn);
@@ -157,7 +158,6 @@ private:
     data_chunk serialize_txs(chain::block const& block);
     result_code insert_block(chain::block const& block, uint32_t height, MDB_txn* db_txn);
 #endif
-
 
     result_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg, MDB_txn* db_txn);
 
@@ -261,13 +261,11 @@ constexpr char internal_database_basis<Clock>::block_db_name[];                 
 #endif
 
 #ifdef BITPRIM_DB_NEW_FULL
-
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::transaction_db_name[];            //key: tx hash, value: tx
 
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::history_db_name[];            //key: tx hash, value: tx
-
 #endif
 
 using internal_database = internal_database_basis<std::chrono::system_clock>;
