@@ -109,6 +109,12 @@ public:
     chain::block get_block(uint32_t height) const;
 #endif //BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL
 
+
+#if defined(BITPRIM_DB_NEW_FULL)
+    chain::transaction get_transaction(hash_digest const& hash) const;
+    chain::history_compact::list get_history(const short_hash& key, size_t limit, size_t from_height);
+#endif
+
 private:
     bool is_old_block(chain::block const& block) const;
 
@@ -132,7 +138,6 @@ private:
     result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, MDB_txn* db_txn);
     result_code insert_history_db (wallet::payment_address const& address, data_chunk const& entry, MDB_txn* db_txn); 
     chain::history_compact history_entry_to_history_compact(history_entry const& entry);
-    chain::history_compact::list get_history(const short_hash& key, size_t limit, size_t from_height);
 #endif //BITPRIM_NEW_DB_FULL
 
     result_code push_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn);

@@ -275,6 +275,32 @@ void check_reorg_output_doesnt_exists(MDB_env* env_, MDB_dbi& dbi_reorg_pool_, s
     BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
 }
 
+
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+void check_blocks_db_just_existence(MDB_env* env_, MDB_dbi& dbi_blocks_db_, uint32_t height) {
+    MDB_txn* db_txn;
+
+    MDB_val key {sizeof(height), &height};
+    MDB_val value;
+
+    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_get(db_txn, dbi_blocks_db_, &key, &value) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+}
+
+void check_blocks_db_doesnt_exists(MDB_env* env_, MDB_dbi& dbi_blocks_db_, uint32_t height) {
+    MDB_txn* db_txn;
+
+    MDB_val key {sizeof(height), &height};
+    MDB_val value;
+
+    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_get(db_txn, dbi_blocks_db_, &key, &value) == MDB_NOTFOUND);
+    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+}
+
+#endif
+
 #if defined(BITPRIM_DB_NEW_BLOCKS)
 
 void check_blocks_db(MDB_env* env_, MDB_dbi& dbi_blocks_db_, uint32_t height) {
@@ -370,32 +396,30 @@ void check_transactions_db_doesnt_exists(MDB_env* env_, MDB_dbi& dbi_transaction
     BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
 }
 
+void check_history_db_just_existence(MDB_env* env_, MDB_dbi& dbi_history_db_, short_hash& hash) {
+    MDB_txn* db_txn;
+
+    MDB_val key {hash.size(), hash.data()};
+    MDB_val value;
+
+    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_get(db_txn, dbi_history_db_, &key, &value) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+}
+
+void check_history_db_doesnt_exists(MDB_env* env_, MDB_dbi& dbi_history_db_, short_hash& hash) {
+    MDB_txn* db_txn;
+
+    MDB_val key {hash.size(), hash.data()};
+    MDB_val value;
+
+    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_get(db_txn, dbi_history_db_, &key, &value) == MDB_NOTFOUND);
+    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+}
 
 #endif
 
-
-
-void check_blocks_db_just_existence(MDB_env* env_, MDB_dbi& dbi_blocks_db_, uint32_t height) {
-    MDB_txn* db_txn;
-
-    MDB_val key {sizeof(height), &height};
-    MDB_val value;
-
-    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_blocks_db_, &key, &value) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
-}
-
-void check_blocks_db_doesnt_exists(MDB_env* env_, MDB_dbi& dbi_blocks_db_, uint32_t height) {
-    MDB_txn* db_txn;
-
-    MDB_val key {sizeof(height), &height};
-    MDB_val value;
-
-    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_blocks_db_, &key, &value) == MDB_NOTFOUND);
-    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
-}
 
 
 void check_reorg_index(MDB_env* env_, MDB_dbi& dbi_reorg_index_, std::string txid_enc, uint32_t pos, uint32_t height) {
@@ -615,6 +639,27 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_genesis) {
 
     auto output = entry.output();
     BOOST_REQUIRE(output.is_valid());
+
+    #if defined(BITPRIM_DB_NEW_FULL)
+
+    auto const& tx = db.get_transaction(txid);
+    BOOST_REQUIRE(tx.is_valid());
+
+    auto const& address = wallet::payment_address("bitcoincash:qp3wjpa3tjlj042z2wv7hahsldgwhwy0rq9sywjpyy");
+    BOOST_REQUIRE(address);
+    
+    auto history_list = db.get_history(address.hash(),0,0);
+    BOOST_REQUIRE(history_list.size() == 1);
+
+    auto history_item = history_list[0];
+
+    BOOST_REQUIRE(history_item.kind == point_kind::output);
+    BOOST_REQUIRE(history_item.point.hash() == txid);
+    BOOST_REQUIRE(history_item.point.index() == 0);
+    BOOST_REQUIRE(history_item.height == 0);
+    BOOST_REQUIRE(history_item.value == 5000000000);
+
+    #endif
 
 
     std::string output_enc = "00f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac";

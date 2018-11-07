@@ -154,7 +154,7 @@ chain::history_compact::list internal_database_basis<Clock>::get_history(const s
         return result;
     }
 
-    MDB_val key_hash{key.size(), key.data()};
+    MDB_val key_hash{key.size(), const_cast<short_hash&>(key).data()};
     MDB_val value;
     int rc;
     if ((rc = mdb_cursor_get(cursor, &key_hash, &value, MDB_SET)) == 0) {

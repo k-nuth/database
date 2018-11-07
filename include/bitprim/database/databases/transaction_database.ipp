@@ -25,6 +25,27 @@ namespace database {
 
 #if defined(BITPRIM_DB_NEW_FULL)
 
+//public
+template <typename Clock>
+chain::transaction internal_database_basis<Clock>::get_transaction(hash_digest const& hash) const {
+    
+    MDB_txn* db_txn;
+    auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+    if (res != MDB_SUCCESS) {
+        return chain::transaction{};
+    }
+
+    auto transaction = get_transaction(hash, db_txn);
+
+    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+        return chain::transaction{};
+    }
+
+    return transaction;
+
+}
+
+
 template <typename Clock>
 template <typename I>
 result_code internal_database_basis<Clock>::insert_transactions(I f, I l, uint32_t height, MDB_txn* db_txn) {
