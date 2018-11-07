@@ -433,15 +433,45 @@ hash_digest get_previous_hash(const block_database& blocks, size_t height) {
 }
 #endif // BITPRIM_DB_LEGACY
 
+
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+static inline 
+uint32_t get_next_height(internal_database const& db) {
+    uint32_t current_height;
+    auto res = db.get_last_height(current_height);
+
+    if (res != result_code::success) {
+        return 0;
+    }
+
+    return current_height + 1;
+}
+
+static inline 
+hash_digest get_previous_hash(internal_database const& db, size_t height) {
+    return height == 0 ? null_hash : db.get_header(height - 1).hash();
+}
+#endif // defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+
+
 code data_base::verify_insert(const block& block, size_t height) {
     if (block.transactions().empty()) {
         return error::empty_block;
     }
 
-#ifdef BITPRIM_DB_LEGACY
+#if defined(BITPRIM_DB_LEGACY)
     if (blocks_->exists(height)) {
         return error::store_block_duplicate;
     }
+
+#elif defined(BITPRIM_DB_NEW)
+
+    auto res = internal_db_->get_header(height);
+
+    if (res.is_valid()) {
+        return error::store_block_duplicate;
+    }
+
 #endif // BITPRIM_DB_LEGACY
 
     return error::success;
@@ -452,7 +482,7 @@ code data_base::verify_push(const block& block, size_t height) {
         return error::empty_block;
     }
 
-#ifdef BITPRIM_DB_LEGACY
+#if defined(BITPRIM_DB_LEGACY)
     if (get_next_height(blocks()) != height) {
         return error::store_block_invalid_height;
     }
@@ -460,6 +490,17 @@ code data_base::verify_push(const block& block, size_t height) {
     if (block.header().previous_block_hash() != get_previous_hash(blocks(), height)) {
         return error::store_block_missing_parent;
     }
+
+#elif defined(BITPRIM_DB_NEW)
+
+    if (get_next_height(internal_db()) != height) {
+        return error::store_block_invalid_height;
+    }
+
+    if (block.header().previous_block_hash() != get_previous_hash(internal_db(), height)) {
+        return error::store_block_missing_parent;
+    }
+
 #endif // BITPRIM_DB_LEGACY
 
     return error::success;
