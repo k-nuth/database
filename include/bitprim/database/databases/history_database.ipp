@@ -185,10 +185,83 @@ chain::history_compact::list internal_database_basis<Clock>::get_history(const s
     mdb_cursor_close(cursor);
 
     if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
-        return result;;
+        return result;
     }
 
     return result;
+}
+
+
+template <typename Clock>
+result_code internal_database_basis<Clock>::remove_transaction_history_db(chain::transaction const& tx, size_t height, MDB_txn* db_txn) {
+
+
+    for (auto const& output: tx.outputs()) {
+        for (auto const& address : output.addresses()) {
+            auto res = remove_history_db(address, height, db_txn);
+            if (res != result_code::success) {
+                return res;
+            }
+        }
+    }
+
+    for (auto const& input: tx.inputs()) {
+        for (auto const& address : input.addresses()) {
+            auto res = remove_history_db(address, height, db_txn);
+            if (res != result_code::success) {
+                return res;
+            }
+        }
+    }
+
+    return result_code::success;
+}
+
+template <typename Clock>
+result_code internal_database_basis<Clock>::remove_history_db(const short_hash& key, size_t height, MDB_txn* db_txn) {
+
+    MDB_cursor* cursor;
+    if (mdb_cursor_open(db_txn, dbi_history_db_, &cursor) != MDB_SUCCESS) {
+        return result_code::other;
+    }
+
+    MDB_val key_hash{key.size(), const_cast<short_hash&>(key).data()};
+    MDB_val value;
+    int rc;
+    if ((rc = mdb_cursor_get(cursor, &key_hash, &value, MDB_SET)) == 0) {
+       
+        auto data = db_value_to_data_chunk(value);
+        auto entry = history_entry::factory_from_data(data);
+        
+        if (entry.height() == height) {
+            
+            if (mdb_cursor_del(cursor, 0) != MDB_SUCCESS) {
+                mdb_cursor_close(cursor);
+                return result_code::other;
+            }
+        }
+
+        while ((rc = mdb_cursor_get(cursor, &key_hash, &value, MDB_NEXT_DUP)) == 0) {
+        
+            auto data = db_value_to_data_chunk(value);
+            auto entry = history_entry::factory_from_data(data);
+
+            if (entry.height() == height) {
+                if (mdb_cursor_del(cursor, 0) != MDB_SUCCESS) {
+                    mdb_cursor_close(cursor);
+                    return result_code::other;
+                }
+            }
+        }
+    } 
+    
+    mdb_cursor_close(cursor);
+
+    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+        return result_code::other;
+    }
+
+    return result_code::success;
 }
 
 

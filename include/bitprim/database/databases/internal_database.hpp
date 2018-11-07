@@ -138,6 +138,8 @@ private:
     result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, MDB_txn* db_txn);
     result_code insert_history_db (wallet::payment_address const& address, data_chunk const& entry, MDB_txn* db_txn); 
     chain::history_compact history_entry_to_history_compact(history_entry const& entry);
+    result_code remove_history_db(const short_hash& key, size_t height, MDB_txn* db_txn);
+    result_code remove_transaction_history_db(chain::transaction const& tx, size_t height, MDB_txn* db_txn);
 #endif //BITPRIM_NEW_DB_FULL
 
     result_code push_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn);

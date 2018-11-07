@@ -491,7 +491,7 @@ code data_base::verify_push(const block& block, size_t height) {
         return error::store_block_missing_parent;
     }
 
-#elif defined(BITPRIM_DB_NEW)
+#elif defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
 
     if (get_next_height(internal_db()) != height) {
         return error::store_block_invalid_height;

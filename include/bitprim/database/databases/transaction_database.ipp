@@ -116,13 +116,24 @@ result_code internal_database_basis<Clock>::remove_transactions(uint32_t height,
         std::copy(f, f + libbitcoin::hash_size, h.data());
         
         MDB_val key_tx {h.size(), h.data()};
+        
+        /*auto const& tx = get_transaction(h, db_txn);
+        if (!tx.is_valid()) {
+            return result_code::other;
+        }
+        
+        auto res0 = remove_transaction_history_db(tx, height, db_txn);
+        if (res0 != result_code::success) {
+            return res0;
+        }*/
+        
         auto res = mdb_del(db_txn, dbi_transaction_db_, &key_tx, NULL);
         if (res == MDB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE) << "Key not found deleting transaction DB in LMDB [remove_blocks_db] - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE) << "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
             return result_code::key_not_found;
         }
         if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error deleting transaction DB in LMDB [remove_blocks_db] - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE) << "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
             return result_code::other;
         }
     
