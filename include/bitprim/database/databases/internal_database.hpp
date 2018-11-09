@@ -53,6 +53,7 @@ template <typename Clock = std::chrono::system_clock>
 class BCD_API internal_database_basis {
 public:
     using path = boost::filesystem::path;
+    using utxo_pool_t = std::unordered_map<chain::point, utxo_entry>;
 
     constexpr static char block_header_db_name[] = "block_header";
     constexpr static char block_header_by_hash_db_name[] = "block_header_by_hash";
@@ -61,10 +62,10 @@ public:
     constexpr static char reorg_index_name[] = "reorg_index";
     constexpr static char reorg_block_name[] = "reorg_block";
   
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+#ifdef BITPRIM_DB_NEW_BLOCKS
     //Blocks DB
     constexpr static char block_db_name[] = "blocks";
-    #endif
+#endif
 
     internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size)
         : db_dir_(db_dir)
@@ -114,9 +115,9 @@ public:
             mdb_dbi_close(env_, dbi_reorg_index_);
             mdb_dbi_close(env_, dbi_reorg_block_);
 
-            #ifdef BITPRIM_DB_NEW_BLOCKS 
+#ifdef BITPRIM_DB_NEW_BLOCKS 
             mdb_dbi_close(env_, dbi_block_db_);
-            #endif
+#endif
 
             db_opened_ = false;
         }
@@ -132,12 +133,12 @@ public:
 
     result_code push_genesis(chain::block const& block) {
         
-        #ifdef BITPRIM_DB_NEW_BLOCKS
+#ifdef BITPRIM_DB_NEW_BLOCKS
         uint32_t height = 0;
         auto valuearr = block.to_data(false);               
         MDB_val key {sizeof(height), &height};         
         MDB_val value {valuearr.size(), valuearr.data()};
-        #endif
+#endif
 
         MDB_txn* db_txn;
         auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
@@ -151,13 +152,13 @@ public:
             return res;
         }
 
-        #ifdef BITPRIM_DB_NEW_BLOCKS
+#ifdef BITPRIM_DB_NEW_BLOCKS
         auto res_block = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_NOOVERWRITE);
         if (res_block == MDB_KEYEXIST) {
             LOG_INFO(LOG_DATABASE) << "Duplicate key in LMDB Block [push_genesis] " << res_block;
             return result_code::duplicated_key;
         }
-        #endif
+#endif
 
         auto res2 = mdb_txn_commit(db_txn);
         if (res2 != MDB_SUCCESS) {
@@ -170,11 +171,11 @@ public:
     //                  avoiding inserting and erasing internal spenders
     result_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past) {
 
-        #ifdef BITPRIM_DB_NEW_BLOCKS
+#ifdef BITPRIM_DB_NEW_BLOCKS
         auto valuearr = block.to_data(false);               
         MDB_val key {sizeof(height), &height};         
         MDB_val value {valuearr.size(), valuearr.data()};
-        #endif
+#endif
 
         MDB_txn* db_txn;
         auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
@@ -189,13 +190,13 @@ public:
             return res;
         }
        
-        #ifdef BITPRIM_DB_NEW_BLOCKS
+#ifdef BITPRIM_DB_NEW_BLOCKS
         auto res_block = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_NOOVERWRITE);
         if (res_block == MDB_KEYEXIST) {
             LOG_INFO(LOG_DATABASE) << "Duplicate key in LMDB Block [push_block] " << res_block;
             return result_code::duplicated_key;
         }
-        #endif
+#endif
 
 
         auto res2 = mdb_txn_commit(db_txn);
@@ -385,10 +386,6 @@ public:
 
         return result_code::success;
     }
-
-
-    // using utxo_pool_t = std::unordered_map<chain::output_point, utxo_entry>;
-    using utxo_pool_t = std::unordered_map<chain::point, utxo_entry>;
 
     //TODO(fernando): move to private
     result_code insert_reorg_into_pool(utxo_pool_t& pool, MDB_val key_point, MDB_txn* db_txn) const {
@@ -629,13 +626,12 @@ private:
             return false;
         }
 
-        #ifdef BITPRIM_DB_NEW_BLOCKS
+#ifdef BITPRIM_DB_NEW_BLOCKS
         res = mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_db_);
         if (res != MDB_SUCCESS) {
             return false;
         }
-        #endif
-
+#endif
 
         db_opened_ = mdb_txn_commit(db_txn) == MDB_SUCCESS;
         return db_opened_;
@@ -699,7 +695,6 @@ private:
         }
         return result_code::success;
     }
-
     
     result_code insert_utxo(chain::output_point const& point, chain::output const& output, data_chunk const& fixed_data, MDB_txn* db_txn) {
         auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);                  //TODO(fernando): podría estar afuera de la DBTx
@@ -1120,7 +1115,7 @@ private:
         return result_code::success;
     }
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+#ifdef BITPRIM_DB_NEW_BLOCKS
     result_code remove_blocks_db(uint32_t height, MDB_txn* db_txn) {
 
         MDB_val key {sizeof(height), &height};
@@ -1135,7 +1130,7 @@ private:
         }
         return result_code::success;
     }
-    #endif
+#endif
 
     result_code remove_block(chain::block const& block, uint32_t height, MDB_txn* db_txn) {
         //precondition: block.transactions().size() >= 1
@@ -1170,12 +1165,12 @@ private:
             return res;
         }
 
-        #ifdef BITPRIM_DB_NEW_BLOCKS
+#ifdef BITPRIM_DB_NEW_BLOCKS
         res = remove_blocks_db(height, db_txn);
         if (res != result_code::success) {
             return res;
         }
-        #endif
+#endif
 
         return result_code::success;
     }
@@ -1193,7 +1188,7 @@ private:
         return res;
     }
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+#ifdef BITPRIM_DB_NEW_BLOCKS
     chain::block get_block(uint32_t height, MDB_txn* db_txn) const {
         MDB_val key {sizeof(height), &height};
         MDB_val value;
@@ -1206,7 +1201,7 @@ private:
         auto res = chain::block::factory_from_data(data);
         return res;
     }
-    #endif
+#endif
 
     chain::block get_block_reorg(uint32_t height, MDB_txn* db_txn) const {
         MDB_val key {sizeof(height), &height};
@@ -1362,10 +1357,9 @@ private:
     MDB_dbi dbi_reorg_index_;
     MDB_dbi dbi_reorg_block_;
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
-    //Blocks DB
+#ifdef BITPRIM_DB_NEW_BLOCKS
     MDB_dbi dbi_block_db_;
-    #endif
+#endif
 };
 
 template <typename Clock>
