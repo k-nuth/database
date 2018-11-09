@@ -195,7 +195,6 @@ chain::history_compact::list internal_database_basis<Clock>::get_history(const s
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_transaction_history_db(chain::transaction const& tx, size_t height, MDB_txn* db_txn) {
 
-
     for (auto const& output: tx.outputs()) {
         for (auto const& address : output.addresses()) {
             auto res = remove_history_db(address, height, db_txn);
@@ -221,6 +220,7 @@ template <typename Clock>
 result_code internal_database_basis<Clock>::remove_history_db(const short_hash& key, size_t height, MDB_txn* db_txn) {
 
     MDB_cursor* cursor;
+
     if (mdb_cursor_open(db_txn, dbi_history_db_, &cursor) != MDB_SUCCESS) {
         return result_code::other;
     }
@@ -256,10 +256,6 @@ result_code internal_database_basis<Clock>::remove_history_db(const short_hash& 
     } 
     
     mdb_cursor_close(cursor);
-
-    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
-        return result_code::other;
-    }
 
     return result_code::success;
 }

@@ -117,7 +117,7 @@ result_code internal_database_basis<Clock>::remove_transactions(uint32_t height,
         
         MDB_val key_tx {h.size(), h.data()};
         
-        /*auto const& tx = get_transaction(h, db_txn);
+        auto const& tx = get_transaction(h, db_txn);
         if (!tx.is_valid()) {
             return result_code::other;
         }
@@ -125,7 +125,7 @@ result_code internal_database_basis<Clock>::remove_transactions(uint32_t height,
         auto res0 = remove_transaction_history_db(tx, height, db_txn);
         if (res0 != result_code::success) {
             return res0;
-        }*/
+        }
         
         auto res = mdb_del(db_txn, dbi_transaction_db_, &key_tx, NULL);
         if (res == MDB_NOTFOUND) {
