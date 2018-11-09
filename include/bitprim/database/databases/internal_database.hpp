@@ -1161,7 +1161,7 @@ private:
         }
 
         res = remove_reorg_index(height, db_txn);
-        if (res != result_code::success) {
+        if (res != result_code::success && res != result_code::key_not_found) {
             return res;
         }
 
