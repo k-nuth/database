@@ -386,7 +386,112 @@ public:
         return result_code::success;
     }
 
-    #ifdef BITPRIM_DB_NEW_BLOCKS
+
+    // using utxo_pool_t = std::unordered_map<chain::output_point, utxo_entry>;
+    using utxo_pool_t = std::unordered_map<chain::point, utxo_entry>;
+
+    //TODO(fernando): move to private
+    result_code insert_reorg_into_pool(utxo_pool_t& pool, MDB_val key_point, MDB_txn* db_txn) const {
+
+        MDB_val value;
+        auto res = mdb_get(db_txn, dbi_reorg_pool_, &key_point, &value);
+        if (res == MDB_NOTFOUND) {
+            LOG_INFO(LOG_DATABASE) << "Key not found in reorg pool [insert_reorg_into_pool] " << res;        
+            return result_code::key_not_found;
+        }
+
+        if (res != MDB_SUCCESS) {
+            LOG_INFO(LOG_DATABASE) << "Error in reorg pool [insert_reorg_into_pool] " << res;        
+            return result_code::other;
+        }
+
+        auto entry_data = db_value_to_data_chunk(value);
+        auto entry = utxo_entry::factory_from_data(entry_data);
+
+        auto point_data = db_value_to_data_chunk(key_point);
+        auto point = chain::output_point::factory_from_data(point_data, BITPRIM_INTERNAL_DB_WIRE);
+        pool.insert({point, std::move(entry)});
+
+        return result_code::success;
+    }
+
+
+    std::pair<result_code, utxo_pool_t> get_utxo_pool_from(uint32_t from, uint32_t to) const {
+        // precondition: from <= to
+        utxo_pool_t pool;
+
+        MDB_txn* db_txn;
+        auto zzz = mdb_txn_begin(env_, NULL, 0, &db_txn);
+        if (zzz != MDB_SUCCESS) {
+            return {result_code::other, pool};
+        }
+
+        MDB_cursor* cursor;
+        if (mdb_cursor_open(db_txn, dbi_reorg_index_, &cursor) != MDB_SUCCESS) {
+            mdb_txn_commit(db_txn);
+            return {result_code::other, pool};
+        }
+
+        MDB_val key {sizeof(from), &from};
+        MDB_val value;
+
+        int rc = mdb_cursor_get(cursor, &key, &value, MDB_SET);
+        if (rc != MDB_SUCCESS) {
+            mdb_cursor_close(cursor);
+            mdb_txn_commit(db_txn);
+            return {result_code::key_not_found, pool};
+        }
+
+        auto current_height = *static_cast<uint32_t*>(key.mv_data);
+        if (current_height < from) {
+            mdb_cursor_close(cursor);
+            mdb_txn_commit(db_txn);
+            return {result_code::other, pool};
+        }
+        if (current_height > from) {
+            mdb_cursor_close(cursor);
+            mdb_txn_commit(db_txn);
+            return {result_code::other, pool};
+        }
+        if (current_height > to) {
+            mdb_cursor_close(cursor);
+            mdb_txn_commit(db_txn);
+            return {result_code::other, pool};
+        }
+
+        auto res = insert_reorg_into_pool(pool, value, db_txn);
+        if (res != result_code::success) {
+            mdb_cursor_close(cursor);
+            mdb_txn_commit(db_txn);
+            return {res, pool};
+        }
+
+        while ((rc = mdb_cursor_get(cursor, &key, &value, MDB_NEXT)) == MDB_SUCCESS) {
+            current_height = *static_cast<uint32_t*>(key.mv_data);
+            if (current_height > to) {
+                mdb_cursor_close(cursor);
+                mdb_txn_commit(db_txn);
+                return {result_code::other, pool};
+            }
+
+            res = insert_reorg_into_pool(pool, value, db_txn);
+            if (res != result_code::success) {
+                mdb_cursor_close(cursor);
+                mdb_txn_commit(db_txn);
+                return {res, pool};
+            }
+        }
+        
+        mdb_cursor_close(cursor);
+
+        if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+            return {result_code::other, pool};
+        }
+
+        return {result_code::success, pool};
+    }
+
+#ifdef BITPRIM_DB_NEW_BLOCKS
     std::pair<chain::block, uint32_t> get_block(hash_digest const& hash) const {
         MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
 
@@ -431,7 +536,9 @@ public:
 
         return block;
     }
-    #endif //BITPRIM_DB_NEW_BLOCKS
+#endif //BITPRIM_DB_NEW_BLOCKS
+
+
 
 private:
     bool is_old_block(chain::block const& block) const {
