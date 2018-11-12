@@ -48,7 +48,7 @@ result_code internal_database_basis<Clock>::insert_history_db (wallet::payment_a
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_input_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::input const& input, MDB_txn* db_txn) {
     
-    //TODO store inpoint
+    
     auto const inpoint = chain::input_point {tx_hash, index};
     auto const& prevout = input.previous_output();
 
@@ -57,6 +57,8 @@ result_code internal_database_basis<Clock>::insert_input_history(hash_digest con
         // address since standard outputs contain unambiguous address data.
         for (auto const& address : prevout.validation.cache.addresses()) {
             
+            //std::cout << "aaa " << encode_hash(tx_hash) << std::endl;
+            
             auto valuearr = history_entry::factory_to_data(inpoint, chain::point_kind::spend, height, index, prevout.checksum());
             auto res = insert_history_db(address, valuearr, db_txn); 
             if (res != result_code::success) {
@@ -64,7 +66,7 @@ result_code internal_database_basis<Clock>::insert_input_history(hash_digest con
             }        
         }
     } else {
-        // For any p2pk spend this creates no record (insufficient data).
+       /* // For any p2pk spend this creates no record (insufficient data).
         // For any p2kh spend this creates the ambiguous p2sh address,
         // which significantly expands the size of the history store.
         // These are tradeoffs when no prevout is cached (checkpoint sync).
@@ -79,13 +81,15 @@ result_code internal_database_basis<Clock>::insert_input_history(hash_digest con
         if (valid) {
             for (auto const& address : input.addresses()) {
                          
+                std::cout << "eee " << address << std::endl;
+                std::cout << "bbb " << encode_hash(tx_hash) << std::endl;
                 auto valuearr = history_entry::factory_to_data(inpoint, chain::point_kind::spend, height, index, prevout.checksum());
                 auto res = insert_history_db(address, valuearr, db_txn); 
                 if (res != result_code::success) {
                     return res;
                 }
             }
-        } else {
+        } else {*/
             //During an IBD with checkpoints some previous output info is missing.
             //We can recover it by accessing the database
             
@@ -97,6 +101,8 @@ result_code internal_database_basis<Clock>::insert_input_history(hash_digest con
 
                 for (auto const& address : out_output.addresses()) {
 
+                    //std::cout << "ccc " << encode_hash(tx_hash) << std::endl;
+
                     auto valuearr = history_entry::factory_to_data(inpoint, chain::point_kind::spend, height, index, prevout.checksum());
                     auto res = insert_history_db(address, valuearr, db_txn); 
                     if (res != result_code::success) {
@@ -104,7 +110,7 @@ result_code internal_database_basis<Clock>::insert_input_history(hash_digest con
                     }   
                 }
             }
-        }
+        /*}*/
     }
 
     return result_code::success;
@@ -119,6 +125,10 @@ result_code internal_database_basis<Clock>::insert_output_history(hash_digest co
 
     // Standard outputs contain unambiguous address data.
     for (auto const& address : output.addresses()) {
+        
+        //std::cout << "eee " << address << std::endl;
+
+        //std::cout << "ddd " << encode_hash(tx_hash) << std::endl; 
         auto valuearr = history_entry::factory_to_data(outpoint, chain::point_kind::output, height, index, value);
         auto res = insert_history_db(address, valuearr, db_txn); 
         if (res != result_code::success) {
@@ -205,11 +215,41 @@ result_code internal_database_basis<Clock>::remove_transaction_history_db(chain:
     }
 
     for (auto const& input: tx.inputs()) {
-        for (auto const& address : input.addresses()) {
-            auto res = remove_history_db(address, height, db_txn);
-            if (res != result_code::success) {
-                return res;
+        
+        auto const& prevout = input.previous_output();
+
+        if (prevout.validation.cache.is_valid()) { 
+            for (auto const& address : prevout.validation.cache.addresses()) { 
+                auto res = remove_history_db(address, height, db_txn);
+                if (res != result_code::success) {
+                    return res;
+                }
             }
+        }
+        else {
+
+            auto const& tx = get_transaction(prevout.hash(), db_txn);
+
+            if (tx.is_valid()) {
+
+                auto const& out_output = tx.outputs()[prevout.index()];
+
+                for (auto const& address : out_output.addresses()) {
+
+                    auto res = remove_history_db(address, height, db_txn);
+                    if (res != result_code::success) {
+                        return res;
+                    }
+                }
+            }
+            
+            /*
+            for (auto const& address : input.addresses()) {
+                auto res = remove_history_db(address, height, db_txn);
+                if (res != result_code::success) {
+                    return res;
+                }
+            }*/
         }
     }
 

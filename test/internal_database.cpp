@@ -539,6 +539,36 @@ size_t db_count_index_by_height(MDB_env *env, MDB_dbi dbi, size_t height) {
     return count;
 }
 
+size_t db_count_db_by_address(MDB_env *env, MDB_dbi dbi, wallet::payment_address const& address) {
+    MDB_val data;
+	MDB_txn *txn;    
+    MDB_cursor *cursor;
+    int rc;
+
+    auto hash = address.hash();
+    MDB_val key {hash.size(), hash.data()};
+
+    mdb_txn_begin(env, NULL, MDB_RDONLY, &txn);
+    mdb_cursor_open(txn, dbi, &cursor);
+
+    size_t count = 0;    
+
+    if ((rc = mdb_cursor_get(cursor, &key, &data, MDB_SET)) == 0) {
+        ++count;
+        while ((rc = mdb_cursor_get(cursor, &key, &data, MDB_NEXT_DUP)) == 0) {
+            ++count;
+        }
+    } else {
+        // std::cout << "no encontre el primero\n" << std::endl;    
+    }
+    // std::cout << "---------------------------------\n" << std::endl;
+    
+    mdb_cursor_close(cursor);
+    mdb_txn_abort(txn);
+
+    return count;
+}
+
 
 bool db_exists_height(MDB_env *env, MDB_dbi dbi, size_t height) {
 	MDB_txn *txn;    
@@ -647,7 +677,7 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_genesis) {
 
     auto const& address = wallet::payment_address("bitcoincash:qp3wjpa3tjlj042z2wv7hahsldgwhwy0rq9sywjpyy");
     BOOST_REQUIRE(address);
-    
+
     auto history_list = db.get_history(address.hash(),0,0);
     BOOST_REQUIRE(history_list.size() == 1);
 
@@ -738,8 +768,6 @@ BOOST_AUTO_TEST_CASE(internal_database__key_not_found) {
 BOOST_AUTO_TEST_CASE(internal_database__insert_duplicate) {
     auto const orig = get_block("01000000a594fda9d85f69e762e498650d6fdb54d838657cea7841915203170000000000a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f505da904ce6ed5b1b017fe8070101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b015cffffffff0100f2052a01000000434104283338ffd784c198147f99aed2cc16709c90b1522e3b3637b312a6f9130e0eda7081e373a96d36be319710cd5c134aaffba81ff08650d7de8af332fe4d8cde20ac00000000");
     auto const spender = get_block("01000000ba8b9cda965dd8e536670f9ddec10e53aab14b20bacad27b9137190000000000190760b278fe7b8565fda3b968b918d5fd997f993b23674c0af3b6fde300b38f33a5914ce6ed5b1b01e32f570201000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b014effffffff0100f2052a01000000434104b68a50eaa0287eff855189f949c1c6e5f58b37c88231373d8a59809cbae83059cc6469d65c665ccfd1cfeb75c6e8e19413bba7fbff9bc762419a76d87b16086eac000000000100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000");
-
-
     // std::cout << encode_hash(orig.hash()) << std::endl;
     // std::cout << encode_hash(spender.hash()) << std::endl;
 
@@ -884,6 +912,12 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg) {
 #elif defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_ ,  0);
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
+
+    auto const& address = wallet::payment_address("bitcoincash:qz78x4gvzcfwaqg4t55j2sshe0tqpp9x6yyrx8jdvp");
+    BOOST_REQUIRE(address);
+    
+    BOOST_REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address) == 2);
+
 #endif 
 
 
@@ -1357,7 +1391,44 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index2) {
     );
 }
 
+/*
+BOOST_AUTO_TEST_CASE(internal_database__test_tx_address) {
 
+std::cout << "*************************************************************"  << std::endl;
+
+data_chunk wire_tx1;
+BOOST_REQUIRE(decode_base16(wire_tx1, "0100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000"));
+transaction tx1;
+BOOST_REQUIRE(tx1.from_data(wire_tx1, true));
+
+BOOST_REQUIRE(tx1.is_valid());
+
+for (auto const& i : tx1.inputs()) {
+    
+    std::cout << "address HHHHHHHHHHHHHHHHH:" << i.address() << std::endl;
+    
+    auto const& script = i.script();
+
+    std::cout << "address SSSSS:" << script.to_string(0) << std::endl;
+
+
+    for (auto const& a : i.addresses()) {
+            std::cout << "address iiiiiii:" << a << std::endl;    
+    }
+}
+
+
+for (auto const& o : tx1.outputs()) {
+    for (auto const& a : o.addresses()) {
+            std::cout << "address oooooo:" << a << std::endl;    
+    }
+}
+
+std::cout << "*************************************************************"  << std::endl;
+
+}
+
+*/
 
 BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     //79880 - 00000000002e872c6fbbcf39c93ef0d89e33484ebf457f6829cbf4b561f3af5a
@@ -1370,6 +1441,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     // timestamp = 1284613427 
     //             Sep 16, 2010 2:03:47 AM
     std::string spender_enc = "01000000ba8b9cda965dd8e536670f9ddec10e53aab14b20bacad27b9137190000000000190760b278fe7b8565fda3b968b918d5fd997f993b23674c0af3b6fde300b38f33a5914ce6ed5b1b01e32f570201000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b014effffffff0100f2052a01000000434104b68a50eaa0287eff855189f949c1c6e5f58b37c88231373d8a59809cbae83059cc6469d65c665ccfd1cfeb75c6e8e19413bba7fbff9bc762419a76d87b16086eac000000000100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000";
+                               
     auto const spender = get_block(spender_enc);
 
     using my_clock = dummy_clock<1284613427>;
@@ -1381,7 +1453,6 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     BOOST_REQUIRE(decode_hash(txid2, "c06fbab289f723c6261d3030ddb6be121f7d2508d77862bb1e484f5cd7f92b25"));
     BOOST_REQUIRE(decode_hash(txid3, "5a4ebf66822b0b2d56bd9dc64ece0bc38ee7844a23ff1d7320a88c5fdb2ad3e2"));
 
-
     MDB_env* env_;
     MDB_dbi dbi_utxo_;
     MDB_dbi dbi_reorg_pool_;
@@ -1389,7 +1460,6 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     MDB_dbi dbi_block_header_;
     MDB_dbi dbi_block_header_by_hash_;
     MDB_dbi dbi_reorg_block_;
-    //MDB_txn* db_txn;
     
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_block_db_;
@@ -1412,6 +1482,28 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
 
         auto entry = db.get_utxo(output_point{txid, 0});
         BOOST_REQUIRE(entry.is_valid());
+
+        auto const& address = wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
+        BOOST_REQUIRE(address);
+
+        auto history_list = db.get_history(address.hash(),0,0);
+        BOOST_REQUIRE(history_list.size() == 1);
+
+        auto history_item = history_list[0];
+
+
+        hash_digest txid;
+        std::string txid_enc = "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6";
+        BOOST_REQUIRE(decode_hash(txid, txid_enc));
+
+        BOOST_REQUIRE(history_item.kind == point_kind::output);
+        BOOST_REQUIRE(history_item.point.hash() == txid);
+        BOOST_REQUIRE(history_item.point.index() == 0);
+        BOOST_REQUIRE(history_item.height == 0);
+        BOOST_REQUIRE(history_item.value == 5000000000);
+
+
+
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
@@ -1429,8 +1521,14 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     check_blocks_db(env_, dbi_block_db_, 0);
 #elif defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 0);
-#endif 
 
+    auto const& address = wallet::payment_address("bitcoincash:qz78x4gvzcfwaqg4t55j2sshe0tqpp9x6yyrx8jdvp");
+    BOOST_REQUIRE(address);
+    
+    BOOST_REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address) == 1);
+
+
+#endif 
 
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
@@ -1475,6 +1573,59 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         BOOST_REQUIRE(db.get_header(1).is_valid());
         BOOST_REQUIRE(db.get_header(1).hash() == spender.hash());
 
+
+        auto const& address = wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
+        BOOST_REQUIRE(address);
+
+        auto history_list = db.get_history(address.hash(),0,0);
+        BOOST_REQUIRE(history_list.size() == 2);
+
+        auto history_item = history_list[0];
+
+        hash_digest txid;
+        std::string txid_enc = "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6";
+        BOOST_REQUIRE(decode_hash(txid, txid_enc));
+
+        BOOST_REQUIRE(history_item.kind == point_kind::output);
+        BOOST_REQUIRE(history_item.point.hash() == txid);
+        BOOST_REQUIRE(history_item.point.index() == 0);
+        BOOST_REQUIRE(history_item.height == 0);
+        BOOST_REQUIRE(history_item.value == 5000000000);
+
+        history_item = history_list[1];
+
+        hash_digest txid2;
+        std::string txid_enc2 = "5a4ebf66822b0b2d56bd9dc64ece0bc38ee7844a23ff1d7320a88c5fdb2ad3e2";                        
+        BOOST_REQUIRE(decode_hash(txid2, txid_enc2));
+    
+        auto const& tx = db.get_transaction(txid);
+        BOOST_REQUIRE(tx.is_valid());
+        output_point point = {tx.hash(), 0};
+
+        BOOST_REQUIRE(history_item.kind == point_kind::spend);
+        BOOST_REQUIRE(history_item.point.hash() == txid2);
+        BOOST_REQUIRE(history_item.point.index() == 0);
+        BOOST_REQUIRE(history_item.height == 1);
+        BOOST_REQUIRE(history_item.previous_checksum ==  point.checksum());
+
+
+
+        auto const& address2 = wallet::payment_address("bitcoincash:qpqyxutst75m67y69lx495k9szm96d25n53frahv6a");
+        BOOST_REQUIRE(address2);
+
+        history_list = db.get_history(address2.hash(),0,0);
+        BOOST_REQUIRE(history_list.size() == 1);
+
+        history_item = history_list[0];
+
+        BOOST_REQUIRE(decode_hash(txid, txid_enc));
+
+        BOOST_REQUIRE(history_item.kind == point_kind::output);
+        BOOST_REQUIRE(history_item.point.hash() == txid2);
+        BOOST_REQUIRE(history_item.point.index() == 0);
+        BOOST_REQUIRE(history_item.height == 1);
+        BOOST_REQUIRE(history_item.value == 5000000000);
+
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
@@ -1499,6 +1650,17 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     check_blocks_db(env_, dbi_block_db_, 1);
 #elif defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
+
+    auto const& address4 = wallet::payment_address("bitcoincash:qpg4uetn4v79s7rh0su9lf60paqvvvxaxveesl8p43");
+    BOOST_REQUIRE(address4);
+    BOOST_REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address4) == 1);
+
+    auto const& address1 = wallet::payment_address("bitcoincash:qpqyxutst75m67y69lx495k9szm96d25n53frahv6a");
+    BOOST_REQUIRE(address1);    
+    BOOST_REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address1) == 1);
+    
+    //BOOST_REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address) == 2);
+
 #endif 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
@@ -1539,6 +1701,33 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
 
         BOOST_REQUIRE(! db.get_header(spender.hash()).first.is_valid());
         BOOST_REQUIRE(! db.get_header(1).is_valid());
+
+        auto const& address = wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
+        BOOST_REQUIRE(address);
+
+        auto history_list = db.get_history(address.hash(),0,0);
+        BOOST_REQUIRE(history_list.size() == 1);
+
+        auto history_item = history_list[0];
+
+        hash_digest txid;
+        std::string txid_enc = "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6";
+        BOOST_REQUIRE(decode_hash(txid, txid_enc));
+
+        BOOST_REQUIRE(history_item.kind == point_kind::output);
+        BOOST_REQUIRE(history_item.point.hash() == txid);
+        BOOST_REQUIRE(history_item.point.index() == 0);
+        BOOST_REQUIRE(history_item.height == 0);
+        BOOST_REQUIRE(history_item.value == 5000000000);
+
+    
+        auto const& address2 = wallet::payment_address("bitcoincash:qpqyxutst75m67y69lx495k9szm96d25n53frahv6a");
+        BOOST_REQUIRE(address2);
+
+        history_list = db.get_history(address2.hash(),0,0);
+        BOOST_REQUIRE(history_list.size() == 0);
+
+        
     }   //close() implicit
 
 
@@ -1604,6 +1793,61 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         BOOST_REQUIRE(db.get_header(spender.hash()).second == 1);
         BOOST_REQUIRE(db.get_header(1).is_valid());
         BOOST_REQUIRE(db.get_header(1).hash() == spender.hash());
+
+
+        auto const& address = wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
+        BOOST_REQUIRE(address);
+
+        auto history_list = db.get_history(address.hash(),0,0);
+        BOOST_REQUIRE(history_list.size() == 2);
+
+        auto history_item = history_list[0];
+
+        hash_digest txid;
+        std::string txid_enc = "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6";
+        BOOST_REQUIRE(decode_hash(txid, txid_enc));
+
+        BOOST_REQUIRE(history_item.kind == point_kind::output);
+        BOOST_REQUIRE(history_item.point.hash() == txid);
+        BOOST_REQUIRE(history_item.point.index() == 0);
+        BOOST_REQUIRE(history_item.height == 0);
+        BOOST_REQUIRE(history_item.value == 5000000000);
+
+        history_item = history_list[1];
+
+        hash_digest txid2;
+        std::string txid_enc2 = "5a4ebf66822b0b2d56bd9dc64ece0bc38ee7844a23ff1d7320a88c5fdb2ad3e2";                        
+        BOOST_REQUIRE(decode_hash(txid2, txid_enc2));
+    
+        auto const& tx = db.get_transaction(txid);
+        BOOST_REQUIRE(tx.is_valid());
+        output_point point = {tx.hash(), 0};
+
+        BOOST_REQUIRE(history_item.kind == point_kind::spend);
+        BOOST_REQUIRE(history_item.point.hash() == txid2);
+        BOOST_REQUIRE(history_item.point.index() == 0);
+        BOOST_REQUIRE(history_item.height == 1);
+        BOOST_REQUIRE(history_item.previous_checksum ==  point.checksum());
+
+
+
+        auto const& address2 = wallet::payment_address("bitcoincash:qpqyxutst75m67y69lx495k9szm96d25n53frahv6a");
+        BOOST_REQUIRE(address2);
+
+        history_list = db.get_history(address2.hash(),0,0);
+        BOOST_REQUIRE(history_list.size() == 1);
+
+        history_item = history_list[0];
+
+        BOOST_REQUIRE(decode_hash(txid, txid_enc));
+
+        BOOST_REQUIRE(history_item.kind == point_kind::output);
+        BOOST_REQUIRE(history_item.point.hash() == txid2);
+        BOOST_REQUIRE(history_item.point.index() == 0);
+        BOOST_REQUIRE(history_item.height == 1);
+        BOOST_REQUIRE(history_item.value == 5000000000);
+
+
 
     }   //close() implicit
 
