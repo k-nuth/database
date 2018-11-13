@@ -127,6 +127,11 @@ result_code internal_database_basis<Clock>::remove_transactions(uint32_t height,
             return res0;
         }
         
+        res0 = remove_transaction_spend_db(tx, db_txn);
+        if (res0 != result_code::success && res0 != result_code::key_not_found) {
+            return res0;
+        }
+
         auto res = mdb_del(db_txn, dbi_transaction_db_, &key_tx, NULL);
         if (res == MDB_NOTFOUND) {
             LOG_INFO(LOG_DATABASE) << "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;

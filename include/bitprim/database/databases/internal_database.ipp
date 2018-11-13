@@ -81,6 +81,7 @@ bool internal_database_basis<Clock>::close() {
         #if defined(BITPRIM_DB_NEW_FULL)
         mdb_dbi_close(env_, dbi_transaction_db_);
         mdb_dbi_close(env_, dbi_history_db_);
+        mdb_dbi_close(env_, dbi_spend_db_);
         #endif
 
         db_opened_ = false;
@@ -543,10 +544,16 @@ bool internal_database_basis<Clock>::open_databases() {
         return false;
     }
 
-    res = mdb_dbi_open(db_txn, history_db_name, MDB_CREATE | MDB_DUPSORT | MDB_DUPFIXED , &dbi_history_db_);
+    res = mdb_dbi_open(db_txn, history_db_name, MDB_CREATE | MDB_DUPSORT | MDB_DUPFIXED, &dbi_history_db_);
     if (res != MDB_SUCCESS) {
         return false;
     }
+
+    res = mdb_dbi_open(db_txn, spend_db_name, MDB_CREATE, &dbi_spend_db_);
+    if (res != MDB_SUCCESS) {
+        return false;
+    }
+
 #endif //BITPRIM_DB_NEW_FULL
 
     db_opened_ = mdb_txn_commit(db_txn) == MDB_SUCCESS;
@@ -557,7 +564,11 @@ template <typename Clock>
 result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
     uint32_t pos = 0;
     for (auto const& input: inputs) {
-        auto res = remove_utxo(height, input.previous_output(), insert_reorg, db_txn);
+        
+        const input_point inpoint {tx_id, pos};
+        auto const& prevout = input.previous_output();
+        
+        auto res = remove_utxo(height, prevout, insert_reorg, db_txn);
         if (res != result_code::success) {
             return res;
         }
@@ -565,6 +576,11 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
         #if defined(BITPRIM_DB_NEW_FULL)
         
         res = insert_input_history(tx_id, height, pos, input, db_txn);            
+        if (res != result_code::success) {
+            return res;
+        }
+
+        res = insert_spend(prevout, inpoint, db_txn);
         if (res != result_code::success) {
             return res;
         }
@@ -899,9 +915,6 @@ result_code internal_database_basis<Clock>::remove_block(chain::block const& blo
     if (res != result_code::success) {
         return res;
     }
-
-
-    
 #endif //defined(BITPRIM_DB_NEW_FULL)
 
 #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)

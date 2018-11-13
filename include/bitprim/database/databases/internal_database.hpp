@@ -46,7 +46,7 @@ namespace database {
 #if defined(BITPRIM_DB_NEW_BLOCKS)
 constexpr size_t max_dbs_ = 7;
 #elif defined(BITPRIM_DB_NEW_FULL)
-constexpr size_t max_dbs_ = 9;
+constexpr size_t max_dbs_ = 10;
 #else
 constexpr size_t max_dbs_ = 6;
 #endif
@@ -76,6 +76,7 @@ public:
     //Transactions
     constexpr static char transaction_db_name[] = "transactions";
     constexpr static char history_db_name[] = "history";
+    constexpr static char spend_db_name[] = "spend";
 #endif  //BITPRIM_DB_NEW_FULL
 
     internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size);
@@ -118,7 +119,8 @@ public:
 
 #if defined(BITPRIM_DB_NEW_FULL)
     chain::transaction get_transaction(hash_digest const& hash) const;
-    chain::history_compact::list get_history(const short_hash& key, size_t limit, size_t from_height);
+    chain::history_compact::list get_history(short_hash const& key, size_t limit, size_t from_height);
+    chain::input_point get_spend(chain::output_point const& point) const;
 #endif
 
 private:
@@ -146,6 +148,9 @@ private:
     chain::history_compact history_entry_to_history_compact(history_entry const& entry);
     result_code remove_history_db(const short_hash& key, size_t height, MDB_txn* db_txn);
     result_code remove_transaction_history_db(chain::transaction const& tx, size_t height, MDB_txn* db_txn);
+    result_code insert_spend(chain::output_point const& out_point, chain::input_point const& in_point, MDB_txn* db_txn);
+    result_code remove_spend(chain::output_point const& out_point, MDB_txn* db_txn);
+    result_code remove_transaction_spend_db(chain::transaction const& tx, MDB_txn* db_txn);
 #endif //BITPRIM_NEW_DB_FULL
 
     //result_code push_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn);
@@ -250,6 +255,7 @@ private:
 #ifdef BITPRIM_DB_NEW_FULL
     MDB_dbi dbi_transaction_db_;
     MDB_dbi dbi_history_db_;
+    MDB_dbi dbi_spend_db_;
 #endif
 };
 
@@ -283,6 +289,10 @@ constexpr char internal_database_basis<Clock>::transaction_db_name[];           
 
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::history_db_name[];            //key: tx hash, value: tx
+
+template <typename Clock>
+constexpr char internal_database_basis<Clock>::spend_db_name[];            //key: output_point, value: input_point
+
 #endif
 
 using internal_database = internal_database_basis<std::chrono::system_clock>;
@@ -294,6 +304,7 @@ using internal_database = internal_database_basis<std::chrono::system_clock>;
 #include <bitprim/database/databases/block_database.ipp>
 #include <bitprim/database/databases/header_database.ipp>
 #include <bitprim/database/databases/history_database.ipp>
+#include <bitprim/database/databases/spend_database.ipp>
 #include <bitprim/database/databases/internal_database.ipp>
 #include <bitprim/database/databases/reorg_database.ipp>
 #include <bitprim/database/databases/transaction_database.ipp>
