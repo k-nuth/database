@@ -592,30 +592,6 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
     return result_code::success;
 }
 
-/*
-template <typename Clock>
-result_code internal_database_basis<Clock>::push_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
-    uint32_t pos = 0;
-    for (auto const& input: inputs) {
-        auto res = remove_utxo(height, input.previous_output(), insert_reorg, db_txn);
-        if (res != result_code::success) {
-            return res;
-        }
-
-        #if defined(BITPRIM_DB_NEW_FULL)
-        
-        res = insert_input_history(tx_id, height, pos, input, db_txn);            
-        if (res != result_code::success) {
-            return res;
-        }
-
-        #endif
-
-        ++pos;
-    }
-    return result_code::success;
-}
-*/
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx_id, uint32_t height, chain::output::list const& outputs, data_chunk const& fixed_data, MDB_txn* db_txn) {
@@ -947,9 +923,6 @@ result_code internal_database_basis<Clock>::remove_block(chain::block const& blo
     }
     return result_code::success;
 }
-
-
-
 
 } // namespace database
 } // namespace libbitcoin

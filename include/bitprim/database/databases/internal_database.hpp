@@ -95,31 +95,33 @@ public:
     //TODO(fernando): optimization: consider passing a list of outputs to insert and a list of inputs to delete instead of an entire Block.
     //                  avoiding inserting and erasing internal spenders
     result_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past);
+    
     utxo_entry get_utxo(chain::output_point const& point) const;
+    
     result_code get_last_height(uint32_t& out_height) const;
     
     std::pair<chain::header, uint32_t> get_header(hash_digest const& hash) const;
-    
     chain::header get_header(uint32_t height) const;
     
     result_code pop_block(chain::block& out_block);
-
+    
     result_code prune();
-
+    
     result_code insert_reorg_into_pool(utxo_pool_t& pool, MDB_val key_point, MDB_txn* db_txn) const;
-
     std::pair<result_code, utxo_pool_t> get_utxo_pool_from(uint32_t from, uint32_t to) const;
-
 
 #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     std::pair<chain::block, uint32_t> get_block(hash_digest const& hash) const;
+    
     chain::block get_block(uint32_t height) const;
 #endif //BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL
 
 
 #if defined(BITPRIM_DB_NEW_FULL)
     chain::transaction get_transaction(hash_digest const& hash) const;
+    
     chain::history_compact::list get_history(short_hash const& key, size_t limit, size_t from_height);
+    
     chain::input_point get_spend(chain::output_point const& point) const;
 #endif
 
@@ -135,25 +137,10 @@ private:
     bool open_databases();
 
     result_code insert_reorg_pool(uint32_t height, MDB_val& key, MDB_txn* db_txn);
+    
     result_code remove_utxo(uint32_t height, chain::output_point const& point, bool insert_reorg, MDB_txn* db_txn);
+    
     result_code insert_utxo(chain::output_point const& point, chain::output const& output, data_chunk const& fixed_data, MDB_txn* db_txn);
-
-#if defined(BITPRIM_DB_NEW_FULL)
-    template <typename I>
-    result_code insert_transactions(I f, I l, uint32_t height, MDB_txn* db_txn);
-    chain::transaction get_transaction(hash_digest const& hash, MDB_txn* db_txn) const;
-    result_code insert_input_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::input const& input, MDB_txn* db_txn);
-    result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, MDB_txn* db_txn);
-    result_code insert_history_db (wallet::payment_address const& address, data_chunk const& entry, MDB_txn* db_txn); 
-    chain::history_compact history_entry_to_history_compact(history_entry const& entry);
-    result_code remove_history_db(const short_hash& key, size_t height, MDB_txn* db_txn);
-    result_code remove_transaction_history_db(chain::transaction const& tx, size_t height, MDB_txn* db_txn);
-    result_code insert_spend(chain::output_point const& out_point, chain::input_point const& in_point, MDB_txn* db_txn);
-    result_code remove_spend(chain::output_point const& out_point, MDB_txn* db_txn);
-    result_code remove_transaction_spend_db(chain::transaction const& tx, MDB_txn* db_txn);
-#endif //BITPRIM_NEW_DB_FULL
-
-    //result_code push_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn);
 
     result_code remove_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn);
 
@@ -171,15 +158,8 @@ private:
     result_code push_transactions_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, bool insert_reorg, MDB_txn* db_txn);
 
     result_code push_block_header(chain::block const& block, uint32_t height, MDB_txn* db_txn);
+    
     result_code push_block_reorg(chain::block const& block, uint32_t height, MDB_txn* db_txn);
-
-#if defined(BITPRIM_DB_NEW_BLOCKS)
-    result_code insert_block(chain::block const& block, uint32_t height,  MDB_txn* db_txn);
-#elif defined(BITPRIM_DB_NEW_FULL)
-    result_code insert_transaction(chain::transaction const& tx, uint32_t height,  MDB_txn* db_txn);
-    data_chunk serialize_txs(chain::block const& block);
-    result_code insert_block(chain::block const& block, uint32_t height, MDB_txn* db_txn);
-#endif
 
     result_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg, MDB_txn* db_txn);
 
@@ -203,33 +183,63 @@ private:
     result_code remove_block_header(hash_digest const& hash, uint32_t height, MDB_txn* db_txn);
 
     result_code remove_block_reorg(uint32_t height, MDB_txn* db_txn);
+    
     result_code remove_reorg_index(uint32_t height, MDB_txn* db_txn);
-
-#if defined(BITPRIM_DB_NEW_FULL)
-    result_code remove_transactions(uint32_t height, MDB_txn* db_txn);
-#endif //defined(BITPRIM_DB_NEW_FULL)
-
-#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
-    result_code remove_blocks_db(uint32_t height, MDB_txn* db_txn);
-#endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
-
+    
     result_code remove_block(chain::block const& block, uint32_t height, MDB_txn* db_txn);
 
     chain::header get_header(uint32_t height, MDB_txn* db_txn) const;
 
-#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
-    chain::block get_block(uint32_t height, MDB_txn* db_txn) const;
-#endif
-
     chain::block get_block_reorg(uint32_t height, MDB_txn* db_txn) const;
+    
     chain::block get_block_reorg(uint32_t height) const;
     
     result_code remove_block(chain::block const& block, uint32_t height);
-
+    
     result_code prune_reorg_index(uint32_t remove_until, MDB_txn* db_txn);
+    
     result_code prune_reorg_block(uint32_t amount_to_delete, MDB_txn* db_txn);
+    
     result_code get_first_reorg_block_height(uint32_t& out_height) const;
 
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    result_code insert_block(chain::block const& block, uint32_t height, MDB_txn* db_txn);
+    
+    result_code remove_blocks_db(uint32_t height, MDB_txn* db_txn);
+    
+    chain::block get_block(uint32_t height, MDB_txn* db_txn) const;
+#endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+
+#if defined(BITPRIM_DB_NEW_FULL)
+    result_code remove_transactions(uint32_t height, MDB_txn* db_txn);
+    
+    result_code insert_transaction(chain::transaction const& tx, uint32_t height,  MDB_txn* db_txn);
+    
+    data_chunk serialize_txs(chain::block const& block);
+    
+    template <typename I>
+    result_code insert_transactions(I f, I l, uint32_t height, MDB_txn* db_txn);
+    
+    chain::transaction get_transaction(hash_digest const& hash, MDB_txn* db_txn) const;
+    
+    result_code insert_input_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::input const& input, MDB_txn* db_txn);
+    
+    result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, MDB_txn* db_txn);
+    
+    result_code insert_history_db (wallet::payment_address const& address, data_chunk const& entry, MDB_txn* db_txn); 
+    
+    chain::history_compact history_entry_to_history_compact(history_entry const& entry);
+    
+    result_code remove_history_db(const short_hash& key, size_t height, MDB_txn* db_txn);
+    
+    result_code remove_transaction_history_db(chain::transaction const& tx, size_t height, MDB_txn* db_txn);
+    
+    result_code insert_spend(chain::output_point const& out_point, chain::input_point const& in_point, MDB_txn* db_txn);
+    
+    result_code remove_spend(chain::output_point const& out_point, MDB_txn* db_txn);
+    
+    result_code remove_transaction_spend_db(chain::transaction const& tx, MDB_txn* db_txn);
+#endif //defined(BITPRIM_DB_NEW_FULL)
 
 // Data members ----------------------------
     path const db_dir_;
@@ -292,7 +302,6 @@ constexpr char internal_database_basis<Clock>::history_db_name[];            //k
 
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::spend_db_name[];            //key: output_point, value: input_point
-
 #endif
 
 using internal_database = internal_database_basis<std::chrono::system_clock>;
