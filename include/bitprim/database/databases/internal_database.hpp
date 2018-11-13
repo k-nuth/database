@@ -432,7 +432,8 @@ public:
         MDB_val key {sizeof(from), &from};
         MDB_val value;
 
-        int rc = mdb_cursor_get(cursor, &key, &value, MDB_SET);
+        // int rc = mdb_cursor_get(cursor, &key, &value, MDB_SET);
+        int rc = mdb_cursor_get(cursor, &key, &value, MDB_SET_RANGE);
         if (rc != MDB_SUCCESS) {
             mdb_cursor_close(cursor);
             mdb_txn_commit(db_txn);
@@ -445,11 +446,11 @@ public:
             mdb_txn_commit(db_txn);
             return {result_code::other, pool};
         }
-        if (current_height > from) {
-            mdb_cursor_close(cursor);
-            mdb_txn_commit(db_txn);
-            return {result_code::other, pool};
-        }
+        // if (current_height > from) {
+        //     mdb_cursor_close(cursor);
+        //     mdb_txn_commit(db_txn);
+        //     return {result_code::other, pool};
+        // }
         if (current_height > to) {
             mdb_cursor_close(cursor);
             mdb_txn_commit(db_txn);

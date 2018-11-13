@@ -1032,14 +1032,18 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index2) {
         BOOST_REQUIRE(db.push_block(spender0, 6, 1) == result_code::success);
 
         p = db.get_utxo_pool_from(0, 6);
-        BOOST_REQUIRE(p.first == result_code::key_not_found);
-        BOOST_REQUIRE(p.second.size() == 0);
+        BOOST_REQUIRE(p.first == result_code::success);
+        BOOST_REQUIRE(p.second.size() == 5);
 
         p = db.get_utxo_pool_from(6, 6);
         BOOST_REQUIRE(p.first == result_code::success);
         BOOST_REQUIRE(p.second.size() == 5);
 
         BOOST_REQUIRE(db.push_block(spender1, 7, 1) == result_code::success);
+
+        p = db.get_utxo_pool_from(0, 7);
+        BOOST_REQUIRE(p.first == result_code::success);
+        BOOST_REQUIRE(p.second.size() == 6);
 
         p = db.get_utxo_pool_from(6, 7);
         BOOST_REQUIRE(p.first == result_code::success);
