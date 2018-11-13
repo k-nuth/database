@@ -916,6 +916,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg) {
     auto const& address = wallet::payment_address("bitcoincash:qz78x4gvzcfwaqg4t55j2sshe0tqpp9x6yyrx8jdvp");
     BOOST_REQUIRE(address);
     
+    std::cout << "aaaaaaaaaa" << db_count_db_by_address(env_, dbi_history_db_, address) << std::endl;
+
     BOOST_REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address) == 2);
 
 #endif 

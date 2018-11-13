@@ -478,7 +478,6 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
         return false;
     }
 
-
     res = mdb_env_set_maxdbs(env_, max_dbs_);
     if (res != MDB_SUCCESS) {
         return false;
@@ -555,12 +554,24 @@ bool internal_database_basis<Clock>::open_databases() {
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_inputs(uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
+    uint32_t pos = 0;
     for (auto const& input: inputs) {
         auto res = remove_utxo(height, input.previous_output(), insert_reorg, db_txn);
         if (res != result_code::success) {
             return res;
         }
+
+        #if defined(BITPRIM_DB_NEW_FULL)
+        
+        res = insert_input_history(tx_id, height, pos, input, db_txn);            
+        if (res != result_code::success) {
+            return res;
+        }
+
+        #endif
+
+        ++pos;
     }
     return result_code::success;
 }
@@ -648,7 +659,7 @@ template <typename I>
 result_code internal_database_basis<Clock>::remove_transactions_inputs_non_coinbase(uint32_t height, I f, I l, bool insert_reorg, MDB_txn* db_txn) {
     while (f != l) {
         auto const& tx = *f;
-        auto res = remove_inputs(height, tx.inputs(), insert_reorg, db_txn);
+        auto res = remove_inputs(tx.hash(), height, tx.inputs(), insert_reorg, db_txn);
         if (res != result_code::success) {
             return res;
         }
