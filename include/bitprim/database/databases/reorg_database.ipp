@@ -140,11 +140,11 @@ result_code internal_database_basis<Clock>::remove_reorg_index(uint32_t height, 
     MDB_val key {sizeof(height), &height};
     auto res = mdb_del(db_txn, dbi_reorg_index_, &key, NULL);
     if (res == MDB_NOTFOUND) {
-        LOG_INFO(LOG_DATABASE) << "Key not found deleting reorg index in LMDB [remove_reorg_index] - mdb_del: " << res;
+        LOG_DEBUG(LOG_DATABASE) << "Key not found deleting reorg index in LMDB [remove_reorg_index] - height: " << height << " - mdb_del: " << res;
         return result_code::key_not_found;
     }
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error deleting reorg index in LMDB [remove_reorg_index] - mdb_del: " << res;
+        LOG_DEBUG(LOG_DATABASE) << "Error deleting reorg index in LMDB [remove_reorg_index] - height: " << height << " - mdb_del: " << res;
         return result_code::other;
     }
     return result_code::success;

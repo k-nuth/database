@@ -58,6 +58,7 @@ template <typename Clock = std::chrono::system_clock>
 class BCD_API internal_database_basis {
 public:
     using path = boost::filesystem::path;
+    using utxo_pool_t = std::unordered_map<chain::point, utxo_entry>;
 
     constexpr static char block_header_db_name[] = "block_header";
     constexpr static char block_header_by_hash_db_name[] = "block_header_by_hash";
@@ -104,6 +105,11 @@ public:
 
     result_code prune();
 
+    result_code insert_reorg_into_pool(utxo_pool_t& pool, MDB_val key_point, MDB_txn* db_txn) const;
+
+    std::pair<result_code, utxo_pool_t> get_utxo_pool_from(uint32_t from, uint32_t to) const;
+
+
 #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     std::pair<chain::block, uint32_t> get_block(hash_digest const& hash) const;
     chain::block get_block(uint32_t height) const;
@@ -142,7 +148,9 @@ private:
     result_code remove_transaction_history_db(chain::transaction const& tx, size_t height, MDB_txn* db_txn);
 #endif //BITPRIM_NEW_DB_FULL
 
-    result_code push_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn);
+    //result_code push_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn);
+
+    result_code remove_inputs(uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn);
 
     result_code insert_outputs(hash_digest const& tx_id, uint32_t height, chain::output::list const& outputs, data_chunk const& fixed_data, MDB_txn* db_txn);
 

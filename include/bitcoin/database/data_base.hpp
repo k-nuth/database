@@ -218,9 +218,12 @@ private:
     // ------------------------------------------------------------------------
 
     bool push_transactions(const chain::block& block, size_t height, uint32_t median_time_past, size_t bucket = 0, size_t buckets = 1);
-    bool push_heights(const chain::block& block, size_t height);
 
-#if defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY)
+#ifdef BITPRIM_DB_LEGACY    
+    bool push_heights(const chain::block& block, size_t height);
+#endif
+
+#if defined(BITPRIM_DB_LEGACY) && (defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY))
     void push_inputs(const hash_digest& tx_hash, size_t height, const inputs& inputs);
 #endif // defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY)    
 
@@ -232,6 +235,20 @@ private:
     void push_stealth(hash_digest const& tx_hash, size_t height, const outputs& outputs);
 #endif // BITPRIM_DB_STEALTH
 
+
+#if defined(BITPRIM_CURRENCY_BCH) && defined(BITPRIM_DB_LEGACY)
+    // bool pop_input_and_unconfirm(size_t height, chain::transaction const& tx);
+    bool pop_output_and_unconfirm(size_t height, chain::transaction const& tx);
+
+    template <typename I>
+    bool pop_transactions_inputs_unconfirm_non_coinbase(size_t height, I f, I l);
+
+    template <typename I>
+    bool pop_transactions_outputs_non_coinbase(size_t height, I f, I l);
+
+    template <typename I>
+    bool pop_transactions_non_coinbase(size_t height, I f, I l);
+#endif 
 
     bool pop(chain::block& out_block);
     bool pop_inputs(const inputs& inputs, size_t height);

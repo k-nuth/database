@@ -732,8 +732,8 @@ bool data_base::push_transactions(const chain::block& block, size_t height, uint
     return true;
 }
 
-bool data_base::push_heights(const chain::block& block, size_t height) {
 #ifdef BITPRIM_DB_LEGACY
+bool data_base::push_heights(const chain::block& block, size_t height) {
     transactions_->synchronize();
     auto const& txs = block.transactions();
 
@@ -745,11 +745,11 @@ bool data_base::push_heights(const chain::block& block, size_t height) {
             }
         }
     }
-#endif // BITPRIM_DB_LEGACY
     return true;
 }
+#endif // BITPRIM_DB_LEGACY
 
-#if defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY)
+#if defined(BITPRIM_DB_LEGACY) && (defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY))
 void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const input::list& inputs) {
     
     for (uint32_t index = 0; index < inputs.size(); ++index) {
@@ -858,6 +858,173 @@ void data_base::push_stealth(hash_digest const& tx_hash, size_t height, const ou
 }
 #endif // BITPRIM_DB_STEALTH
 
+
+#ifdef BITPRIM_CURRENCY_BCH
+
+#ifdef BITPRIM_DB_LEGACY
+
+// bool data_base::pop_input_and_unconfirm(size_t height, chain::transaction const& tx) {
+   
+//     if ( ! pop_inputs(tx.inputs(), height)) {
+//         return false;
+//     }
+
+// // #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+// //     // if ( ! tx.is_coinbase()) {       //Note(fernando): satisfied by the precondition
+// //     transactions_unconfirmed_->store(tx);
+// //     // }
+// // #endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+
+// //     if ( ! transactions_->unconfirm(tx.hash())) {
+// //         return false;
+// //     }
+
+//     return true;
+// }
+
+bool data_base::pop_output_and_unconfirm(size_t height, chain::transaction const& tx) {
+   
+    if ( ! pop_outputs(tx.outputs(), height)) {
+        return false;
+    }
+
+#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+    // if ( ! tx.is_coinbase()) {       //Note(fernando): satisfied by the precondition
+    transactions_unconfirmed_->store(tx);
+    // }
+#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+
+    if ( ! transactions_->unconfirm(tx.hash())) {
+        return false;
+    }
+
+    return true;
+}
+
+
+template <typename I>
+bool data_base::pop_transactions_inputs_unconfirm_non_coinbase(size_t height, I f, I l) {
+    // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
+    
+    while (f != l) {
+        auto const& tx = *f;
+        if ( ! pop_inputs(tx.inputs(), height)) {
+            return false;
+        }
+
+        // if ( ! pop_input_and_unconfirm(height, tx)) {
+        //     return false;
+        // }
+        ++f;
+    } 
+
+    return true;
+}
+
+template <typename I>
+bool data_base::pop_transactions_outputs_non_coinbase(size_t height, I f, I l) {
+    // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
+    
+    while (f != l) {
+        auto const& tx = *f;
+        if ( ! pop_output_and_unconfirm(height, tx)) {
+            return false;
+        }
+        ++f;
+    } 
+    return true;
+}
+
+template <typename I>
+bool data_base::pop_transactions_non_coinbase(size_t height, I f, I l) {
+
+    if ( ! pop_transactions_inputs_unconfirm_non_coinbase(height, f, l)) {
+        return false;
+    }
+    return pop_transactions_outputs_non_coinbase(height, f, l);
+}
+#endif // BITPRIM_DB_LEGACY
+
+
+// A false return implies store corruption.
+bool data_base::pop(block& out_block) {
+    
+    auto const start_time = asio::steady_clock::now();
+
+#ifdef BITPRIM_DB_NEW
+    if (internal_db_->pop_block(out_block) != result_code::success) {
+        return false;
+    }
+#endif
+
+#ifdef BITPRIM_DB_LEGACY
+    size_t height;
+    
+    // The blockchain is empty (nothing to pop, not even genesis).
+    if ( ! blocks_->top(height)) {
+        return false;
+    }
+
+    // This should never become invalid if this call is protected.
+    auto const block = blocks_->get(height);
+    if ( ! block) {
+        return false;
+    }
+
+    auto const count = block.transaction_count();
+    transaction::list transactions;
+    transactions.reserve(count);
+
+    for (size_t position = 0; position < count; ++position) {
+        auto tx_hash = block.transaction_hash(position);
+        auto const tx = transactions_->get(tx_hash, height, true);
+
+        if ( ! tx || (tx.height() != height) || (tx.position() != position))
+            return false;
+
+        // Deserialize transaction and move it to the block.
+        // The tx move/copy constructors do not currently transfer cache.
+        transactions.emplace_back(tx.transaction(), std::move(tx_hash));
+
+        // std::cout << encode_hash(tx_hash) << std::endl;
+    }
+    // std::cout << "----------------------------------" << std::endl;
+
+    if (count > 1) {
+        if ( ! pop_transactions_non_coinbase(height, transactions.begin() + 1, transactions.end())) {
+            return false;
+        }
+    }
+
+    auto const& coinbase = transactions.front();
+
+    if ( ! pop_outputs(coinbase.outputs(), height)) {
+        return false;
+    }
+
+    if ( ! transactions_->unconfirm(coinbase.hash())) {
+        return false;
+    }
+
+    if ( ! blocks_->unlink(height)) {
+        return false;
+    }
+
+    // Synchronise everything that was changed.
+    synchronize();
+   
+    // Return the block (with header/block metadata and pop start time). 
+    out_block = chain::block(block.header(), std::move(transactions));
+
+#endif // BITPRIM_DB_LEGACY
+
+    out_block.validation.error = error::success;
+    out_block.validation.start_pop = start_time;
+    return true;
+}
+
+#else // BITPRIM_CURRENCY_BCH
+
 // A false return implies store corruption.
 bool data_base::pop(block& out_block) {
     
@@ -937,6 +1104,9 @@ bool data_base::pop(block& out_block) {
     out_block.validation.start_pop = start_time;
     return true;
 }
+#endif // BITPRIM_CURRENCY_BCH
+
+
 
 // A false return implies store corruption.
 bool data_base::pop_inputs(const input::list& inputs, size_t height) {

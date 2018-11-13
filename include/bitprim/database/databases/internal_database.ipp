@@ -23,6 +23,8 @@
 namespace libbitcoin {
 namespace database {
 
+using utxo_pool_t = std::unordered_map<chain::point, utxo_entry>;
+
 template <typename Clock>
 internal_database_basis<Clock>::internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size)
     : db_dir_(db_dir)
@@ -333,6 +335,104 @@ result_code internal_database_basis<Clock>::prune() {
 }
 
 
+//TODO(fernando): move to private
+template <typename Clock>
+result_code internal_database_basis<Clock>::insert_reorg_into_pool(utxo_pool_t& pool, MDB_val key_point, MDB_txn* db_txn) const {
+    MDB_val value;
+    auto res = mdb_get(db_txn, dbi_reorg_pool_, &key_point, &value);
+    if (res == MDB_NOTFOUND) {
+        LOG_INFO(LOG_DATABASE) << "Key not found in reorg pool [insert_reorg_into_pool] " << res;        
+        return result_code::key_not_found;
+    }
+    if (res != MDB_SUCCESS) {
+        LOG_INFO(LOG_DATABASE) << "Error in reorg pool [insert_reorg_into_pool] " << res;        
+        return result_code::other;
+    }
+    auto entry_data = db_value_to_data_chunk(value);
+    auto entry = utxo_entry::factory_from_data(entry_data);
+    auto point_data = db_value_to_data_chunk(key_point);
+    auto point = chain::output_point::factory_from_data(point_data, BITPRIM_INTERNAL_DB_WIRE);
+    pool.insert({point, std::move(entry)});
+    return result_code::success;
+}
+
+
+template <typename Clock>
+std::pair<result_code, utxo_pool_t> internal_database_basis<Clock>::get_utxo_pool_from(uint32_t from, uint32_t to) const {
+    // precondition: from <= to
+    utxo_pool_t pool;
+    MDB_txn* db_txn;
+    auto zzz = mdb_txn_begin(env_, NULL, 0, &db_txn);
+    if (zzz != MDB_SUCCESS) {
+        return {result_code::other, pool};
+    }
+    
+    MDB_cursor* cursor;
+    if (mdb_cursor_open(db_txn, dbi_reorg_index_, &cursor) != MDB_SUCCESS) {
+        mdb_txn_commit(db_txn);
+        return {result_code::other, pool};
+    }
+    
+    MDB_val key {sizeof(from), &from};
+    MDB_val value;
+    int rc = mdb_cursor_get(cursor, &key, &value, MDB_SET);
+
+    if (rc != MDB_SUCCESS) {
+        mdb_cursor_close(cursor);
+        mdb_txn_commit(db_txn);
+        return {result_code::key_not_found, pool};
+    }
+    
+    auto current_height = *static_cast<uint32_t*>(key.mv_data);
+    if (current_height < from) {
+        mdb_cursor_close(cursor);
+        mdb_txn_commit(db_txn);
+        return {result_code::other, pool};
+    }
+    
+    if (current_height > from) {
+        mdb_cursor_close(cursor);
+        mdb_txn_commit(db_txn);
+        return {result_code::other, pool};
+    }
+    
+    if (current_height > to) {
+        mdb_cursor_close(cursor);
+        mdb_txn_commit(db_txn);
+        return {result_code::other, pool};
+    }
+    
+    auto res = insert_reorg_into_pool(pool, value, db_txn);
+    if (res != result_code::success) {
+        mdb_cursor_close(cursor);
+        mdb_txn_commit(db_txn);
+        return {res, pool};
+    }
+    
+    while ((rc = mdb_cursor_get(cursor, &key, &value, MDB_NEXT)) == MDB_SUCCESS) {
+        current_height = *static_cast<uint32_t*>(key.mv_data);
+        if (current_height > to) {
+            mdb_cursor_close(cursor);
+            mdb_txn_commit(db_txn);
+            return {result_code::other, pool};
+        }
+        res = insert_reorg_into_pool(pool, value, db_txn);
+        if (res != result_code::success) {
+            mdb_cursor_close(cursor);
+            mdb_txn_commit(db_txn);
+            return {res, pool};
+        }
+    }
+    
+    mdb_cursor_close(cursor);
+    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+        return {result_code::other, pool};
+    }
+    return {result_code::success, pool};
+}
+
+
+
 // Private functions
 // ------------------------------------------------------------------------------------------------------
 
@@ -455,6 +555,18 @@ bool internal_database_basis<Clock>::open_databases() {
 }
 
 template <typename Clock>
+result_code internal_database_basis<Clock>::remove_inputs(uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
+    for (auto const& input: inputs) {
+        auto res = remove_utxo(height, input.previous_output(), insert_reorg, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
+    }
+    return result_code::success;
+}
+
+/*
+template <typename Clock>
 result_code internal_database_basis<Clock>::push_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
     uint32_t pos = 0;
     for (auto const& input: inputs) {
@@ -476,6 +588,7 @@ result_code internal_database_basis<Clock>::push_inputs(hash_digest const& tx_id
     }
     return result_code::success;
 }
+*/
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx_id, uint32_t height, chain::output::list const& outputs, data_chunk const& fixed_data, MDB_txn* db_txn) {
@@ -535,7 +648,7 @@ template <typename I>
 result_code internal_database_basis<Clock>::remove_transactions_inputs_non_coinbase(uint32_t height, I f, I l, bool insert_reorg, MDB_txn* db_txn) {
     while (f != l) {
         auto const& tx = *f;
-        auto res = push_inputs(tx.hash(), height, tx.inputs(), insert_reorg, db_txn);
+        auto res = remove_inputs(height, tx.inputs(), insert_reorg, db_txn);
         if (res != result_code::success) {
             return res;
         }
@@ -766,7 +879,7 @@ result_code internal_database_basis<Clock>::remove_block(chain::block const& blo
     }
 
     res = remove_reorg_index(height, db_txn);
-    if (res != result_code::success) {
+    if (res != result_code::success && res != result_code::key_not_found) {
         return res;
     }
 
@@ -810,6 +923,9 @@ result_code internal_database_basis<Clock>::remove_block(chain::block const& blo
     }
     return result_code::success;
 }
+
+
+
 
 } // namespace database
 } // namespace libbitcoin

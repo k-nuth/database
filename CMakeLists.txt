@@ -531,12 +531,12 @@ if (WITH_TESTS)
         )
     endif()
 
-    #TODO(fernando): disabled, it fails in CI
-     if (DB_NEW)
-         _add_tests(bitprim_database_test
-             internal_db_tests
-         )
-     endif()
+    
+    if (DB_NEW)
+        _add_tests(bitprim_database_test
+            internal_db_tests
+        )
+    endif()
 
 
 endif()
