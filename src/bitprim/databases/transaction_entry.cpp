@@ -120,7 +120,6 @@ void transaction_entry::factory_to_data(writer& sink, chain::transaction const& 
     sink.write_4_bytes_little_endian(height);
     sink.write_4_bytes_little_endian(median_time_past);
     write_position(sink, position);
-    //sink.write_4_bytes_little_endian(position);
 }
 
 
@@ -189,7 +188,6 @@ bool transaction_entry::from_data(reader& source) {
     transaction_.from_data(source,false,true,false);
     height_ = source.read_4_bytes_little_endian();
     median_time_past_ = source.read_4_bytes_little_endian();
-    //position_ = source.read_4_bytes_little_endian();
     position_ = read_position(source);
 
     if ( ! source) {

@@ -48,12 +48,40 @@ public:
     data_chunk to_data() const;
     void to_data(std::ostream& stream) const;
 
+
+#ifdef BITPRIM_USE_DOMAIN
+    template <Writer W, BITPRIM_IS_WRITER(W)>
+    void to_data(W& sink) const {
+        factory_to_data(sink, transaction_, height_, median_time_past_, position_ );
+    }
+
+#else
     void to_data(writer& sink) const;
+#endif
 
     bool from_data(const data_chunk& data);
     bool from_data(std::istream& stream);
 
+
+#ifdef BITPRIM_USE_DOMAIN
+    template <Reader R, BITPRIM_IS_READER(R)>
+    bool from_data(R& source) {
+        reset();
+    
+        transaction_.from_data(source,false,true,false);
+        height_ = source.read_4_bytes_little_endian();
+        median_time_past_ = source.read_4_bytes_little_endian();
+        position_ = read_position(source);
+
+        if ( ! source) {
+            reset();
+        }
+
+        return source;
+    }    
+#else
     bool from_data(reader& source);
+#endif
 
     bool confirmed();
 
@@ -64,15 +92,39 @@ public:
     static
     transaction_entry factory_from_data(std::istream& stream);
 
+
+#ifdef BITPRIM_USE_DOMAIN
+    template <Reader R, BITPRIM_IS_READER(R)>
+    static
+    transaction_entry factory_from_data(R& source) {
+        transaction_entry instance;
+        instance.from_data(source);
+        return instance;
+    }
+#else
     transaction_entry factory_from_data(reader& source);
+#endif
 
     static
     data_chunk factory_to_data(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position);
     static
     void factory_to_data(std::ostream& stream, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position);
 
+
+#ifdef BITPRIM_USE_DOMAIN
+    template <Writer W, BITPRIM_IS_WRITER(W)>
+    static
+    void factory_to_data(W& sink, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position);
+        tx.to_data(sink, false,true,false);
+        sink.write_4_bytes_little_endian(height);
+        sink.write_4_bytes_little_endian(median_time_past);
+        write_position(sink, position);
+    }
+#else
     static
     void factory_to_data(writer& sink, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position);
+#endif
+
 
 private:
     void reset();
