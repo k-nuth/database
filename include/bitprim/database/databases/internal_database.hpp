@@ -32,6 +32,7 @@
 #include <bitprim/database/databases/tools.hpp>
 #include <bitprim/database/databases/utxo_entry.hpp>
 #include <bitprim/database/databases/history_entry.hpp>
+#include <bitprim/database/databases/transaction_entry.hpp>
 
 
 #ifdef BITPRIM_INTERNAL_DB_4BYTES_INDEX
@@ -119,7 +120,7 @@ public:
 
 
 #if defined(BITPRIM_DB_NEW_FULL)
-    chain::transaction get_transaction(hash_digest const& hash) const;
+    transaction_entry get_transaction(hash_digest const& hash, size_t fork_height, bool require_confirmed) const;
     
     chain::history_compact::list get_history(short_hash const& key, size_t limit, size_t from_height);
     
@@ -214,14 +215,14 @@ private:
 #if defined(BITPRIM_DB_NEW_FULL)
     result_code remove_transactions(uint32_t height, MDB_txn* db_txn);
     
-    result_code insert_transaction(chain::transaction const& tx, uint32_t height,  MDB_txn* db_txn);
+    result_code insert_transaction(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, MDB_txn* db_txn);
     
     data_chunk serialize_txs(chain::block const& block);
     
     template <typename I>
-    result_code insert_transactions(I f, I l, uint32_t height, MDB_txn* db_txn);
+    result_code insert_transactions(I f, I l, uint32_t height, uint32_t median_time_past, MDB_txn* db_txn);
     
-    chain::transaction get_transaction(hash_digest const& hash, MDB_txn* db_txn) const;
+    transaction_entry get_transaction(hash_digest const& hash, size_t fork_height, bool require_confirmed, MDB_txn* db_txn) const;
     
     result_code insert_input_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::input const& input, MDB_txn* db_txn);
     
@@ -242,6 +243,10 @@ private:
     result_code remove_transaction_spend_db(chain::transaction const& tx, MDB_txn* db_txn);
 
     result_code insert_transaction_unconfirmed(chain::transaction const& tx,  MDB_txn* db_txn);
+
+    result_code remove_transaction_unconfirmed(hash_digest const& tx_id,  MDB_txn* db_txn);
+
+    chain::transaction get_transaction_unconfirmed(hash_digest const& hash, MDB_txn* db_txn) const;
 
 #endif //defined(BITPRIM_DB_NEW_FULL)
 

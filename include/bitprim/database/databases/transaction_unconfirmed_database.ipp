@@ -25,6 +25,41 @@ namespace database {
 
 #if defined(BITPRIM_DB_NEW_FULL)
 
+
+template <typename Clock>
+chain::transaction internal_database_basis<Clock>::get_transaction_unconfirmed(hash_digest const& hash, MDB_txn* db_txn) const {
+    MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
+    MDB_val value;
+
+    if (mdb_get(db_txn, dbi_transaction_unconfirmed_db_, &key, &value) != MDB_SUCCESS) {
+        return chain::transaction{};
+    }
+
+    auto data = db_value_to_data_chunk(value);
+    auto res = chain::transaction::factory_from_data(data,false,true,true);
+    return res;
+}
+
+
+template <typename Clock>
+result_code internal_database_basis<Clock>::remove_transaction_unconfirmed(hash_digest const& tx_id,  MDB_txn* db_txn) {
+
+    MDB_val key {tx_id.size(), tx_id.data()};
+
+    auto res = mdb_del(db_txn, dbi_transaction_unconfirmed_db_, &key, NULL);
+    if (res == MDB_NOTFOUND) {
+        LOG_INFO(LOG_DATABASE) << "Key not found deleting transaction unconfirmed DB in LMDB [remove_transaction_unconfirmed] - mdb_del: " << res;
+        return result_code::key_not_found;
+    }
+    if (res != MDB_SUCCESS) {
+        LOG_INFO(LOG_DATABASE) << "Error deleting transaction unconfirmed DB in LMDB [remove_transaction_unconfirmed] - mdb_del: " << res;
+        return result_code::other;
+    }
+
+    return result_code::success;
+}
+
+
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(chain::transaction const& tx,  MDB_txn* db_txn) {
     auto key_arr = tx.hash();                                    //TODO(fernando): podría estar afuera de la DBTx
@@ -47,7 +82,6 @@ result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(chain
 
     return result_code::success;
 }
-
 
 
 #endif //BITPRIM_NEW_DB_FULL

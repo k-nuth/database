@@ -93,9 +93,12 @@ result_code internal_database_basis<Clock>::insert_input_history(hash_digest con
             //During an IBD with checkpoints some previous output info is missing.
             //We can recover it by accessing the database
             
-            auto const& tx = get_transaction(prevout.hash(), db_txn);
+            //TODO (Mario) requiere_confirmed = true ??
+            auto const& entry = get_transaction(prevout.hash(), max_uint32, true, db_txn);
 
-            if (tx.is_valid()) {
+            if (entry.is_valid()) {
+                
+                auto const& tx = entry.transaction();
 
                 auto const& out_output = tx.outputs()[prevout.index()];
 
@@ -225,10 +228,12 @@ result_code internal_database_basis<Clock>::remove_transaction_history_db(chain:
         }
         else {
 
-            auto const& tx = get_transaction(prevout.hash(), db_txn);
+            //TODO (Mario) : require_confirmed true ??
+            auto const& entry = get_transaction(prevout.hash(), max_uint32, true ,  db_txn);
 
-            if (tx.is_valid()) {
-
+            if (entry.is_valid()) {
+                
+                auto const& tx = entry.transaction();
                 auto const& out_output = tx.outputs()[prevout.index()];
 
                 for (auto const& address : out_output.addresses()) {

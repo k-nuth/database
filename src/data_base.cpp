@@ -511,7 +511,8 @@ code data_base::verify_push(const transaction& tx) {
     auto const result = transactions_->get(tx.hash(), max_size_t, false);
     return result && ! result.is_spent(max_size_t) ? error::unspent_duplicate : error::success;
 #else
-    return error::success;
+    auto const result = internal_db_->get_transaction(tx.hash(), max_size_t, false);
+    return result.is_valid() && ! result.is_spent(max_size_t) ? error::unspent_duplicate : error::success;
 #endif // BITPRIM_DB_LEGACY    
 }
 
@@ -538,7 +539,10 @@ bool data_base::end_insert() const {
 code data_base::insert(const chain::block& block, size_t height) {
 
     auto const median_time_past = block.header().validation.median_time_past;
-    // std::cout << "data_base::insert - median_time_past: " << median_time_past << std::endl;
+    
+    auto const ec = verify_insert(block, height);
+
+    if (ec) return ec;
 
 #ifdef BITPRIM_DB_NEW
     auto res = internal_db_->push_block(block, height, median_time_past);
@@ -548,14 +552,7 @@ code data_base::insert(const chain::block& block, size_t height) {
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_LEGACY
-    auto const ec = verify_insert(block, height);
-
-    if (ec) return ec;
-
-    // auto const median_time_past = block.header().validation.median_time_past;
-    // median_time_past = block.header().validation.median_time_past;
-    // std::cout << "data_base::insert - median_time_past(2): " << median_time_past << std::endl;
-
+    
     if ( ! push_transactions(block, height, median_time_past) || ! push_heights(block, height)) {
         return error::operation_failed_1;
     }

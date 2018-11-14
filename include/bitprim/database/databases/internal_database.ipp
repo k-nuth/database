@@ -705,12 +705,10 @@ result_code internal_database_basis<Clock>::push_block(chain::block const& block
 
 #if defined(BITPRIM_DB_NEW_FULL)
 
-    res = insert_transactions(txs.begin(), txs.end(), height,  db_txn);
+    res = insert_transactions(txs.begin(), txs.end(), height, median_time_past,  db_txn);
     if (res == result_code::duplicated_key) {
-        // std::cout << "33333333" << static_cast<uint32_t>(res) << "\n";
         res = result_code::success_duplicate_coinbase;
     } else if (res != result_code::success) {
-        // std::cout << "44444444" << static_cast<uint32_t>(res) << "\n";
         return res;
     }
 

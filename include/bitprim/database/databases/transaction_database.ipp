@@ -27,62 +27,71 @@ namespace database {
 
 //public
 template <typename Clock>
-chain::transaction internal_database_basis<Clock>::get_transaction(hash_digest const& hash) const {
+transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest const& hash, size_t fork_height, bool require_confirmed) const {
     
     MDB_txn* db_txn;
     auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
     if (res != MDB_SUCCESS) {
-        return chain::transaction{};
+        return transaction_entry{};
     }
 
-    auto transaction = get_transaction(hash, db_txn);
+    auto entry = get_transaction(hash, fork_height, require_confirmed, db_txn);
 
     if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
-        return chain::transaction{};
+        return transaction_entry{};
     }
 
-    return transaction;
+    return entry;
 
 }
 
-
 template <typename Clock>
 template <typename I>
-result_code internal_database_basis<Clock>::insert_transactions(I f, I l, uint32_t height, MDB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_transactions(I f, I l, uint32_t height, uint32_t median_time_past, MDB_txn* db_txn) {
+    uint32_t pos = 0;
     while (f != l) {
         auto const& tx = *f;
-        auto res = insert_transaction(tx, height,  db_txn);
+        auto res = insert_transaction(tx, height, median_time_past, pos, db_txn);
         if (res != result_code::success) {    
             return res;
         }
         ++f;
+        ++pos;
     }
 
     return result_code::success;
 }
 
 template <typename Clock>
-chain::transaction internal_database_basis<Clock>::get_transaction(hash_digest const& hash, MDB_txn* db_txn) const {
+transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest const& hash, size_t fork_height, bool require_confirmed, MDB_txn* db_txn) const {
     MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
     MDB_val value;
 
-    if (mdb_get(db_txn, dbi_transaction_db_, &key, &value) != MDB_SUCCESS) {
-        return chain::transaction{};
+    auto res = mdb_get(db_txn, dbi_transaction_db_, &key, &value);
+    
+    if (res != MDB_SUCCESS) {
+        return transaction_entry{};
     }
 
     auto data = db_value_to_data_chunk(value);
-    auto res = chain::transaction::factory_from_data(data,true,true);
-    return res;
+    auto entry = transaction_entry::factory_from_data(data);
+
+    if (! require_confirmed) {
+        return entry;
+    }
+
+    auto const confirmed = entry.confirmed();
+    
+    return (confirmed && entry.height() > fork_height) || (require_confirmed && ! confirmed) ? transaction_entry{} : entry;
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_transaction(chain::transaction const& tx, uint32_t height,  MDB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_transaction(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, MDB_txn* db_txn) {
     auto key_arr = tx.hash();                                    //TODO(fernando): podría estar afuera de la DBTx
     MDB_val key {key_arr.size(), key_arr.data()};
 
-    //TODO (Mario): store height        
-    auto value_arr = tx.to_data(true,true);                                //TODO(fernando): podría estar afuera de la DBTx
-    MDB_val value {value_arr.size(), value_arr.data()}; 
+    auto valuearr = transaction_entry::factory_to_data(tx, height, median_time_past, position);
+    MDB_val value {valuearr.size(), valuearr.data()}; 
 
     auto res = mdb_put(db_txn, dbi_transaction_db_, &key, &value, MDB_NOOVERWRITE);
     if (res == MDB_KEYEXIST) {
@@ -117,17 +126,18 @@ result_code internal_database_basis<Clock>::remove_transactions(uint32_t height,
         
         MDB_val key_tx {h.size(), h.data()};
         
-        auto const& tx = get_transaction(h, db_txn);
-        if (!tx.is_valid()) {
+        //TODO (Mario) ver si esta bien pasarle require_confirmd true
+        auto const& entry = get_transaction(h, max_uint32, true, db_txn);
+        if ( ! entry.is_valid() ) {
             return result_code::other;
         }
         
-        auto res0 = remove_transaction_history_db(tx, height, db_txn);
+        auto res0 = remove_transaction_history_db(entry.transaction(), height, db_txn);
         if (res0 != result_code::success) {
             return res0;
         }
         
-        res0 = remove_transaction_spend_db(tx, db_txn);
+        res0 = remove_transaction_spend_db(entry.transaction(), db_txn);
         if (res0 != result_code::success && res0 != result_code::key_not_found) {
             return res0;
         }

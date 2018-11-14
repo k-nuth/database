@@ -397,6 +397,7 @@ if (DB_NEW)
         ${bitprim_database_sources_just_bitprim}
         src/bitprim/databases/utxo_entry.cpp
         src/bitprim/databases/history_entry.cpp
+        src/bitprim/databases/transaction_entry.cpp
     )
 endif()
 

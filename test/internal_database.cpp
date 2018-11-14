@@ -362,7 +362,9 @@ void check_blocks_db(MDB_env* env_, MDB_dbi& dbi_blocks_db_, MDB_dbi& dbi_block_
         BOOST_REQUIRE(mdb_get(db_txn, dbi_transaction_db_, &key_tx, &value_tx) == MDB_SUCCESS);
            
         data_chunk data_tx {static_cast<uint8_t*>(value_tx.mv_data), static_cast<uint8_t*>(value_tx.mv_data) + value_tx.mv_size};
-        auto tx = chain::transaction::factory_from_data(data_tx,true,true);
+        
+        auto res = transaction_entry::factory_from_data(data_tx);
+        auto tx = res.transaction();
         
         BOOST_REQUIRE(tx.is_valid());
 
@@ -674,9 +676,9 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_genesis) {
     auto output = entry.output();
     BOOST_REQUIRE(output.is_valid());
 
-    #if defined(BITPRIM_DB_NEW_FULL)
+#if defined(BITPRIM_DB_NEW_FULL)
 
-    auto const& tx = db.get_transaction(txid);
+    auto const& tx = db.get_transaction(txid, max_uint32, true);
     BOOST_REQUIRE(tx.is_valid());
 
     auto const& address = wallet::payment_address("bitcoincash:qp3wjpa3tjlj042z2wv7hahsldgwhwy0rq9sywjpyy");
@@ -693,7 +695,7 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_genesis) {
     BOOST_REQUIRE(history_item.height == 0);
     BOOST_REQUIRE(history_item.value == 5000000000);
 
-    #endif
+#endif
 
 
     std::string output_enc = "00f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac";
@@ -1534,11 +1536,11 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         auto const& address = wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
         BOOST_REQUIRE(address);
 
+#if defined(BITPRIM_DB_NEW_FULL)
         auto history_list = db.get_history(address.hash(),0,0);
         BOOST_REQUIRE(history_list.size() == 1);
 
         auto history_item = history_list[0];
-
 
         hash_digest txid;
         std::string txid_enc = "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6";
@@ -1549,6 +1551,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         BOOST_REQUIRE(history_item.point.index() == 0);
         BOOST_REQUIRE(history_item.height == 0);
         BOOST_REQUIRE(history_item.value == 5000000000);
+#endif
 
     }   //close() implicit
 
@@ -1622,6 +1625,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         BOOST_REQUIRE(db.get_header(1).is_valid());
         BOOST_REQUIRE(db.get_header(1).hash() == spender.hash());
 
+#if defined(BITPRIM_DB_NEW_FULL)
 
         auto const& address = wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
         BOOST_REQUIRE(address);
@@ -1647,8 +1651,9 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         std::string txid_enc2 = "5a4ebf66822b0b2d56bd9dc64ece0bc38ee7844a23ff1d7320a88c5fdb2ad3e2";                        
         BOOST_REQUIRE(decode_hash(txid2, txid_enc2));
     
-        auto const& tx = db.get_transaction(txid);
-        BOOST_REQUIRE(tx.is_valid());
+        auto const& tx_entry = db.get_transaction(txid,max_uint32, true);
+        BOOST_REQUIRE(tx_entry.is_valid());
+        auto const& tx = tx_entry.transaction();
         output_point point = {tx.hash(), 0};
 
         BOOST_REQUIRE(history_item.kind == point_kind::spend);
@@ -1675,6 +1680,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
 
         auto const& in_point = db.get_spend(output_point{txid, 0});
         BOOST_REQUIRE(in_point.is_valid());
+
+#endif
 
     }   //close() implicit
 
@@ -1755,6 +1762,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         BOOST_REQUIRE(! db.get_header(spender.hash()).first.is_valid());
         BOOST_REQUIRE(! db.get_header(1).is_valid());
 
+#if defined(BITPRIM_DB_NEW_FULL)
+
         auto const& address = wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
         BOOST_REQUIRE(address);
 
@@ -1783,7 +1792,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         
         auto const& in_point = db.get_spend(output_point{txid, 0});
         BOOST_REQUIRE(!in_point.is_valid());
-
+#endif
 
     }   //close() implicit
 
@@ -1853,6 +1862,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         BOOST_REQUIRE(db.get_header(1).is_valid());
         BOOST_REQUIRE(db.get_header(1).hash() == spender.hash());
 
+#if defined(BITPRIM_DB_NEW_FULL)
 
         auto const& address = wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
         BOOST_REQUIRE(address);
@@ -1878,8 +1888,9 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         std::string txid_enc2 = "5a4ebf66822b0b2d56bd9dc64ece0bc38ee7844a23ff1d7320a88c5fdb2ad3e2";                        
         BOOST_REQUIRE(decode_hash(txid2, txid_enc2));
     
-        auto const& tx = db.get_transaction(txid);
-        BOOST_REQUIRE(tx.is_valid());
+        auto const& tx_entry = db.get_transaction(txid, max_uint32, true);
+        BOOST_REQUIRE(tx_entry.is_valid());
+        auto const& tx = tx_entry.transaction();
         output_point point = {tx.hash(), 0};
 
         BOOST_REQUIRE(history_item.kind == point_kind::spend);
@@ -1908,6 +1919,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
 
         auto const& in_point = db.get_spend(output_point{txid, 0});
         BOOST_REQUIRE(in_point.is_valid());
+
+#endif
 
     }   //close() implicit
 
