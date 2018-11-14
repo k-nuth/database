@@ -46,7 +46,7 @@ namespace database {
 #if defined(BITPRIM_DB_NEW_BLOCKS)
 constexpr size_t max_dbs_ = 7;
 #elif defined(BITPRIM_DB_NEW_FULL)
-constexpr size_t max_dbs_ = 10;
+constexpr size_t max_dbs_ = 11;
 #else
 constexpr size_t max_dbs_ = 6;
 #endif
@@ -77,6 +77,7 @@ public:
     constexpr static char transaction_db_name[] = "transactions";
     constexpr static char history_db_name[] = "history";
     constexpr static char spend_db_name[] = "spend";
+    constexpr static char transaction_unconfirmed_db_name[] = "transaction_unconfirmed";
 #endif  //BITPRIM_DB_NEW_FULL
 
     internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size);
@@ -239,6 +240,9 @@ private:
     result_code remove_spend(chain::output_point const& out_point, MDB_txn* db_txn);
     
     result_code remove_transaction_spend_db(chain::transaction const& tx, MDB_txn* db_txn);
+
+    result_code insert_transaction_unconfirmed(chain::transaction const& tx,  MDB_txn* db_txn);
+
 #endif //defined(BITPRIM_DB_NEW_FULL)
 
 // Data members ----------------------------
@@ -266,6 +270,7 @@ private:
     MDB_dbi dbi_transaction_db_;
     MDB_dbi dbi_history_db_;
     MDB_dbi dbi_spend_db_;
+    MDB_dbi dbi_transaction_unconfirmed_db_;
 #endif
 };
 
@@ -302,6 +307,11 @@ constexpr char internal_database_basis<Clock>::history_db_name[];            //k
 
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::spend_db_name[];            //key: output_point, value: input_point
+
+template <typename Clock>
+constexpr char internal_database_basis<Clock>::transaction_unconfirmed_db_name[];     //key: tx hash, value: tx
+
+
 #endif
 
 using internal_database = internal_database_basis<std::chrono::system_clock>;
@@ -314,6 +324,7 @@ using internal_database = internal_database_basis<std::chrono::system_clock>;
 #include <bitprim/database/databases/header_database.ipp>
 #include <bitprim/database/databases/history_database.ipp>
 #include <bitprim/database/databases/spend_database.ipp>
+#include <bitprim/database/databases/transaction_unconfirmed_database.ipp>
 #include <bitprim/database/databases/internal_database.ipp>
 #include <bitprim/database/databases/reorg_database.ipp>
 #include <bitprim/database/databases/transaction_database.ipp>

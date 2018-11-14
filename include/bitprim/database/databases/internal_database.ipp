@@ -82,6 +82,7 @@ bool internal_database_basis<Clock>::close() {
         mdb_dbi_close(env_, dbi_transaction_db_);
         mdb_dbi_close(env_, dbi_history_db_);
         mdb_dbi_close(env_, dbi_spend_db_);
+        mdb_dbi_close(env_, dbi_transaction_unconfirmed_db_);
         #endif
 
         db_opened_ = false;
@@ -550,6 +551,12 @@ bool internal_database_basis<Clock>::open_databases() {
     }
 
     res = mdb_dbi_open(db_txn, spend_db_name, MDB_CREATE, &dbi_spend_db_);
+    if (res != MDB_SUCCESS) {
+        return false;
+    }
+
+    
+    res = mdb_dbi_open(db_txn, transaction_unconfirmed_db_name, MDB_CREATE, &dbi_transaction_unconfirmed_db_);
     if (res != MDB_SUCCESS) {
         return false;
     }
