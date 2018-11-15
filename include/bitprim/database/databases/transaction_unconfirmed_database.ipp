@@ -36,7 +36,13 @@ chain::transaction internal_database_basis<Clock>::get_transaction_unconfirmed(h
     }
 
     auto data = db_value_to_data_chunk(value);
-    auto res = chain::transaction::factory_from_data(data,false,true,true);
+
+#if ! defined(BITPRIM_USE_DOMAIN) || defined(BITPRIM_CACHED_RPC_DATA)    
+    auto res = chain::transaction::factory_from_data(data, false, true, true);
+#else
+    auto res = chain::transaction::factory_from_data(data, false, true);
+#endif
+
     return res;
 }
 
@@ -65,8 +71,14 @@ result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(chain
     auto key_arr = tx.hash();                                    //TODO(fernando): podría estar afuera de la DBTx
     MDB_val key {key_arr.size(), key_arr.data()};
 
-    //TODO (Mario): store height        
-    auto value_arr = tx.to_data(false,true,true);                                //TODO(fernando): podría estar afuera de la DBTx
+    //TODO (Mario): store height
+    //TODO(fernando): podría estar afuera de la DBTx
+#if ! defined(BITPRIM_USE_DOMAIN) || defined(BITPRIM_CACHED_RPC_DATA)    
+    auto value_arr = tx.to_data(false, true, true);
+#else
+    auto value_arr = tx.to_data(false, true);
+#endif
+
     MDB_val value {value_arr.size(), value_arr.data()}; 
 
     auto res = mdb_put(db_txn, dbi_transaction_unconfirmed_db_, &key, &value, MDB_NOOVERWRITE);

@@ -46,7 +46,7 @@ const size_t position_max = max_uint32;
 #define BITPRIM_POSITION_READER read_2_bytes_little_endian
 static constexpr auto position_size = sizeof(uint16_t);
 const size_t position_max = max_uint16;
-#endif
+#endif // BITPRIM_CURRENCY_BCH
 
 void write_position(serializer<uint8_t*>& serial, size_t position) {
     serial.BITPRIM_POSITION_WRITER(static_cast<uint32_t>(position));
