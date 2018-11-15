@@ -25,6 +25,18 @@
 namespace libbitcoin {
 namespace database {
 
+
+#ifdef BITPRIM_USE_DOMAIN
+template <Writer W, BITPRIM_IS_WRITER(W)>
+void write_position(W& serial, uint32_t position) {
+    serial.BITPRIM_POSITION_WRITER(position);
+}
+#else
+void write_position(writer& serial, uint32_t position) {
+    serial.BITPRIM_POSITION_WRITER(position);
+}
+#endif
+
 class BCD_API transaction_entry {
 public:
 

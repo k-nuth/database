@@ -23,6 +23,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <bitcoin/bitcoin.hpp>
+#include <bitcoin/database/currency_config.hpp>
 #include <bitcoin/database/memory/memory.hpp>
 #include <bitcoin/database/result/transaction_result.hpp>
 
@@ -33,20 +34,6 @@ using namespace bc::machine;
 
 static constexpr auto value_size = sizeof(uint64_t);
 static constexpr auto height_size = sizeof(uint32_t);
-
-#ifdef BITPRIM_CURRENCY_BCH
-#define BITPRIM_WITNESS_DEFAULT false
-#define BITPRIM_POSITION_WRITER write_4_bytes_little_endian
-#define BITPRIM_POSITION_READER read_4_bytes_little_endian
-static constexpr auto position_size = sizeof(uint32_t);
-const size_t position_max = max_uint32;
-#else
-#define BITPRIM_WITNESS_DEFAULT true
-#define BITPRIM_POSITION_WRITER write_2_bytes_little_endian
-#define BITPRIM_POSITION_READER read_2_bytes_little_endian
-static constexpr auto position_size = sizeof(uint16_t);
-const size_t position_max = max_uint16;
-#endif // BITPRIM_CURRENCY_BCH
 
 void write_position(serializer<uint8_t*>& serial, size_t position) {
     serial.BITPRIM_POSITION_WRITER(static_cast<uint32_t>(position));
