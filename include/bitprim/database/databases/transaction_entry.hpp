@@ -114,8 +114,8 @@ public:
 #ifdef BITPRIM_USE_DOMAIN
     template <Writer W, BITPRIM_IS_WRITER(W)>
     static
-    void factory_to_data(W& sink, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position);
-        tx.to_data(sink, false,true,false);
+    void factory_to_data(W& sink, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position) {
+        tx.to_data(sink, false, true, false);
         sink.write_4_bytes_little_endian(height);
         sink.write_4_bytes_little_endian(median_time_past);
         write_position(sink, position);

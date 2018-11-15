@@ -113,7 +113,7 @@ public:
 #ifdef BITPRIM_USE_DOMAIN
     template <Writer W, BITPRIM_IS_WRITER(W)>
     static
-    void factory_to_data(W& sink, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
+    void factory_to_data(W& sink, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
         point.to_data(sink, false);
         sink.write_byte(static_cast<uint8_t>(kind));
         sink.write_4_bytes_little_endian(height);
