@@ -23,19 +23,17 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <bitcoin/database/currency_config.hpp>
-
 namespace libbitcoin { 
 namespace database {
 
-void write_position(writer& serial, uint32_t position) {
-    serial.BITPRIM_POSITION_WRITER(position);
-}
+// void write_position(writer& serial, uint32_t position) {
+//     serial.BITPRIM_POSITION_WRITER(position);
+// }
 
-template <typename Deserializer>
-uint32_t read_position(Deserializer& deserial) {
-    return deserial.BITPRIM_POSITION_READER();
-}
+// template <typename Deserializer>
+// uint32_t read_position(Deserializer& deserial) {
+//     return deserial.BITPRIM_POSITION_READER();
+// }
 
 transaction_entry::transaction_entry(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position)
     : transaction_(tx), height_(height), median_time_past_(median_time_past), position_(position)
@@ -180,7 +178,7 @@ bool transaction_entry::from_data(std::istream& stream) {
 bool transaction_entry::from_data(reader& source) {
     reset();
     
-    transaction_.from_data(source,false,true,false);
+    transaction_.from_data(source, false, true, false);
     height_ = source.read_4_bytes_little_endian();
     median_time_past_ = source.read_4_bytes_little_endian();
     position_ = read_position(source);

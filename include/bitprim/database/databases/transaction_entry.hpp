@@ -20,6 +20,8 @@
 #define BITPRIM_DATABASE_TRANSACTION_ENTRY_HPP_
 
 #include <bitcoin/bitcoin.hpp>
+
+#include <bitcoin/database/currency_config.hpp>
 #include <bitcoin/database/define.hpp>
 
 namespace libbitcoin {
@@ -36,6 +38,11 @@ void write_position(writer& serial, uint32_t position) {
     serial.BITPRIM_POSITION_WRITER(position);
 }
 #endif
+
+template <typename Deserializer>
+uint32_t read_position(Deserializer& deserial) {
+    return deserial.BITPRIM_POSITION_READER();
+}
 
 class BCD_API transaction_entry {
 public:
@@ -80,7 +87,11 @@ public:
     bool from_data(R& source) {
         reset();
     
-        transaction_.from_data(source,false,true,false);
+#if defined(BITPRIM_CACHED_RPC_DATA)    
+        transaction_.from_data(source, false, true, false);
+#else
+        transaction_.from_data(source, false, true);
+#endif
         height_ = source.read_4_bytes_little_endian();
         median_time_past_ = source.read_4_bytes_little_endian();
         position_ = read_position(source);
