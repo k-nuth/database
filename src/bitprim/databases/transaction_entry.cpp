@@ -120,7 +120,7 @@ void transaction_entry::factory_to_data(std::ostream& stream, chain::transaction
 }
 
 
-
+#if ! defined(BITPRIM_USE_DOMAIN)
 // static
 void transaction_entry::factory_to_data(writer& sink, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position) {
     tx.to_data(sink, false,true,false);
@@ -128,6 +128,7 @@ void transaction_entry::factory_to_data(writer& sink, chain::transaction const& 
     sink.write_4_bytes_little_endian(median_time_past);
     write_position(sink, position);
 }
+#endif
 
 
 // Serialization.
