@@ -37,11 +37,12 @@ chain::transaction internal_database_basis<Clock>::get_transaction_unconfirmed(h
 
     auto data = db_value_to_data_chunk(value);
 
-#if ! defined(BITPRIM_USE_DOMAIN) || defined(BITPRIM_CACHED_RPC_DATA)    
-    auto res = chain::transaction::factory_from_data(data, false, true, true);
-#else
     auto res = chain::transaction::factory_from_data(data, false, true);
-#endif
+// #if ! defined(BITPRIM_USE_DOMAIN) || defined(BITPRIM_CACHED_RPC_DATA)    
+//     auto res = chain::transaction::factory_from_data(data, false, true, true);
+// #else
+//     auto res = chain::transaction::factory_from_data(data, false, true);
+// #endif
 
     return res;
 }

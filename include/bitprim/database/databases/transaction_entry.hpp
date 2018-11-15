@@ -34,6 +34,7 @@ void write_position(W& serial, uint32_t position) {
     serial.BITPRIM_POSITION_WRITER(position);
 }
 #else
+inline
 void write_position(writer& serial, uint32_t position) {
     serial.BITPRIM_POSITION_WRITER(position);
 }
