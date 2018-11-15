@@ -88,8 +88,15 @@ bool transaction_entry::is_valid() const {
 // constexpr
 //TODO(fernando): make this constexpr 
 size_t transaction_entry::serialized_size(chain::transaction const& tx) {
-    return tx.serialized_size(false, true, false) + sizeof(uint32_t) + sizeof(uint32_t) + position_size;
+#if ! defined(BITPRIM_USE_DOMAIN) || defined(BITPRIM_CACHED_RPC_DATA)
+    return tx.serialized_size(false, true, false) 
+#else
+    return tx.serialized_size(false, true) 
+#endif
+         + sizeof(uint32_t) + sizeof(uint32_t) + position_size;
 }
+
+
 
 // Serialization.
 //-----------------------------------------------------------------------------
