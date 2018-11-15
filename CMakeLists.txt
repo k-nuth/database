@@ -87,6 +87,14 @@ if (USE_DOMAIN)
   add_definitions(-DBITPRIM_USE_DOMAIN)
 endif()
 
+# Implement --with-cached-rpc-data and declare WITH_CACHED_RPC_DATA.
+#------------------------------------------------------------------------------
+option(WITH_CACHED_RPC_DATA "Cached RPC data enabled." OFF)
+if (WITH_CACHED_RPC_DATA)
+  message(STATUS "Bitprim: Cached RPC data enabled")
+  add_definitions(-DBITPRIM_CACHED_RPC_DATA)
+endif()
+
 
 # Implement and declare DB_TRANSACTION_UNCONFIRMED.
 #------------------------------------------------------------------------------

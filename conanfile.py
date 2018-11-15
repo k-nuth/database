@@ -44,6 +44,7 @@ class BitprimDatabaseConan(BitprimConanFile):
                "measurements": [True, False],
                "use_domain": [True, False],
                "db": ['legacy', 'legacy_full', 'new', 'new_with_blocks', 'new_full'],
+               "cached_rpc_data": [True, False],
                "cxxflags": "ANY",
                "cflags": "ANY",
     }
@@ -59,6 +60,7 @@ class BitprimDatabaseConan(BitprimConanFile):
         "measurements=False", \
         "use_domain=False", \
         "db=legacy_full", \
+        "cached_rpc_data=False", \
         "cxxflags=_DUMMY_", \
         "cflags=_DUMMY_"
 
@@ -134,6 +136,7 @@ class BitprimDatabaseConan(BitprimConanFile):
         cmake.definitions["CURRENCY"] = self.options.currency
         cmake.definitions["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
         cmake.definitions["USE_DOMAIN"] = option_on_off(self.options.use_domain)
+        cmake.definitions["WITH_CACHED_RPC_DATA"] = option_on_off(self.options.cached_rpc_data)
 
         if self.options.db == "legacy":
             cmake.definitions["DB_TRANSACTION_UNCONFIRMED"] = option_on_off(False)
