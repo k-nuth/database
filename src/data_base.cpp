@@ -506,6 +506,9 @@ code data_base::verify_push(const block& block, size_t height) {
     return error::success;
 }
 
+
+#if defined(BITPRIM_DB_LEGACY) || defined(BITPRIM_DB_NEW_FULL)
+
 code data_base::verify_push(const transaction& tx) {
 #ifdef BITPRIM_DB_LEGACY
     auto const result = transactions_->get(tx.hash(), max_size_t, false);
@@ -515,6 +518,9 @@ code data_base::verify_push(const transaction& tx) {
     return result.is_valid() && ! result.is_spent(max_size_t) ? error::unspent_duplicate : error::success;
 #endif // BITPRIM_DB_LEGACY    
 }
+
+#endif // defined(BITPRIM_DB_LEGACY) || defined(BITPRIM_DB_NEW_FULL)
+
 
 #ifdef BITPRIM_DB_LEGACY
 bool data_base::begin_insert() const {

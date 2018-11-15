@@ -26,6 +26,8 @@
 #include <lmdb.h>
 
 #include <bitcoin/bitcoin.hpp>
+#include <bitcoin/bitcoin/chain/input_point.hpp>
+
 #include <bitcoin/database/define.hpp>
 
 #include <bitprim/database/databases/result_code.hpp>
@@ -33,7 +35,6 @@
 #include <bitprim/database/databases/utxo_entry.hpp>
 #include <bitprim/database/databases/history_entry.hpp>
 #include <bitprim/database/databases/transaction_entry.hpp>
-
 
 #ifdef BITPRIM_INTERNAL_DB_4BYTES_INDEX
 #define BITPRIM_INTERNAL_DB_WIRE true

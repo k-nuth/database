@@ -20,10 +20,29 @@
 #define BITPRIM_DATABASE_TRANSACTION_ENTRY_HPP_
 
 #include <bitcoin/bitcoin.hpp>
+
+#include <bitcoin/database/currency_config.hpp>
 #include <bitcoin/database/define.hpp>
 
 namespace libbitcoin {
 namespace database {
+
+
+#ifdef BITPRIM_USE_DOMAIN
+template <Writer W, BITPRIM_IS_WRITER(W)>
+void write_position(W& serial, uint32_t position) {
+    serial.BITPRIM_POSITION_WRITER(position);
+}
+#else
+void write_position(writer& serial, uint32_t position) {
+    serial.BITPRIM_POSITION_WRITER(position);
+}
+#endif
+
+template <typename Deserializer>
+uint32_t read_position(Deserializer& deserial) {
+    return deserial.BITPRIM_POSITION_READER();
+}
 
 class BCD_API transaction_entry {
 public:
@@ -68,7 +87,11 @@ public:
     bool from_data(R& source) {
         reset();
     
-        transaction_.from_data(source,false,true,false);
+#if defined(BITPRIM_CACHED_RPC_DATA)    
+        transaction_.from_data(source, false, true, false);
+#else
+        transaction_.from_data(source, false, true);
+#endif
         height_ = source.read_4_bytes_little_endian();
         median_time_past_ = source.read_4_bytes_little_endian();
         position_ = read_position(source);
@@ -115,7 +138,13 @@ public:
     template <Writer W, BITPRIM_IS_WRITER(W)>
     static
     void factory_to_data(W& sink, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position) {
+
+#if defined(BITPRIM_CACHED_RPC_DATA)    
         tx.to_data(sink, false, true, false);
+#else
+        tx.to_data(sink, false, true);
+#endif
+
         sink.write_4_bytes_little_endian(height);
         sink.write_4_bytes_little_endian(median_time_past);
         write_position(sink, position);

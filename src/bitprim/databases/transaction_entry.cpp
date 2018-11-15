@@ -26,29 +26,14 @@
 namespace libbitcoin { 
 namespace database {
 
+// void write_position(writer& serial, uint32_t position) {
+//     serial.BITPRIM_POSITION_WRITER(position);
+// }
 
-#ifdef BITPRIM_CURRENCY_BCH
-#define BITPRIM_WITNESS_DEFAULT false
-#define BITPRIM_POSITION_WRITER write_4_bytes_little_endian
-#define BITPRIM_POSITION_READER read_4_bytes_little_endian
-static constexpr auto position_size = sizeof(uint32_t);
-const size_t position_max = max_uint32;
-#else
-#define BITPRIM_WITNESS_DEFAULT true
-#define BITPRIM_POSITION_WRITER write_2_bytes_little_endian
-#define BITPRIM_POSITION_READER read_2_bytes_little_endian
-static constexpr auto position_size = sizeof(uint16_t);
-const size_t position_max = max_uint16;
-#endif
-
-void write_position(writer& serial, uint32_t position) {
-    serial.BITPRIM_POSITION_WRITER(position);
-}
-
-template <typename Deserializer>
-uint32_t read_position(Deserializer& deserial) {
-    return deserial.BITPRIM_POSITION_READER();
-}
+// template <typename Deserializer>
+// uint32_t read_position(Deserializer& deserial) {
+//     return deserial.BITPRIM_POSITION_READER();
+// }
 
 transaction_entry::transaction_entry(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position)
     : transaction_(tx), height_(height), median_time_past_(median_time_past), position_(position)
@@ -88,8 +73,15 @@ bool transaction_entry::is_valid() const {
 // constexpr
 //TODO(fernando): make this constexpr 
 size_t transaction_entry::serialized_size(chain::transaction const& tx) {
-    return tx.serialized_size(false, true, false) + sizeof(uint32_t) + sizeof(uint32_t) + position_size;
+#if ! defined(BITPRIM_USE_DOMAIN) || defined(BITPRIM_CACHED_RPC_DATA)
+    return tx.serialized_size(false, true, false) 
+#else
+    return tx.serialized_size(false, true) 
+#endif
+         + sizeof(uint32_t) + sizeof(uint32_t) + position_size;
 }
+
+
 
 // Serialization.
 //-----------------------------------------------------------------------------
@@ -113,7 +105,7 @@ void transaction_entry::factory_to_data(std::ostream& stream, chain::transaction
 }
 
 
-
+#if ! defined(BITPRIM_USE_DOMAIN)
 // static
 void transaction_entry::factory_to_data(writer& sink, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position) {
     tx.to_data(sink, false,true,false);
@@ -121,6 +113,7 @@ void transaction_entry::factory_to_data(writer& sink, chain::transaction const& 
     sink.write_4_bytes_little_endian(median_time_past);
     write_position(sink, position);
 }
+#endif
 
 
 // Serialization.
@@ -185,7 +178,7 @@ bool transaction_entry::from_data(std::istream& stream) {
 bool transaction_entry::from_data(reader& source) {
     reset();
     
-    transaction_.from_data(source,false,true,false);
+    transaction_.from_data(source, false, true, false);
     height_ = source.read_4_bytes_little_endian();
     median_time_past_ = source.read_4_bytes_little_endian();
     position_ = read_position(source);
