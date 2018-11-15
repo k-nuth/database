@@ -577,7 +577,7 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
     uint32_t pos = 0;
     for (auto const& input: inputs) {
         
-        const input_point inpoint {tx_id, pos};
+        chain::input_point const inpoint {tx_id, pos};
         auto const& prevout = input.previous_output();
         
         auto res = remove_utxo(height, prevout, insert_reorg, db_txn);
