@@ -248,6 +248,12 @@ private:
 
     chain::transaction get_transaction_unconfirmed(hash_digest const& hash, MDB_txn* db_txn) const;
 
+    result_code update_transaction(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, MDB_txn* db_txn);
+
+    result_code set_spend(chain::output_point const& point, uint32_t spender_height, MDB_txn* db_txn);
+
+    result_code set_unspend(chain::output_point const& point, MDB_txn* db_txn);
+
 #endif //defined(BITPRIM_DB_NEW_FULL)
 
 // Data members ----------------------------

@@ -267,6 +267,8 @@ template <typename Clock>
 result_code internal_database_basis<Clock>::pop_block(chain::block& out_block) {
     uint32_t height;
 
+    //TODO: (Mario) use only one transaction ?
+
     //TODO: (Mario) add overload with tx
     // The blockchain is empty (nothing to pop, not even genesis).
     auto res = get_last_height(height);
@@ -592,7 +594,14 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
             return res;
         }
 
+        //insert in spend database
         res = insert_spend(prevout, inpoint, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
+
+        //set spender height in tx database
+        res = set_spend(prevout, height, db_txn);
         if (res != result_code::success) {
             return res;
         }
@@ -621,6 +630,8 @@ result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx
         if (res != result_code::success) {
             return res;
         }
+
+
 
         #endif
 
@@ -869,11 +880,13 @@ result_code internal_database_basis<Clock>::remove_block(chain::block const& blo
     auto const& txs = block.transactions();
     auto const& coinbase = txs.front();
 
+    //UTXO
     auto res = remove_transactions_non_coinbase(txs.begin() + 1, txs.end(), db_txn);
     if (res != result_code::success) {
         return res;
     }
 
+    //UTXO Coinbase
     //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
     res = remove_outputs(coinbase.hash(), coinbase.outputs(), db_txn);
     if (res != result_code::success) {
@@ -897,6 +910,7 @@ result_code internal_database_basis<Clock>::remove_block(chain::block const& blo
     }
 
 #if defined(BITPRIM_DB_NEW_FULL)
+    //Transaction Database
     res = remove_transactions(height, db_txn);
     if (res != result_code::success) {
         return res;

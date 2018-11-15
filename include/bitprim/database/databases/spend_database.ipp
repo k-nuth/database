@@ -98,6 +98,11 @@ result_code internal_database_basis<Clock>::remove_transaction_spend_db(chain::t
         if (res != result_code::success) {
             return res;
         }
+
+        res = set_unspend(prevout, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
     }
 
     return result_code::success;

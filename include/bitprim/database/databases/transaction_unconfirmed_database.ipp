@@ -44,7 +44,7 @@ chain::transaction internal_database_basis<Clock>::get_transaction_unconfirmed(h
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_transaction_unconfirmed(hash_digest const& tx_id,  MDB_txn* db_txn) {
 
-    MDB_val key {tx_id.size(), tx_id.data()};
+    MDB_val key {tx_id.size(), const_cast<hash_digest&>(tx_id).data()};
 
     auto res = mdb_del(db_txn, dbi_transaction_unconfirmed_db_, &key, NULL);
     if (res == MDB_NOTFOUND) {

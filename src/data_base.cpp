@@ -607,6 +607,11 @@ code data_base::push(const chain::transaction& tx, uint32_t forks) {
     ///////////////////////////////////////////////////////////////////////////
 
 #else
+    
+    
+    
+    
+    
     return error::success;  //TODO(fernando): store the transactions in a new mempool
 #endif // BITPRIM_DB_LEGACY
 }
