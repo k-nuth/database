@@ -255,7 +255,10 @@ private:
     bool pop_outputs(const outputs& outputs, size_t height);
     code verify_insert(const chain::block& block, size_t height);
     code verify_push(const chain::block& block, size_t height);
+
+#if defined(BITPRIM_DB_LEGACY) || defined(BITPRIM_DB_NEW_FULL)
     code verify_push(const chain::transaction& tx);
+#endif
 
     // Asynchronous writers.
     // ------------------------------------------------------------------------
