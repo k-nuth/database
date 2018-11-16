@@ -123,7 +123,7 @@ public:
 #if defined(BITPRIM_DB_NEW_FULL)
     transaction_entry get_transaction(hash_digest const& hash, size_t fork_height, bool require_confirmed) const;
     
-    chain::history_compact::list get_history(short_hash const& key, size_t limit, size_t from_height);
+    chain::history_compact::list get_history(short_hash const& key, size_t limit, size_t from_height) const;
     std::vector<hash_digest> get_history_txns(short_hash const& key, size_t limit, size_t from_height) const;
     
     chain::input_point get_spend(chain::output_point const& point) const;
@@ -232,6 +232,7 @@ private:
     
     result_code insert_history_db (wallet::payment_address const& address, data_chunk const& entry, MDB_txn* db_txn); 
     
+    static
     chain::history_compact history_entry_to_history_compact(history_entry const& entry);
     
     result_code remove_history_db(const short_hash& key, size_t height, MDB_txn* db_txn);

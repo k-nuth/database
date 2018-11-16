@@ -141,18 +141,19 @@ result_code internal_database_basis<Clock>::insert_output_history(hash_digest co
 }
 
 template <typename Clock>
+// static
 chain::history_compact internal_database_basis<Clock>::history_entry_to_history_compact(history_entry const& entry) {
     return chain::history_compact{entry.point_kind(), entry.point(), entry.height(), entry.value_or_checksum()};
 }
 
 template <typename Clock>
-chain::history_compact::list internal_database_basis<Clock>::get_history(const short_hash& key, size_t limit, size_t from_height) {
+chain::history_compact::list internal_database_basis<Clock>::get_history(short_hash const& key, size_t limit, size_t from_height) const {
 
     chain::history_compact::list result;
 
-    // Stop once we reach the limit (if specified).
-    if (limit > 0 && result.size() >= limit)
+    if (limit == 0) {
         return result;
+    }
 
     MDB_txn* db_txn;
     auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
