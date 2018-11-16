@@ -239,7 +239,7 @@ result_code internal_database_basis<Clock>::set_spend(chain::output_point const&
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::set_unspend(chain::output_point const& point, MDB_txn* db_txn) {
-    return set_spend(point, output::validation::not_spent, db_txn);
+    return set_spend(point, chain::output::validation::not_spent, db_txn);
 }
 
 
