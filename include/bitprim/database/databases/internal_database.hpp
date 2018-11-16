@@ -35,6 +35,7 @@
 #include <bitprim/database/databases/utxo_entry.hpp>
 #include <bitprim/database/databases/history_entry.hpp>
 #include <bitprim/database/databases/transaction_entry.hpp>
+#include <bitprim/database/databases/transaction_unconfirmed_entry.hpp>
 
 #ifdef BITPRIM_INTERNAL_DB_4BYTES_INDEX
 #define BITPRIM_INTERNAL_DB_WIRE true
@@ -128,7 +129,7 @@ public:
     
     chain::input_point get_spend(chain::output_point const& point) const;
 
-    std::vector<chain::transaction> get_all_transaction_unconfirmed() const;
+    std::vector<transaction_unconfirmed_entry> get_all_transaction_unconfirmed() const;
 #endif
 
 private:
@@ -251,7 +252,7 @@ private:
 
     result_code remove_transaction_unconfirmed(hash_digest const& tx_id,  MDB_txn* db_txn);
 
-    chain::transaction get_transaction_unconfirmed(hash_digest const& hash, MDB_txn* db_txn) const;
+    transaction_unconfirmed_entry get_transaction_unconfirmed(hash_digest const& hash, MDB_txn* db_txn) const;
 
     result_code update_transaction(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, MDB_txn* db_txn);
 
