@@ -195,6 +195,7 @@ result_code internal_database_basis<Clock>::get_last_height(uint32_t& out_height
 
     MDB_cursor* cursor;
     if (mdb_cursor_open(db_txn, dbi_block_header_, &cursor) != MDB_SUCCESS) {
+        mdb_txn_commit(db_txn);
         return result_code::other;
     }
 
@@ -630,8 +631,6 @@ result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx
         if (res != result_code::success) {
             return res;
         }
-
-
 
         #endif
 

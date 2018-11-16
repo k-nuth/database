@@ -78,14 +78,14 @@ transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest co
     auto res = mdb_get(db_txn, dbi_transaction_db_, &key, &value);
     
     if (res != MDB_SUCCESS) {
-        return transaction_entry{};
+        return {};
     }
 
     auto data = db_value_to_data_chunk(value);
     auto entry = transaction_entry::factory_from_data(data);
 
     if ( !entry.is_valid() ) {
-        return transaction_entry{};
+        return entry;
     } 
 
     if (! require_confirmed) {

@@ -250,6 +250,7 @@ result_code internal_database_basis<Clock>::get_first_reorg_block_height(uint32_
 
     MDB_cursor* cursor;
     if (mdb_cursor_open(db_txn, dbi_reorg_block_, &cursor) != MDB_SUCCESS) {
+        mdb_txn_commit(db_txn);
         return result_code::other;
     }
 

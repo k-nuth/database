@@ -643,6 +643,12 @@ BOOST_AUTO_TEST_CASE(internal_database__open) {
     BOOST_REQUIRE(db.open());
 }
 
+
+BOOST_AUTO_TEST_CASE(internal_database__test_get_all_transaction_unconfirmed) {
+    internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
+    auto& ret = db.get_all_transaction_unconfirmed();
+}
+
 BOOST_AUTO_TEST_CASE(internal_database__insert_genesis) {
     auto const genesis = get_genesis();
 
