@@ -162,6 +162,7 @@ chain::history_compact::list internal_database_basis<Clock>::get_history(const s
 
     MDB_cursor* cursor;
     if (mdb_cursor_open(db_txn, dbi_history_db_, &cursor) != MDB_SUCCESS) {
+        mdb_txn_commit(db_txn);
         return result;
     }
 
@@ -220,6 +221,7 @@ std::vector<hash_digest> internal_database_basis<Clock>::get_history_txns(short_
 
     MDB_cursor* cursor;
     if (mdb_cursor_open(db_txn, dbi_history_db_, &cursor) != MDB_SUCCESS) {
+        mdb_txn_commit(db_txn);
         return result;
     }
 
@@ -298,7 +300,7 @@ result_code internal_database_basis<Clock>::remove_transaction_history_db(chain:
         else {
 
             //TODO (Mario) : require_confirmed true ??
-            auto const& entry = get_transaction(prevout.hash(), max_uint32, true ,  db_txn);
+            auto const& entry = get_transaction(prevout.hash(), max_uint32, true, db_txn);
 
             if (entry.is_valid()) {
                 

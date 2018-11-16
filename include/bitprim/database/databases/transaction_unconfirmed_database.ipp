@@ -32,20 +32,60 @@ chain::transaction internal_database_basis<Clock>::get_transaction_unconfirmed(h
     MDB_val value;
 
     if (mdb_get(db_txn, dbi_transaction_unconfirmed_db_, &key, &value) != MDB_SUCCESS) {
-        return chain::transaction{};
+        return {};
     }
 
     auto data = db_value_to_data_chunk(value);
-
     auto res = chain::transaction::factory_from_data(data, false, true);
-// #if ! defined(BITPRIM_USE_DOMAIN) || defined(BITPRIM_CACHED_RPC_DATA)    
-//     auto res = chain::transaction::factory_from_data(data, false, true, true);
-// #else
-//     auto res = chain::transaction::factory_from_data(data, false, true);
-// #endif
-
     return res;
 }
+
+
+template <typename Clock>
+std::vector<chain::transaction> internal_database_basis<Clock>::get_all_transaction_unconfirmed() {
+
+    std::vector<chain::transaction> result;
+
+    MDB_txn* db_txn;
+    auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+    if (res != MDB_SUCCESS) {
+        return result;
+    }
+
+    MDB_cursor* cursor;
+
+    if (mdb_cursor_open(db_txn, dbi_transaction_unconfirmed_db_, &cursor) != MDB_SUCCESS) {
+        mdb_txn_commit(db_txn);
+        return result;
+    }
+
+    MDB_val key;
+    MDB_val value;
+    
+    
+    int rc;
+    if ((rc = mdb_cursor_get(cursor, &key, &value, MDB_NEXT)) == 0) {
+       
+        auto data = db_value_to_data_chunk(value);
+        auto res = chain::transaction::factory_from_data(data, false, true);
+        result.push_back(res);
+
+        while ((rc = mdb_cursor_get(cursor, &key, &value, MDB_NEXT)) == 0) {
+            auto data = db_value_to_data_chunk(value);
+            auto res = chain::transaction::factory_from_data(data, false, true);
+            result.push_back(res);
+        }
+    } 
+    
+    mdb_cursor_close(cursor);
+
+    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+        return result;
+    }
+
+    return result;
+}
+
 
 
 template <typename Clock>
