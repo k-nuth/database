@@ -42,7 +42,7 @@ chain::transaction internal_database_basis<Clock>::get_transaction_unconfirmed(h
 
 
 template <typename Clock>
-std::vector<chain::transaction> internal_database_basis<Clock>::get_all_transaction_unconfirmed() {
+std::vector<chain::transaction> internal_database_basis<Clock>::get_all_transaction_unconfirmed() const {
 
     std::vector<chain::transaction> result;
 

@@ -128,7 +128,7 @@ public:
     
     chain::input_point get_spend(chain::output_point const& point) const;
 
-    std::vector<chain::transaction> get_all_transaction_unconfirmed();
+    std::vector<chain::transaction> get_all_transaction_unconfirmed() const;
 #endif
 
 private:
