@@ -124,6 +124,7 @@ public:
     transaction_entry get_transaction(hash_digest const& hash, size_t fork_height, bool require_confirmed) const;
     
     chain::history_compact::list get_history(short_hash const& key, size_t limit, size_t from_height);
+    std::vector<hash_digest> get_history_txns(short_hash const& key, size_t limit, size_t from_height) const;
     
     chain::input_point get_spend(chain::output_point const& point) const;
 #endif

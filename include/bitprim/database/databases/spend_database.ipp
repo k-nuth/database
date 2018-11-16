@@ -35,10 +35,9 @@ chain::input_point internal_database_basis<Clock>::get_spend(chain::output_point
     MDB_txn* db_txn;
     auto res0 = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
     if (res0 != MDB_SUCCESS) {
-        
         //std::cout << "bbbbbbbbbbbb" << static_cast<uint32_t>(res0) << std::endl;
         LOG_INFO(LOG_DATABASE) << "Error begining LMDB Transaction [get_spend] " << res0;
-        return {};
+        return chain::input_point{};
     }
 
     res0 = mdb_get(db_txn, dbi_spend_db_, &key, &value);
@@ -46,7 +45,7 @@ chain::input_point internal_database_basis<Clock>::get_spend(chain::output_point
         //std::cout << "ccccccccccc" << static_cast<uint32_t>(res0) << std::endl;
         mdb_txn_commit(db_txn);
         // mdb_txn_abort(db_txn);  
-        return {};
+        return chain::input_point{};
     }
 
     auto data = db_value_to_data_chunk(value);
@@ -55,7 +54,7 @@ chain::input_point internal_database_basis<Clock>::get_spend(chain::output_point
     if (res0 != MDB_SUCCESS) {
         //std::cout << "cccc" << static_cast<uint32_t>(res0) << std::endl;
         LOG_DEBUG(LOG_DATABASE) << "Error commiting LMDB Transaction [get_spend] " << res0;        
-        return {};
+        return chain::input_point{};
     }
 
     auto res = chain::input_point::factory_from_data(data);

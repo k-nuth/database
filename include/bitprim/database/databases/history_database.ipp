@@ -93,6 +93,7 @@ result_code internal_database_basis<Clock>::insert_input_history(hash_digest con
             //During an IBD with checkpoints some previous output info is missing.
             //We can recover it by accessing the database
             
+            //TODO (Mario) check if we can query UTXO
             //TODO (Mario) requiere_confirmed = true ??
             auto const& entry = get_transaction(prevout.hash(), max_uint32, true, db_txn);
 
@@ -187,6 +188,74 @@ chain::history_compact::list internal_database_basis<Clock>::get_history(const s
 
             if (from_height == 0 || entry.height() >= from_height) {
                 result.push_back(history_entry_to_history_compact(entry));
+            }
+            
+        }
+    } 
+    
+    mdb_cursor_close(cursor);
+
+    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+        return result;
+    }
+
+    return result;
+}
+
+template <typename Clock>
+std::vector<hash_digest> internal_database_basis<Clock>::get_history_txns(short_hash const& key, size_t limit, size_t from_height) const {
+
+    std::set<hash_digest> temp;
+    std::vector<hash_digest> result;
+
+    // Stop once we reach the limit (if specified).
+    if (limit > 0 && result.size() >= limit)
+        return result;
+
+    MDB_txn* db_txn;
+    auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+    if (res != MDB_SUCCESS) {
+        return result;
+    }
+
+    MDB_cursor* cursor;
+    if (mdb_cursor_open(db_txn, dbi_history_db_, &cursor) != MDB_SUCCESS) {
+        return result;
+    }
+
+    MDB_val key_hash{key.size(), const_cast<short_hash&>(key).data()};
+    MDB_val value;
+    int rc;
+    if ((rc = mdb_cursor_get(cursor, &key_hash, &value, MDB_SET)) == 0) {
+       
+        auto data = db_value_to_data_chunk(value);
+        auto entry = history_entry::factory_from_data(data);
+        
+        if (from_height == 0 || entry.height() >= from_height) {
+            // Avoid inserting the same tx
+            const auto & pair = temp.insert(entry.point().hash());
+            if (pair.second){
+                // Add valid txns to the result vector
+                result.push_back(*pair.first);
+            }
+        }
+
+        while ((rc = mdb_cursor_get(cursor, &key_hash, &value, MDB_NEXT_DUP)) == 0) {
+        
+            if (limit > 0 && result.size() >= limit) {
+                break;
+            }
+
+            auto data = db_value_to_data_chunk(value);
+            auto entry = history_entry::factory_from_data(data);
+
+            if (from_height == 0 || entry.height() >= from_height) {
+                // Avoid inserting the same tx
+                const auto & pair = temp.insert(entry.point().hash());
+                if (pair.second){
+                    // Add valid txns to the result vector
+                    result.push_back(*pair.first);
+                }
             }
             
         }
