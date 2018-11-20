@@ -104,6 +104,8 @@ class BitprimDatabaseConan(BitprimConanFile):
             march_conan_manip(self)
             self.options["*"].microarchitecture = self.options.microarchitecture
 
+
+        self.options["*"].cached_rpc_data = self.options.cached_rpc_data
         self.options["*"].measurements = self.options.measurements
         self.options["*"].currency = self.options.currency
         self.output.info("Compiling for currency: %s" % (self.options.currency,))
