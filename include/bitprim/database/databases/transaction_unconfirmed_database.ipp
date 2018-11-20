@@ -27,6 +27,24 @@ namespace database {
 
 
 template <typename Clock>
+transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_unconfirmed(hash_digest const& hash) const {
+    
+    MDB_txn* db_txn;
+    auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+    if (res != MDB_SUCCESS) {
+        return {};
+    }
+
+    auto const& ret = get_transaction_unconfirmed(hash, db_txn);
+
+    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+        return {};
+    }
+
+    return ret;
+}
+
+template <typename Clock>
 transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_unconfirmed(hash_digest const& hash, MDB_txn* db_txn) const {
     MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
     MDB_val value;

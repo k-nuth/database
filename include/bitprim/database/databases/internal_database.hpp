@@ -130,6 +130,8 @@ public:
     chain::input_point get_spend(chain::output_point const& point) const;
 
     std::vector<transaction_unconfirmed_entry> get_all_transaction_unconfirmed() const;
+
+    transaction_unconfirmed_entry get_transaction_unconfirmed(hash_digest const& hash) const;
 #endif
 
 private:
