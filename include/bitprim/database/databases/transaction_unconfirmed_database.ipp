@@ -106,7 +106,8 @@ result_code internal_database_basis<Clock>::remove_transaction_unconfirmed(hash_
     return result_code::success;
 }
 
-uint32_t get_clock_now() {
+template <typename Clock>
+uint32_t internal_database_basis<Clock>::get_clock_now() {
     auto const now = std::chrono::high_resolution_clock::now();
     return static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
 }

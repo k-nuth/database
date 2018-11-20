@@ -260,6 +260,8 @@ private:
 
     result_code set_unspend(chain::output_point const& point, MDB_txn* db_txn);
 
+    uint32_t get_clock_now();
+
 #endif //defined(BITPRIM_DB_NEW_FULL)
 
 // Data members ----------------------------
