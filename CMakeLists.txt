@@ -412,6 +412,7 @@ if (DB_NEW_FULL)
         ${bitprim_database_sources_just_bitprim}
         src/bitprim/databases/history_entry.cpp
         src/bitprim/databases/transaction_entry.cpp
+        src/bitprim/databases/transaction_unconfirmed_entry.cpp
     )
 endif()
 

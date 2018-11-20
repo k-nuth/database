@@ -27,7 +27,25 @@ namespace database {
 
 
 template <typename Clock>
-chain::transaction internal_database_basis<Clock>::get_transaction_unconfirmed(hash_digest const& hash, MDB_txn* db_txn) const {
+transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_unconfirmed(hash_digest const& hash) const {
+    
+    MDB_txn* db_txn;
+    auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+    if (res != MDB_SUCCESS) {
+        return {};
+    }
+
+    auto const& ret = get_transaction_unconfirmed(hash, db_txn);
+
+    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+        return {};
+    }
+
+    return ret;
+}
+
+template <typename Clock>
+transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_unconfirmed(hash_digest const& hash, MDB_txn* db_txn) const {
     MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
     MDB_val value;
 
@@ -36,15 +54,15 @@ chain::transaction internal_database_basis<Clock>::get_transaction_unconfirmed(h
     }
 
     auto data = db_value_to_data_chunk(value);
-    auto res = chain::transaction::factory_from_data(data, false, true);
+    auto res = transaction_unconfirmed_entry::factory_from_data(data);
     return res;
 }
 
 
 template <typename Clock>
-std::vector<chain::transaction> internal_database_basis<Clock>::get_all_transaction_unconfirmed() const {
+std::vector<transaction_unconfirmed_entry> internal_database_basis<Clock>::get_all_transaction_unconfirmed() const {
 
-    std::vector<chain::transaction> result;
+    std::vector<transaction_unconfirmed_entry> result;
 
     MDB_txn* db_txn;
     auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
@@ -67,12 +85,12 @@ std::vector<chain::transaction> internal_database_basis<Clock>::get_all_transact
     if ((rc = mdb_cursor_get(cursor, &key, &value, MDB_NEXT)) == 0) {
        
         auto data = db_value_to_data_chunk(value);
-        auto res = chain::transaction::factory_from_data(data, false, true);
+        auto res = transaction_unconfirmed_entry::factory_from_data(data);
         result.push_back(res);
 
         while ((rc = mdb_cursor_get(cursor, &key, &value, MDB_NEXT)) == 0) {
             auto data = db_value_to_data_chunk(value);
-            auto res = chain::transaction::factory_from_data(data, false, true);
+            auto res = transaction_unconfirmed_entry::factory_from_data(data);
             result.push_back(res);
         }
     } 
@@ -106,20 +124,30 @@ result_code internal_database_basis<Clock>::remove_transaction_unconfirmed(hash_
     return result_code::success;
 }
 
+template <typename Clock>
+uint32_t internal_database_basis<Clock>::get_clock_now() {
+    auto const now = std::chrono::high_resolution_clock::now();
+    return static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
+}
+
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(chain::transaction const& tx,  MDB_txn* db_txn) {
+    
+    uint32_t arrival_time = get_clock_now();
+    
     auto key_arr = tx.hash();                                    //TODO(fernando): podría estar afuera de la DBTx
     MDB_val key {key_arr.size(), key_arr.data()};
 
-    //TODO (Mario): store height
+    
     //TODO(fernando): podría estar afuera de la DBTx
-#if ! defined(BITPRIM_USE_DOMAIN) || defined(BITPRIM_CACHED_RPC_DATA)    
-    auto value_arr = tx.to_data(false, true, true);
-#else
-    auto value_arr = tx.to_data(false, true);
-#endif
+//#if ! defined(BITPRIM_USE_DOMAIN) || defined(BITPRIM_CACHED_RPC_DATA)    
+//    auto value_arr = tx.to_data(false, true, true);
+//#else
+//    auto value_arr = tx.to_data(false, true);
+//#endif
 
+    auto valuearr = transaction_unconfirmed_entry::factory_to_data(tx, arrival_time);
     MDB_val value {value_arr.size(), value_arr.data()}; 
 
     auto res = mdb_put(db_txn, dbi_transaction_unconfirmed_db_, &key, &value, MDB_NOOVERWRITE);
