@@ -52,7 +52,7 @@ result_code internal_database_basis<Clock>::insert_transactions(I f, I l, uint32
     while (f != l) {
         auto const& tx = *f;
         auto res = insert_transaction(tx, height, median_time_past, pos, db_txn);
-        if (res != result_code::success) {    
+        if (res != result_code::success && res != result_code::duplicated_key) {
             return res;
         }
 
