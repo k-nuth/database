@@ -139,15 +139,7 @@ result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(chain
     auto key_arr = tx.hash();                                    //TODO(fernando): podría estar afuera de la DBTx
     MDB_val key {key_arr.size(), key_arr.data()};
 
-    
-    //TODO(fernando): podría estar afuera de la DBTx
-//#if ! defined(BITPRIM_USE_DOMAIN) || defined(BITPRIM_CACHED_RPC_DATA)    
-//    auto value_arr = tx.to_data(false, true, true);
-//#else
-//    auto value_arr = tx.to_data(false, true);
-//#endif
-
-    auto valuearr = transaction_unconfirmed_entry::factory_to_data(tx, arrival_time);
+    auto value_arr = transaction_unconfirmed_entry::factory_to_data(tx, arrival_time);
     MDB_val value {value_arr.size(), value_arr.data()}; 
 
     auto res = mdb_put(db_txn, dbi_transaction_unconfirmed_db_, &key, &value, MDB_NOOVERWRITE);
