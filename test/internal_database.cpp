@@ -646,6 +646,7 @@ BOOST_AUTO_TEST_CASE(internal_database__open) {
 
 BOOST_AUTO_TEST_CASE(internal_database__test_get_all_transaction_unconfirmed) {
     internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
+    db.open();
     auto ret = db.get_all_transaction_unconfirmed();
 }
 
@@ -654,8 +655,6 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_genesis) {
 
     internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
     BOOST_REQUIRE(db.open());
-    //auto res = db.push_block(genesis, 0, 1);
-    //std::cout << "aaaaaaaaaaaaaaa" << static_cast<uint32_t>(res) << "\n"; 
     BOOST_REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);  
 
     BOOST_REQUIRE(db.get_header(genesis.hash()).first.is_valid());
@@ -690,7 +689,7 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_genesis) {
     auto const& address = wallet::payment_address("bitcoincash:qp3wjpa3tjlj042z2wv7hahsldgwhwy0rq9sywjpyy");
     BOOST_REQUIRE(address);
 
-    auto history_list = db.get_history(address.hash(),0,0);
+    auto history_list = db.get_history(address.hash(),max_uint32,0);
     BOOST_REQUIRE(history_list.size() == 1);
 
     auto history_item = history_list[0];
@@ -1543,7 +1542,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         BOOST_REQUIRE(address);
 
 #if defined(BITPRIM_DB_NEW_FULL)
-        auto history_list = db.get_history(address.hash(),0,0);
+        auto history_list = db.get_history(address.hash(),max_uint32,0);
         BOOST_REQUIRE(history_list.size() == 1);
 
         auto history_item = history_list[0];
@@ -1636,7 +1635,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         auto const& address = wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
         BOOST_REQUIRE(address);
 
-        auto history_list = db.get_history(address.hash(),0,0);
+        auto history_list = db.get_history(address.hash(),max_uint32,0);
         BOOST_REQUIRE(history_list.size() == 2);
 
         auto history_item = history_list[0];
@@ -1671,7 +1670,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         auto const& address2 = wallet::payment_address("bitcoincash:qpqyxutst75m67y69lx495k9szm96d25n53frahv6a");
         BOOST_REQUIRE(address2);
 
-        history_list = db.get_history(address2.hash(),0,0);
+        history_list = db.get_history(address2.hash(),max_uint32,0);
         BOOST_REQUIRE(history_list.size() == 1);
 
         history_item = history_list[0];
@@ -1773,7 +1772,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         auto const& address = wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
         BOOST_REQUIRE(address);
 
-        auto history_list = db.get_history(address.hash(),0,0);
+        auto history_list = db.get_history(address.hash(),max_uint32,0);
         BOOST_REQUIRE(history_list.size() == 1);
 
         auto history_item = history_list[0];
@@ -1792,7 +1791,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         auto const& address2 = wallet::payment_address("bitcoincash:qpqyxutst75m67y69lx495k9szm96d25n53frahv6a");
         BOOST_REQUIRE(address2);
 
-        history_list = db.get_history(address2.hash(),0,0);
+        history_list = db.get_history(address2.hash(),max_uint32,0);
         BOOST_REQUIRE(history_list.size() == 0);
 
         
@@ -1873,7 +1872,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         auto const& address = wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
         BOOST_REQUIRE(address);
 
-        auto history_list = db.get_history(address.hash(),0,0);
+        auto history_list = db.get_history(address.hash(),max_uint32,0);
         BOOST_REQUIRE(history_list.size() == 2);
 
         auto history_item = history_list[0];
@@ -1910,7 +1909,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         auto const& address2 = wallet::payment_address("bitcoincash:qpqyxutst75m67y69lx495k9szm96d25n53frahv6a");
         BOOST_REQUIRE(address2);
 
-        history_list = db.get_history(address2.hash(),0,0);
+        history_list = db.get_history(address2.hash(),max_uint32,0);
         BOOST_REQUIRE(history_list.size() == 1);
 
         history_item = history_list[0];
