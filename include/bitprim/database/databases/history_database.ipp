@@ -32,7 +32,7 @@ result_code internal_database_basis<Clock>::insert_history_db(wallet::payment_ad
     MDB_val key {key_arr.size(), key_arr.data()};   
     MDB_val value {entry.size(), const_cast<data_chunk&>(entry).data()};
 
-    auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, MDB_NOOVERWRITE);
+    auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, 0);
     if (res == MDB_KEYEXIST) {
         LOG_INFO(LOG_DATABASE) << "Duplicate key inserting history [insert_history_db] " << res;        
         return result_code::duplicated_key;
