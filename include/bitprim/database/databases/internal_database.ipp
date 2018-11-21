@@ -596,10 +596,10 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
         }*/
 
         //insert in spend database
-        res = insert_spend(prevout, inpoint, db_txn);
+        /*res = insert_spend(prevout, inpoint, db_txn);
         if (res != result_code::success) {
             return res;
-        }
+        }*/
 
         //set spender height in tx database
         res = set_spend(prevout, height, db_txn);
