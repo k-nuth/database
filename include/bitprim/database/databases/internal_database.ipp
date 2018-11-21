@@ -602,10 +602,10 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
         }*/
 
         //set spender height in tx database
-        res = set_spend(prevout, height, db_txn);
+        /*res = set_spend(prevout, height, db_txn);
         if (res != result_code::success) {
             return res;
-        }
+        }*/
 
         #endif
 
@@ -715,12 +715,12 @@ result_code internal_database_basis<Clock>::push_block(chain::block const& block
 
 #if defined(BITPRIM_DB_NEW_FULL)
 
-    res = insert_transactions(txs.begin(), txs.end(), height, median_time_past,  db_txn);
+    /*res = insert_transactions(txs.begin(), txs.end(), height, median_time_past,  db_txn);
     if (res == result_code::duplicated_key) {
         res = result_code::success_duplicate_coinbase;
     } else if (res != result_code::success) {
         return res;
-    }
+    }*/
 
 #endif //defined(BITPRIM_DB_NEW_FULL)
 
