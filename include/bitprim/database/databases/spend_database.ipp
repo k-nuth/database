@@ -73,7 +73,7 @@ result_code internal_database_basis<Clock>::insert_spend(chain::output_point con
     auto value_arr = in_point.to_data();
     MDB_val value {value_arr.size(), value_arr.data()};
 
-    auto res = mdb_put(db_txn, dbi_spend_db_, &key, &value, 0);
+    auto res = mdb_put(db_txn, dbi_spend_db_, &key, &value, MDB_NOOVERWRITE);
     if (res == MDB_KEYEXIST) {
         LOG_INFO(LOG_DATABASE) << "Duplicate key inserting spend [insert_spend] " << res;        
         return result_code::duplicated_key;
