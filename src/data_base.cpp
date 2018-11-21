@@ -515,7 +515,7 @@ code data_base::verify_push(const transaction& tx) {
     return result && ! result.is_spent(max_size_t) ? error::unspent_duplicate : error::success;
 #else
     
-    return true;
+    return error::success;
     //auto const result = internal_db_->get_transaction(tx.hash(), max_size_t, false);
     //return result.is_valid() && ! result.is_spent(max_size_t) ? error::unspent_duplicate : error::success;
 #endif // BITPRIM_DB_LEGACY    
