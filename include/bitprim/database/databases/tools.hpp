@@ -61,6 +61,7 @@ data_chunk db_value_to_data_chunk(MDB_val const& value) {
                       static_cast<uint8_t*>(value.mv_data) + value.mv_size};
 }
 
+inline
 uint32_t get_point_index(MDB_val const& value, bool wire) {
 
     // https://www.boost.org/doc/libs/1_68_0/libs/iostreams/doc/index.html
