@@ -147,12 +147,24 @@ result_code internal_database_basis<Clock>::push_block(chain::block const& block
     return res;
 }
 
+
 template <typename Clock>
-utxo_entry internal_database_basis<Clock>::get_utxo(chain::output_point const& point) const {
-    
+utxo_entry internal_database_basis<Clock>::get_utxo(chain::output_point const& point, MDB_txn* db_txn) const {
+
     auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);
     MDB_val key {keyarr.size(), keyarr.data()};
     MDB_val value;
+
+    auto res0 = mdb_get(db_txn, dbi_utxo_, &key, &value);
+    if (res0 != MDB_SUCCESS) {  
+        return utxo_entry{};
+    }
+
+    return utxo_entry::factory_from_data(db_value_to_data_chunk(value));
+}
+
+template <typename Clock>
+utxo_entry internal_database_basis<Clock>::get_utxo(chain::output_point const& point) const {
 
     MDB_txn* db_txn;
     auto res0 = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
@@ -160,29 +172,19 @@ utxo_entry internal_database_basis<Clock>::get_utxo(chain::output_point const& p
         
         //std::cout << "bbbbbbbbbbbb" << static_cast<uint32_t>(res0) << std::endl;
         LOG_INFO(LOG_DATABASE) << "Error begining LMDB Transaction [get_utxo] " << res0;
-        return utxo_entry{};
+        return {};
     }
 
-    res0 = mdb_get(db_txn, dbi_utxo_, &key, &value);
-    if (res0 != MDB_SUCCESS) {
-        //std::cout << "ccccccccccc" << static_cast<uint32_t>(res0) << std::endl;
-        mdb_txn_commit(db_txn);
-        // mdb_txn_abort(db_txn);  
-        return utxo_entry{};
-    }
-
-    auto data = db_value_to_data_chunk(value);
+    auto ret = get_utxo(point, db_txn);
 
     res0 = mdb_txn_commit(db_txn);
     if (res0 != MDB_SUCCESS) {
         //std::cout << "cccc" << static_cast<uint32_t>(res0) << std::endl;
         LOG_DEBUG(LOG_DATABASE) << "Error commiting LMDB Transaction [get_utxo] " << res0;        
-        return utxo_entry{};
+        return {};
     }
 
-    auto res = utxo_entry::factory_from_data(data);
-    //std::cout << "ddddddddddddddd" << static_cast<uint32_t>(res0) << std::endl;
-    return res;
+    return ret;
 }
 
 template <typename Clock>
@@ -583,18 +585,19 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
         chain::input_point const inpoint {tx_id, pos};
         auto const& prevout = input.previous_output();
         
-        auto res = remove_utxo(height, prevout, insert_reorg, db_txn);
+        auto res = insert_input_history(inpoint, height, input, db_txn);            
+        if (res != result_code::success) {
+            return res;
+        }
+
+        res = remove_utxo(height, prevout, insert_reorg, db_txn);
         if (res != result_code::success) {
             return res;
         }
 
         #if defined(BITPRIM_DB_NEW_FULL)
         
-        /*res = insert_input_history(tx_id, height, pos, input, db_txn);            
-        if (res != result_code::success) {
-            return res;
-        }*/
-
+    
         //insert in spend database
         /*res = insert_spend(prevout, inpoint, db_txn);
         if (res != result_code::success) {

@@ -46,75 +46,50 @@ result_code internal_database_basis<Clock>::insert_history_db(wallet::payment_ad
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_input_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::input const& input, MDB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_input_history(chain::input_point const& inpoint, uint32_t height, chain::input const& input, MDB_txn* db_txn) {
     
-    
-    auto const inpoint = chain::input_point {tx_hash, index};
     auto const& prevout = input.previous_output();
 
     if (prevout.validation.cache.is_valid()) {
         // This results in a complete and unambiguous history for the
         // address since standard outputs contain unambiguous address data.
         for (auto const& address : prevout.validation.cache.addresses()) {
-            
-            //std::cout << "aaa " << encode_hash(tx_hash) << std::endl;
-            
-            auto valuearr = history_entry::factory_to_data(inpoint, chain::point_kind::spend, height, index, prevout.checksum());
+            auto valuearr = history_entry::factory_to_data(inpoint, chain::point_kind::spend, height, inpoint.index(), prevout.checksum());
             auto res = insert_history_db(address, valuearr, db_txn); 
             if (res != result_code::success) {
                 return res;
             }        
         }
     } else {
-       /* // For any p2pk spend this creates no record (insufficient data).
-        // For any p2kh spend this creates the ambiguous p2sh address,
-        // which significantly expands the size of the history store.
-        // These are tradeoffs when no prevout is cached (checkpoint sync).
-        bool valid = true;
-        for (auto const& address : input.addresses()) {
-            if ( ! address) {
-                valid = false;
-                break;
-            }
-        }
-        
-        if (valid) {
-            for (auto const& address : input.addresses()) {
-                         
-                std::cout << "eee " << address << std::endl;
-                std::cout << "bbb " << encode_hash(tx_hash) << std::endl;
-                auto valuearr = history_entry::factory_to_data(inpoint, chain::point_kind::spend, height, index, prevout.checksum());
-                auto res = insert_history_db(address, valuearr, db_txn); 
-                if (res != result_code::success) {
-                    return res;
-                }
-            }
-        } else {*/
             //During an IBD with checkpoints some previous output info is missing.
             //We can recover it by accessing the database
             
             //TODO (Mario) check if we can query UTXO
             //TODO (Mario) requiere_confirmed = true ??
-            auto const& entry = get_transaction(prevout.hash(), max_uint32, true, db_txn);
+
+            auto entry = get_utxo(prevout, db_txn);
+
+            //auto entry = get_transaction(prevout.hash(), max_uint32, true, db_txn);
 
             if (entry.is_valid()) {
                 
-                auto const& tx = entry.transaction();
+                //auto const& tx = entry.transaction();
 
-                auto const& out_output = tx.outputs()[prevout.index()];
+                //auto const& out_output = tx.outputs()[prevout.index()];
+
+                auto const& out_output = entry.output();
 
                 for (auto const& address : out_output.addresses()) {
 
                     //std::cout << "ccc " << encode_hash(tx_hash) << std::endl;
 
-                    auto valuearr = history_entry::factory_to_data(inpoint, chain::point_kind::spend, height, index, prevout.checksum());
+                    auto valuearr = history_entry::factory_to_data(inpoint, chain::point_kind::spend, height, inpoint.index(), prevout.checksum());
                     auto res = insert_history_db(address, valuearr, db_txn); 
                     if (res != result_code::success) {
                         return res;
                     }   
                 }
             }
-        /*}*/
     }
 
     return result_code::success;
