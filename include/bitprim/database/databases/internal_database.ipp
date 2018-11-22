@@ -590,10 +590,10 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
 
         #if defined(BITPRIM_DB_NEW_FULL)
         
-        res = insert_input_history(tx_id, height, pos, input, db_txn);            
+        /*res = insert_input_history(tx_id, height, pos, input, db_txn);            
         if (res != result_code::success) {
             return res;
-        }
+        }*/
 
         //insert in spend database
         /*res = insert_spend(prevout, inpoint, db_txn);
