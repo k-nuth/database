@@ -27,7 +27,7 @@ namespace database {
 template <typename Clock>
 data_chunk internal_database_basis<Clock>::serialize_txs(chain::block const& block) {
     data_chunk ret;
-    auto txs = block.transactions();
+    auto const& txs = block.transactions();
     ret.reserve(txs.size() * libbitcoin::hash_size);
 
     for (auto const& tx : txs) {
