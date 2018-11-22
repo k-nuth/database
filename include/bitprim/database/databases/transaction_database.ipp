@@ -51,6 +51,8 @@ result_code internal_database_basis<Clock>::insert_transactions(I f, I l, uint32
     uint32_t pos = 0;
     while (f != l) {
         auto const& tx = *f;
+
+        //TODO: (Mario) : Implement tx.Confirm to update existing transactions
         auto res = insert_transaction(tx, height, median_time_past, pos, db_txn);
         if (res != result_code::success && res != result_code::duplicated_key) {
             return res;

@@ -514,7 +514,6 @@ code data_base::verify_push(const transaction& tx) {
     auto const result = transactions_->get(tx.hash(), max_size_t, false);
     return result && ! result.is_spent(max_size_t) ? error::unspent_duplicate : error::success;
 #else
-    
     return error::success;
     //auto const result = internal_db_->get_transaction(tx.hash(), max_size_t, false);
     //return result.is_valid() && ! result.is_spent(max_size_t) ? error::unspent_duplicate : error::success;
@@ -601,9 +600,7 @@ code data_base::push(const chain::transaction& tx, uint32_t forks) {
     transactions_unconfirmed_->store(tx); //, forks, transaction_unconfirmed_database::unconfirmed);
 #endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
 
-#ifdef BITPRIM_DB_LEGACY
     transactions_->synchronize();
-#endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     transactions_unconfirmed_->synchronize();
@@ -616,10 +613,9 @@ code data_base::push(const chain::transaction& tx, uint32_t forks) {
 
 #else
     
-    
-    
-    
-    
+    //TODO
+
+
     return error::success;  //TODO(fernando): store the transactions in a new mempool
 #endif // BITPRIM_DB_LEGACY
 }
