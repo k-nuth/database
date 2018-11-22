@@ -214,7 +214,7 @@ result_code internal_database_basis<Clock>::set_spend(chain::output_point const&
     // This is consistent with support for unconfirmed double spends.
 
     auto entry = get_transaction(point.hash(), spender_height, true, db_txn);
-    
+
     // The transaction is not exist as confirmed at or below the height.
     if ( ! entry.is_valid() ) {
         return result_code::other;
@@ -231,10 +231,10 @@ result_code internal_database_basis<Clock>::set_spend(chain::output_point const&
     output.validation.spender_height = spender_height;
 
     //overwrite transaction
-    auto ret = update_transaction(tx, entry.height(), entry.median_time_past(), entry.position(), db_txn);
+    /*auto ret = update_transaction(tx, entry.height(), entry.median_time_past(), entry.position(), db_txn);
     if (ret != result_code::success & ret != result_code::duplicated_key) {
         return ret;
-    }
+    }*/
     
     return result_code::success;
 }
