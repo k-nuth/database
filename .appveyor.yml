@@ -54,6 +54,13 @@ test_script:
   # - git fetch --unshallow
   - git fetch origin master:master
 
+  # - dir C:\MinGW
+  - set PATH=C:\MinGW\bin;%PATH%
+
+  - IF "%MINGW_CONFIGURATIONS%" NEQ "" (
+      gcc --version
+    )
+
   - ps: |
       $a = python ci_utils/set_envvars_and_files.py
       Write-Host $a
