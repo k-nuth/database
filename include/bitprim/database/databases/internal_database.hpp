@@ -243,6 +243,41 @@ public:
     // }
 
 
+    //TODO(fernando): rename this function
+    template <typename F>
+    result_code do_something_utxo(chain::output_point const& point, F f, MDB_dbi const& dbi, MDB_txn* db_txn) const {
+        MDB_val key {point.hash().size(), const_cast<hash_digest&>(point.hash()).data()};
+
+        MDB_cursor* cursor;
+        if (mdb_cursor_open(db_txn, dbi, &cursor) != MDB_SUCCESS) {
+            mdb_txn_commit(db_txn);
+            return result_code::other;
+        }
+
+        MDB_val value;
+        auto res0 = mdb_cursor_get(cursor, &key, &value, MDB_SET);
+        if (res0 != MDB_SUCCESS) {
+            mdb_txn_commit(db_txn);
+            return result_code::key_not_found;
+        }
+
+        //TODO(fernando): apply this technique everywhere
+        auto index = get_point_index(value, BITPRIM_INTERNAL_DB_WIRE);
+        while (index != point.index() && (res0 = mdb_cursor_get(cursor, &key, &value, MDB_NEXT_DUP)) == MDB_SUCCESS) {
+            index = get_point_index(value, BITPRIM_INTERNAL_DB_WIRE);
+        }
+
+        if (res0 != MDB_SUCCESS) {
+            mdb_txn_commit(db_txn);
+            return result_code::key_not_found;
+        }
+
+        auto res = f(index, key, value, cursor);
+        mdb_cursor_close(cursor);
+
+        return res;
+    }
+
     utxo_entry get_utxo(chain::output_point const& point) const {
         MDB_val key {point.hash().size(), const_cast<hash_digest&>(point.hash()).data()};
         MDB_val value;
@@ -254,32 +289,15 @@ public:
             return {};
         }
 
-        MDB_cursor* cursor;
-        if (mdb_cursor_open(db_txn, dbi_utxo_, &cursor) != MDB_SUCCESS) {
-            mdb_txn_commit(db_txn);
+        data_chunk data;
+        auto res = do_something_utxo(point, [&data](uint32_t index, MDB_val const& /*key*/, MDB_val const& value, MDB_cursor* cursor) {
+            data = db_value_to_data_chunk(value);
+            return result_code::success;
+        }, dbi_utxo_, db_txn);
+
+        if (res != result_code::success) {
             return {};
         }
-
-        res0 = mdb_cursor_get(cursor, &key, &value, MDB_SET);
-        if (res0 != MDB_SUCCESS) {
-            mdb_txn_commit(db_txn);
-            return {};
-        }
-
-        //TODO(fernando): apply this technique everywhere
-        auto index = get_point_index(value, BITPRIM_INTERNAL_DB_WIRE);
-        while (index != point.index() && (res0 = mdb_cursor_get(cursor, &key, &value, MDB_NEXT_DUP)) == MDB_SUCCESS) {
-            index = get_point_index(value, BITPRIM_INTERNAL_DB_WIRE);
-        }
-
-        if (res0 != MDB_SUCCESS) {
-            mdb_txn_commit(db_txn);
-            return {};
-        }
-
-        auto data = db_value_to_data_chunk(value);
-
-        mdb_cursor_close(cursor);
 
         res0 = mdb_txn_commit(db_txn);
         if (res0 != MDB_SUCCESS) {
@@ -287,9 +305,56 @@ public:
             return utxo_entry{};
         }
 
-        auto res = utxo_entry::factory_from_data(data, BITPRIM_INTERNAL_DB_WIRE);
-        return res;
+        return utxo_entry::factory_from_data(data, BITPRIM_INTERNAL_DB_WIRE);
     }
+
+    // utxo_entry get_utxo(chain::output_point const& point) const {
+    //     MDB_val key {point.hash().size(), const_cast<hash_digest&>(point.hash()).data()};
+    //     MDB_val value;
+
+    //     MDB_txn* db_txn;
+    //     auto res0 = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+    //     if (res0 != MDB_SUCCESS) {
+    //         LOG_INFO(LOG_DATABASE) << "Error begining LMDB Transaction [get_utxo] " << res0;
+    //         return {};
+    //     }
+
+    //     MDB_cursor* cursor;
+    //     if (mdb_cursor_open(db_txn, dbi_utxo_, &cursor) != MDB_SUCCESS) {
+    //         mdb_txn_commit(db_txn);
+    //         return {};
+    //     }
+
+    //     res0 = mdb_cursor_get(cursor, &key, &value, MDB_SET);
+    //     if (res0 != MDB_SUCCESS) {
+    //         mdb_txn_commit(db_txn);
+    //         return {};
+    //     }
+
+    //     //TODO(fernando): apply this technique everywhere
+    //     auto index = get_point_index(value, BITPRIM_INTERNAL_DB_WIRE);
+    //     while (index != point.index() && (res0 = mdb_cursor_get(cursor, &key, &value, MDB_NEXT_DUP)) == MDB_SUCCESS) {
+    //         index = get_point_index(value, BITPRIM_INTERNAL_DB_WIRE);
+    //     }
+
+    //     if (res0 != MDB_SUCCESS) {
+    //         mdb_txn_commit(db_txn);
+    //         return {};
+    //     }
+
+    //     auto data = db_value_to_data_chunk(value);
+
+    //     mdb_cursor_close(cursor);
+
+    //     res0 = mdb_txn_commit(db_txn);
+    //     if (res0 != MDB_SUCCESS) {
+    //         LOG_DEBUG(LOG_DATABASE) << "Error commiting LMDB Transaction [get_utxo] " << res0;        
+    //         return utxo_entry{};
+    //     }
+
+    //     auto res = utxo_entry::factory_from_data(data, BITPRIM_INTERNAL_DB_WIRE);
+    //     return res;
+    // }
 
     result_code get_last_height(uint32_t& out_height) const {
         MDB_txn* db_txn;
@@ -436,34 +501,51 @@ public:
 
         return result_code::success;
     }
+ 
 
     //TODO(fernando): move to private
-    result_code insert_reorg_into_pool(utxo_pool_t& pool, MDB_val key_point, MDB_txn* db_txn) const {
+    result_code insert_reorg_into_pool(utxo_pool_t& pool, chain::output_point const& point, MDB_txn* db_txn) const {
 
-        MDB_val value;
-        auto res = mdb_get(db_txn, dbi_reorg_pool_, &key_point, &value);
-        if (res == MDB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE) << "Key not found in reorg pool [insert_reorg_into_pool] " << res;        
-            return result_code::key_not_found;
-        }
+        auto res = do_something_utxo(point, [&pool, &point](uint32_t index, MDB_val const& key, MDB_val const& value, MDB_cursor* cursor) {
+            auto entry_data = db_value_to_data_chunk(value);
+            auto entry = utxo_entry::factory_from_data(entry_data, BITPRIM_INTERNAL_DB_WIRE);
+            pool.insert({point, std::move(entry)});
+            return result_code::success;
+        }, dbi_reorg_pool_, db_txn);
 
-        if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error in reorg pool [insert_reorg_into_pool] " << res;        
-            return result_code::other;
-        }
+        if (res != result_code::success) {
+            return res;
+        }          
 
-        auto entry_data = db_value_to_data_chunk(value);
-        auto entry = utxo_entry::factory_from_data(entry_data, BITPRIM_INTERNAL_DB_WIRE);
-
-        auto point_data = db_value_to_data_chunk(key_point);
-        auto point = chain::output_point::factory_from_data(point_data, BITPRIM_INTERNAL_DB_WIRE);
-        pool.insert({point, std::move(entry)});
-
-        return result_code::success;
     }
 
+    // //TODO(fernando): move to private
+    // result_code insert_reorg_into_pool(utxo_pool_t& pool, MDB_val key_point, MDB_txn* db_txn) const {
 
-    std::pair<result_code, utxo_pool_t> pool_from(uint32_t from, uint32_t to) const {
+    //     MDB_val value;
+    //     auto res = mdb_get(db_txn, dbi_reorg_pool_, &key_point, &value);
+    //     if (res == MDB_NOTFOUND) {
+    //         LOG_INFO(LOG_DATABASE) << "Key not found in reorg pool [insert_reorg_into_pool] " << res;        
+    //         return result_code::key_not_found;
+    //     }
+
+    //     if (res != MDB_SUCCESS) {
+    //         LOG_INFO(LOG_DATABASE) << "Error in reorg pool [insert_reorg_into_pool] " << res;        
+    //         return result_code::other;
+    //     }
+
+    //     auto entry_data = db_value_to_data_chunk(value);
+    //     auto entry = utxo_entry::factory_from_data(entry_data, BITPRIM_INTERNAL_DB_WIRE);
+
+    //     auto point_data = db_value_to_data_chunk(key_point);
+    //     auto point = chain::output_point::factory_from_data(point_data, BITPRIM_INTERNAL_DB_WIRE);
+    //     pool.insert({point, std::move(entry)});
+
+    //     return result_code::success;
+    // }
+
+
+    std::pair<result_code, utxo_pool_t> get_utxo_pool_from(uint32_t from, uint32_t to) const {
         // precondition: from <= to
         utxo_pool_t pool;
 
@@ -507,7 +589,9 @@ public:
             return {result_code::other, pool};
         }
 
-        auto res = insert_reorg_into_pool(pool, value, db_txn);
+        auto point = chain::output_point::factory_from_data(db_value_to_data_chunk(value), BITPRIM_INTERNAL_DB_WIRE);
+
+        auto res = insert_reorg_into_pool(pool, point, db_txn);
         if (res != result_code::success) {
             mdb_cursor_close(cursor);
             mdb_txn_commit(db_txn);
@@ -522,7 +606,8 @@ public:
                 return {result_code::other, pool};
             }
 
-            res = insert_reorg_into_pool(pool, value, db_txn);
+            auto point = chain::output_point::factory_from_data(db_value_to_data_chunk(value), BITPRIM_INTERNAL_DB_WIRE);
+            res = insert_reorg_into_pool(pool, point, db_txn);
             if (res != result_code::success) {
                 mdb_cursor_close(cursor);
                 mdb_txn_commit(db_txn);
@@ -690,113 +775,144 @@ private:
         return db_opened_;
     }
 
-    result_code insert_reorg_pool(uint32_t height, MDB_val& key, MDB_txn* db_txn) {
-        MDB_val value;
-        auto res = mdb_get(db_txn, dbi_utxo_, &key, &value);
-        if (res == MDB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE) << "Key not found getting UTXO [insert_reorg_pool] " << res;        
-            return result_code::key_not_found;
-        }
-        if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error getting UTXO [insert_reorg_pool] " << res;        
-            return result_code::other;
-        }
+    // result_code insert_reorg_pool(uint32_t height, MDB_val& key, MDB_txn* db_txn) {
+    //     MDB_val value;
+    //     auto res = mdb_get(db_txn, dbi_utxo_, &key, &value);
+    //     if (res == MDB_NOTFOUND) {
+    //         LOG_INFO(LOG_DATABASE) << "Key not found getting UTXO [insert_reorg_pool] " << res;        
+    //         return result_code::key_not_found;
+    //     }
+    //     if (res != MDB_SUCCESS) {
+    //         LOG_INFO(LOG_DATABASE) << "Error getting UTXO [insert_reorg_pool] " << res;        
+    //         return result_code::other;
+    //     }
 
-        res = mdb_put(db_txn, dbi_reorg_pool_, &key, &value, MDB_NOOVERWRITE);
-        if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in reorg pool [insert_reorg_pool] " << res;        
-            return result_code::duplicated_key;
-        }
-        if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error inseting in reorg pool [insert_reorg_pool] " << res;        
-            return result_code::other;
-        }
+    //     res = mdb_put(db_txn, dbi_reorg_pool_, &key, &value, MDB_NOOVERWRITE);
+    //     if (res == MDB_KEYEXIST) {
+    //         LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in reorg pool [insert_reorg_pool] " << res;        
+    //         return result_code::duplicated_key;
+    //     }
+    //     if (res != MDB_SUCCESS) {
+    //         LOG_INFO(LOG_DATABASE) << "Error inseting in reorg pool [insert_reorg_pool] " << res;        
+    //         return result_code::other;
+    //     }
 
-
-
-
-
-
-
-        MDB_val key_index {sizeof(height), &height};        //TODO(fernando): podría estar afuera de la DBTx
-        MDB_val value_index {key.mv_size, key.mv_data};     //TODO(fernando): podría estar afuera de la DBTx
-        res = mdb_put(db_txn, dbi_reorg_index_, &key_index, &value_index, 0);
+    //     MDB_val key_index {sizeof(height), &height};        //TODO(fernando): podría estar afuera de la DBTx
+    //     MDB_val value_index {key.mv_size, key.mv_data};     //TODO(fernando): podría estar afuera de la DBTx
+    //     res = mdb_put(db_txn, dbi_reorg_index_, &key_index, &value_index, 0);
         
-        if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in reorg index [insert_reorg_pool] " << res;
-            return result_code::duplicated_key;
-        }
-        if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error inserting in reorg index [insert_reorg_pool] " << res;
-            return result_code::other;
-        }
+    //     if (res == MDB_KEYEXIST) {
+    //         LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in reorg index [insert_reorg_pool] " << res;
+    //         return result_code::duplicated_key;
+    //     }
+    //     if (res != MDB_SUCCESS) {
+    //         LOG_INFO(LOG_DATABASE) << "Error inserting in reorg index [insert_reorg_pool] " << res;
+    //         return result_code::other;
+    //     }
 
-        return result_code::success;
-    }
+    //     return result_code::success;
+    // }
+
+
+    // result_code remove_utxo(uint32_t height, chain::output_point const& point, bool insert_reorg, MDB_txn* db_txn) {
+    //     MDB_val key {point.hash().size(), const_cast<hash_digest&>(point.hash()).data()};     //TODO(fernando): podría estar afuera de la DBTx
+
+    //     // if (insert_reorg) {
+    //     //     auto res0 = insert_reorg_pool(height, key, db_txn);
+    //     //     if (res0 != result_code::success) return res0;
+    //     // }
+
+    //     MDB_cursor* cursor;
+    //     if (mdb_cursor_open(db_txn, dbi_utxo_, &cursor) != MDB_SUCCESS) {
+    //         return result_code::other;
+    //     }
+
+    //     MDB_val value;
+    //     auto res1 = mdb_cursor_get(cursor, &key, &value, MDB_SET);
+    //     if (res1 != MDB_SUCCESS) {
+    //         LOG_INFO(LOG_DATABASE) << "Key not found deleting UTXO [remove_utxo] " << res1;
+    //         mdb_cursor_close(cursor);
+    //         return result_code::key_not_found;
+    //     }
+
+    //     auto index = get_point_index(value, BITPRIM_INTERNAL_DB_WIRE);
+    //     while (index != point.index() && (res1 = mdb_cursor_get(cursor, &key, &value, MDB_NEXT_DUP)) == MDB_SUCCESS) {
+    //         index = get_point_index(value, BITPRIM_INTERNAL_DB_WIRE);
+    //     }
+
+    //     if (res1 != MDB_SUCCESS) {
+    //         LOG_INFO(LOG_DATABASE) << "Key not found deleting UTXO [remove_utxo] " << res1;
+    //         mdb_cursor_close(cursor);
+    //         return result_code::key_not_found;
+    //     }
+
+
+    //     if (insert_reorg) {
+    //         res1 = mdb_put(db_txn, dbi_reorg_pool_, &key, &value, 0);
+    //         if (res1 != MDB_SUCCESS) {
+    //             LOG_INFO(LOG_DATABASE) << "Error inseting in reorg pool [remove_utxo] " << res1;        
+    //             return result_code::other;
+    //         }
+
+    //         MDB_val key_index {sizeof(height), &height};        //TODO(fernando): podría estar afuera de la DBTx
+    //         auto valuearr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);                  //TODO(fernando): podría estar afuera de la DBTx
+    //         MDB_val value_index {valuearr.size(), valuearr.data()};                   //TODO(fernando): podría estar afuera de la DBTx
+
+    //         res1 = mdb_put(db_txn, dbi_reorg_index_, &key_index, &value_index, 0);
+            
+    //         if (res1 == MDB_KEYEXIST) {
+    //             LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in reorg index [remove_utxo] " << res1;
+    //             return result_code::duplicated_key;
+    //         }
+    //         if (res1 != MDB_SUCCESS) {
+    //             LOG_INFO(LOG_DATABASE) << "Error inserting in reorg index [remove_utxo] " << res1;
+    //             return result_code::other;
+    //         }
+    //     }
+
+    //     if (mdb_cursor_del(cursor, 0) != MDB_SUCCESS) {
+    //         mdb_cursor_close(cursor);
+    //         return result_code::other;
+    //     }
+        
+    //     mdb_cursor_close(cursor);
+    //     return result_code::success;
+    // }
 
     result_code remove_utxo(uint32_t height, chain::output_point const& point, bool insert_reorg, MDB_txn* db_txn) {
-        MDB_val key {point.hash().size(), const_cast<hash_digest&>(point.hash()).data()};     //TODO(fernando): podría estar afuera de la DBTx
 
-        // if (insert_reorg) {
-        //     auto res0 = insert_reorg_pool(height, key, db_txn);
-        //     if (res0 != result_code::success) return res0;
-        // }
+        auto res = do_something_utxo(point, [this, &height, &point, insert_reorg, db_txn](uint32_t index, MDB_val& key, MDB_val& value, MDB_cursor* cursor) {
 
-        MDB_cursor* cursor;
-        if (mdb_cursor_open(db_txn, dbi_utxo_, &cursor) != MDB_SUCCESS) {
-            return result_code::other;
-        }
+            if (insert_reorg) {
+                auto res1 = mdb_put(db_txn, dbi_reorg_pool_, &key, &value, 0);
+                if (res1 != MDB_SUCCESS) {
+                    LOG_INFO(LOG_DATABASE) << "Error inseting in reorg pool [remove_utxo] " << res1;        
+                    return result_code::other;
+                }
 
-        MDB_val value;
-        auto res1 = mdb_cursor_get(cursor, &key, &value, MDB_SET);
-        if (res1 != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Key not found deleting UTXO [remove_utxo] " << res1;
-            mdb_cursor_close(cursor);
-            return result_code::key_not_found;
-        }
+                MDB_val key_index {sizeof(height), &height};                    //TODO(fernando): podría estar afuera de la DBTx
+                auto valuearr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);        //TODO(fernando): podría estar afuera de la DBTx
+                MDB_val value_index {valuearr.size(), valuearr.data()};         //TODO(fernando): podría estar afuera de la DBTx
 
-        auto index = get_point_index(value, BITPRIM_INTERNAL_DB_WIRE);
-        while (index != point.index() && (res1 = mdb_cursor_get(cursor, &key, &value, MDB_NEXT_DUP)) == MDB_SUCCESS) {
-            index = get_point_index(value, BITPRIM_INTERNAL_DB_WIRE);
-        }
+                res1 = mdb_put(db_txn, dbi_reorg_index_, &key_index, &value_index, 0);
+                
+                if (res1 == MDB_KEYEXIST) {
+                    LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in reorg index [remove_utxo] " << res1;
+                    return result_code::duplicated_key;
+                }
+                if (res1 != MDB_SUCCESS) {
+                    LOG_INFO(LOG_DATABASE) << "Error inserting in reorg index [remove_utxo] " << res1;
+                    return result_code::other;
+                }
+            }
 
-        if (res1 != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Key not found deleting UTXO [remove_utxo] " << res1;
-            mdb_cursor_close(cursor);
-            return result_code::key_not_found;
-        }
-
-
-        if (insert_reorg) {
-            res1 = mdb_put(db_txn, dbi_reorg_pool_, &key, &value, 0);
-            if (res1 != MDB_SUCCESS) {
-                LOG_INFO(LOG_DATABASE) << "Error inseting in reorg pool [remove_utxo] " << res1;        
+            if (mdb_cursor_del(cursor, 0) != MDB_SUCCESS) {
                 return result_code::other;
             }
+            return result_code::success;
+        }, dbi_utxo_, db_txn);
 
-            MDB_val key_index {sizeof(height), &height};        //TODO(fernando): podría estar afuera de la DBTx
-            auto valuearr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);                  //TODO(fernando): podría estar afuera de la DBTx
-            MDB_val value_index {valuearr.size(), valuearr.data()};                   //TODO(fernando): podría estar afuera de la DBTx
-
-            res1 = mdb_put(db_txn, dbi_reorg_index_, &key_index, &value_index, 0);
-            
-            if (res1 == MDB_KEYEXIST) {
-                LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in reorg index [insert_reorg_pool] " << res1;
-                return result_code::duplicated_key;
-            }
-            if (res1 != MDB_SUCCESS) {
-                LOG_INFO(LOG_DATABASE) << "Error inserting in reorg index [insert_reorg_pool] " << res1;
-                return result_code::other;
-            }
-        }
-
-        if (mdb_cursor_del(cursor, 0) != MDB_SUCCESS) {
-            mdb_cursor_close(cursor);
-            return result_code::other;
-        }
-        
-        mdb_cursor_close(cursor);
-        return result_code::success;
+        return res;
     }
     
     // result_code insert_utxo(chain::output_point const& point, chain::output const& output, data_chunk const& fixed_data, MDB_txn* db_txn) {
@@ -1051,42 +1167,30 @@ private:
         return result_code::success;
     }
 
-
+    //TODO(fernando): Do I have to remove the entry in the dbi_reorg_index DB ?
     result_code insert_output_from_reorg_and_remove(chain::output_point const& point, MDB_txn* db_txn) {
-        auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);
-        MDB_val key {keyarr.size(), keyarr.data()};
 
-        MDB_val value;
-        auto res = mdb_get(db_txn, dbi_reorg_pool_, &key, &value);
-        if (res == MDB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE) << "Key not found in reorg pool [insert_output_from_reorg_and_remove] " << res;        
-            return result_code::key_not_found;
-        }
-        if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error in reorg pool [insert_output_from_reorg_and_remove] " << res;        
-            return result_code::other;
-        }
+        auto res = do_something_utxo(point, [this, db_txn](uint32_t index, MDB_val& key, MDB_val& value, MDB_cursor* cursor) {
 
-        res = mdb_put(db_txn, dbi_utxo_, &key, &value, MDB_NOOVERWRITE);
-        if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in UTXO [insert_output_from_reorg_and_remove] " << res;        
-            return result_code::duplicated_key;
-        }
-        if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error inserting in UTXO [insert_output_from_reorg_and_remove] " << res;        
-            return result_code::other;
-        }
+            auto res = mdb_put(db_txn, dbi_utxo_, &key, &value, 0);
+            if (res == MDB_KEYEXIST) {
+                LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in UTXO [insert_output_from_reorg_and_remove] " << res;        
+                return result_code::duplicated_key;
+            }
+            if (res != MDB_SUCCESS) {
+                LOG_INFO(LOG_DATABASE) << "Error inserting in UTXO [insert_output_from_reorg_and_remove] " << res;        
+                return result_code::other;
+            }
 
-        res = mdb_del(db_txn, dbi_reorg_pool_, &key, NULL);
-        if (res == MDB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE) << "Key not found deleting in reorg pool [insert_output_from_reorg_and_remove] " << res;
-            return result_code::key_not_found;
-        }
-        if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error deleting in reorg pool [insert_output_from_reorg_and_remove] " << res;
-            return result_code::other;
-        }
-        return result_code::success;
+            if (mdb_cursor_del(cursor, 0) != MDB_SUCCESS) {
+                LOG_INFO(LOG_DATABASE) << "Key not found deleting in reorg pool [insert_output_from_reorg_and_remove] " << res;
+                return result_code::key_not_found;
+            }
+
+            return result_code::success;
+        }, dbi_reorg_pool_, db_txn);
+
+        return res;
     }
 
     result_code insert_inputs(chain::input::list const& inputs, MDB_txn* db_txn) {
