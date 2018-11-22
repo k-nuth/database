@@ -24,7 +24,6 @@ namespace database {
 
 #if defined(BITPRIM_DB_NEW_FULL)
 
-
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_history_db(wallet::payment_address const& address, data_chunk const& entry, MDB_txn* db_txn) {
 
@@ -89,6 +88,9 @@ result_code internal_database_basis<Clock>::insert_input_history(chain::input_po
                         return res;
                     }   
                 }
+            }
+            else {
+                LOG_INFO(LOG_DATABASE) << "Error finding UTXO for input history [insert_input_history]";        
             }
     }
 
