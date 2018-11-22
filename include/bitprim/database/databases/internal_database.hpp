@@ -513,10 +513,7 @@ public:
             return result_code::success;
         }, dbi_reorg_pool_, db_txn);
 
-        if (res != result_code::success) {
-            return res;
-        }          
-
+        return res;
     }
 
     // //TODO(fernando): move to private

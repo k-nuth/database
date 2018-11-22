@@ -76,7 +76,7 @@ size_t utxo_entry::serialized_size_fixed() {
 
 // static
 size_t utxo_entry::serialized_size(chain::output const& output, bool wire) {
-    return  wire ? sizeof(uint32_t) : sizeof(uint16_t) 
+    return  (wire ? sizeof(uint32_t) : sizeof(uint16_t))
           + output.serialized_size(false) 
           + serialized_size_fixed();
 }
