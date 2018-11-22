@@ -21,6 +21,9 @@
 
 #include <chrono>
 
+#include <boost/iostreams/device/array.hpp>
+#include <boost/iostreams/stream.hpp>
+
 #include <bitcoin/bitcoin.hpp>
 
 namespace libbitcoin {
@@ -56,6 +59,36 @@ inline
 data_chunk db_value_to_data_chunk(MDB_val const& value) {
     return data_chunk{static_cast<uint8_t*>(value.mv_data), 
                       static_cast<uint8_t*>(value.mv_data) + value.mv_size};
+}
+
+uint32_t get_point_index(MDB_val const& value, bool wire) {
+
+    // https://www.boost.org/doc/libs/1_68_0/libs/iostreams/doc/index.html
+
+    // const char*           h = "Hello World!";
+    // stream<array_source>  in(h, std::strlen(h));
+    // std::string           hello;
+    // std::getline(in, hello);
+    // std::cout << hello << "\n";  // Prints "Hello World!"
+
+    using boost::iostreams::stream;
+    // using byte_source = boost::iostreams::basic_array_source<uint8_t>;
+
+    using boost::iostreams::array_source;
+
+    // stream<byte_source> str(static_cast<uint8_t*>(value.mv_data), value.mv_size);
+    stream<array_source> str(static_cast<char*>(value.mv_data), value.mv_size);
+    istream_reader source(str);
+
+    if (wire) {
+        return source.read_4_bytes_little_endian();
+    }
+
+    auto index = source.read_2_bytes_little_endian();
+    if (index == max_uint16) {
+        index = chain::point::null_index;
+    }
+    return index;
 }
 
 } // namespace database

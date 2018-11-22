@@ -32,7 +32,8 @@
 #include <bitprim/database/databases/tools.hpp>
 #include <bitprim/database/databases/utxo_entry.hpp>
 
-#ifdef BITPRIM_INTERNAL_DB_4BYTES_INDEX
+//**--**
+#ifdef BITPRIM_CURRENCY_BCH //BITPRIM_INTERNAL_DB_4BYTES_INDEX
 #define BITPRIM_INTERNAL_DB_WIRE true
 #else
 #define BITPRIM_INTERNAL_DB_WIRE false
@@ -208,28 +209,77 @@ public:
         return res;
     }
 
-    utxo_entry get_utxo(chain::output_point const& point) const {
+    // utxo_entry get_utxo(chain::output_point const& point) const {
         
-        auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);
-        MDB_val key {keyarr.size(), keyarr.data()};
+    //     auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);
+    //     MDB_val key {keyarr.size(), keyarr.data()};
+    //     MDB_val value;
+
+    //     MDB_txn* db_txn;
+    //     auto res0 = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+    //     if (res0 != MDB_SUCCESS) {
+    //         LOG_INFO(LOG_DATABASE) << "Error begining LMDB Transaction [get_utxo] " << res0;
+    //         return utxo_entry{};
+    //     }
+
+    //     res0 = mdb_get(db_txn, dbi_utxo_, &key, &value);
+    //     if (res0 != MDB_SUCCESS) {
+          
+    //         mdb_txn_commit(db_txn);
+    //         // mdb_txn_abort(db_txn);  
+    //         return utxo_entry{};
+    //     }
+
+    //     auto data = db_value_to_data_chunk(value);
+
+    //     res0 = mdb_txn_commit(db_txn);
+    //     if (res0 != MDB_SUCCESS) {
+    //         LOG_DEBUG(LOG_DATABASE) << "Error commiting LMDB Transaction [get_utxo] " << res0;        
+    //         return utxo_entry{};
+    //     }
+
+    //     auto res = utxo_entry::factory_from_data(data);
+    //     return res;
+    // }
+
+
+    utxo_entry get_utxo(chain::output_point const& point) const {
+        MDB_val key {point.hash().size(), const_cast<hash_digest&>(point.hash()).data()};
         MDB_val value;
 
         MDB_txn* db_txn;
         auto res0 = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
         if (res0 != MDB_SUCCESS) {
             LOG_INFO(LOG_DATABASE) << "Error begining LMDB Transaction [get_utxo] " << res0;
-            return utxo_entry{};
+            return {};
         }
 
-        res0 = mdb_get(db_txn, dbi_utxo_, &key, &value);
-        if (res0 != MDB_SUCCESS) {
-          
+        MDB_cursor* cursor;
+        if (mdb_cursor_open(db_txn, dbi_utxo_, &cursor) != MDB_SUCCESS) {
             mdb_txn_commit(db_txn);
-            // mdb_txn_abort(db_txn);  
-            return utxo_entry{};
+            return {};
+        }
+
+        res0 = mdb_cursor_get(cursor, &key, &value, MDB_SET);
+        if (res0 != MDB_SUCCESS) {
+            mdb_txn_commit(db_txn);
+            return {};
+        }
+
+        //TODO(fernando): apply this technique everywhere
+        auto index = get_point_index(value, BITPRIM_INTERNAL_DB_WIRE);
+        while (index != point.index() && (res0 = mdb_cursor_get(cursor, &key, &value, MDB_NEXT_DUP)) == MDB_SUCCESS) {
+            index = get_point_index(value, BITPRIM_INTERNAL_DB_WIRE);
+        }
+
+        if (res0 != MDB_SUCCESS) {
+            mdb_txn_commit(db_txn);
+            return {};
         }
 
         auto data = db_value_to_data_chunk(value);
+
+        mdb_cursor_close(cursor);
 
         res0 = mdb_txn_commit(db_txn);
         if (res0 != MDB_SUCCESS) {
@@ -237,10 +287,10 @@ public:
             return utxo_entry{};
         }
 
-        auto res = utxo_entry::factory_from_data(data);
+        auto res = utxo_entry::factory_from_data(data, BITPRIM_INTERNAL_DB_WIRE);
         return res;
     }
-    
+
     result_code get_last_height(uint32_t& out_height) const {
         MDB_txn* db_txn;
         auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
@@ -403,7 +453,7 @@ public:
         }
 
         auto entry_data = db_value_to_data_chunk(value);
-        auto entry = utxo_entry::factory_from_data(entry_data);
+        auto entry = utxo_entry::factory_from_data(entry_data, BITPRIM_INTERNAL_DB_WIRE);
 
         auto point_data = db_value_to_data_chunk(key_point);
         auto point = chain::output_point::factory_from_data(point_data, BITPRIM_INTERNAL_DB_WIRE);
@@ -413,7 +463,7 @@ public:
     }
 
 
-    std::pair<result_code, utxo_pool_t> get_utxo_pool_from(uint32_t from, uint32_t to) const {
+    std::pair<result_code, utxo_pool_t> pool_from(uint32_t from, uint32_t to) const {
         // precondition: from <= to
         utxo_pool_t pool;
 
@@ -607,12 +657,14 @@ private:
             return false;
         }
 
-        res = mdb_dbi_open(db_txn, utxo_db_name, MDB_CREATE, &dbi_utxo_);
+        //**--**
+        res = mdb_dbi_open(db_txn, utxo_db_name, MDB_CREATE | MDB_DUPSORT, &dbi_utxo_);
         if (res != MDB_SUCCESS) {
             return false;
         }
 
-        res = mdb_dbi_open(db_txn, reorg_pool_name, MDB_CREATE, &dbi_reorg_pool_);
+        //**--**
+        res = mdb_dbi_open(db_txn, reorg_pool_name, MDB_CREATE | MDB_DUPSORT, &dbi_reorg_pool_);
         if (res != MDB_SUCCESS) {
             return false;
         }
@@ -660,6 +712,12 @@ private:
             return result_code::other;
         }
 
+
+
+
+
+
+
         MDB_val key_index {sizeof(height), &height};        //TODO(fernando): podría estar afuera de la DBTx
         MDB_val value_index {key.mv_size, key.mv_data};     //TODO(fernando): podría estar afuera de la DBTx
         res = mdb_put(db_txn, dbi_reorg_index_, &key_index, &value_index, 0);
@@ -677,44 +735,112 @@ private:
     }
 
     result_code remove_utxo(uint32_t height, chain::output_point const& point, bool insert_reorg, MDB_txn* db_txn) {
-        auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);      //TODO(fernando): podría estar afuera de la DBTx
-        MDB_val key {keyarr.size(), keyarr.data()};                 //TODO(fernando): podría estar afuera de la DBTx
+        MDB_val key {point.hash().size(), const_cast<hash_digest&>(point.hash()).data()};     //TODO(fernando): podría estar afuera de la DBTx
 
-        if (insert_reorg) {
-            auto res0 = insert_reorg_pool(height, key, db_txn);
-            if (res0 != result_code::success) return res0;
-        }
+        // if (insert_reorg) {
+        //     auto res0 = insert_reorg_pool(height, key, db_txn);
+        //     if (res0 != result_code::success) return res0;
+        // }
 
-        auto res = mdb_del(db_txn, dbi_utxo_, &key, NULL);
-        if (res == MDB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE) << "Key not found deleting UTXO [remove_utxo] " << res;
-            return result_code::key_not_found;
-        }
-        if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error deleting UTXO [remove_utxo] " << res;
+        MDB_cursor* cursor;
+        if (mdb_cursor_open(db_txn, dbi_utxo_, &cursor) != MDB_SUCCESS) {
             return result_code::other;
         }
+
+        MDB_val value;
+        auto res1 = mdb_cursor_get(cursor, &key, &value, MDB_SET);
+        if (res1 != MDB_SUCCESS) {
+            LOG_INFO(LOG_DATABASE) << "Key not found deleting UTXO [remove_utxo] " << res1;
+            mdb_cursor_close(cursor);
+            return result_code::key_not_found;
+        }
+
+        auto index = get_point_index(value, BITPRIM_INTERNAL_DB_WIRE);
+        while (index != point.index() && (res1 = mdb_cursor_get(cursor, &key, &value, MDB_NEXT_DUP)) == MDB_SUCCESS) {
+            index = get_point_index(value, BITPRIM_INTERNAL_DB_WIRE);
+        }
+
+        if (res1 != MDB_SUCCESS) {
+            LOG_INFO(LOG_DATABASE) << "Key not found deleting UTXO [remove_utxo] " << res1;
+            mdb_cursor_close(cursor);
+            return result_code::key_not_found;
+        }
+
+
+        if (insert_reorg) {
+            res1 = mdb_put(db_txn, dbi_reorg_pool_, &key, &value, 0);
+            if (res1 != MDB_SUCCESS) {
+                LOG_INFO(LOG_DATABASE) << "Error inseting in reorg pool [remove_utxo] " << res1;        
+                return result_code::other;
+            }
+
+            MDB_val key_index {sizeof(height), &height};        //TODO(fernando): podría estar afuera de la DBTx
+            auto valuearr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);                  //TODO(fernando): podría estar afuera de la DBTx
+            MDB_val value_index {valuearr.size(), valuearr.data()};                   //TODO(fernando): podría estar afuera de la DBTx
+
+            res1 = mdb_put(db_txn, dbi_reorg_index_, &key_index, &value_index, 0);
+            
+            if (res1 == MDB_KEYEXIST) {
+                LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in reorg index [insert_reorg_pool] " << res1;
+                return result_code::duplicated_key;
+            }
+            if (res1 != MDB_SUCCESS) {
+                LOG_INFO(LOG_DATABASE) << "Error inserting in reorg index [insert_reorg_pool] " << res1;
+                return result_code::other;
+            }
+        }
+
+        if (mdb_cursor_del(cursor, 0) != MDB_SUCCESS) {
+            mdb_cursor_close(cursor);
+            return result_code::other;
+        }
+        
+        mdb_cursor_close(cursor);
         return result_code::success;
     }
     
+    // result_code insert_utxo(chain::output_point const& point, chain::output const& output, data_chunk const& fixed_data, MDB_txn* db_txn) {
+    //     auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);                  //TODO(fernando): podría estar afuera de la DBTx
+    //     auto valuearr = utxo_entry::to_data_with_fixed(output, fixed_data);     //TODO(fernando): podría estar afuera de la DBTx
+
+    //     MDB_val key   {keyarr.size(), keyarr.data()};                           //TODO(fernando): podría estar afuera de la DBTx
+    //     MDB_val value {valuearr.size(), valuearr.data()};                       //TODO(fernando): podría estar afuera de la DBTx
+    //     auto res = mdb_put(db_txn, dbi_utxo_, &key, &value, MDB_NOOVERWRITE);
+
+    //     if (res == MDB_KEYEXIST) {
+    //         LOG_INFO(LOG_DATABASE) << "Duplicate Key inserting UTXO [insert_utxo] " << res;        
+    //         return result_code::duplicated_key;
+    //     }
+    //     if (res != MDB_SUCCESS) {
+    //         LOG_INFO(LOG_DATABASE) << "Error inserting UTXO [insert_utxo] " << res;        
+    //         return result_code::other;
+    //     }
+    //     return result_code::success;
+    // }
+
     result_code insert_utxo(chain::output_point const& point, chain::output const& output, data_chunk const& fixed_data, MDB_txn* db_txn) {
-        auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);                  //TODO(fernando): podría estar afuera de la DBTx
-        auto valuearr = utxo_entry::to_data_with_fixed(output, fixed_data);     //TODO(fernando): podría estar afuera de la DBTx
+        // auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);                  //TODO(fernando): podría estar afuera de la DBTx
+        auto valuearr = utxo_entry::to_data_with_fixed(point.index(), output, fixed_data, BITPRIM_INTERNAL_DB_WIRE);     //TODO(fernando): podría estar afuera de la DBTx
 
-        MDB_val key   {keyarr.size(), keyarr.data()};                           //TODO(fernando): podría estar afuera de la DBTx
+
+
+        MDB_val key   {point.hash().size(), const_cast<hash_digest&>(point.hash()).data()};               //TODO(fernando): podría estar afuera de la DBTx
         MDB_val value {valuearr.size(), valuearr.data()};                       //TODO(fernando): podría estar afuera de la DBTx
-        auto res = mdb_put(db_txn, dbi_utxo_, &key, &value, MDB_NOOVERWRITE);
+        auto res = mdb_put(db_txn, dbi_utxo_, &key, &value, 0);
 
-        if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicate Key inserting UTXO [insert_utxo] " << res;        
-            return result_code::duplicated_key;
-        }
+        //TODO(fernando): check for duplicates (hash + index)
+
+        // if (res == MDB_KEYEXIST) {
+        //     LOG_INFO(LOG_DATABASE) << "Duplicate Key inserting UTXO [insert_utxo] " << res;        
+        //     return result_code::duplicated_key;
+        // }
         if (res != MDB_SUCCESS) {
             LOG_INFO(LOG_DATABASE) << "Error inserting UTXO [insert_utxo] " << res;        
             return result_code::other;
         }
         return result_code::success;
     }
+
 
     result_code remove_inputs(uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
         for (auto const& input: inputs) {
@@ -963,18 +1089,6 @@ private:
         return result_code::success;
     }
 
-    // result_code insert_inputs(chain::input::list const& inputs, MDB_txn* db_txn) {
-    //     for (auto const& input: boost::adaptors::reverse(inputs)) {
-    //         auto const& point = input.previous_output();
-
-    //         auto res = insert_output_from_reorg_and_remove(point, db_txn);
-    //         if (res != result_code::success) {
-    //             return res;
-    //         }
-    //     }
-    //     return result_code::success;
-    // }
-
     result_code insert_inputs(chain::input::list const& inputs, MDB_txn* db_txn) {
         for (auto const& input: inputs) {
             auto const& point = input.previous_output();
@@ -986,16 +1100,6 @@ private:
         }
         return result_code::success;
     }
-
-    // result_code remove_transaction_non_coinbase(chain::transaction const& tx, MDB_txn* db_txn) {
-    //     //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
-    //     auto res = remove_outputs(tx.hash(), tx.outputs(), db_txn);
-    //     if (res != result_code::success) {    
-    //         return res;
-    //     }
-
-    //     return insert_inputs(tx.inputs(), db_txn);
-    // }
 
     template <typename I>
     result_code insert_transactions_inputs_non_coinbase(I f, I l, MDB_txn* db_txn) {
