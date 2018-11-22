@@ -231,10 +231,10 @@ result_code internal_database_basis<Clock>::set_spend(chain::output_point const&
     output.validation.spender_height = spender_height;
 
     //overwrite transaction
-    /*auto ret = update_transaction(tx, entry.height(), entry.median_time_past(), entry.position(), db_txn);
+    auto ret = update_transaction(tx, entry.height(), entry.median_time_past(), entry.position(), db_txn);
     if (ret != result_code::success & ret != result_code::duplicated_key) {
         return ret;
-    }*/
+    }
     
     return result_code::success;
 }
