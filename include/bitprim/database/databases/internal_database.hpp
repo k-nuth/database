@@ -933,9 +933,23 @@ private:
 
     result_code insert_utxo(chain::output_point const& point, chain::output const& output, data_chunk const& fixed_data, MDB_txn* db_txn) {
         // auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);                  //TODO(fernando): podría estar afuera de la DBTx
+
+
+        if (encode_hash(point.hash()) == "e411dbebd2f7d64dafeef9b14b5c59ec60c36779d43f850e5e347abee1e1a455") {
+            LOG_INFO(LOG_DATABASE) << "Hash: " << encode_hash(point.hash());
+            LOG_INFO(LOG_DATABASE) << "Index: " << point.index();
+            LOG_INFO(LOG_DATABASE) << "fixed_data: " << encode_base16(fixed_data);
+            auto odata = output.to_data(false);
+            LOG_INFO(LOG_DATABASE) << "odata: **" << encode_base16(odata) << "**";
+        }
+
         auto valuearr = utxo_entry::to_data_with_fixed(point.index(), output, fixed_data, BITPRIM_INTERNAL_DB_WIRE);     //TODO(fernando): podría estar afuera de la DBTx
 
-
+        if (encode_hash(point.hash()) == "e411dbebd2f7d64dafeef9b14b5c59ec60c36779d43f850e5e347abee1e1a455") {
+            LOG_INFO(LOG_DATABASE) << "Value: **" << encode_base16(valuearr) << "**";
+            // valuearr.clear();
+            // LOG_INFO(LOG_DATABASE) << "Value: " << encode_base16(valuearr);
+        }
 
         MDB_val key   {point.hash().size(), const_cast<hash_digest&>(point.hash()).data()};               //TODO(fernando): podría estar afuera de la DBTx
         MDB_val value {valuearr.size(), valuearr.data()};                       //TODO(fernando): podría estar afuera de la DBTx
@@ -943,12 +957,11 @@ private:
 
         //TODO(fernando): check for duplicates (hash + index)
 
-        // if (res == MDB_KEYEXIST) {
-        //     LOG_INFO(LOG_DATABASE) << "Duplicate Key inserting UTXO [insert_utxo] " << res;        
-        //     return result_code::duplicated_key;
-        // }
         if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error inserting UTXO [insert_utxo] " << res;        
+            LOG_INFO(LOG_DATABASE) << "Error inserting UTXO [insert_utxo] " << res;
+            LOG_INFO(LOG_DATABASE) << "Hash: " << encode_hash(point.hash());
+            LOG_INFO(LOG_DATABASE) << "Index: " << point.index();
+            LOG_INFO(LOG_DATABASE) << "Value: " << encode_base16(valuearr);
             return result_code::other;
         }
         return result_code::success;
