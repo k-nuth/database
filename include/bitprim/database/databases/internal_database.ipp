@@ -374,7 +374,7 @@ std::pair<result_code, utxo_pool_t> internal_database_basis<Clock>::get_utxo_poo
     utxo_pool_t pool;
 
     MDB_txn* db_txn;
-    auto zzz = mdb_txn_begin(env_, NULL, 0, &db_txn);
+    auto zzz = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
     if (zzz != MDB_SUCCESS) {
         return {result_code::other, pool};
     }
@@ -444,6 +444,26 @@ std::pair<result_code, utxo_pool_t> internal_database_basis<Clock>::get_utxo_poo
 
     return {result_code::success, pool};
 }
+
+template <typename Clock>
+result_code internal_database_basis<Clock>::push_transaction_unconfirmed(chain::transaction const& tx) {
+
+    MDB_txn* db_txn;
+    if (mdb_txn_begin(env_, NULL, 0, &db_txn) != MDB_SUCCESS) {
+        return result_code::other;
+    }
+
+    auto res = insert_transaction_unconfirmed(tx, db_txn);
+    if (res != result_code::success) {
+        mdb_txn_abort(db_txn);
+        return res;
+    }
+
+    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+        return result_code::other;
+    }
+}
+
 
 // Private functions
 // ------------------------------------------------------------------------------------------------------

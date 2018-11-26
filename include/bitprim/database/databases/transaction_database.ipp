@@ -87,16 +87,21 @@ transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest co
     auto entry = transaction_entry::factory_from_data(data);
 
     if ( !entry.is_valid() ) {
-        return entry;
+        return {};
     } 
 
-    if (! require_confirmed) {
+    //Bitprim: Transaction stored in dbi_transaction_db_ are always confirmed
+    //the parameter requiere_confirmed is never used.
+    /*if (! require_confirmed) {
         return entry;
     }
 
     auto const confirmed = entry.confirmed();
     
     return (confirmed && entry.height() > fork_height) || (require_confirmed && ! confirmed) ? transaction_entry{} : entry;
+    */
+
+    return entry;
 }
 
 template <typename Clock>
