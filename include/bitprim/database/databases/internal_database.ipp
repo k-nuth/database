@@ -591,12 +591,6 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
             return res;
         }
 
-        //insert in spend database
-        res = insert_spend(prevout, inpoint, db_txn);
-        if (res != result_code::success) {
-            return res;
-        }
-
         //set spender height in tx database
         //Commented because we don't validate transaction duplicates (BIP-30)
         /*res = set_spend(prevout, height, db_txn);
@@ -610,6 +604,16 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
         if (res != result_code::success) {
             return res;
         }
+
+#if defined(BITPRIM_DB_NEW_FULL)
+
+        //insert in spend database
+        res = insert_spend(prevout, inpoint, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
+
+#endif
 
         ++pos;
     }
