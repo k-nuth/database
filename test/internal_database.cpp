@@ -683,7 +683,7 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_genesis) {
 
 #if defined(BITPRIM_DB_NEW_FULL)
 
-    auto const& tx = db.get_transaction(txid, max_uint32, true);
+    auto const& tx = db.get_transaction(txid, max_uint32);
     BOOST_REQUIRE(tx.is_valid());
 
     auto const& address = wallet::payment_address("bitcoincash:qp3wjpa3tjlj042z2wv7hahsldgwhwy0rq9sywjpyy");
@@ -1656,7 +1656,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         std::string txid_enc2 = "5a4ebf66822b0b2d56bd9dc64ece0bc38ee7844a23ff1d7320a88c5fdb2ad3e2";                        
         BOOST_REQUIRE(decode_hash(txid2, txid_enc2));
     
-        auto const& tx_entry = db.get_transaction(txid,max_uint32, true);
+        auto const& tx_entry = db.get_transaction(txid,max_uint32);
         BOOST_REQUIRE(tx_entry.is_valid());
         auto const& tx = tx_entry.transaction();
         output_point point = {tx.hash(), 0};
@@ -1893,7 +1893,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         std::string txid_enc2 = "5a4ebf66822b0b2d56bd9dc64ece0bc38ee7844a23ff1d7320a88c5fdb2ad3e2";                        
         BOOST_REQUIRE(decode_hash(txid2, txid_enc2));
     
-        auto const& tx_entry = db.get_transaction(txid, max_uint32, true);
+        auto const& tx_entry = db.get_transaction(txid, max_uint32);
         BOOST_REQUIRE(tx_entry.is_valid());
         auto const& tx = tx_entry.transaction();
         output_point point = {tx.hash(), 0};

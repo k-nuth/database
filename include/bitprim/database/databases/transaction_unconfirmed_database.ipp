@@ -55,6 +55,7 @@ transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_un
 
     auto data = db_value_to_data_chunk(value);
     auto res = transaction_unconfirmed_entry::factory_from_data(data);
+
     return res;
 }
 
@@ -132,14 +133,14 @@ uint32_t internal_database_basis<Clock>::get_clock_now() {
 
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(chain::transaction const& tx,  MDB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(chain::transaction const& tx, uint32_t height, MDB_txn* db_txn) {
     
     uint32_t arrival_time = get_clock_now();
     
     auto key_arr = tx.hash();                                    //TODO(fernando): podría estar afuera de la DBTx
     MDB_val key {key_arr.size(), key_arr.data()};
 
-    auto value_arr = transaction_unconfirmed_entry::factory_to_data(tx, arrival_time);
+    auto value_arr = transaction_unconfirmed_entry::factory_to_data(tx, arrival_time, height);
     MDB_val value {value_arr.size(), value_arr.data()}; 
 
     auto res = mdb_put(db_txn, dbi_transaction_unconfirmed_db_, &key, &value, MDB_NOOVERWRITE);

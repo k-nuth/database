@@ -122,7 +122,7 @@ public:
 
 
 #if defined(BITPRIM_DB_NEW_FULL)
-    transaction_entry get_transaction(hash_digest const& hash, size_t fork_height, bool require_confirmed) const;
+    transaction_entry get_transaction(hash_digest const& hash, size_t fork_height) const;
     
     chain::history_compact::list get_history(short_hash const& key, size_t limit, size_t from_height) const;
     std::vector<hash_digest> get_history_txns(short_hash const& key, size_t limit, size_t from_height) const;
@@ -133,7 +133,7 @@ public:
 
     transaction_unconfirmed_entry get_transaction_unconfirmed(hash_digest const& hash) const;
 
-    result_code push_transaction_unconfirmed(chain::transaction const& tx);
+    result_code push_transaction_unconfirmed(chain::transaction const& tx, uint32_t height);
 #endif
 
 private:
@@ -233,7 +233,7 @@ private:
     template <typename I>
     result_code insert_transactions(I f, I l, uint32_t height, uint32_t median_time_past, MDB_txn* db_txn);
     
-    transaction_entry get_transaction(hash_digest const& hash, size_t fork_height, bool require_confirmed, MDB_txn* db_txn) const;
+    transaction_entry get_transaction(hash_digest const& hash, size_t fork_height, MDB_txn* db_txn) const;
     
     result_code insert_input_history(chain::input_point const& inpoint, uint32_t height, chain::input const& input, MDB_txn* db_txn);
 
@@ -254,7 +254,7 @@ private:
     
     result_code remove_transaction_spend_db(chain::transaction const& tx, MDB_txn* db_txn);
 
-    result_code insert_transaction_unconfirmed(chain::transaction const& tx,  MDB_txn* db_txn);
+    result_code insert_transaction_unconfirmed(chain::transaction const& tx, uint32_t height, MDB_txn* db_txn);
 
     result_code remove_transaction_unconfirmed(hash_digest const& tx_id,  MDB_txn* db_txn);
 

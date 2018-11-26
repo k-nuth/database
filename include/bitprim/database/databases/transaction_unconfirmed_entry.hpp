@@ -33,11 +33,12 @@ public:
 
     transaction_unconfirmed_entry() = default;
 
-    transaction_unconfirmed_entry(chain::transaction const& tx, uint32_t arrival_time);
+    transaction_unconfirmed_entry(chain::transaction const& tx, uint32_t arrival_time, uint32_t height);
 
     // Getters
     chain::transaction const& transaction() const;
     uint32_t arrival_time() const;
+    uint32_t height() const;
 
     bool is_valid() const;
 
@@ -76,6 +77,8 @@ public:
 #endif
         arrival_time_ = source.read_4_bytes_little_endian();
         
+        height_ = source.read_4_bytes_little_endian();
+
         if ( ! source) {
             reset();
         }
@@ -105,15 +108,15 @@ public:
 #endif
 
     static
-    data_chunk factory_to_data(chain::transaction const& tx, uint32_t arrival_time);
+    data_chunk factory_to_data(chain::transaction const& tx, uint32_t arrival_time, uint32_t height);
     static
-    void factory_to_data(std::ostream& stream, chain::transaction const& tx, uint32_t arrival_time);
+    void factory_to_data(std::ostream& stream, chain::transaction const& tx, uint32_t arrival_time, uint32_t height);
 
 
 #ifdef BITPRIM_USE_DOMAIN
     template <Writer W, BITPRIM_IS_WRITER(W)>
     static
-    void factory_to_data(W& sink, chain::transaction const& tx, uint32_t arrival_time) {
+    void factory_to_data(W& sink, chain::transaction const& tx, uint32_t arrival_time, uint32_t height) {
 
 #if defined(BITPRIM_CACHED_RPC_DATA)    
         tx.to_data(sink, false, true, true);
@@ -122,10 +125,12 @@ public:
 #endif
 
         sink.write_4_bytes_little_endian(arrival_time);
+        sink.write_4_bytes_little_endian(height);
+
     }
 #else
     static
-    void factory_to_data(writer& sink, chain::transaction const& tx, uint32_t arrival_time);
+    void factory_to_data(writer& sink, chain::transaction const& tx, uint32_t arrival_time, uint32_t height);
 #endif
 
 
@@ -134,6 +139,7 @@ private:
 
     chain::transaction transaction_;
     uint32_t arrival_time_;
+    uint32_t height_;
 };
 
 } // namespace database

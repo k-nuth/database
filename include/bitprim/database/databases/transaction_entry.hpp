@@ -109,7 +109,8 @@ public:
 
     bool confirmed();
 
-    bool is_spent(size_t fork_height) const;
+    //Bitprim: we don't have spent information
+    //bool is_spent(size_t fork_height) const;
 
     static
     transaction_entry factory_from_data(data_chunk const& data);

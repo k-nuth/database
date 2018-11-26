@@ -195,7 +195,9 @@ bool transaction_entry::confirmed() {
     return position_ != position_max;
 }
 
- bool transaction_entry::is_spent(size_t fork_height) const {
+//Bitprim: We don't have spent information
+/*
+bool transaction_entry::is_spent(size_t fork_height) const {
 
      // Cannot be spent if unconfirmed.
     if (position_ == position_max)
@@ -209,7 +211,7 @@ bool transaction_entry::confirmed() {
             return false;
     }
     return true;
- }
+}*/
 
 
 } // namespace database

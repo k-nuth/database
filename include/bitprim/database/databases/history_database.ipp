@@ -277,8 +277,7 @@ result_code internal_database_basis<Clock>::remove_transaction_history_db(chain:
         }
         else {
 
-            //TODO (Mario) : require_confirmed true ??
-            auto const& entry = get_transaction(prevout.hash(), max_uint32, true, db_txn);
+            auto const& entry = get_transaction(prevout.hash(), max_uint32, db_txn);
 
             if (entry.is_valid()) {
                 

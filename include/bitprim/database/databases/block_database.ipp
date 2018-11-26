@@ -151,8 +151,7 @@ chain::block internal_database_basis<Clock>::get_block(uint32_t height, MDB_txn*
         hash_digest h;
         std::copy(f, f + libbitcoin::hash_size, h.data());
         
-        //TODO (Mario) : require_confirmed = true
-        auto tx_entry = get_transaction(h,max_uint32, true, db_txn);
+        auto tx_entry = get_transaction(h,max_uint32, db_txn);
         
         if ( ! tx_entry.is_valid() ) {
             return chain::block{};

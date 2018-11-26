@@ -446,14 +446,14 @@ std::pair<result_code, utxo_pool_t> internal_database_basis<Clock>::get_utxo_poo
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::push_transaction_unconfirmed(chain::transaction const& tx) {
+result_code internal_database_basis<Clock>::push_transaction_unconfirmed(chain::transaction const& tx, uint32_t height) {
 
     MDB_txn* db_txn;
     if (mdb_txn_begin(env_, NULL, 0, &db_txn) != MDB_SUCCESS) {
         return result_code::other;
     }
 
-    auto res = insert_transaction_unconfirmed(tx, db_txn);
+    auto res = insert_transaction_unconfirmed(tx, height, db_txn);
     if (res != result_code::success) {
         mdb_txn_abort(db_txn);
         return res;

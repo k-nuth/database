@@ -616,7 +616,7 @@ code data_base::push(const chain::transaction& tx, uint32_t forks) {
     //TODO Mario : use mutex to avoid block and tx concurrency 
     
     //We insert only in transaction unconfirmed here
-    internal_db_->push_transaction_unconfirmed(tx);
+    internal_db_->push_transaction_unconfirmed(tx, forks);
 
     return error::success;  //TODO(fernando): store the transactions in a new mempool
 #endif // BITPRIM_DB_LEGACY

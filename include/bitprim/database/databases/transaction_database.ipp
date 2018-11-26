@@ -27,7 +27,7 @@ namespace database {
 
 //public
 template <typename Clock>
-transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest const& hash, size_t fork_height, bool require_confirmed) const {
+transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest const& hash, size_t fork_height) const {
     
     MDB_txn* db_txn;
     auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
@@ -35,7 +35,7 @@ transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest co
         return transaction_entry{};
     }
 
-    auto entry = get_transaction(hash, fork_height, require_confirmed, db_txn);
+    auto entry = get_transaction(hash, fork_height, db_txn);
 
     if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
         return transaction_entry{};
@@ -73,7 +73,7 @@ result_code internal_database_basis<Clock>::insert_transactions(I f, I l, uint32
 }
 
 template <typename Clock>
-transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest const& hash, size_t fork_height, bool require_confirmed, MDB_txn* db_txn) const {
+transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest const& hash, size_t fork_height, MDB_txn* db_txn) const {
     MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
     MDB_val value;
 
@@ -86,9 +86,13 @@ transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest co
     auto data = db_value_to_data_chunk(value);
     auto entry = transaction_entry::factory_from_data(data);
 
-    if ( !entry.is_valid() ) {
+    /*if ( !entry.is_valid() ) {
         return {};
-    } 
+    } */
+
+    if (entry.height() > fork_height) {
+        return {};
+    }
 
     //Bitprim: Transaction stored in dbi_transaction_db_ are always confirmed
     //the parameter requiere_confirmed is never used.
@@ -150,7 +154,7 @@ result_code internal_database_basis<Clock>::remove_transactions(uint32_t height,
         
         MDB_val key_tx {h.size(), h.data()};
         
-        auto const& entry = get_transaction(h, height, true, db_txn);
+        auto const& entry = get_transaction(h, height, db_txn);
         if ( ! entry.is_valid() ) {
             return result_code::other;
         }
@@ -218,7 +222,7 @@ result_code internal_database_basis<Clock>::set_spend(chain::output_point const&
     // Transactions are not marked as spent unless the spender is confirmed.
     // This is consistent with support for unconfirmed double spends.
 
-    auto entry = get_transaction(point.hash(), spender_height, true, db_txn);
+    auto entry = get_transaction(point.hash(), spender_height, db_txn);
 
     // The transaction is not exist as confirmed at or below the height.
     if ( ! entry.is_valid() ) {

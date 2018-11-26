@@ -26,8 +26,8 @@
 namespace libbitcoin { 
 namespace database {
 
-transaction_unconfirmed_entry::transaction_unconfirmed_entry(chain::transaction const& tx, uint32_t arrival_time)
-    : transaction_(tx), arrival_time_(arrival_time)
+transaction_unconfirmed_entry::transaction_unconfirmed_entry(chain::transaction const& tx, uint32_t arrival_time, uint32_t height)
+    : transaction_(tx), arrival_time_(arrival_time), height_(height)
 {}
 
 chain::transaction const& transaction_unconfirmed_entry::transaction() const {
@@ -38,15 +38,20 @@ uint32_t transaction_unconfirmed_entry::arrival_time() const {
     return arrival_time_;
 }
 
+uint32_t transaction_unconfirmed_entry::height() const {
+    return height_;
+}
+
 // private
 void transaction_unconfirmed_entry::reset() {
     transaction_ = chain::transaction{};
     arrival_time_ = max_uint32;
+    height_ = max_uint32;
 }
 
 // Empty scripts are valid, validation relies on not_found only.
 bool transaction_unconfirmed_entry::is_valid() const {
-    return transaction_.is_valid() && arrival_time_ != bc::max_uint32;
+    return transaction_.is_valid() && arrival_time_ != bc::max_uint32  && height_ != bc::max_uint32;
 }
 
 // Size.
@@ -59,7 +64,8 @@ size_t transaction_unconfirmed_entry::serialized_size(chain::transaction const& 
 #else
     return tx.serialized_size(false, true) 
 #endif
-         + sizeof(uint32_t);
+         + sizeof(uint32_t) // arrival_time 
+         + sizeof(uint32_t); //height
 }
 
 
@@ -67,29 +73,30 @@ size_t transaction_unconfirmed_entry::serialized_size(chain::transaction const& 
 //-----------------------------------------------------------------------------
 
 // static
-data_chunk transaction_unconfirmed_entry::factory_to_data(chain::transaction const& tx, uint32_t arrival_time) {
+data_chunk transaction_unconfirmed_entry::factory_to_data(chain::transaction const& tx, uint32_t arrival_time, uint32_t height) {
     data_chunk data;
     auto const size = serialized_size(tx);
     data.reserve(size);
     data_sink ostream(data);
-    factory_to_data(ostream, tx, arrival_time);
+    factory_to_data(ostream, tx, arrival_time, height);
     ostream.flush();
     BITCOIN_ASSERT(data.size() == size);
     return data;
 }
 
 // static
-void transaction_unconfirmed_entry::factory_to_data(std::ostream& stream, chain::transaction const& tx, uint32_t arrival_time) {
+void transaction_unconfirmed_entry::factory_to_data(std::ostream& stream, chain::transaction const& tx, uint32_t arrival_time, uint32_t height) {
     ostream_writer sink(stream);
-    factory_to_data(sink, tx, arrival_time);
+    factory_to_data(sink, tx, arrival_time, height);
 }
 
 
 #if ! defined(BITPRIM_USE_DOMAIN)
 // static
-void transaction_unconfirmed_entry::factory_to_data(writer& sink, chain::transaction const& tx, uint32_t arrival_time) {
+void transaction_unconfirmed_entry::factory_to_data(writer& sink, chain::transaction const& tx, uint32_t arrival_time, uint32_t height) {
     tx.to_data(sink, false,true,true);
     sink.write_4_bytes_little_endian(arrival_time);
+    sink.write_4_bytes_little_endian(height);
 }
 #endif
 
@@ -115,7 +122,7 @@ void transaction_unconfirmed_entry::to_data(std::ostream& stream) const {
 
 #ifndef BITPRIM_USE_DOMAIN
 void transaction_unconfirmed_entry::to_data(writer& sink) const {
-    factory_to_data(sink, transaction_, arrival_time_);
+    factory_to_data(sink, transaction_, arrival_time_, height_);
 }
 #endif
 
@@ -159,6 +166,7 @@ bool transaction_unconfirmed_entry::from_data(reader& source) {
 
     transaction_.from_data(source, false, true, false);
     arrival_time_ = source.read_4_bytes_little_endian();
+    height_ = source.read_4_bytes_little_endian();
     
     if ( ! source) {
         reset();
