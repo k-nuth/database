@@ -585,19 +585,12 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
         chain::input_point const inpoint {tx_id, pos};
         auto const& prevout = input.previous_output();
         
+#if defined(BITPRIM_DB_NEW_FULL)
         auto res = insert_input_history(inpoint, height, input, db_txn);            
         if (res != result_code::success) {
             return res;
         }
 
-        res = remove_utxo(height, prevout, insert_reorg, db_txn);
-        if (res != result_code::success) {
-            return res;
-        }
-
-        #if defined(BITPRIM_DB_NEW_FULL)
-        
-    
         //insert in spend database
         res = insert_spend(prevout, inpoint, db_txn);
         if (res != result_code::success) {
@@ -605,12 +598,18 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
         }
 
         //set spender height in tx database
-        res = set_spend(prevout, height, db_txn);
+        //Commented because we don't validate transaction duplicates (BIP-30)
+        /*res = set_spend(prevout, height, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }*/
+
+#endif
+
+        res = remove_utxo(height, prevout, insert_reorg, db_txn);
         if (res != result_code::success) {
             return res;
         }
-
-        #endif
 
         ++pos;
     }
