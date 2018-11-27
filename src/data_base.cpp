@@ -507,20 +507,15 @@ code data_base::verify_push(const block& block, size_t height) {
 }
 
 
-#if defined(BITPRIM_DB_LEGACY) || defined(BITPRIM_DB_NEW_FULL)
-
+//Bitprim: We don't store spend information
+#if defined(BITPRIM_DB_LEGACY)
 code data_base::verify_push(const transaction& tx) {
-#ifdef BITPRIM_DB_LEGACY
+
     auto const result = transactions_->get(tx.hash(), max_size_t, false);
     return result && ! result.is_spent(max_size_t) ? error::unspent_duplicate : error::success;
-#else
-    return error::success;
-    //auto const result = internal_db_->get_transaction(tx.hash(), max_size_t, false);
-    //return result.is_valid() && ! result.is_spent(max_size_t) ? error::unspent_duplicate : error::success;
-#endif // BITPRIM_DB_LEGACY    
+   
 }
-
-#endif // defined(BITPRIM_DB_LEGACY) || defined(BITPRIM_DB_NEW_FULL)
+#endif // defined(BITPRIM_DB_LEGACY)
 
 
 #ifdef BITPRIM_DB_LEGACY
@@ -612,12 +607,8 @@ code data_base::push(const chain::transaction& tx, uint32_t forks) {
     ///////////////////////////////////////////////////////////////////////////
 
 #elif defined(BITPRIM_DB_NEW_FULL)
-    
-    //TODO Mario : use mutex to avoid block and tx concurrency 
-    
     //We insert only in transaction unconfirmed here
     internal_db_->push_transaction_unconfirmed(tx, forks);
-
     return error::success;  //TODO(fernando): store the transactions in a new mempool
 #endif // BITPRIM_DB_LEGACY
 }

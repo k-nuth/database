@@ -256,7 +256,7 @@ private:
     code verify_insert(const chain::block& block, size_t height);
     code verify_push(const chain::block& block, size_t height);
 
-#if defined(BITPRIM_DB_LEGACY) || defined(BITPRIM_DB_NEW_FULL)
+#if defined(BITPRIM_DB_LEGACY)
     code verify_push(const chain::transaction& tx);
 #endif
 
