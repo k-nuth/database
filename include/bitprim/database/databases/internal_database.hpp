@@ -31,6 +31,7 @@
 #include <bitcoin/database/define.hpp>
 
 #include <bitprim/database/databases/result_code.hpp>
+#include <bitprim/database/databases/property_code.hpp>
 #include <bitprim/database/databases/tools.hpp>
 #include <bitprim/database/databases/utxo_entry.hpp>
 #include <bitprim/database/databases/history_entry.hpp>
@@ -47,11 +48,11 @@ namespace libbitcoin {
 namespace database {
 
 #if defined(BITPRIM_DB_NEW_BLOCKS)
-constexpr size_t max_dbs_ = 7;
+constexpr size_t max_dbs_ = 8;
 #elif defined(BITPRIM_DB_NEW_FULL)
-constexpr size_t max_dbs_ = 11;
+constexpr size_t max_dbs_ = 12;
 #else
-constexpr size_t max_dbs_ = 6;
+constexpr size_t max_dbs_ = 7;
 #endif
 
 constexpr size_t env_open_mode_ = 0664;
@@ -69,6 +70,7 @@ public:
     constexpr static char reorg_pool_name[] = "reorg_pool";
     constexpr static char reorg_index_name[] = "reorg_index";
     constexpr static char reorg_block_name[] = "reorg_block";
+    constexpr static char db_properties_name[] = "properties";
   
 #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     //Blocks DB
@@ -137,6 +139,13 @@ public:
 #endif
 
 private:
+    
+    bool create_db_mode_property();
+
+    bool verify_db_mode_property();
+
+    bool open_internal();
+    
     bool is_old_block(chain::block const& block) const;
 
     size_t get_db_page_size() const;
@@ -285,6 +294,7 @@ private:
     MDB_dbi dbi_reorg_pool_;
     MDB_dbi dbi_reorg_index_;
     MDB_dbi dbi_reorg_block_;
+    MDB_dbi dbi_properties_;
 
 #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     //Blocks DB
@@ -316,6 +326,9 @@ constexpr char internal_database_basis<Clock>::reorg_index_name[];              
 
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::reorg_block_name[];               //key: block height, value: block
+
+template <typename Clock>
+constexpr char internal_database_basis<Clock>::db_properties_name[];                   //key: propery, value: data
 
 #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
 template <typename Clock>
