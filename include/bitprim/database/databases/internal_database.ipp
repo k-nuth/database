@@ -519,7 +519,7 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
     // if (db_flags & DBF_FASTEST)
     //     mdb_flags |= MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC;
 
-    res = mdb_env_open(env_, db_dir_.string().c_str() , MDB_NORDAHEAD | MDB_NOTLS, env_open_mode_);
+    res = mdb_env_open(env_, db_dir_.string().c_str() , MDB_NORDAHEAD | MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC | MDB_NOTLS, env_open_mode_);
     return res == MDB_SUCCESS;
 }
 
