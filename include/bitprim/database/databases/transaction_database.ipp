@@ -47,13 +47,16 @@ transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest co
 
 template <typename Clock>
 template <typename I>
-result_code internal_database_basis<Clock>::insert_transactions(I f, I l, uint32_t height, uint32_t median_time_past, MDB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_transactions(I f, I l, uint32_t height, uint32_t median_time_past, uint64_t tx_count, MDB_txn* db_txn) {
+    
+    auto id = tx_count;
     uint32_t pos = 0;
+    
     while (f != l) {
         auto const& tx = *f;
 
         //TODO: (Mario) : Implement tx.Confirm to update existing transactions
-        auto res = insert_transaction(tx, height, median_time_past, pos, db_txn);
+        auto res = insert_transaction(id, tx, height, median_time_past, pos, db_txn);
         if (res != result_code::success && res != result_code::duplicated_key) {
             return res;
         }
@@ -67,14 +70,17 @@ result_code internal_database_basis<Clock>::insert_transactions(I f, I l, uint32
 
         ++f;
         ++pos;
+        ++id;
     }
 
     return result_code::success;
 }
 
+
 template <typename Clock>
-transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest const& hash, size_t fork_height, MDB_txn* db_txn) const {
-    MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
+transaction_entry internal_database_basis<Clock>::get_transaction(uint64_t id, MDB_txn* db_txn) const {
+
+    MDB_val key {sizeof(id), &id};
     MDB_val value;
 
     auto res = mdb_get(db_txn, dbi_transaction_db_, &key, &value);
@@ -86,9 +92,30 @@ transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest co
     auto data = db_value_to_data_chunk(value);
     auto entry = transaction_entry::factory_from_data(data);
 
-    /*if ( !entry.is_valid() ) {
+    return entry;
+}
+
+template <typename Clock>
+transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest const& hash, size_t fork_height, MDB_txn* db_txn) const {
+    MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
+    MDB_val value;
+
+    auto res = mdb_get(db_txn, dbi_transaction_hash_db_, &key, &value);
+    if (res != MDB_SUCCESS) {
         return {};
-    } */
+    }
+
+    auto tx_id = *static_cast<uint32_t*>(value.mv_data);;
+    MDB_val key_tx {sizeof(tx_id), &tx_id};
+
+    res = mdb_get(db_txn, dbi_transaction_db_, &key_tx, &value);
+    
+    if (res != MDB_SUCCESS) {
+        return {};
+    }
+
+    auto data = db_value_to_data_chunk(value);
+    auto entry = transaction_entry::factory_from_data(data);
 
     if (entry.height() > fork_height) {
         return {};
@@ -109,14 +136,17 @@ transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest co
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_transaction(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, MDB_txn* db_txn) {
-    auto key_arr = tx.hash();                                    //TODO(fernando): podría estar afuera de la DBTx
-    MDB_val key {key_arr.size(), key_arr.data()};
+result_code internal_database_basis<Clock>::insert_transaction(uint64_t id, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, MDB_txn* db_txn) {
+    
+    MDB_val key {sizeof(id), &id};
+    
+    //auto key_arr = tx.hash();                                    //TODO(fernando): podría estar afuera de la DBTx
+    //MDB_val key {key_arr.size(), key_arr.data()};
 
     auto valuearr = transaction_entry::factory_to_data(tx, height, median_time_past, position);
     MDB_val value {valuearr.size(), valuearr.data()}; 
 
-    auto res = mdb_put(db_txn, dbi_transaction_db_, &key, &value, MDB_NOOVERWRITE);
+    auto res = mdb_put(db_txn, dbi_transaction_db_, &key, &value, MDB_APPEND);
     if (res == MDB_KEYEXIST) {
         LOG_INFO(LOG_DATABASE) << "Duplicate key in Transaction DB [insert_transaction] " << res;
         return result_code::duplicated_key;
@@ -127,18 +157,178 @@ result_code internal_database_basis<Clock>::insert_transaction(chain::transactio
         return result_code::other;
     }
 
+
+    auto key_arr = tx.hash();                                    //TODO(fernando): podría estar afuera de la DBTx
+    MDB_val key_tx {key_arr.size(), key_arr.data()};
+    
+    res = mdb_put(db_txn, dbi_transaction_hash_db_, &key_tx, &key, MDB_NOOVERWRITE);
+    if (res == MDB_KEYEXIST) {
+        LOG_INFO(LOG_DATABASE) << "Duplicate key in Transaction DB [insert_transaction] " << res;
+        return result_code::duplicated_key;
+    }        
+
+    if (res != MDB_SUCCESS) {
+        LOG_INFO(LOG_DATABASE) << "Error saving in Transaction DB [insert_transaction] " << res;
+        return result_code::other;
+    }
+
+
     return result_code::success;
 }
 
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_transactions(uint32_t height, MDB_txn* db_txn) {
-    MDB_val key {sizeof(height), &height};
+result_code internal_database_basis<Clock>::remove_transactions(chain::block const& block, uint32_t height, MDB_txn* db_txn) {
+    
+    auto const& txs = block.transactions();
+    uint32_t pos = 0;
+    for (auto const& tx : txs) {
+
+        auto const& hash = tx.hash();
+        
+        auto res0 = remove_transaction_history_db(tx, height, db_txn);
+        if (res0 != result_code::success) {
+            return res0;
+        }
+        
+        if (pos > 0) {
+            auto res0 = remove_transaction_spend_db(tx, db_txn);
+            if (res0 != result_code::success && res0 != result_code::key_not_found) {
+                return res0;
+            }
+        }
+        
+        MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
+        MDB_val value;
+
+        auto res = mdb_get(db_txn, dbi_transaction_hash_db_, &key, &value);
+        if (res != MDB_SUCCESS) {
+            return result_code::other;
+        }
+
+        auto tx_id = *static_cast<uint32_t*>(value.mv_data);;
+        MDB_val key_tx {sizeof(tx_id), &tx_id};
+
+        res = mdb_del(db_txn, dbi_transaction_db_, &key_tx, NULL);
+        if (res == MDB_NOTFOUND) {
+            LOG_INFO(LOG_DATABASE) << "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+            return result_code::key_not_found;
+        }
+        if (res != MDB_SUCCESS) {
+            LOG_INFO(LOG_DATABASE) << "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+            return result_code::other;
+        }
+
+        res = mdb_del(db_txn, dbi_transaction_hash_db_, &key, NULL);
+        if (res == MDB_NOTFOUND) {
+            LOG_INFO(LOG_DATABASE) << "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+            return result_code::key_not_found;
+        }
+        if (res != MDB_SUCCESS) {
+            LOG_INFO(LOG_DATABASE) << "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+            return result_code::other;
+        }
+
+        ++pos;
+    }
+    
+    
+    /*MDB_val key {sizeof(height), &height};
     MDB_val value;
 
+    MDB_cursor* cursor;
+    if (mdb_cursor_open(db_txn, dbi_block_db_, &cursor) != MDB_SUCCESS) {
+        return {};
+    }
 
-    //To get the tx hashes to remove, we need to read the block db
+    uint32_t pos = 0;
+    int rc;
+    if ((rc = mdb_cursor_get(cursor, &key, &value, MDB_SET)) == 0) {
+       
+        auto tx_id = *static_cast<uint32_t*>(value.mv_data);;
+        auto const entry = get_transaction(tx_id, db_txn);
+        auto const& tx = entry.transaction();
+        
+        auto res0 = remove_transaction_history_db(tx, height, db_txn);
+        if (res0 != result_code::success) {
+            return res0;
+        }
+        
+        if (pos > 0) {
+            res0 = remove_transaction_spend_db(tx, db_txn);
+            if (res0 != result_code::success && res0 != result_code::key_not_found) {
+                return res0;
+            }
+        }
+        
+        MDB_val key_tx {sizeof(tx_id), &tx_id};
+        auto res = mdb_del(db_txn, dbi_transaction_db_, &key_tx, NULL);
+        if (res == MDB_NOTFOUND) {
+            LOG_INFO(LOG_DATABASE) << "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+            return result_code::key_not_found;
+        }
+        if (res != MDB_SUCCESS) {
+            LOG_INFO(LOG_DATABASE) << "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+            return result_code::other;
+        }
 
+        MDB_val key_hash {tx.hash().size(), tx.hash().data()};
+        res = mdb_del(db_txn, dbi_transaction_hash_db_, &key_hash, NULL);
+        if (res == MDB_NOTFOUND) {
+            LOG_INFO(LOG_DATABASE) << "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+            return result_code::key_not_found;
+        }
+        if (res != MDB_SUCCESS) {
+            LOG_INFO(LOG_DATABASE) << "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+            return result_code::other;
+        }
+    
+        while ((rc = mdb_cursor_get(cursor, &key, &value, MDB_NEXT_DUP)) == 0) {
+            ++pos;
+            auto tx_id = *static_cast<uint32_t*>(value.mv_data);;
+            auto const entry = get_transaction(tx_id, db_txn);
+            auto const& tx = entry.transaction();
+            
+            auto res0 = remove_transaction_history_db(tx, height, db_txn);
+            if (res0 != result_code::success) {
+                return res0;
+            }
+            
+            if (pos > 0) {
+                res0 = remove_transaction_spend_db(tx, db_txn);
+                if (res0 != result_code::success && res0 != result_code::key_not_found) {
+                    return res0;
+                }
+            }
+            
+            MDB_val key_tx {sizeof(tx_id), &tx_id};
+            auto res = mdb_del(db_txn, dbi_transaction_db_, &key_tx, NULL);
+            if (res == MDB_NOTFOUND) {
+                LOG_INFO(LOG_DATABASE) << "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+                return result_code::key_not_found;
+            }
+            if (res != MDB_SUCCESS) {
+                LOG_INFO(LOG_DATABASE) << "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+                return result_code::other;
+            }
+
+            MDB_val key_hash {tx.hash().size(), tx.hash().data()};
+            res = mdb_del(db_txn, dbi_transaction_hash_db_, &key_hash, NULL);
+            if (res == MDB_NOTFOUND) {
+                LOG_INFO(LOG_DATABASE) << "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+                return result_code::key_not_found;
+            }
+            if (res != MDB_SUCCESS) {
+                LOG_INFO(LOG_DATABASE) << "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+                return result_code::other;
+            }    
+        }
+    } 
+    
+    mdb_cursor_close(cursor);*/
+
+
+    /*//To get the tx hashes to remove, we need to read the block db
     if (mdb_get(db_txn, dbi_block_db_, &key, &value) != MDB_SUCCESS) {
         return result_code::other;
     }
@@ -186,7 +376,7 @@ result_code internal_database_basis<Clock>::remove_transactions(uint32_t height,
         n -= libbitcoin::hash_size;
         f += libbitcoin::hash_size;
         ++pos;
-    }
+    }*/
 
     return result_code::success;
 }
@@ -253,6 +443,15 @@ result_code internal_database_basis<Clock>::set_unspend(chain::output_point cons
     return set_spend(point, chain::output::validation::not_spent, db_txn);
 }
 
+template <typename Clock>
+uint64_t internal_database_basis<Clock>::get_tx_count(MDB_txn* db_txn) {
+  MDB_stat db_stats;
+  auto ret = mdb_stat(db_txn, dbi_transaction_db_, &db_stats);
+  if (ret != MDB_SUCCESS) {
+      return max_uint64;
+  }
+  return db_stats.ms_entries;
+}
 
 #endif //BITPRIM_NEW_DB_FULL
 

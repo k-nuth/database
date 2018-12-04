@@ -112,6 +112,8 @@ void close_everything(MDB_env* e, MDB_dbi& db0, MDB_dbi& db1, MDB_dbi& db2, MDB_
 , MDB_dbi& db7
 , MDB_dbi& db8
 , MDB_dbi& db9
+, MDB_dbi& db10
+, MDB_dbi& db11
 #endif
 
 ) {
@@ -130,6 +132,8 @@ void close_everything(MDB_env* e, MDB_dbi& db0, MDB_dbi& db1, MDB_dbi& db2, MDB_
     mdb_dbi_close(e, db7);
     mdb_dbi_close(e, db8);
     mdb_dbi_close(e, db9);
+    mdb_dbi_close(e, db10);
+    mdb_dbi_close(e, db11);
 #endif
 
     mdb_env_close(e);
@@ -144,8 +148,11 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi
 , MDB_dbi
 , MDB_dbi
 , MDB_dbi
+, MDB_dbi
+, MDB_dbi
 #endif
 > open_dbs() {
+    
     MDB_env* env_;
     MDB_dbi dbi_utxo_;
     MDB_dbi dbi_reorg_pool_;
@@ -162,6 +169,8 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi
     MDB_dbi dbi_transaction_db_;
     MDB_dbi dbi_history_db_;
     MDB_dbi dbi_spend_db_;
+    MDB_dbi dbi_transaction_hash_db_;
+    MDB_dbi dbi_transaction_unconfirmed_db_;
     #endif
 
     MDB_txn* db_txn;
@@ -180,6 +189,8 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi
 
     #ifdef BITPRIM_DB_NEW_FULL
     char transaction_db_name[] = "transactions";
+    char transaction_hash_db_name[] = "transactions_hash";
+    char transaction_unconfirmed_db_name[] = "transactions_unconfirmed";
     char history_db_name[] = "history";
     char spend_db_name[] = "spend";
     #endif
@@ -190,7 +201,7 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi
     #ifdef BITPRIM_DB_NEW_BLOCKS
     BOOST_REQUIRE(mdb_env_set_maxdbs(env_, 7) == MDB_SUCCESS);
     #elif BITPRIM_DB_NEW_FULL
-    BOOST_REQUIRE(mdb_env_set_maxdbs(env_, 10) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_env_set_maxdbs(env_, 12) == MDB_SUCCESS);
     #else
     BOOST_REQUIRE(mdb_env_set_maxdbs(env_, 6) == MDB_SUCCESS);
     #endif
@@ -208,14 +219,18 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi
     BOOST_REQUIRE(mdb_dbi_open(db_txn, reorg_index_name, MDB_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED, &dbi_reorg_index_) == MDB_SUCCESS);
     BOOST_REQUIRE(mdb_dbi_open(db_txn, reorg_block_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_reorg_block_) == MDB_SUCCESS);
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+    #if defined(BITPRIM_DB_NEW_BLOCKS)
     BOOST_REQUIRE(mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_db_) == MDB_SUCCESS);
     #endif
 
-    #ifdef BITPRIM_DB_NEW_FULL
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, transaction_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_transaction_db_) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, history_db_name, MDB_CREATE | MDB_DUPSORT | MDB_DUPFIXED , &dbi_history_db_) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, spend_db_name, MDB_CREATE, &dbi_spend_db_) == MDB_SUCCESS);
+    #if defined(BITPRIM_DB_NEW_FULL)
+
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED  | MDB_INTEGERDUP, &dbi_block_db_)== MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, transaction_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_transaction_db_)== MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, transaction_hash_db_name, MDB_CREATE, &dbi_transaction_hash_db_)== MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, history_db_name, MDB_CREATE | MDB_DUPSORT | MDB_DUPFIXED, &dbi_history_db_)== MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, spend_db_name, MDB_CREATE, &dbi_spend_db_)== MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, transaction_unconfirmed_db_name, MDB_CREATE, &dbi_transaction_unconfirmed_db_) == MDB_SUCCESS);
     #endif
 
     BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
@@ -223,12 +238,29 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi
     #ifdef BITPRIM_DB_NEW_BLOCKS
         return {env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_, dbi_block_db_};
     #elif BITPRIM_DB_NEW_FULL
-        return {env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_, dbi_block_db_, dbi_transaction_db_, dbi_history_db_,dbi_spend_db_ };
+        return {env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_, dbi_block_db_, dbi_transaction_db_, dbi_history_db_,dbi_spend_db_, dbi_transaction_hash_db_, dbi_transaction_unconfirmed_db_ };
     #else
         return {env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_};
     #endif
 }
 
+
+
+void print_db_entries_count(MDB_env* env_, MDB_dbi& dbi ) {
+    MDB_txn *txn;    
+    mdb_txn_begin(env_, NULL, MDB_RDONLY, &txn);
+  
+    MDB_stat db_stats;
+    auto ret = mdb_stat(txn, dbi, &db_stats);
+    if (ret != MDB_SUCCESS) {
+        std::cout << "Error getting entries " << static_cast<int32_t>(ret) << std::endl;
+        mdb_txn_commit(txn);
+        return;
+    }
+
+    std::cout << "Entries: " << db_stats.ms_entries << std::endl;
+    mdb_txn_commit(txn);
+}
 
 //check_reorg_output(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0, "00f2052a01000000434104283338ffd784c198147f99aed2cc16709c90b1522e3b3637b312a6f9130e0eda7081e373a96d36be319710cd5c134aaffba81ff08650d7de8af332fe4d8cde20ac");
 void check_reorg_output(MDB_env* env_, MDB_dbi& dbi_reorg_pool_, std::string txid_enc, uint32_t pos, std::string output_enc) {
@@ -330,49 +362,53 @@ void check_blocks_db(MDB_env* env_, MDB_dbi& dbi_blocks_db_, uint32_t height) {
 #if defined(BITPRIM_DB_NEW_FULL)
 
 void check_blocks_db(MDB_env* env_, MDB_dbi& dbi_blocks_db_, MDB_dbi& dbi_block_header_, MDB_dbi& dbi_transaction_db_, uint32_t height) {
+    
     MDB_txn* db_txn;
- 
-    MDB_val key {sizeof(height), &height};
-    MDB_val value;
-
     BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
+
+
+    MDB_cursor* cursor;
+    BOOST_REQUIRE(mdb_cursor_open(db_txn, dbi_blocks_db_, &cursor) == MDB_SUCCESS);
+
+    
+    MDB_val key {sizeof(height), &height};
+    chain::transaction::list tx_list;
+
+    MDB_val value;
+    int rc;
+    BOOST_REQUIRE(mdb_cursor_get(cursor, &key, &value, MDB_SET) == MDB_SUCCESS); 
+       
+    auto tx_id = *static_cast<uint32_t*>(value.mv_data);
+    
+    MDB_val key_tx {sizeof(tx_id), &tx_id};
+    MDB_val value_tx;
+
+    BOOST_REQUIRE(mdb_get(db_txn, dbi_transaction_db_, &key_tx, &value_tx) == MDB_SUCCESS);
+        
+    data_chunk data_tx {static_cast<uint8_t*>(value_tx.mv_data), static_cast<uint8_t*>(value_tx.mv_data) + value_tx.mv_size};
+    auto entry = transaction_entry::factory_from_data(data_tx);
+    tx_list.push_back(std::move(entry.transaction()));
+
+    while ((rc = mdb_cursor_get(cursor, &key, &value, MDB_NEXT_DUP)) == 0) {
+        auto tx_id = *static_cast<uint32_t*>(value.mv_data);;
+        MDB_val key_tx {sizeof(tx_id), &tx_id};
+        MDB_val value_tx;
+
+        BOOST_REQUIRE(mdb_get(db_txn, dbi_transaction_db_, &key_tx, &value_tx) == MDB_SUCCESS);
+            
+        data_chunk data_tx {static_cast<uint8_t*>(value_tx.mv_data), static_cast<uint8_t*>(value_tx.mv_data) + value_tx.mv_size};
+        auto entry = transaction_entry::factory_from_data(data_tx);
+        tx_list.push_back(std::move(entry.transaction()));    
+    }
+      
+    
+    mdb_cursor_close(cursor);
     
     BOOST_REQUIRE(mdb_get(db_txn, dbi_block_header_, &key, &value) == MDB_SUCCESS);      
 
     data_chunk data_header {static_cast<uint8_t*>(value.mv_data), static_cast<uint8_t*>(value.mv_data) + value.mv_size};
     auto header = chain::header::factory_from_data(data_header);
     BOOST_REQUIRE(header.is_valid());
-
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_blocks_db_, &key, &value) == MDB_SUCCESS);
-    
-    auto n = value.mv_size;
-    auto f = static_cast<uint8_t*>(value.mv_data); 
-    //precondition: mv_size es multiplo de 32
-    
-    chain::transaction::list tx_list;
-    tx_list.reserve(n / libbitcoin::hash_size);
-    
-    while (n != 0) {
-        hash_digest h;
-        std::copy(f, f + libbitcoin::hash_size, h.data());
-        
-        MDB_val key_tx {h.size(), const_cast<hash_digest&>(h).data()};
-        MDB_val value_tx;
-
-        BOOST_REQUIRE(mdb_get(db_txn, dbi_transaction_db_, &key_tx, &value_tx) == MDB_SUCCESS);
-           
-        data_chunk data_tx {static_cast<uint8_t*>(value_tx.mv_data), static_cast<uint8_t*>(value_tx.mv_data) + value_tx.mv_size};
-        
-        auto res = transaction_entry::factory_from_data(data_tx);
-        auto tx = res.transaction();
-        
-        BOOST_REQUIRE(tx.is_valid());
-
-        tx_list.push_back(std::move(tx));
-
-        n -= libbitcoin::hash_size;
-        f += libbitcoin::hash_size;
-    }
         
     chain::block block{header, std::move(tx_list)};
     
@@ -382,10 +418,10 @@ void check_blocks_db(MDB_env* env_, MDB_dbi& dbi_blocks_db_, MDB_dbi& dbi_block_
 }
 
 
-void check_transactions_db_just_existence(MDB_env* env_, MDB_dbi& dbi_transaction_db_, hash_digest& hash) {
+void check_transactions_db_just_existence(MDB_env* env_, MDB_dbi& dbi_transaction_db_, uint64_t id) {
     MDB_txn* db_txn;
 
-    MDB_val key {hash.size(), hash.data()};
+    MDB_val key {sizeof(id), &id};
     MDB_val value;
 
     BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
@@ -393,10 +429,10 @@ void check_transactions_db_just_existence(MDB_env* env_, MDB_dbi& dbi_transactio
     BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
 }
 
-void check_transactions_db_doesnt_exists(MDB_env* env_, MDB_dbi& dbi_transaction_db_, hash_digest& hash) {
+void check_transactions_db_doesnt_exists(MDB_env* env_, MDB_dbi& dbi_transaction_db_, uint64_t id) {
     MDB_txn* db_txn;
 
-    MDB_val key {hash.size(), hash.data()};
+    MDB_val key {sizeof(id), &id};
     MDB_val value;
 
     BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
@@ -501,7 +537,7 @@ size_t db_count_items(MDB_env *env, MDB_dbi dbi) {
 
         data_chunk key_bytes {static_cast<uint8_t*>(key.mv_data), static_cast<uint8_t*>(key.mv_data) + key.mv_size};
         std::reverse(begin(key_bytes), end(key_bytes));
-        // std::cout << encode_base16(key_bytes) << std::endl;
+        std::cout << encode_base16(key_bytes) << std::endl;
 
         data_chunk value_bytes {static_cast<uint8_t*>(data.mv_data), static_cast<uint8_t*>(data.mv_data) + data.mv_size};
         std::reverse(begin(value_bytes), end(value_bytes));
@@ -512,7 +548,7 @@ size_t db_count_items(MDB_env *env, MDB_dbi dbi) {
     // std::cout << "---------------------------------\n" << std::endl;
     
     mdb_cursor_close(cursor);
-    mdb_txn_abort(txn);
+    mdb_txn_commit(txn);
 
     return count;
 }
@@ -897,6 +933,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg) {
 
     #if defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_transaction_db_;
+    MDB_dbi dbi_transaction_hash_db_;
+    MDB_dbi dbi_transaction_unconfirmed_db_;
     MDB_dbi dbi_history_db_;
     MDB_dbi dbi_spend_db_;
     #endif
@@ -910,6 +948,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -929,7 +969,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg) {
     auto const& address = wallet::payment_address("bitcoincash:qz78x4gvzcfwaqg4t55j2sshe0tqpp9x6yyrx8jdvp");
     BOOST_REQUIRE(address);
     
-    std::cout << "aaaaaaaaaa" << db_count_db_by_address(env_, dbi_history_db_, address) << std::endl;
+    //std::cout << "aaaaaaaaaa" << db_count_db_by_address(env_, dbi_history_db_, address) << std::endl;
 
     BOOST_REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address) == 2);
 
@@ -944,6 +984,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 }
@@ -985,6 +1027,8 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_0) {
 
     #if defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_transaction_db_;
+    MDB_dbi dbi_transaction_hash_db_;
+    MDB_dbi dbi_transaction_unconfirmed_db_;
     MDB_dbi dbi_history_db_;
     MDB_dbi dbi_spend_db_;
     #endif
@@ -998,6 +1042,8 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_0) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -1023,6 +1069,8 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_0) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 }
@@ -1063,6 +1111,8 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_1) {
 
     #if defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_transaction_db_;
+    MDB_dbi dbi_transaction_hash_db_;
+    MDB_dbi dbi_transaction_unconfirmed_db_;
     MDB_dbi dbi_history_db_;
     MDB_dbi dbi_spend_db_;
     #endif
@@ -1076,6 +1126,8 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_1) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -1101,6 +1153,8 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_1) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 }
@@ -1141,6 +1195,8 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_2) {
 
     #if defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_transaction_db_;
+    MDB_dbi dbi_transaction_hash_db_;
+    MDB_dbi dbi_transaction_unconfirmed_db_;
     MDB_dbi dbi_history_db_;
     MDB_dbi dbi_spend_db_;
     #endif
@@ -1154,6 +1210,8 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_2) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -1180,6 +1238,8 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_2) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 }
@@ -1234,6 +1294,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index) {
 
     #if defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_transaction_db_;
+    MDB_dbi dbi_transaction_hash_db_;
+    MDB_dbi dbi_transaction_unconfirmed_db_;
     MDB_dbi dbi_history_db_;
     MDB_dbi dbi_spend_db_;
     #endif
@@ -1247,6 +1309,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -1289,6 +1353,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 }
@@ -1377,6 +1443,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index2) {
 
     #if defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_transaction_db_;
+    MDB_dbi dbi_transaction_hash_db_;
+    MDB_dbi dbi_transaction_unconfirmed_db_;
     MDB_dbi dbi_history_db_;
     MDB_dbi dbi_spend_db_;
     #endif
@@ -1390,6 +1458,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index2) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -1441,6 +1511,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index2) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 }
@@ -1522,6 +1594,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
 
     #if defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_transaction_db_;
+    MDB_dbi dbi_transaction_hash_db_;
+    MDB_dbi dbi_transaction_unconfirmed_db_;
     MDB_dbi dbi_history_db_;
     MDB_dbi dbi_spend_db_;
     #endif
@@ -1569,6 +1643,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -1583,7 +1659,9 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     
     BOOST_REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address) == 1);
 
-
+    print_db_entries_count(env_, dbi_transaction_db_);
+    check_transactions_db_just_existence(env_,dbi_transaction_db_,0);
+    BOOST_REQUIRE(db_count_items(env_, dbi_transaction_db_) == 1);
 #endif 
 
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
@@ -1598,6 +1676,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -1699,6 +1779,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -1713,6 +1795,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
 #if defined(BITPRIM_DB_NEW_BLOCKS)
     check_blocks_db(env_, dbi_block_db_, 1);
 #elif defined(BITPRIM_DB_NEW_FULL)
+
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
 
     auto const& address4 = wallet::payment_address("bitcoincash:qpg4uetn4v79s7rh0su9lf60paqvvvxaxveesl8p43");
@@ -1723,8 +1806,13 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     BOOST_REQUIRE(address1);    
     BOOST_REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address1) == 1);
     
-    //BOOST_REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address) == 2);
 
+    print_db_entries_count(env_, dbi_transaction_db_);
+    check_transactions_db_just_existence(env_,dbi_transaction_db_,0);
+    check_transactions_db_just_existence(env_,dbi_transaction_db_,1);
+    check_transactions_db_just_existence(env_,dbi_transaction_db_,2);
+    BOOST_REQUIRE(db_count_items(env_, dbi_transaction_db_) == 3);
+    
 #endif 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
@@ -1735,6 +1823,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -1769,7 +1859,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
 
 #if defined(BITPRIM_DB_NEW_FULL)
 
-        auto const& address = wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
+        /*auto const& address = wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
         BOOST_REQUIRE(address);
 
         auto history_list = db.get_history(address.hash(),max_uint32,0);
@@ -1796,7 +1886,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
 
         
         auto const& in_point = db.get_spend(output_point{txid, 0});
-        BOOST_REQUIRE(!in_point.is_valid());
+        BOOST_REQUIRE(!in_point.is_valid());*/
 #endif
 
     }   //close() implicit
@@ -1810,6 +1900,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -1818,14 +1910,22 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
     
 
-    #if defined(BITPRIM_DB_NEW_BLOCKS)
+#if defined(BITPRIM_DB_NEW_BLOCKS)
     check_blocks_db_doesnt_exists(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_,0);
-    #elif defined(BITPRIM_DB_NEW_FULL)
+#elif defined(BITPRIM_DB_NEW_FULL)
+    
     check_blocks_db_doesnt_exists(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
-    #endif
 
+    print_db_entries_count(env_, dbi_transaction_db_);
+    check_transactions_db_just_existence(env_,dbi_transaction_db_,0);
+    check_transactions_db_doesnt_exists(env_,dbi_transaction_db_,1);
+    check_transactions_db_doesnt_exists(env_,dbi_transaction_db_,2);
+    std::cout << "aaaaaaaaaaaaaaaaaaaaaaaaaaaaa" << std::endl;
+    BOOST_REQUIRE(db_count_items(env_, dbi_transaction_db_) == 1);
+    std::cout << "aaaaaaaaaaaaaaaaaaaaaaaaaaaaa" << std::endl;
+    #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
@@ -1835,6 +1935,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+        , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -1937,6 +2039,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -1950,13 +2054,20 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
     
     
-    #if defined(BITPRIM_DB_NEW_BLOCKS) 
+#if defined(BITPRIM_DB_NEW_BLOCKS) 
     check_blocks_db(env_, dbi_block_db_,0);
     check_blocks_db(env_, dbi_block_db_,1);
-    #elif defined(BITPRIM_DB_NEW_FULL)
+#elif defined(BITPRIM_DB_NEW_FULL)
+    
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
-    #endif
+
+    print_db_entries_count(env_, dbi_transaction_db_);
+    check_transactions_db_just_existence(env_,dbi_transaction_db_,0);
+    check_transactions_db_just_existence(env_,dbi_transaction_db_,1);
+    check_transactions_db_just_existence(env_,dbi_transaction_db_,2);
+    BOOST_REQUIRE(db_count_items(env_, dbi_transaction_db_) == 3);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
@@ -1966,6 +2077,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+        , dbi_transaction_unconfirmed_db_
     #endif
     );
 }
@@ -2008,6 +2121,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
 
     #if defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_transaction_db_;
+    MDB_dbi dbi_transaction_hash_db_;
+    MDB_dbi dbi_transaction_unconfirmed_db_;
     MDB_dbi dbi_history_db_;
     MDB_dbi dbi_spend_db_;
     #endif
@@ -2032,6 +2147,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -2054,6 +2171,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
     
@@ -2096,6 +2215,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -2123,6 +2244,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -2144,6 +2267,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -2164,6 +2289,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -2269,6 +2396,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
 
     #if defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_transaction_db_;
+    MDB_dbi dbi_transaction_hash_db_;
+    MDB_dbi dbi_transaction_unconfirmed_db_;
     MDB_dbi dbi_history_db_;
     MDB_dbi dbi_spend_db_;
     #endif
@@ -2297,6 +2426,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -2334,6 +2465,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -2354,6 +2487,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -2392,6 +2527,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -2412,6 +2549,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -2452,6 +2591,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -2473,6 +2614,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -2515,6 +2658,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -2536,6 +2681,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -2580,6 +2727,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -2601,6 +2750,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -2647,6 +2798,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -2664,6 +2817,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -2708,6 +2863,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -2725,6 +2882,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -2767,6 +2926,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -2784,6 +2945,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -2826,6 +2989,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -2843,6 +3008,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -2885,6 +3052,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -2902,6 +3071,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -2943,6 +3114,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -2960,6 +3133,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -3001,6 +3176,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -3083,6 +3260,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
 
     #if defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_transaction_db_;
+    MDB_dbi dbi_transaction_hash_db_;
+    MDB_dbi dbi_transaction_unconfirmed_db_;
     MDB_dbi dbi_history_db_;
     MDB_dbi dbi_spend_db_;
     #endif
@@ -3111,6 +3290,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -3150,6 +3331,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -3173,6 +3356,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -3215,6 +3400,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -3236,6 +3423,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -3282,6 +3471,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -3305,6 +3496,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -3348,6 +3541,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -3365,6 +3560,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -3407,6 +3604,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -3424,6 +3623,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -3466,6 +3667,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -3483,6 +3686,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -3525,6 +3730,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -3542,6 +3749,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -3584,6 +3793,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -3601,6 +3812,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -3643,6 +3856,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -3661,6 +3876,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -3703,6 +3920,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -3783,6 +4002,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
 
     #if defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_transaction_db_;
+    MDB_dbi dbi_transaction_hash_db_;
+    MDB_dbi dbi_transaction_unconfirmed_db_;
     MDB_dbi dbi_history_db_;
     MDB_dbi dbi_spend_db_;
     #endif
@@ -3811,6 +4032,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -3850,6 +4073,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -3871,6 +4096,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -3914,6 +4141,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -3935,6 +4164,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -3978,6 +4209,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -3999,6 +4232,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -4041,6 +4276,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -4059,6 +4296,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -4100,6 +4339,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 
@@ -4179,6 +4420,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool_3) {
 
     #if defined(BITPRIM_DB_NEW_FULL)
     MDB_dbi dbi_transaction_db_;
+    MDB_dbi dbi_transaction_hash_db_;
+    MDB_dbi dbi_transaction_unconfirmed_db_;
     MDB_dbi dbi_history_db_;
     MDB_dbi dbi_spend_db_;
     #endif
@@ -4192,6 +4435,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool_3) {
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
+    , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     ) = open_dbs();
 
@@ -4221,6 +4466,8 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool_3) {
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
+        , dbi_transaction_hash_db_
+    , dbi_transaction_unconfirmed_db_
     #endif
     );
 

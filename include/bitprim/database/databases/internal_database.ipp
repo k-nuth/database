@@ -80,6 +80,7 @@ bool internal_database_basis<Clock>::close() {
         
         #if defined(BITPRIM_DB_NEW_FULL)
         mdb_dbi_close(env_, dbi_transaction_db_);
+        mdb_dbi_close(env_, dbi_transaction_hash_db_);
         mdb_dbi_close(env_, dbi_history_db_);
         mdb_dbi_close(env_, dbi_spend_db_);
         mdb_dbi_close(env_, dbi_transaction_unconfirmed_db_);
@@ -515,10 +516,7 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
         return false;
     }
 
-    //TODO(fernando): check if we can apply the following flags
-    // if (db_flags & DBF_FASTEST)
-    //     mdb_flags |= MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC;
-
+    //TODO (Mario): Review Flags
     res = mdb_env_open(env_, db_dir_.string().c_str() , MDB_NORDAHEAD | MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC | MDB_NOTLS, env_open_mode_);
     return res == MDB_SUCCESS;
 }
@@ -562,7 +560,7 @@ bool internal_database_basis<Clock>::open_databases() {
         return false;
     }
 
-#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL) 
+#if defined(BITPRIM_DB_NEW_BLOCKS) 
     res = mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_db_);
     if (res != MDB_SUCCESS) {
         return false;
@@ -570,7 +568,18 @@ bool internal_database_basis<Clock>::open_databases() {
 #endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
 
 #if defined(BITPRIM_DB_NEW_FULL)
-    res = mdb_dbi_open(db_txn, transaction_db_name, MDB_CREATE, &dbi_transaction_db_);
+    
+    res = mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED  | MDB_INTEGERDUP, &dbi_block_db_);
+    if (res != MDB_SUCCESS) {
+        return false;
+    }
+    
+    res = mdb_dbi_open(db_txn, transaction_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_transaction_db_);
+    if (res != MDB_SUCCESS) {
+        return false;
+    }
+
+    res = mdb_dbi_open(db_txn, transaction_hash_db_name, MDB_CREATE, &dbi_transaction_hash_db_);
     if (res != MDB_SUCCESS) {
         return false;
     }
@@ -585,7 +594,6 @@ bool internal_database_basis<Clock>::open_databases() {
         return false;
     }
 
-    
     res = mdb_dbi_open(db_txn, transaction_unconfirmed_db_name, MDB_CREATE, &dbi_transaction_unconfirmed_db_);
     if (res != MDB_SUCCESS) {
         return false;
@@ -730,27 +738,33 @@ result_code internal_database_basis<Clock>::push_block(chain::block const& block
         return res;
     }
 
-    auto const& txs = block.transactions();
+    auto const& txs = block.transactions();     
 
-#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+#if defined(BITPRIM_DB_NEW_BLOCKS) 
     res = insert_block(block, height, db_txn);        
     if (res != result_code::success) {
         // std::cout << "22222222222222" << static_cast<uint32_t>(res) << "\n";
         return res;
     }
 
-#if defined(BITPRIM_DB_NEW_FULL)
+#elif defined(BITPRIM_DB_NEW_FULL)
 
-    res = insert_transactions(txs.begin(), txs.end(), height, median_time_past,  db_txn);
+    auto tx_count = get_tx_count(db_txn);
+    
+    res = insert_block(block, height, tx_count, db_txn);        
+    if (res != result_code::success) {
+        // std::cout << "22222222222222" << static_cast<uint32_t>(res) << "\n";
+        return res;
+    }
+
+    res = insert_transactions(txs.begin(), txs.end(), height, median_time_past, tx_count, db_txn);
     if (res == result_code::duplicated_key) {
         res = result_code::success_duplicate_coinbase;
     } else if (res != result_code::success) {
         return res;
     }
 
-#endif //defined(BITPRIM_DB_NEW_FULL)
-
-#endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+#endif
 
     if ( insert_reorg ) {
         res = push_block_reorg(block, height, db_txn);
@@ -758,6 +772,7 @@ result_code internal_database_basis<Clock>::push_block(chain::block const& block
             return res;
         }
     }
+
     
     auto const& coinbase = txs.front();
 
@@ -790,9 +805,11 @@ result_code internal_database_basis<Clock>::push_genesis(chain::block const& blo
         return res;
     }
 
-#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+#if defined(BITPRIM_DB_NEW_BLOCKS)
     res = insert_block(block, 0, db_txn);
-#endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+#elif defined(BITPRIM_DB_NEW_FULL) 
+    res = insert_block(block, 0, 0, db_txn);
+#endif 
 
     return res;
 }
@@ -870,33 +887,6 @@ result_code internal_database_basis<Clock>::remove_transactions_non_coinbase(I f
     return remove_transactions_outputs_non_coinbase(f, l, db_txn);
 }
 
-template <typename Clock>
-result_code internal_database_basis<Clock>::remove_block_header(hash_digest const& hash, uint32_t height, MDB_txn* db_txn) {
-
-    MDB_val key {sizeof(height), &height};
-    auto res = mdb_del(db_txn, dbi_block_header_, &key, NULL);
-    if (res == MDB_NOTFOUND) {
-        LOG_INFO(LOG_DATABASE) << "Key not found deleting block header in LMDB [remove_block_header] - mdb_del: " << res;
-        return result_code::key_not_found;
-    }
-    if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Erro deleting block header in LMDB [remove_block_header] - mdb_del: " << res;
-        return result_code::other;
-    }
-
-    MDB_val key_hash {hash.size(), const_cast<hash_digest&>(hash).data()};
-    res = mdb_del(db_txn, dbi_block_header_by_hash_, &key_hash, NULL);
-    if (res == MDB_NOTFOUND) {
-        LOG_INFO(LOG_DATABASE) << "Key not found deleting block header by hash in LMDB [remove_block_header] - mdb_del: " << res;
-        return result_code::key_not_found;
-    }
-    if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Erro deleting block header by hash in LMDB [remove_block_header] - mdb_del: " << res;
-        return result_code::other;
-    }
-
-    return result_code::success;
-}
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_block(chain::block const& block, uint32_t height, MDB_txn* db_txn) {
@@ -936,7 +926,7 @@ result_code internal_database_basis<Clock>::remove_block(chain::block const& blo
 
 #if defined(BITPRIM_DB_NEW_FULL)
     //Transaction Database
-    res = remove_transactions(height, db_txn);
+    res = remove_transactions(block, height, db_txn);
     if (res != result_code::success) {
         return res;
     }
