@@ -138,6 +138,7 @@ public:
 #endif
 
 private:
+
     bool is_old_block(chain::block const& block) const;
 
     size_t get_db_page_size() const;
@@ -278,6 +279,10 @@ private:
     uint32_t get_clock_now();
 
     uint64_t get_tx_count(MDB_txn* db_txn);
+
+    uint64_t get_history_count(MDB_txn* db_txn);
+
+    
 
 #endif //defined(BITPRIM_DB_NEW_FULL)
 

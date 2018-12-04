@@ -31,7 +31,7 @@ result_code internal_database_basis<Clock>::insert_history_db(wallet::payment_ad
     MDB_val key {key_arr.size(), key_arr.data()};   
     MDB_val value {entry.size(), const_cast<data_chunk&>(entry).data()};
 
-    auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, 0);
+    auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, MDB_APPENDDUP);
     if (res == MDB_KEYEXIST) {
         LOG_INFO(LOG_DATABASE) << "Duplicate key inserting history [insert_history_db] " << res;        
         return result_code::duplicated_key;
@@ -50,14 +50,25 @@ result_code internal_database_basis<Clock>::insert_input_history(chain::input_po
     auto const& prevout = input.previous_output();
 
     if (prevout.validation.cache.is_valid()) {
+        
+        uint64_t history_count = get_history_count(db_txn);
+    
+        if (history_count == max_uint64) {
+            LOG_INFO(LOG_DATABASE) << "Error getting history items count";
+            return result_code::other;
+        }
+
+        uint64_t id = history_count;
+        
         // This results in a complete and unambiguous history for the
         // address since standard outputs contain unambiguous address data.
         for (auto const& address : prevout.validation.cache.addresses()) {
-            auto valuearr = history_entry::factory_to_data(inpoint, chain::point_kind::spend, height, inpoint.index(), prevout.checksum());
+            auto valuearr = history_entry::factory_to_data(id, inpoint, chain::point_kind::spend, height, inpoint.index(), prevout.checksum());
             auto res = insert_history_db(address, valuearr, db_txn); 
             if (res != result_code::success) {
                 return res;
-            }        
+            }
+            ++id;        
         }
     } else {
             //During an IBD with checkpoints some previous output info is missing.
@@ -76,17 +87,25 @@ result_code internal_database_basis<Clock>::insert_input_history(chain::input_po
 
                 //auto const& out_output = tx.outputs()[prevout.index()];
 
-                auto const& out_output = entry.output();
+                uint64_t history_count = get_history_count(db_txn);
+                if (history_count == max_uint64) {
+                    LOG_INFO(LOG_DATABASE) << "Error getting history items count";
+                    return result_code::other;
+                }
 
+                uint64_t id = history_count;
+            
+                auto const& out_output = entry.output();
                 for (auto const& address : out_output.addresses()) {
 
                     //std::cout << "ccc " << encode_hash(tx_hash) << std::endl;
 
-                    auto valuearr = history_entry::factory_to_data(inpoint, chain::point_kind::spend, height, inpoint.index(), prevout.checksum());
+                    auto valuearr = history_entry::factory_to_data(id, inpoint, chain::point_kind::spend, height, inpoint.index(), prevout.checksum());
                     auto res = insert_history_db(address, valuearr, db_txn); 
                     if (res != result_code::success) {
                         return res;
                     }   
+                    ++id;
                 }
             }
             else {
@@ -100,6 +119,14 @@ result_code internal_database_basis<Clock>::insert_input_history(chain::input_po
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, MDB_txn* db_txn ) {
     
+    uint64_t history_count = get_history_count(db_txn);
+    if (history_count == max_uint64) {
+        LOG_INFO(LOG_DATABASE) << "Error getting history items count";
+        return result_code::other;
+    }
+
+    uint64_t id = history_count;
+    
     auto const outpoint = chain::output_point {tx_hash, index};
     auto const value = output.value();
 
@@ -107,11 +134,12 @@ result_code internal_database_basis<Clock>::insert_output_history(hash_digest co
     for (auto const& address : output.addresses()) {
         //std::cout << "eee " << address << std::endl;
         //std::cout << "ddd " << encode_hash(tx_hash) << std::endl; 
-        auto valuearr = history_entry::factory_to_data(outpoint, chain::point_kind::output, height, index, value);
+        auto valuearr = history_entry::factory_to_data(id, outpoint, chain::point_kind::output, height, index, value);
         auto res = insert_history_db(address, valuearr, db_txn); 
         if (res != result_code::success) {
             return res;
         }
+        ++id;
     }
 
     return result_code::success;
@@ -350,6 +378,15 @@ result_code internal_database_basis<Clock>::remove_history_db(const short_hash& 
     return result_code::success;
 }
 
+template <typename Clock>
+uint64_t internal_database_basis<Clock>::get_history_count(MDB_txn* db_txn) {
+  MDB_stat db_stats;
+  auto ret = mdb_stat(db_txn, dbi_history_db_, &db_stats);
+  if (ret != MDB_SUCCESS) {
+      return max_uint64;
+  }
+  return db_stats.ms_entries;
+}
 
 #endif //BITPRIM_NEW_DB_FULL
 

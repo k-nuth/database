@@ -27,9 +27,14 @@
 namespace libbitcoin { 
 namespace database {
 
-history_entry::history_entry(chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum)
-    : point_(point), point_kind_(kind), height_(height), index_(index), value_or_checksum_(value_or_checksum)
+history_entry::history_entry(uint64_t id, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum)
+    : id_(id), point_(point), point_kind_(kind), height_(height), index_(index), value_or_checksum_(value_or_checksum)
 {}
+
+
+uint64_t history_entry::id() const {
+    return id_;
+}
 
 chain::point const& history_entry::point() const {
     return point_;
@@ -53,6 +58,7 @@ uint64_t history_entry::value_or_checksum() const {
 
 // private
 void history_entry::reset() {
+    id_ = max_uint64;
     point_ = chain::point{};
     point_kind_ = libbitcoin::chain::point_kind::output;
     height_ = max_uint32;
@@ -62,7 +68,7 @@ void history_entry::reset() {
 
 // Empty scripts are valid, validation relies on not_found only.
 bool history_entry::is_valid() const {
-    return point_.is_valid() && height_ != bc::max_uint32 && index_ != max_uint32 && value_or_checksum_ != max_uint64;
+    return id_ != max_uint64 && point_.is_valid() && height_ != bc::max_uint32 && index_ != max_uint32 && value_or_checksum_ != max_uint64;
 }
 
 // Size.
@@ -70,34 +76,35 @@ bool history_entry::is_valid() const {
 // constexpr
 //TODO(fernando): make chain::point::serialized_size() static and constexpr to make this constexpr too
 size_t history_entry::serialized_size(chain::point const& point) {
-    return point.serialized_size(false) + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint64_t);
+    return sizeof(uint64_t) + point.serialized_size(false) + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint64_t);
 }
 
 // Serialization.
 //-----------------------------------------------------------------------------
 
 // static
-data_chunk history_entry::factory_to_data(chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
+data_chunk history_entry::factory_to_data(uint64_t id, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
     data_chunk data;
     auto const size = serialized_size(point);
     data.reserve(size);
     data_sink ostream(data);
-    factory_to_data(ostream, point, kind, height, index, value_or_checksum);
+    factory_to_data(ostream, id, point, kind, height, index, value_or_checksum);
     ostream.flush();
     BITCOIN_ASSERT(data.size() == size);
     return data;
 }
 
 // static
-void history_entry::factory_to_data(std::ostream& stream, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
+void history_entry::factory_to_data(std::ostream& stream, uint64_t id, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
     ostream_writer sink(stream);
-    factory_to_data(sink, point, kind, height, index, value_or_checksum);
+    factory_to_data(sink, id, point, kind, height, index, value_or_checksum);
 }
 
 
 #ifndef BITPRIM_USE_DOMAIN
 // static
-void history_entry::factory_to_data(writer& sink, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
+void history_entry::factory_to_data(writer& sink, uint64_t id, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
+    sink.write_8_bytes_little_endian(id);
     point.to_data(sink, false);
     sink.write_byte(static_cast<uint8_t>(kind));
     sink.write_4_bytes_little_endian(height);
@@ -127,7 +134,7 @@ void history_entry::to_data(std::ostream& stream) const {
 
 #ifndef BITPRIM_USE_DOMAIN
 void history_entry::to_data(writer& sink) const {
-    factory_to_data(sink, point_, point_kind_, height_, index_, value_or_checksum_ );
+    factory_to_data(sink, id_, point_, point_kind_, height_, index_, value_or_checksum_ );
 }
 #endif
 
@@ -168,6 +175,7 @@ bool history_entry::from_data(std::istream& stream) {
 bool history_entry::from_data(reader& source) {
     reset();
     
+    id_ = source.read_8_bytes_little_endian();
     point_.from_data(source, false);
     point_kind_ = static_cast<chain::point_kind>(source.read_byte()),
     height_ = source.read_4_bytes_little_endian();

@@ -521,6 +521,16 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
     return res == MDB_SUCCESS;
 }
 
+int compare_uint64(const MDB_val *a, const MDB_val *b) {
+    const uint64_t va = *(const uint64_t *)a->mv_data;
+    const uint64_t vb = *(const uint64_t *)b->mv_data;
+    
+    //std::cout << "va: " << va << std::endl;
+    //std::cout << "vb: " << va << std::endl;
+
+    return (va < vb) ? -1 : va > vb;
+}
+
 template <typename Clock>
 bool internal_database_basis<Clock>::open_databases() {
     MDB_txn* db_txn;
@@ -598,6 +608,8 @@ bool internal_database_basis<Clock>::open_databases() {
     if (res != MDB_SUCCESS) {
         return false;
     }
+
+    mdb_set_dupsort(db_txn, dbi_history_db_, compare_uint64);
 
 #endif //BITPRIM_DB_NEW_FULL
 
@@ -962,6 +974,8 @@ result_code internal_database_basis<Clock>::remove_block(chain::block const& blo
     }
     return result_code::success;
 }
+
+
 
 } // namespace database
 } // namespace libbitcoin
