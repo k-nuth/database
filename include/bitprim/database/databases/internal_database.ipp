@@ -630,6 +630,7 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
     return res == MDB_SUCCESS;
 }
 
+inline 
 int compare_uint64(const MDB_val *a, const MDB_val *b) {
     const uint64_t va = *(const uint64_t *)a->mv_data;
     const uint64_t vb = *(const uint64_t *)b->mv_data;
