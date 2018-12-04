@@ -52,16 +52,120 @@ bool internal_database_basis<Clock>::create() {
         return false;
     }
 
-    return open();
+    auto ret = open_internal();
+    if ( ! ret ) {
+        return false;
+    }
+
+    ret = create_db_mode_property();
+    if ( ! ret ) {
+        return false;
+    }
+
+    return true;
 }    
 
 template <typename Clock>
+bool internal_database_basis<Clock>::create_db_mode_property() {
+
+    MDB_txn* db_txn;
+    auto res = mdb_txn_begin(env_, NULL, 0, &db_txn);
+    if (res != MDB_SUCCESS) {
+        return false;
+    }
+
+    db_mode_code db_mode_;
+
+#if defined(BITPRIM_DB_NEW_FULL)
+    db_mode_ = db_mode_code::db_new_full;
+#elif defined(BITPRIM_DB_NEW_BLOCKS)
+    db_mode_ = db_mode_code::db_new_with_blocks;
+#else
+    db_mode_ = db_mode_code::db_new;
+#endif
+
+    property_code property_code_ = property_code::db_mode;
+
+    MDB_val key {sizeof(property_code_), &property_code_};
+    MDB_val value {sizeof(db_mode_), &db_mode_};
+
+    res = mdb_put(db_txn, dbi_properties_, &key, &value, MDB_NOOVERWRITE);
+    if (res != MDB_SUCCESS) {  
+        mdb_txn_abort(db_txn);
+        return false;
+    }
+
+    res = mdb_txn_commit(db_txn);
+    if (res != MDB_SUCCESS) {
+        return false;
+    }
+
+    return true;
+}
+
+template <typename Clock>
 bool internal_database_basis<Clock>::open() {
+    
+    auto ret = open_internal();
+    if ( ! ret ) {
+        return false;
+    }
+
+    ret = verify_db_mode_property();
+    if ( ! ret ) {
+        return false;
+    }
+
+    return true;
+}
+
+
+template <typename Clock>
+bool internal_database_basis<Clock>::open_internal() {
+    
     if ( ! create_and_open_environment()) {
+        LOG_ERROR(LOG_DATABASE) << "Error configuring LMDB environment.";
         return false;
     }
 
     return open_databases();
+}
+
+template <typename Clock>
+bool internal_database_basis<Clock>::verify_db_mode_property() {
+
+    MDB_txn* db_txn;
+    auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+    if (res != MDB_SUCCESS) {
+        return false;
+    }
+
+    property_code property_code_ = property_code::db_mode;
+    
+    MDB_val key {sizeof(property_code_), &property_code_};
+    MDB_val value;
+
+    res = mdb_get(db_txn, dbi_properties_, &key, &value);
+    if (res != MDB_SUCCESS) {  
+        mdb_txn_abort(db_txn);
+        return false;
+    }
+
+    auto db_mode_ = *static_cast<db_mode_code*>(value.mv_data);
+
+    res = mdb_txn_commit(db_txn);
+    if (res != MDB_SUCCESS) {
+        return false;
+    }
+
+#if defined(BITPRIM_DB_NEW_FULL)
+    return  db_mode_ == db_mode_code::db_new_full;     
+#elif defined(BITPRIM_DB_NEW_BLOCKS)
+    return  db_mode_ == db_mode_code::db_new_with_blocks;
+#else
+    return  db_mode_ == db_mode_code::db_new;
+#endif
+
 }
 
 template <typename Clock>
@@ -73,6 +177,7 @@ bool internal_database_basis<Clock>::close() {
         mdb_dbi_close(env_, dbi_reorg_pool_);
         mdb_dbi_close(env_, dbi_reorg_index_);
         mdb_dbi_close(env_, dbi_reorg_block_);
+        mdb_dbi_close(env_, dbi_properties_);
 
         #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL) 
         mdb_dbi_close(env_, dbi_block_db_);
@@ -446,6 +551,8 @@ std::pair<result_code, utxo_pool_t> internal_database_basis<Clock>::get_utxo_poo
     return {result_code::success, pool};
 }
 
+#if defined(BITPRIM_DB_NEW_FULL)
+
 template <typename Clock>
 result_code internal_database_basis<Clock>::push_transaction_unconfirmed(chain::transaction const& tx, uint32_t height) {
 
@@ -465,6 +572,7 @@ result_code internal_database_basis<Clock>::push_transaction_unconfirmed(chain::
     }
 }
 
+#endif
 
 // Private functions
 // ------------------------------------------------------------------------------------------------------
@@ -571,12 +679,17 @@ bool internal_database_basis<Clock>::open_databases() {
         return false;
     }
 
-#if defined(BITPRIM_DB_NEW_BLOCKS) 
+    res = mdb_dbi_open(db_txn, db_properties_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_properties_);
+    if (res != MDB_SUCCESS) {
+        return false;
+    }
+
+#if defined(BITPRIM_DB_NEW_BLOCKS)  
     res = mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_db_);
     if (res != MDB_SUCCESS) {
         return false;
     }
-#endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+#endif 
 
 #if defined(BITPRIM_DB_NEW_FULL)
     
@@ -639,6 +752,8 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
             return res;
         }*/
 
+#else 
+    result_code res;
 #endif
 
         res = remove_utxo(height, prevout, insert_reorg, db_txn);

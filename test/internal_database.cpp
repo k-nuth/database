@@ -679,12 +679,13 @@ BOOST_AUTO_TEST_CASE(internal_database__open) {
     BOOST_REQUIRE(db.open());
 }
 
-
+#if defined(BITPRIM_DB_NEW_FULL)
 BOOST_AUTO_TEST_CASE(internal_database__test_get_all_transaction_unconfirmed) {
     internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
     db.open();
     auto ret = db.get_all_transaction_unconfirmed();
 }
+#endif
 
 BOOST_AUTO_TEST_CASE(internal_database__insert_genesis) {
     auto const genesis = get_genesis();
