@@ -516,7 +516,8 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
         return false;
     }
 
-    //TODO (Mario): Review Flags
+    //Bitprim: fastest flags
+    //for more secure flags use: MDB_NORDAHEAD | MDB_NOSYNC  | MDB_NOTLS
     res = mdb_env_open(env_, db_dir_.string().c_str() , MDB_NORDAHEAD | MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC | MDB_NOTLS, env_open_mode_);
     return res == MDB_SUCCESS;
 }
