@@ -22,7 +22,7 @@
 namespace libbitcoin {
 namespace database {
 
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
 
 //public
 template <typename Clock>
@@ -127,7 +127,7 @@ result_code internal_database_basis<Clock>::remove_spend(chain::output_point con
 }
 
 
-#endif // defined(BITPRIM_DB_NEW_FULL)
+#endif // defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
 
 } // namespace database
 } // namespace libbitcoin

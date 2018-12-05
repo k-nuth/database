@@ -42,7 +42,7 @@ data_chunk internal_database_basis<Clock>::serialize_txs(chain::block const& blo
 */
 
 
-#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
 //public
 template <typename Clock>
 std::pair<chain::block, uint32_t> internal_database_basis<Clock>::get_block(hash_digest const& hash) const {
@@ -97,7 +97,7 @@ chain::block internal_database_basis<Clock>::get_block(uint32_t height) const {
 #if defined(BITPRIM_DB_NEW_BLOCKS)
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_block(chain::block const& block, uint32_t height, MDB_txn* db_txn) {
-#elif defined(BITPRIM_DB_NEW_FULL)
+#elif defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_block(chain::block const& block, uint32_t height, uint64_t tx_count, MDB_txn* db_txn) {
 #endif
@@ -127,7 +127,7 @@ MDB_val key {sizeof(height), &height};
         return result_code::other;
     }
 
-#elif defined(BITPRIM_DB_NEW_FULL)
+#elif defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
 
     auto const& txs = block.transactions();
     
@@ -170,7 +170,7 @@ chain::block internal_database_basis<Clock>::get_block(uint32_t height, MDB_txn*
     auto res = chain::block::factory_from_data(data);
     return res;
 
-#elif defined(BITPRIM_DB_NEW_FULL)
+#elif defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
 
     auto header = get_header(height, db_txn);
     if ( ! header.is_valid() )
@@ -248,7 +248,7 @@ result_code internal_database_basis<Clock>::remove_blocks_db(uint32_t height, MD
         return result_code::other;
     }
 
-#elif defined(BITPRIM_DB_NEW_FULL)
+#elif defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
 
     MDB_cursor* cursor;
     if (mdb_cursor_open(db_txn, dbi_block_db_, &cursor) != MDB_SUCCESS) {

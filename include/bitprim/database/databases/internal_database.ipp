@@ -76,10 +76,12 @@ bool internal_database_basis<Clock>::create_db_mode_property() {
 
     db_mode_code db_mode_;
 
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(BITPRIM_DB_NEW_FULL) 
     db_mode_ = db_mode_code::db_new_full;
 #elif defined(BITPRIM_DB_NEW_BLOCKS)
     db_mode_ = db_mode_code::db_new_with_blocks;
+#elif defined(BITPRIM_DB_NEW_FULL_ASYNC)
+    db_mode_ = db_mode_code::db_new_full_async;
 #else
     db_mode_ = db_mode_code::db_new;
 #endif
@@ -162,6 +164,8 @@ bool internal_database_basis<Clock>::verify_db_mode_property() {
     return  db_mode_ == db_mode_code::db_new_full;     
 #elif defined(BITPRIM_DB_NEW_BLOCKS)
     return  db_mode_ == db_mode_code::db_new_with_blocks;
+#elif defined(BITPRIM_DB_NEW_FULL_ASYNC)
+    return  db_mode_ == db_mode_code::db_new_full_async;
 #else
     return  db_mode_ == db_mode_code::db_new;
 #endif
@@ -179,11 +183,11 @@ bool internal_database_basis<Clock>::close() {
         mdb_dbi_close(env_, dbi_reorg_block_);
         mdb_dbi_close(env_, dbi_properties_);
 
-        #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL) 
+        #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
         mdb_dbi_close(env_, dbi_block_db_);
         #endif
         
-        #if defined(BITPRIM_DB_NEW_FULL)
+        #if defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
         mdb_dbi_close(env_, dbi_transaction_db_);
         mdb_dbi_close(env_, dbi_transaction_hash_db_);
         mdb_dbi_close(env_, dbi_history_db_);
@@ -551,7 +555,7 @@ std::pair<result_code, utxo_pool_t> internal_database_basis<Clock>::get_utxo_poo
     return {result_code::success, pool};
 }
 
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::push_transaction_unconfirmed(chain::transaction const& tx, uint32_t height) {
@@ -692,7 +696,7 @@ bool internal_database_basis<Clock>::open_databases() {
     }
 #endif 
 
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
     
     res = mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED  | MDB_INTEGERDUP, &dbi_block_db_);
     if (res != MDB_SUCCESS) {
@@ -740,7 +744,7 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
         chain::input_point const inpoint {tx_id, pos};
         auto const& prevout = input.previous_output();
         
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
         auto res = insert_input_history(inpoint, height, input, db_txn);            
         if (res != result_code::success) {
             return res;
@@ -762,7 +766,7 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
             return res;
         }
 
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
 
         //insert in spend database
         res = insert_spend(prevout, inpoint, db_txn);
@@ -788,7 +792,7 @@ result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx
             return res;
         }
 
-        #if defined(BITPRIM_DB_NEW_FULL)
+        #if defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
         
         res = insert_output_history(tx_id, height, pos, output, db_txn);
         if (res != result_code::success) {
@@ -876,7 +880,7 @@ result_code internal_database_basis<Clock>::push_block(chain::block const& block
         return res;
     }
 
-#elif defined(BITPRIM_DB_NEW_FULL)
+#elif defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
 
     auto tx_count = get_tx_count(db_txn);
     
@@ -936,7 +940,7 @@ result_code internal_database_basis<Clock>::push_genesis(chain::block const& blo
 
 #if defined(BITPRIM_DB_NEW_BLOCKS)
     res = insert_block(block, 0, db_txn);
-#elif defined(BITPRIM_DB_NEW_FULL) 
+#elif defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
     res = insert_block(block, 0, 0, db_txn);
 #endif 
 
@@ -1053,7 +1057,7 @@ result_code internal_database_basis<Clock>::remove_block(chain::block const& blo
         return res;
     }
 
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
     //Transaction Database
     res = remove_transactions(block, height, db_txn);
     if (res != result_code::success) {
@@ -1061,7 +1065,7 @@ result_code internal_database_basis<Clock>::remove_block(chain::block const& blo
     }
 #endif //defined(BITPRIM_DB_NEW_FULL)
 
-#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
     res = remove_blocks_db(height, db_txn);
     if (res != result_code::success) {
         return res;

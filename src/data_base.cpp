@@ -434,7 +434,7 @@ hash_digest get_previous_hash(const block_database& blocks, size_t height) {
 #endif // BITPRIM_DB_LEGACY
 
 
-#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
 static inline 
 uint32_t get_next_height(internal_database const& db) {
     uint32_t current_height;
@@ -491,7 +491,7 @@ code data_base::verify_push(const block& block, size_t height) {
         return error::store_block_missing_parent;
     }
 
-#elif defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+#elif defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
 
     if (get_next_height(internal_db()) != height) {
         return error::store_block_invalid_height;
@@ -606,7 +606,7 @@ code data_base::push(const chain::transaction& tx, uint32_t forks) {
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     ///////////////////////////////////////////////////////////////////////////
 
-#elif defined(BITPRIM_DB_NEW_FULL)
+#elif defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
     //We insert only in transaction unconfirmed here
     internal_db_->push_transaction_unconfirmed(tx, forks);
     return error::success;  //TODO(fernando): store the transactions in a new mempool

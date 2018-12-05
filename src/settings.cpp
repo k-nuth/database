@@ -35,8 +35,8 @@ settings::settings()
     , reorg_pool_limit(100)                                  //TODO(fernando): look for a good default
 #if defined(BITPRIM_DB_NEW_BLOCKS)
     , db_max_size(200 * (uint64_t(1) << 30))  //200 GiB     //TODO(fernando): look for a good default
-#elif defined(BITPRIM_DB_NEW_FULL)
-    , db_max_size(300 * (uint64_t(1) << 30))  //300 GiB     //TODO(fernando): look for a good default
+#elif defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
+    , db_max_size(600 * (uint64_t(1) << 30))  //300 GiB     //TODO(fernando): look for a good default
 #else                                                         
     , db_max_size(100 * (uint64_t(1) << 30))  //100 GiB     //TODO(fernando): look for a good default
 #endif // BITPRIM_DB_NEW_BLOCKS

@@ -23,7 +23,7 @@ namespace libbitcoin {
 namespace database {
 
 
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
 
 
 template <typename Clock>

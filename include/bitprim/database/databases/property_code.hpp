@@ -29,7 +29,8 @@ enum class property_code {
 enum class db_mode_code {
     db_new = 0,
     db_new_with_blocks = 1,
-    db_new_full = 2
+    db_new_full = 2,
+    db_new_full_async = 3
 };
 
 } // namespace database

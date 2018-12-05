@@ -22,7 +22,7 @@
 namespace libbitcoin {
 namespace database {
 
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_history_db(wallet::payment_address const& address, data_chunk const& entry, MDB_txn* db_txn) {
