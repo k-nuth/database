@@ -91,28 +91,10 @@ chain::block internal_database_basis<Clock>::get_block(uint32_t height) const {
     return block;
 }
 
-
-
-
-#if defined(BITPRIM_DB_NEW_BLOCKS)
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_block(chain::block const& block, uint32_t height, MDB_txn* db_txn) {
-#elif defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
-template <typename Clock>
-result_code internal_database_basis<Clock>::insert_block(chain::block const& block, uint32_t height, uint64_t tx_count, MDB_txn* db_txn) {
-#endif
-
-
-/*#if defined(BITPRIM_DB_NEW_BLOCKS)
-    auto data = block.to_data(false);
-#elif defined(BITPRIM_DB_NEW_FULL)
-    auto data = serialize_txs(block);
-#endif
-*/
-MDB_val key {sizeof(height), &height};
-
-#if defined(BITPRIM_DB_NEW_BLOCKS)
-
+result_code internal_database_basis<Clock>::insert_block_serialized(chain::block const& block, uint32_t height, MDB_txn* db_txn) { 
+    MDB_val key {sizeof(height), &height};
     auto data = block.to_data(false);
     MDB_val value {data.size(), data.data()};
 
@@ -126,9 +108,15 @@ MDB_val key {sizeof(height), &height};
         LOG_INFO(LOG_DATABASE) << "Error saving in Block DB [insert_block] " << res;
         return result_code::other;
     }
+    return result_code::success;    
+}
+#endif
 
-#elif defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
+#if defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
+template <typename Clock>
+result_code internal_database_basis<Clock>::insert_block_with_tx_id(chain::block const& block, uint32_t height, uint64_t tx_count, MDB_txn* db_txn) {
 
+    MDB_val key {sizeof(height), &height};
     auto const& txs = block.transactions();
     
     for (uint64_t i = tx_count; i<tx_count + txs.size();i++ ) {
@@ -147,10 +135,10 @@ MDB_val key {sizeof(height), &height};
         }
     }
 
-#endif
-
     return result_code::success;
 }
+
+#endif
 
 
 template <typename Clock>
@@ -170,7 +158,14 @@ chain::block internal_database_basis<Clock>::get_block(uint32_t height, MDB_txn*
     auto res = chain::block::factory_from_data(data);
     return res;
 
+
 #elif defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
+
+#if defined(BITPRIM_DB_NEW_FULL)
+    MDB_dbi dbi_ = dbi_block_db_;
+#else
+    MDB_dbi dbi_ = dbi_blocks_index_db_;
+#endif
 
     auto header = get_header(height, db_txn);
     if ( ! header.is_valid() )
@@ -181,7 +176,7 @@ chain::block internal_database_basis<Clock>::get_block(uint32_t height, MDB_txn*
     chain::transaction::list tx_list;
 
     MDB_cursor* cursor;
-    if (mdb_cursor_open(db_txn, dbi_block_db_, &cursor) != MDB_SUCCESS) {
+    if (mdb_cursor_open(db_txn, dbi_, &cursor) != MDB_SUCCESS) {
         return {};
     }
 
@@ -202,31 +197,6 @@ chain::block internal_database_basis<Clock>::get_block(uint32_t height, MDB_txn*
     
     mdb_cursor_close(cursor);
 
-    /*auto n = value.mv_size;
-    auto f = static_cast<uint8_t*>(value.mv_data); 
-    //precondition: mv_size es multiplo de 32
-    
-    chain::transaction::list tx_list;
-    tx_list.reserve(n / libbitcoin::hash_size);
-    
-    while (n != 0) {
-        hash_digest h;
-        std::copy(f, f + libbitcoin::hash_size, h.data());
-        
-        auto tx_entry = get_transaction(h,max_uint32, db_txn);
-        
-        if ( ! tx_entry.is_valid() ) {
-            return chain::block{};
-        }
-
-        auto const& tx = tx_entry.transaction();
-
-        tx_list.push_back(std::move(tx));
-
-        n -= libbitcoin::hash_size;
-        f += libbitcoin::hash_size;
-    }*/
-    
     return chain::block{header, std::move(tx_list)};
 #endif //defined(BITPRIM_DB_NEW_FULL)
 }
@@ -250,8 +220,14 @@ result_code internal_database_basis<Clock>::remove_blocks_db(uint32_t height, MD
 
 #elif defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
 
+#if defined(BITPRIM_DB_NEW_FULL)
+    MDB_dbi dbi_ = dbi_block_db_;
+#else
+    MDB_dbi dbi_ = dbi_blocks_index_db_;
+#endif
+
     MDB_cursor* cursor;
-    if (mdb_cursor_open(db_txn, dbi_block_db_, &cursor) != MDB_SUCCESS) {
+    if (mdb_cursor_open(db_txn, dbi_, &cursor) != MDB_SUCCESS) {
         return {};
     }
 

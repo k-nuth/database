@@ -22,6 +22,22 @@
 namespace libbitcoin {
 namespace database {
 
+
+template <typename Clock>
+utxo_entry internal_database_basis<Clock>::get_utxo(chain::output_point const& point, MDB_txn* db_txn) const {
+
+    auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);
+    MDB_val key {keyarr.size(), keyarr.data()};
+    MDB_val value;
+
+    auto res0 = mdb_get(db_txn, dbi_utxo_, &key, &value);
+    if (res0 != MDB_SUCCESS) {  
+        return utxo_entry{};
+    }
+
+    return utxo_entry::factory_from_data(db_value_to_data_chunk(value));
+}
+
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_utxo(uint32_t height, chain::output_point const& point, bool insert_reorg, MDB_txn* db_txn) {
     auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);      //TODO(fernando): podría estar afuera de la DBTx

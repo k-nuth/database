@@ -273,6 +273,32 @@ result_code internal_database_basis<Clock>::get_first_reorg_block_height(uint32_
     return result_code::success;
 }    
 
+//TODO(fernando): move to private
+template <typename Clock>
+result_code internal_database_basis<Clock>::insert_reorg_into_pool(utxo_pool_t& pool, MDB_val key_point, MDB_txn* db_txn) const {
+
+    MDB_val value;
+    auto res = mdb_get(db_txn, dbi_reorg_pool_, &key_point, &value);
+    if (res == MDB_NOTFOUND) {
+        LOG_INFO(LOG_DATABASE) << "Key not found in reorg pool [insert_reorg_into_pool] " << res;        
+        return result_code::key_not_found;
+    }
+
+    if (res != MDB_SUCCESS) {
+        LOG_INFO(LOG_DATABASE) << "Error in reorg pool [insert_reorg_into_pool] " << res;        
+        return result_code::other;
+    }
+
+    auto entry_data = db_value_to_data_chunk(value);
+    auto entry = utxo_entry::factory_from_data(entry_data);
+
+    auto point_data = db_value_to_data_chunk(key_point);
+    auto point = chain::output_point::factory_from_data(point_data, BITPRIM_INTERNAL_DB_WIRE);
+    pool.insert({point, std::move(entry)});
+
+    return result_code::success;
+}
+
 
 } // namespace database
 } // namespace libbitcoin

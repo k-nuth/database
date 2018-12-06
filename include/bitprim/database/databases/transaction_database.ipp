@@ -392,12 +392,12 @@ result_code internal_database_basis<Clock>::update_transaction(chain::transactio
 
     auto res = mdb_put(db_txn, dbi_transaction_db_, &key, &value, 0);
     if (res == MDB_KEYEXIST) {
-        LOG_INFO(LOG_DATABASE) << "Duplicate key in Transaction DB [insert_transaction] " << res;
+        LOG_INFO(LOG_DATABASE) << "Duplicate key in Transaction DB [update_transaction] " << res;
         return result_code::duplicated_key;
     }        
 
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error saving in Transaction DB [insert_transaction] " << res;
+        LOG_INFO(LOG_DATABASE) << "Error saving in Transaction DB [update_transaction] " << res;
         return result_code::other;
     }
 

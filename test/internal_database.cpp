@@ -116,6 +116,9 @@ void close_everything(MDB_env* e, MDB_dbi& db0, MDB_dbi& db1, MDB_dbi& db2, MDB_
 , MDB_dbi& db11
 #endif
 
+#ifdef BITPRIM_DB_NEW_FULL_ASYNC
+#endif
+
 ) {
     mdb_dbi_close(e, db0);
     mdb_dbi_close(e, db1);
@@ -243,8 +246,6 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi
         return {env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_};
     #endif
 }
-
-
 
 void print_db_entries_count(MDB_env* env_, MDB_dbi& dbi ) {
     MDB_txn *txn;    

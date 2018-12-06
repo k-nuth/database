@@ -23,7 +23,9 @@ namespace libbitcoin {
 namespace database {
 
 enum class property_code {
-    db_mode = 0,
+    db_mode = 0, //enum
+    last_indexed_height = 1, //uint32_t
+    indexing_completed = 3 // bool
 };
 
 enum class db_mode_code {

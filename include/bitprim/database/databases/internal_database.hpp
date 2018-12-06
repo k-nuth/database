@@ -90,7 +90,7 @@ public:
 
 
 #if defined(BITPRIM_DB_NEW_FULL_ASYNC)
-
+    constexpr static char block_index_db_name[] = "blocks_index";
 #endif
 
     internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size);
@@ -239,8 +239,8 @@ private:
     result_code get_first_reorg_block_height(uint32_t& out_height) const;
 
 
-#if defined(BITPRIM_DB_NEW_BLOCKS)
-    result_code insert_block(chain::block const& block, uint32_t height, MDB_txn* db_txn);
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
+    result_code insert_block_serialized(chain::block const& block, uint32_t height, MDB_txn* db_txn);
 #endif //defined(BITPRIM_DB_NEW_BLOCKS)
 
 
@@ -250,10 +250,9 @@ private:
     chain::block get_block(uint32_t height, MDB_txn* db_txn) const;
 #endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
 
+
 #if defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
     
-    result_code insert_block(chain::block const& block, uint32_t height, uint64_t tx_count, MDB_txn* db_txn);
-
     result_code remove_transactions(chain::block const& block, uint32_t height, MDB_txn* db_txn);
     
     result_code insert_transaction(uint64_t id, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position , MDB_txn* db_txn);
@@ -302,24 +301,26 @@ private:
     uint64_t get_tx_count(MDB_txn* db_txn);
 
     uint64_t get_history_count(MDB_txn* db_txn);
+
+    result_code insert_block_with_tx_id(chain::block const& block, uint32_t height, uint64_t tx_count, MDB_txn* db_txn);
     
 #endif //defined(BITPRIM_DB_NEW_FULL)
 
 #if defined(BITPRIM_DB_NEW_FULL_ASYNC)
 
-    result_code set_end_indexing();
+    result_code set_indexing_completed(MDB_txn* db_txn);
 
-    result_code update_last_height_indexed(uint32_t height);
+    result_code update_last_height_indexed(uint32_t height, MDB_txn* db_txn);
 
-    result_code index_block_height(uint32_t height);
+    result_code push_block_height(uint32_t height, MDB_txn* db_txn);
 
-    result_code insert_block_index(chain::block block);
+    result_code insert_block_index_db(chain::block block, MDB_txn* db_txn);
 
-    result_code insert_index_transaction(chain::transaction tx);
+    result_code push_transaction_index(chain::transaction tx, uint32_t height, uint32_t tx_pos, MDB_txn* db_txn);
 
-    uint32_t get_last_indexed_height();
+    uint32_t get_last_indexed_height(MDB_txn* db_txn);
 
-    bool is_indexing_end();
+    bool is_indexing_completed(MDB_txn* db_txn);
 
 #endif
 
@@ -352,6 +353,13 @@ private:
     MDB_dbi dbi_spend_db_;
     MDB_dbi dbi_transaction_unconfirmed_db_;
 #endif
+
+
+#if defined(BITPRIM_DB_NEW_FULL_ASYNC)
+    MDB_dbi dbi_blocks_index_db_;
+#endif
+
+
 };
 
 template <typename Clock>
@@ -399,6 +407,12 @@ constexpr char internal_database_basis<Clock>::transaction_unconfirmed_db_name[]
 
 
 #endif
+
+#if defined(BITPRIM_DB_NEW_FULL_ASYNC)
+template <typename Clock>
+constexpr char internal_database_basis<Clock>::block_index_db_name[]; 
+#endif
+
 
 using internal_database = internal_database_basis<std::chrono::system_clock>;
 
