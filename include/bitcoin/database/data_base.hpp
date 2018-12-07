@@ -94,6 +94,11 @@ public:
     bool close();
 #endif// BITPRIM_DB_LEGACY
 
+
+#if defined(BITPRIM_DB_NEW_FULL_ASYNC)
+    bool generate_indexes();
+#endif
+
     /// Call close on destruct.
     ~data_base();
 

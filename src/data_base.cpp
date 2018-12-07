@@ -248,6 +248,17 @@ bool data_base::close() {
             ;
 }
 
+#if defined(BITPRIM_DB_NEW_FULL_ASYNC)
+bool data_base::generate_indexes() {
+
+    auto res = internal_db_->start_indexing();
+    if (res != result_code::success) {
+        return false;
+    }
+    return true;
+}
+#endif
+
 // protected
 void data_base::start() {
     // TODO: parameterize initial file sizes as record count or slab bytes?
