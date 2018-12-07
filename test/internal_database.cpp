@@ -4674,7 +4674,21 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool_3) {
 }
 
 
+#if defined(BITPRIM_DB_NEW_FULL_ASYNC)
+BOOST_AUTO_TEST_CASE(internal_database__test_indexing_1) {
+    internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
+    db.open();
+    
+    auto const genesis = get_genesis();
+    BOOST_REQUIRE(db.push_genesis(genesis) == result_code::success);
+    
+    // Block 1 - 00000000839a8e6886ab5951d76f411475428afc90947ee320161bbf18eb6048
+    auto const b1 = get_block("010000006fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000982051fd1e4ba744bbbe680e1fee14677ba1a3c3540bf7b1cdb606e857233e0e61bc6649ffff001d01e362990101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704ffff001d0104ffffffff0100f2052a0100000043410496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52da7589379515d4e0a604f8141781e62294721166bf621e73a82cbf2342c858eeac00000000");
+    BOOST_REQUIRE(db.push_block(b1,1,1) == result_code::success);
 
+    BOOST_REQUIRE(db.start_indexing() == result_code::success);
+}
+#endif
 
 
 /*

@@ -147,6 +147,27 @@ result_code internal_database_basis<Clock>::insert_block_with_tx_id(chain::block
 #endif
 
 
+#if defined(BITPRIM_DB_NEW_FULL_ASYNC)
+
+template <typename Clock>
+chain::block internal_database_basis<Clock>::get_serialized_block(uint32_t height, MDB_txn* db_txn) const {
+
+    MDB_val key {sizeof(height), &height};
+    MDB_val value;
+
+    if (mdb_get(db_txn, dbi_block_db_, &key, &value) != MDB_SUCCESS) {
+        return chain::block{};
+    }
+
+    auto data = db_value_to_data_chunk(value);
+    auto res = chain::block::factory_from_data(data);
+    return res;
+
+}
+
+#endif
+
+
 template <typename Clock>
 chain::block internal_database_basis<Clock>::get_block(uint32_t height, MDB_txn* db_txn) const {
 
@@ -206,6 +227,27 @@ chain::block internal_database_basis<Clock>::get_block(uint32_t height, MDB_txn*
     return chain::block{header, std::move(tx_list)};
 #endif //defined(BITPRIM_DB_NEW_FULL)
 }
+
+
+#if defined(BITPRIM_DB_NEW_FULL_ASYNC)
+
+template <typename Clock>
+result_code internal_database_basis<Clock>::remove_serialized_blocks_db(uint32_t height, MDB_txn* db_txn) {
+
+    MDB_val key {sizeof(height), &height};
+    auto res = mdb_del(db_txn, dbi_block_db_, &key, NULL);
+    if (res == MDB_NOTFOUND) {
+        LOG_INFO(LOG_DATABASE) << "Key not found deleting blocks DB in LMDB [remove_blocks_db] - mdb_del: " << res;
+        return result_code::key_not_found;
+    }
+    if (res != MDB_SUCCESS) {
+        LOG_INFO(LOG_DATABASE) << "Error deleting blocks DB in LMDB [remove_blocks_db] - mdb_del: " << res;
+        return result_code::other;
+    }
+    return result_code::success;
+}
+
+#endif
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_blocks_db(uint32_t height, MDB_txn* db_txn) {

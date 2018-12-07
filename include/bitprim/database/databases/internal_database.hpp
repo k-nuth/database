@@ -337,6 +337,10 @@ private:
     
     template <typename I>
     result_code remove_transactions_inputs_non_coinbase_full(uint32_t height, I f, I l, bool insert_reorg, MDB_txn* db_txn);
+
+    chain::block get_serialized_block(uint32_t height, MDB_txn* db_txn) const;
+
+    result_code remove_serialized_blocks_db(uint32_t height, MDB_txn* db_txn);
 #endif
 
 // Data members ----------------------------

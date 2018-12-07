@@ -88,7 +88,7 @@ result_code internal_database_basis<Clock>::start_indexing() {
         }
 
         //delete raw block
-        res1 = remove_blocks_db(last_height, db_txn);
+        res1 = remove_serialized_blocks_db(last_height, db_txn);
         if (res1 != result_code::success) {
             mdb_txn_abort(db_txn);
             LOG_DEBUG(LOG_DATABASE) << "Error removing block " << static_cast<uint32_t>(res1);
@@ -119,7 +119,7 @@ result_code internal_database_basis<Clock>::start_indexing() {
 template <typename Clock>
 result_code internal_database_basis<Clock>::push_block_height(uint32_t height, MDB_txn* db_txn) {
     //get block by height
-    auto const block = get_block(height, db_txn);
+    auto const block = get_serialized_block(height, db_txn);
     auto const& txs = block.transactions();
     auto tx_count = get_tx_count(db_txn);
     //insert block_index
