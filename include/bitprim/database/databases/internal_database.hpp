@@ -52,7 +52,7 @@ constexpr size_t max_dbs_ = 8;
 #elif defined(BITPRIM_DB_NEW_FULL)
 constexpr size_t max_dbs_ = 13;
 #elif defined(BITPRIM_DB_NEW_FULL_ASYNC)
-constexpr size_t max_dbs_ = 13;
+constexpr size_t max_dbs_ = 14;
 #else
 constexpr size_t max_dbs_ = 7;
 #endif
@@ -150,6 +150,7 @@ public:
 
 #if defined(BITPRIM_DB_NEW_FULL_ASYNC)
     result_code start_indexing();
+    result_code set_indexing_completed();
 #endif
 
 private:
@@ -314,14 +315,28 @@ private:
 
     result_code push_block_height(uint32_t height, MDB_txn* db_txn);
 
-    result_code insert_block_index_db(chain::block block, MDB_txn* db_txn);
+    result_code insert_block_index_db(chain::block block, uint32_t height, uint64_t tx_count, MDB_txn* db_txn);
 
     result_code push_transaction_index(chain::transaction tx, uint32_t height, uint32_t tx_pos, MDB_txn* db_txn);
 
-    uint32_t get_last_indexed_height(MDB_txn* db_txn);
+    bool get_last_indexed_height(uint32_t& out_height, MDB_txn* db_txn);
 
     bool is_indexing_completed(MDB_txn* db_txn);
 
+    result_code insert_outputs_full(hash_digest const& tx_id, uint32_t height, chain::output::list const& outputs, data_chunk const& fixed_data, MDB_txn* db_txn);
+
+    result_code insert_outputs_error_treatment_full(uint32_t height, data_chunk const& fixed_data, hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn);
+
+    template <typename I>
+    result_code push_transactions_outputs_non_coinbase_full(uint32_t height, data_chunk const& fixed_data, I f, I l, MDB_txn* db_txn);
+
+    template <typename I>
+    result_code push_transactions_non_coinbase_full(uint32_t height, data_chunk const& fixed_data, I f, I l, bool insert_reorg, MDB_txn* db_txn);
+
+    result_code remove_inputs_full(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn);
+    
+    template <typename I>
+    result_code remove_transactions_inputs_non_coinbase_full(uint32_t height, I f, I l, bool insert_reorg, MDB_txn* db_txn);
 #endif
 
 // Data members ----------------------------

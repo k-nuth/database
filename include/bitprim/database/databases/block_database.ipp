@@ -100,12 +100,12 @@ result_code internal_database_basis<Clock>::insert_block_serialized(chain::block
 
     auto res = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_APPEND);
     if (res == MDB_KEYEXIST) {
-        LOG_INFO(LOG_DATABASE) << "Duplicate key in Block DB [insert_block] " << res;
+        LOG_INFO(LOG_DATABASE) << "Duplicate key in Block DB [insert_block_serialized] " << res;
         return result_code::duplicated_key;
     }
 
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error saving in Block DB [insert_block] " << res;
+        LOG_INFO(LOG_DATABASE) << "Error saving in Block DB [insert_block_serialized] " << res;
         return result_code::other;
     }
     return result_code::success;    
@@ -116,21 +116,27 @@ result_code internal_database_basis<Clock>::insert_block_serialized(chain::block
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_block_with_tx_id(chain::block const& block, uint32_t height, uint64_t tx_count, MDB_txn* db_txn) {
 
+#if defined(BITPRIM_DB_NEW_FULL)
+    MDB_dbi dbi_ = dbi_block_db_;
+#else
+    MDB_dbi dbi_ = dbi_blocks_index_db_;
+#endif
+  
     MDB_val key {sizeof(height), &height};
     auto const& txs = block.transactions();
     
-    for (uint64_t i = tx_count; i<tx_count + txs.size();i++ ) {
+    for (uint64_t i = tx_count; i < tx_count + txs.size(); i++ ) {
 
         MDB_val value {sizeof(i), &i};
 
-        auto res = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_APPENDDUP);
+        auto res = mdb_put(db_txn, dbi_, &key, &value, MDB_APPENDDUP);
         if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicate key in Block DB [insert_block] " << res;
+            LOG_INFO(LOG_DATABASE) << "Duplicate key in Block DB [insert_block_with_tx_id] " << res;
             return result_code::duplicated_key;
         }
 
         if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error saving in Block DB [insert_block] " << res;
+            LOG_INFO(LOG_DATABASE) << "Error saving in Block DB [insert_block_with_tx_id] " << res;
             return result_code::other;
         }
     }

@@ -41,19 +41,15 @@ result_code internal_database_basis<Clock>::start_indexing() {
         return result_code::other;
     }
 
-    //get last height indexed
-    auto last_indexed = get_last_indexed_height(db_txn);
-    if (last_indexed == max_uint32t) {
-        mdb_txn_abort(db_txn);
-        LOG_DEBUG(LOG_DATABASE) << "Error getting last indexed height";
-        return result_code::other;
-    }
-    
-    LOG_DEBUG(LOG_DATABASE) << "Last indexed height is " << last_indexed;
-
     //get block from height
     uint32_t last_height;
-    if (get_last_height(last_height) != result_code::success)
+    auto res1 = get_last_height(last_height);
+    if (res1 == result_code::db_empty) {
+        mdb_txn_abort(db_txn);
+        LOG_DEBUG(LOG_DATABASE) << "The database is empty";
+        return res1;
+    }
+    else if (res1 != result_code::success)
     {
         mdb_txn_abort(db_txn);
         LOG_DEBUG(LOG_DATABASE) << "Error getting last height";
@@ -62,14 +58,24 @@ result_code internal_database_basis<Clock>::start_indexing() {
 
     LOG_DEBUG(LOG_DATABASE) << "Last height is " << last_height;
 
+    //get last height indexed
+    uint32_t last_indexed; 
+    if ( ! get_last_indexed_height(last_indexed, db_txn)) {
+        mdb_txn_abort(db_txn);
+        LOG_DEBUG(LOG_DATABASE) << "Error getting last indexed height";
+        return result_code::other;
+    }
+    
+    LOG_DEBUG(LOG_DATABASE) << "Last indexed height is " << last_indexed;
+
     while (last_indexed < last_height) {
         ++last_indexed;
 
         //process block
-        auto res1 = push_block_height(last_indexed, db_txn);
+        res1 = push_block_height(last_indexed, db_txn);
         if (res1 != result_code::success) {
             mdb_txn_abort(db_txn);
-            LOG_DEBUG(LOG_DATABASE) << "Error indexing block " << res1;
+            LOG_DEBUG(LOG_DATABASE) << "Error indexing block " << static_cast<uint32_t>(res1);
             return res1;
         }
 
@@ -77,7 +83,7 @@ result_code internal_database_basis<Clock>::start_indexing() {
         res1 = update_last_height_indexed(last_height, db_txn);
         if (res1 != result_code::success) {
             mdb_txn_abort(db_txn);
-            LOG_DEBUG(LOG_DATABASE) << "Error updating last indexed height " << res1;
+            LOG_DEBUG(LOG_DATABASE) << "Error updating last indexed height " << static_cast<uint32_t>(res1);
             return res1;
         }
 
@@ -85,7 +91,7 @@ result_code internal_database_basis<Clock>::start_indexing() {
         res1 = remove_blocks_db(last_height, db_txn);
         if (res1 != result_code::success) {
             mdb_txn_abort(db_txn);
-            LOG_DEBUG(LOG_DATABASE) << "Error removing block " << res1;
+            LOG_DEBUG(LOG_DATABASE) << "Error removing block " << static_cast<uint32_t>(res1);
             return res1;
         }
 
@@ -93,11 +99,11 @@ result_code internal_database_basis<Clock>::start_indexing() {
     }
 
     //mark end of indexing
-    res1 = set_indexing_completed(db_txn);
-    if (res1 != result_code::success) {
+    auto res2 = set_indexing_completed(db_txn);
+    if (res2 != result_code::success) {
         mdb_txn_abort(db_txn);
-        LOG_DEBUG(LOG_DATABASE) << "Error setting indexing complete flag " << res1;
-        return res1;
+        LOG_DEBUG(LOG_DATABASE) << "Error setting indexing complete flag " << static_cast<uint32_t>(res2);
+        return res2;
     }
 
     res = mdb_txn_commit(db_txn);
@@ -106,6 +112,8 @@ result_code internal_database_basis<Clock>::start_indexing() {
     }
 
     LOG_DEBUG(LOG_DATABASE) << "Finished indexing at height " << last_height;
+
+    return result_code::success;
 }
 
 template <typename Clock>
@@ -113,9 +121,9 @@ result_code internal_database_basis<Clock>::push_block_height(uint32_t height, M
     //get block by height
     auto const block = get_block(height, db_txn);
     auto const& txs = block.transactions();
-
+    auto tx_count = get_tx_count(db_txn);
     //insert block_index
-    auto res = insert_block_index_db(block, db_txn);
+    auto res = insert_block_index_db(block, height, tx_count, db_txn);
     if (res != result_code::success) {
         return res;
     }
@@ -125,7 +133,7 @@ result_code internal_database_basis<Clock>::push_block_height(uint32_t height, M
     for (auto const& tx : txs) {
 
         //insert transaction        
-        res = push_transaction(tx, pos ,db_txn);
+        res = push_transaction_index(tx, height, pos, db_txn);
         if (res != result_code::success) {
             return res;
         }
@@ -139,7 +147,7 @@ result_code internal_database_basis<Clock>::push_block_height(uint32_t height, M
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_block_index_db(chain::block block, MDB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_block_index_db(chain::block block, uint32_t height, uint64_t tx_count, MDB_txn* db_txn) {
 
     MDB_val key {sizeof(height), &height};
     auto const& txs = block.transactions();
@@ -221,6 +229,30 @@ bool internal_database_basis<Clock>::is_indexing_completed(MDB_txn* db_txn) {
     return *static_cast<bool*>(value.mv_data);
 }
 
+
+template <typename Clock>
+result_code internal_database_basis<Clock>::set_indexing_completed() {
+    
+    MDB_txn* db_txn;
+
+    auto res = mdb_txn_begin(env_, NULL, 0, &db_txn);
+    if (res != MDB_SUCCESS) {
+        return result_code::other;
+    }
+
+    auto ret = set_indexing_completed(db_txn);
+    if (ret != result_code::success) {
+        mdb_txn_abort(db_txn);
+        return result_code::other;
+    }
+
+    res = mdb_txn_commit(db_txn);
+    if (res != MDB_SUCCESS) {
+        return result_code::other;
+    }
+    return result_code::success;
+}
+
 template <typename Clock>
 result_code internal_database_basis<Clock>::set_indexing_completed(MDB_txn* db_txn) {
     
@@ -256,7 +288,7 @@ result_code internal_database_basis<Clock>::update_last_height_indexed(uint32_t 
 
 
 template <typename Clock>
-uint32_t internal_database_basis<Clock>::get_last_indexed_height(MDB_txn* db_txn) {
+bool internal_database_basis<Clock>::get_last_indexed_height(uint32_t& out_height, MDB_txn* db_txn) {
     
     property_code property_code_ = property_code::last_indexed_height;
     
@@ -266,14 +298,17 @@ uint32_t internal_database_basis<Clock>::get_last_indexed_height(MDB_txn* db_txn
     auto res = mdb_get(db_txn, dbi_properties_, &key, &value);
     
     if (res == MDB_NOTFOUND) {
-        return -1;
+        out_height = max_uint32;
+        return true;
     }
     
     if (res != MDB_SUCCESS) {  
-        return max_uint32t;
+        return false;
     }
 
-    return *static_cast<uint32_t*>(value.mv_data);
+    out_height = *static_cast<uint32_t*>(value.mv_data);
+
+    return true;
 } 
 
 #endif

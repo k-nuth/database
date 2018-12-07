@@ -701,7 +701,7 @@ bool internal_database_basis<Clock>::open_databases() {
 
 #if defined(BITPRIM_DB_NEW_FULL_ASYNC)
 
-    res = mdb_dbi_open(db_txn, block_index_db_name, MDB_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED  | MDB_INTEGERDUP, &dbi_block_db_);
+    res = mdb_dbi_open(db_txn, block_index_db_name, MDB_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED  | MDB_INTEGERDUP, &dbi_blocks_index_db_);
     if (res != MDB_SUCCESS) {
         return false;
     }
@@ -711,6 +711,49 @@ bool internal_database_basis<Clock>::open_databases() {
     db_opened_ = mdb_txn_commit(db_txn) == MDB_SUCCESS;
     return db_opened_;
 }
+
+#if defined(BITPRIM_DB_NEW_FULL_ASYNC)
+
+template <typename Clock>
+result_code internal_database_basis<Clock>::remove_inputs_full(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
+    uint32_t pos = 0;
+    for (auto const& input: inputs) {
+        
+        chain::input_point const inpoint {tx_id, pos};
+        auto const& prevout = input.previous_output();
+        
+        auto res = insert_input_history(inpoint, height, input, db_txn);            
+        if (res != result_code::success) {
+            return res;
+        }
+
+        //set spender height in tx database
+        //Bitprim: Commented because we don't validate transaction duplicates (BIP-30)
+        /*res = set_spend(prevout, height, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }*/
+
+        res = remove_utxo(height, prevout, insert_reorg, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
+
+        //insert in spend database
+        res = insert_spend(prevout, inpoint, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
+
+        ++pos;
+    }
+    return result_code::success;
+}
+
+
+#endif
+
+
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
@@ -757,6 +800,28 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
     return result_code::success;
 }
 
+#if defined(BITPRIM_DB_NEW_FULL_ASYNC)
+template <typename Clock>
+result_code internal_database_basis<Clock>::insert_outputs_full(hash_digest const& tx_id, uint32_t height, chain::output::list const& outputs, data_chunk const& fixed_data, MDB_txn* db_txn) {
+    uint32_t pos = 0;
+    for (auto const& output: outputs) {
+        
+        auto res = insert_utxo(chain::point{tx_id, pos}, output, fixed_data, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
+        
+        res = insert_output_history(tx_id, height, pos, output, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
+
+        ++pos;
+    }
+    return result_code::success;
+}
+#endif
+
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx_id, uint32_t height, chain::output::list const& outputs, data_chunk const& fixed_data, MDB_txn* db_txn) {
@@ -775,16 +840,26 @@ result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx
             return res;
         }
 
-#elif defined(BITPRIM_DB_NEW_FULL_ASYNC)
-
-
-
 #endif
 
         ++pos;
     }
     return result_code::success;
 }
+
+#if defined(BITPRIM_DB_NEW_FULL_ASYNC)
+template <typename Clock>
+result_code internal_database_basis<Clock>::insert_outputs_error_treatment_full(uint32_t height, data_chunk const& fixed_data, hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn) {
+    auto res = insert_outputs_full(txid,height, outputs, fixed_data, db_txn);
+    
+    if (res == result_code::duplicated_key) {
+        // std::cout << "bbbhhhhhhhhhhh" << static_cast<uint32_t>(res) << "\n";
+        //TODO(fernando): log and continue
+        return result_code::success_duplicate_coinbase;
+    }
+    return res;
+}
+#endif
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_outputs_error_treatment(uint32_t height, data_chunk const& fixed_data, hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn) {
@@ -798,6 +873,24 @@ result_code internal_database_basis<Clock>::insert_outputs_error_treatment(uint3
     return res;
 }
 
+
+#if defined(BITPRIM_DB_NEW_FULL_ASYNC)
+template <typename Clock>
+template <typename I>
+result_code internal_database_basis<Clock>::push_transactions_outputs_non_coinbase_full(uint32_t height, data_chunk const& fixed_data, I f, I l, MDB_txn* db_txn) {
+    // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
+
+    while (f != l) {
+        auto const& tx = *f;
+        auto res = insert_outputs_error_treatment_full(height, fixed_data, tx.hash(), tx.outputs(), db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
+        ++f;
+    }
+    return result_code::success;
+}
+#endif
 
 template <typename Clock>
 template <typename I>
@@ -815,6 +908,25 @@ result_code internal_database_basis<Clock>::push_transactions_outputs_non_coinba
     return result_code::success;
 }
 
+#if defined(BITPRIM_DB_NEW_FULL_ASYNC)
+
+template <typename Clock>
+template <typename I>
+result_code internal_database_basis<Clock>::remove_transactions_inputs_non_coinbase_full(uint32_t height, I f, I l, bool insert_reorg, MDB_txn* db_txn) {
+    while (f != l) {
+        auto const& tx = *f;
+        auto res = remove_inputs_full(tx.hash(), height, tx.inputs(), insert_reorg, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
+        ++f;
+    }
+    return result_code::success;
+}
+
+#endif
+
+
 template <typename Clock>
 template <typename I>
 result_code internal_database_basis<Clock>::remove_transactions_inputs_non_coinbase(uint32_t height, I f, I l, bool insert_reorg, MDB_txn* db_txn) {
@@ -828,6 +940,24 @@ result_code internal_database_basis<Clock>::remove_transactions_inputs_non_coinb
     }
     return result_code::success;
 }
+
+#if defined(BITPRIM_DB_NEW_FULL_ASYNC)
+
+template <typename Clock>
+template <typename I>
+result_code internal_database_basis<Clock>::push_transactions_non_coinbase_full(uint32_t height, data_chunk const& fixed_data, I f, I l, bool insert_reorg, MDB_txn* db_txn) {
+    // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
+
+    auto res = push_transactions_outputs_non_coinbase_full(height, fixed_data, f, l, db_txn);
+    if (res != result_code::success) {
+        return res;
+    }
+
+    return remove_transactions_inputs_non_coinbase_full(height, f, l, insert_reorg, db_txn);
+}
+
+
+#endif
 
 template <typename Clock>
 template <typename I>
@@ -878,9 +1008,9 @@ result_code internal_database_basis<Clock>::push_block(chain::block const& block
 
 #elif defined(BITPRIM_DB_NEW_FULL_ASYNC) 
 
-    bool indexing_complete = is_indexing_completed(db_txn);
+    bool indexing_completed = is_indexing_completed(db_txn);
 
-    if (indexing_complete) {
+    if (indexing_completed) {
 
         auto tx_count = get_tx_count(db_txn);
         res = insert_block_with_tx_id(block, height, tx_count, db_txn);        
@@ -918,7 +1048,48 @@ result_code internal_database_basis<Clock>::push_block(chain::block const& block
     auto const& coinbase = txs.front();
 
     auto fixed = utxo_entry::to_data_fixed(height, median_time_past, true);                                     //TODO(fernando): podría estar afuera de la DBTx
+    
+
+#if defined(BITPRIM_DB_NEW_FULL_ASYNC)
+    result_code res0;
+
+    if (indexing_completed) {
+        res0 = insert_outputs_error_treatment_full(height, fixed, coinbase.hash(), coinbase.outputs(), db_txn);     //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
+
+        if ( ! succeed(res0)) {
+            // std::cout << "aaaaaaaaaaaaaaa" << static_cast<uint32_t>(res0) << "\n";
+            return res0;
+        }
+
+        fixed.back() = 0;   //The last byte equal to 0 means NonCoinbaseTx    
+        res = push_transactions_non_coinbase_full(height, fixed, txs.begin() + 1, txs.end(), insert_reorg, db_txn);
+        if (res != result_code::success) {
+            // std::cout << "bbb" << static_cast<uint32_t>(res) << "\n";
+            return res;
+        }
+    }
+    else {
+
+        res0 = insert_outputs_error_treatment(height, fixed, coinbase.hash(), coinbase.outputs(), db_txn);     //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
+
+        if ( ! succeed(res0)) {
+            // std::cout << "aaaaaaaaaaaaaaa" << static_cast<uint32_t>(res0) << "\n";
+            return res0;
+        }
+
+        fixed.back() = 0;   //The last byte equal to 0 means NonCoinbaseTx    
+        res = push_transactions_non_coinbase(height, fixed, txs.begin() + 1, txs.end(), insert_reorg, db_txn);
+        if (res != result_code::success) {
+            // std::cout << "bbb" << static_cast<uint32_t>(res) << "\n";
+            return res;
+        }
+
+        // std::cout << "ddd" << static_cast<uint32_t>(res0) << "\n";
+    }
+    
+#else
     auto res0 = insert_outputs_error_treatment(height, fixed, coinbase.hash(), coinbase.outputs(), db_txn);     //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
+
     if ( ! succeed(res0)) {
         // std::cout << "aaaaaaaaaaaaaaa" << static_cast<uint32_t>(res0) << "\n";
         return res0;
@@ -932,6 +1103,8 @@ result_code internal_database_basis<Clock>::push_block(chain::block const& block
     }
 
     // std::cout << "ddd" << static_cast<uint32_t>(res0) << "\n";
+    
+#endif
     
     if (res == result_code::success_duplicate_coinbase)
         return res;
@@ -951,7 +1124,7 @@ result_code internal_database_basis<Clock>::push_genesis(chain::block const& blo
     if (res != result_code::success) {
         return res;
     }
-#elif defined(BITPRIM_DB_NEW_FULL)
+#elif defined(BITPRIM_DB_NEW_FULL) || defined(BITPRIM_DB_NEW_FULL_ASYNC)
     auto tx_count = get_tx_count(db_txn);
     res = insert_block_with_tx_id(block, 0, tx_count, db_txn);
     if (res != result_code::success) {
@@ -972,38 +1145,17 @@ result_code internal_database_basis<Clock>::push_genesis(chain::block const& blo
     if (res != result_code::success) {
         return res;
     }
-#elif defined(BITPRIM_DB_NEW_FULL_ASYNC)
-    
-    if (is_indexing_completed(db_txn)) {
-        auto tx_count = get_tx_count(db_txn);
-        res = insert_block_with_tx_id(block, 0, tx_count, db_txn);
-        if (res != result_code::success) {
-            return res;
-        }
-        auto const& txs = block.transactions();
-        auto const& coinbase = txs.front();
-        auto const& hash = coinbase.hash();
-        auto const median_time_past = block.header().validation.median_time_past;
-        
-        res = insert_transaction(tx_count, coinbase, 0, median_time_past, 0, db_txn);
-        if (res != result_code::success && res != result_code::duplicated_key) {
-            return res;
-        }
-            
-        res = insert_output_history(hash, 0, 0, coinbase.outputs()[0], db_txn);
-        if (res != result_code::success) {
-            return res;
-        }
-    }
-    else {
-        res = insert_block_serialized(block, 0, db_txn);
-        if (res != result_code::success) {
-            return res;
-        }
+
+#if defined(BITPRIM_DB_NEW_FULL_ASYNC)
+
+    res = update_last_height_indexed(0, db_txn);
+    if (res != result_code::success) {
+        return res;
     }
 
-#endif 
+#endif
 
+#endif
     return res;
 }
 
