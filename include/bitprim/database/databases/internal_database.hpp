@@ -266,7 +266,7 @@ private:
     transaction_entry get_transaction(hash_digest const& hash, size_t fork_height, MDB_txn* db_txn) const;
     transaction_entry get_transaction(uint64_t id, MDB_txn* db_txn) const;
     
-    result_code insert_input_history(chain::input_point const& inpoint, uint32_t height, chain::input const& input, MDB_txn* db_txn);
+    result_code insert_input_history_utxo(chain::input_point const& inpoint, uint32_t height, chain::input const& input, MDB_txn* db_txn);
 
     result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, MDB_txn* db_txn);
     
@@ -341,6 +341,8 @@ private:
     chain::block get_serialized_block(uint32_t height, MDB_txn* db_txn) const;
 
     result_code remove_serialized_blocks_db(uint32_t height, MDB_txn* db_txn);
+
+    result_code insert_input_history_transaction(chain::input_point const& inpoint, uint32_t height, chain::input const& input, MDB_txn* db_txn);
 #endif
 
 // Data members ----------------------------

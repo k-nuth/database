@@ -722,7 +722,7 @@ result_code internal_database_basis<Clock>::remove_inputs_full(hash_digest const
         chain::input_point const inpoint {tx_id, pos};
         auto const& prevout = input.previous_output();
         
-        auto res = insert_input_history(inpoint, height, input, db_txn);            
+        auto res = insert_input_history_utxo(inpoint, height, input, db_txn);            
         if (res != result_code::success) {
             return res;
         }
@@ -764,7 +764,7 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
         auto const& prevout = input.previous_output();
         
 #if defined(BITPRIM_DB_NEW_FULL)
-        auto res = insert_input_history(inpoint, height, input, db_txn);            
+        auto res = insert_input_history_utxo(inpoint, height, input, db_txn);            
         if (res != result_code::success) {
             return res;
         }

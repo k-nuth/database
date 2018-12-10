@@ -190,7 +190,7 @@ result_code internal_database_basis<Clock>::push_transaction_index(chain::transa
         chain::input_point const inpoint {tx_id, pos};
         auto const& prevout = input.previous_output();
 
-        auto res = insert_input_history(inpoint, height, input, db_txn);            
+        auto res = insert_input_history_transaction(inpoint, height, input, db_txn);            
         if (res != result_code::success) {
             return res;
         }
