@@ -251,10 +251,21 @@ bool data_base::close() {
 #if defined(BITPRIM_DB_NEW_FULL_ASYNC)
 bool data_base::generate_indexes() {
 
+    if (!open()) {
+        //Log Error
+        return false;
+    }
+
     auto res = internal_db_->start_indexing();
     if (res != result_code::success) {
         return false;
     }
+
+    if (!close()) {
+        //Log error
+        return false;
+    }
+
     return true;
 }
 #endif
