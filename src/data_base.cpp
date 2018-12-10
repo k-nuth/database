@@ -610,7 +610,11 @@ code data_base::push(const chain::transaction& tx, uint32_t forks) {
     //We insert only in transaction unconfirmed here
     internal_db_->push_transaction_unconfirmed(tx, forks);
     return error::success;  //TODO(fernando): store the transactions in a new mempool
+
+#else 
+    return error::success;
 #endif // BITPRIM_DB_LEGACY
+
 }
 
 

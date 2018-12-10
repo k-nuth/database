@@ -156,7 +156,7 @@ chain::block internal_database_basis<Clock>::get_block_reorg(uint32_t height, MD
     MDB_val value;
 
     if (mdb_get(db_txn, dbi_reorg_block_, &key, &value) != MDB_SUCCESS) {
-        return chain::block{};
+        return {};
     }
 
     auto data = db_value_to_data_chunk(value);
@@ -169,13 +169,13 @@ chain::block internal_database_basis<Clock>::get_block_reorg(uint32_t height) co
     MDB_txn* db_txn;
     auto zzz = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
     if (zzz != MDB_SUCCESS) {
-        return chain::block{};
+        return {};
     }
 
     auto res = get_block_reorg(height, db_txn);
 
     if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
-        return chain::block{};
+        return {};
     }
 
     return res;

@@ -27,7 +27,7 @@ result_code internal_database_basis<Clock>::push_block_header(chain::block const
     auto valuearr = block.header().to_data(true);               //TODO(fernando): podría estar afuera de la DBTx
     MDB_val key {sizeof(height), &height};                      //TODO(fernando): podría estar afuera de la DBTx
     MDB_val value {valuearr.size(), valuearr.data()};           //TODO(fernando): podría estar afuera de la DBTx
-    auto res = mdb_put(db_txn, dbi_block_header_, &key, &value, MDB_NOOVERWRITE);
+    auto res = mdb_put(db_txn, dbi_block_header_, &key, &value, MDB_APPEND);
     if (res == MDB_KEYEXIST) {
         //TODO(fernando): El logging en general no está bueno que esté en la DbTx.
         LOG_INFO(LOG_DATABASE) << "Duplicate key inserting block header [push_block_header] " << res;        //TODO(fernando): podría estar afuera de la DBTx. 
@@ -67,6 +67,35 @@ chain::header internal_database_basis<Clock>::get_header(uint32_t height, MDB_tx
     auto res = chain::header::factory_from_data(data);
     return res;
 }
+
+template <typename Clock>
+result_code internal_database_basis<Clock>::remove_block_header(hash_digest const& hash, uint32_t height, MDB_txn* db_txn) {
+
+    MDB_val key {sizeof(height), &height};
+    auto res = mdb_del(db_txn, dbi_block_header_, &key, NULL);
+    if (res == MDB_NOTFOUND) {
+        LOG_INFO(LOG_DATABASE) << "Key not found deleting block header in LMDB [remove_block_header] - mdb_del: " << res;
+        return result_code::key_not_found;
+    }
+    if (res != MDB_SUCCESS) {
+        LOG_INFO(LOG_DATABASE) << "Erro deleting block header in LMDB [remove_block_header] - mdb_del: " << res;
+        return result_code::other;
+    }
+
+    MDB_val key_hash {hash.size(), const_cast<hash_digest&>(hash).data()};
+    res = mdb_del(db_txn, dbi_block_header_by_hash_, &key_hash, NULL);
+    if (res == MDB_NOTFOUND) {
+        LOG_INFO(LOG_DATABASE) << "Key not found deleting block header by hash in LMDB [remove_block_header] - mdb_del: " << res;
+        return result_code::key_not_found;
+    }
+    if (res != MDB_SUCCESS) {
+        LOG_INFO(LOG_DATABASE) << "Erro deleting block header by hash in LMDB [remove_block_header] - mdb_del: " << res;
+        return result_code::other;
+    }
+
+    return result_code::success;
+}
+
 
 } // namespace database
 } // namespace libbitcoin

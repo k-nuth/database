@@ -50,7 +50,7 @@ namespace database {
 #if defined(BITPRIM_DB_NEW_BLOCKS)
 constexpr size_t max_dbs_ = 8;
 #elif defined(BITPRIM_DB_NEW_FULL)
-constexpr size_t max_dbs_ = 12;
+constexpr size_t max_dbs_ = 13;
 #else
 constexpr size_t max_dbs_ = 7;
 #endif
@@ -80,6 +80,7 @@ public:
 #if defined(BITPRIM_DB_NEW_FULL)
     //Transactions
     constexpr static char transaction_db_name[] = "transactions";
+    constexpr static char transaction_hash_db_name[] = "transactions_hash";
     constexpr static char history_db_name[] = "history";
     constexpr static char spend_db_name[] = "spend";
     constexpr static char transaction_unconfirmed_db_name[] = "transaction_unconfirmed";
@@ -224,25 +225,33 @@ private:
     
     result_code get_first_reorg_block_height(uint32_t& out_height) const;
 
-#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+
+#if defined(BITPRIM_DB_NEW_BLOCKS)
     result_code insert_block(chain::block const& block, uint32_t height, MDB_txn* db_txn);
-    
+#endif //defined(BITPRIM_DB_NEW_BLOCKS)
+
+
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     result_code remove_blocks_db(uint32_t height, MDB_txn* db_txn);
     
     chain::block get_block(uint32_t height, MDB_txn* db_txn) const;
 #endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
 
 #if defined(BITPRIM_DB_NEW_FULL)
-    result_code remove_transactions(uint32_t height, MDB_txn* db_txn);
     
-    result_code insert_transaction(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, MDB_txn* db_txn);
+    result_code insert_block(chain::block const& block, uint32_t height, uint64_t tx_count, MDB_txn* db_txn);
+
+    result_code remove_transactions(chain::block const& block, uint32_t height, MDB_txn* db_txn);
     
-    data_chunk serialize_txs(chain::block const& block);
+    result_code insert_transaction(uint64_t id, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position , MDB_txn* db_txn);
+    
+    //data_chunk serialize_txs(chain::block const& block);
     
     template <typename I>
-    result_code insert_transactions(I f, I l, uint32_t height, uint32_t median_time_past, MDB_txn* db_txn);
+    result_code insert_transactions(I f, I l, uint32_t height, uint32_t median_time_past,uint64_t tx_count, MDB_txn* db_txn);
     
     transaction_entry get_transaction(hash_digest const& hash, size_t fork_height, MDB_txn* db_txn) const;
+    transaction_entry get_transaction(uint64_t id, MDB_txn* db_txn) const;
     
     result_code insert_input_history(chain::input_point const& inpoint, uint32_t height, chain::input const& input, MDB_txn* db_txn);
 
@@ -277,6 +286,12 @@ private:
 
     uint32_t get_clock_now();
 
+    uint64_t get_tx_count(MDB_txn* db_txn);
+
+    uint64_t get_history_count(MDB_txn* db_txn);
+
+    
+
 #endif //defined(BITPRIM_DB_NEW_FULL)
 
 // Data members ----------------------------
@@ -303,6 +318,7 @@ private:
 
 #ifdef BITPRIM_DB_NEW_FULL
     MDB_dbi dbi_transaction_db_;
+    MDB_dbi dbi_transaction_hash_db_;
     MDB_dbi dbi_history_db_;
     MDB_dbi dbi_spend_db_;
     MDB_dbi dbi_transaction_unconfirmed_db_;
@@ -339,6 +355,9 @@ constexpr char internal_database_basis<Clock>::block_db_name[];                 
 #ifdef BITPRIM_DB_NEW_FULL
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::transaction_db_name[];            //key: tx hash, value: tx
+
+template <typename Clock>
+constexpr char internal_database_basis<Clock>::transaction_hash_db_name[];            //key: tx hash, value: tx
 
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::history_db_name[];            //key: tx hash, value: tx
