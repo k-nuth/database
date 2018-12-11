@@ -71,7 +71,7 @@ result_code internal_database_basis<Clock>::start_indexing() {
     while (last_indexed < last_height) {
         ++last_indexed;
 
-        LOG_INFO(LOG_DATABASE) << "Indexing height " << last_height;
+        LOG_INFO(LOG_DATABASE) << "Indexing height " << last_indexed;
 
         //process block
         res1 = push_block_height(last_indexed, db_txn);
@@ -82,7 +82,7 @@ result_code internal_database_basis<Clock>::start_indexing() {
         }
 
         //update last indexed height
-        res1 = update_last_height_indexed(last_height, db_txn);
+        res1 = update_last_height_indexed(last_indexed, db_txn);
         if (res1 != result_code::success) {
             mdb_txn_abort(db_txn);
             LOG_INFO(LOG_DATABASE) << "Error updating last indexed height " << static_cast<uint32_t>(res1);
@@ -90,14 +90,14 @@ result_code internal_database_basis<Clock>::start_indexing() {
         }
 
         //delete raw block
-        res1 = remove_serialized_blocks_db(last_height, db_txn);
+        res1 = remove_serialized_blocks_db(last_indexed, db_txn);
         if (res1 != result_code::success) {
             mdb_txn_abort(db_txn);
             LOG_INFO(LOG_DATABASE) << "Error removing block " << static_cast<uint32_t>(res1);
             return res1;
         }
 
-        LOG_INFO(LOG_DATABASE) << "Indexed height " << last_height;
+        LOG_INFO(LOG_DATABASE) << "Indexed height " << last_indexed;
     }
 
     //mark end of indexing
@@ -113,7 +113,7 @@ result_code internal_database_basis<Clock>::start_indexing() {
         return result_code::other;
     }
 
-    LOG_INFO(LOG_DATABASE) << "Finished indexing at height " << last_height;
+    LOG_INFO(LOG_DATABASE) << "Finished indexing at height " << last_indexed;
 
     return result_code::success;
 }
