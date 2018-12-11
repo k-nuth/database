@@ -71,6 +71,8 @@ result_code internal_database_basis<Clock>::start_indexing() {
     while (last_indexed < last_height) {
         ++last_indexed;
 
+        LOG_INFO(LOG_DATABASE) << "Indexing height " << last_height;
+
         //process block
         res1 = push_block_height(last_indexed, db_txn);
         if (res1 != result_code::success) {
@@ -118,11 +120,13 @@ result_code internal_database_basis<Clock>::start_indexing() {
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::push_block_height(uint32_t height, MDB_txn* db_txn) {
+    
     //get block by height
     auto const block = get_serialized_block(height, db_txn);
     auto const median_time_past = block.header().validation.median_time_past;
     auto const& txs = block.transactions();
     auto tx_count = get_tx_count(db_txn);
+    
     //insert block_index
     auto res = insert_block_index_db(block, height, tx_count, db_txn);
     if (res != result_code::success) {
