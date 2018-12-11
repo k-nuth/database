@@ -77,7 +77,6 @@ result_code internal_database_basis<Clock>::insert_input_history_transaction(cha
             //We can recover it by accessing the database
             
             //TODO (Mario) check if we can query UTXO
-            //TODO (Mario) requiere_confirmed = true ??
 
             //auto entry = get_utxo(prevout, db_txn);
 
@@ -91,7 +90,7 @@ result_code internal_database_basis<Clock>::insert_input_history_transaction(cha
 
                 uint64_t history_count = get_history_count(db_txn);
                 if (history_count == max_uint64) {
-                    LOG_INFO(LOG_DATABASE) << "Error getting history items count";
+                    LOG_INFO(LOG_DATABASE) << "Error getting history items count [insert_input_history_transaction]";
                     return result_code::other;
                 }
 
@@ -111,7 +110,7 @@ result_code internal_database_basis<Clock>::insert_input_history_transaction(cha
                 }
             }
             else {
-                LOG_INFO(LOG_DATABASE) << "Error finding UTXO for input history [insert_input_history]";        
+                LOG_INFO(LOG_DATABASE) << "Error finding transaction for input history [insert_input_history_transaction]";        
             }
     }
 

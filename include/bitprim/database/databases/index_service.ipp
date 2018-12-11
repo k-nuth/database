@@ -37,7 +37,7 @@ result_code internal_database_basis<Clock>::start_indexing() {
 
     if (is_indexing_completed(db_txn)) {
         mdb_txn_abort(db_txn);
-        LOG_DEBUG(LOG_DATABASE) << "Error starting indexing because the process is already done";
+        LOG_INFO(LOG_DATABASE) << "Error starting indexing because the process is already done";
         return result_code::other;
     }
 
@@ -46,27 +46,27 @@ result_code internal_database_basis<Clock>::start_indexing() {
     auto res1 = get_last_height(last_height);
     if (res1 == result_code::db_empty) {
         mdb_txn_abort(db_txn);
-        LOG_DEBUG(LOG_DATABASE) << "The database is empty";
+        LOG_INFO(LOG_DATABASE) << "The database is empty";
         return res1;
     }
     else if (res1 != result_code::success)
     {
         mdb_txn_abort(db_txn);
-        LOG_DEBUG(LOG_DATABASE) << "Error getting last height";
+        LOG_INFO(LOG_DATABASE) << "Error getting last height";
         return result_code::other;
     }
 
-    LOG_DEBUG(LOG_DATABASE) << "Last height is " << last_height;
+    LOG_INFO(LOG_DATABASE) << "Last height is " << last_height;
 
     //get last height indexed
     uint32_t last_indexed; 
     if ( ! get_last_indexed_height(last_indexed, db_txn)) {
         mdb_txn_abort(db_txn);
-        LOG_DEBUG(LOG_DATABASE) << "Error getting last indexed height";
+        LOG_INFO(LOG_DATABASE) << "Error getting last indexed height";
         return result_code::other;
     }
     
-    LOG_DEBUG(LOG_DATABASE) << "Last indexed height is " << last_indexed;
+    LOG_INFO(LOG_DATABASE) << "Last indexed height is " << last_indexed;
 
     while (last_indexed < last_height) {
         ++last_indexed;
@@ -75,7 +75,7 @@ result_code internal_database_basis<Clock>::start_indexing() {
         res1 = push_block_height(last_indexed, db_txn);
         if (res1 != result_code::success) {
             mdb_txn_abort(db_txn);
-            LOG_DEBUG(LOG_DATABASE) << "Error indexing block " << static_cast<uint32_t>(res1);
+            LOG_INFO(LOG_DATABASE) << "Error indexing block " << static_cast<uint32_t>(res1);
             return res1;
         }
 
@@ -83,7 +83,7 @@ result_code internal_database_basis<Clock>::start_indexing() {
         res1 = update_last_height_indexed(last_height, db_txn);
         if (res1 != result_code::success) {
             mdb_txn_abort(db_txn);
-            LOG_DEBUG(LOG_DATABASE) << "Error updating last indexed height " << static_cast<uint32_t>(res1);
+            LOG_INFO(LOG_DATABASE) << "Error updating last indexed height " << static_cast<uint32_t>(res1);
             return res1;
         }
 
@@ -91,18 +91,18 @@ result_code internal_database_basis<Clock>::start_indexing() {
         res1 = remove_serialized_blocks_db(last_height, db_txn);
         if (res1 != result_code::success) {
             mdb_txn_abort(db_txn);
-            LOG_DEBUG(LOG_DATABASE) << "Error removing block " << static_cast<uint32_t>(res1);
+            LOG_INFO(LOG_DATABASE) << "Error removing block " << static_cast<uint32_t>(res1);
             return res1;
         }
 
-        LOG_DEBUG(LOG_DATABASE) << "Indexed height " << last_height;
+        LOG_INFO(LOG_DATABASE) << "Indexed height " << last_height;
     }
 
     //mark end of indexing
     auto res2 = set_indexing_completed(db_txn);
     if (res2 != result_code::success) {
         mdb_txn_abort(db_txn);
-        LOG_DEBUG(LOG_DATABASE) << "Error setting indexing complete flag " << static_cast<uint32_t>(res2);
+        LOG_INFO(LOG_DATABASE) << "Error setting indexing complete flag " << static_cast<uint32_t>(res2);
         return res2;
     }
 
@@ -111,7 +111,7 @@ result_code internal_database_basis<Clock>::start_indexing() {
         return result_code::other;
     }
 
-    LOG_DEBUG(LOG_DATABASE) << "Finished indexing at height " << last_height;
+    LOG_INFO(LOG_DATABASE) << "Finished indexing at height " << last_height;
 
     return result_code::success;
 }
@@ -120,6 +120,7 @@ template <typename Clock>
 result_code internal_database_basis<Clock>::push_block_height(uint32_t height, MDB_txn* db_txn) {
     //get block by height
     auto const block = get_serialized_block(height, db_txn);
+    auto const median_time_past = block.header().validation.median_time_past;
     auto const& txs = block.transactions();
     auto tx_count = get_tx_count(db_txn);
     //insert block_index
@@ -128,12 +129,12 @@ result_code internal_database_basis<Clock>::push_block_height(uint32_t height, M
         return res;
     }
 
-
+    auto id = tx_count;
     uint32_t pos = 0;
     for (auto const& tx : txs) {
 
         //insert transaction        
-        res = push_transaction_index(tx, height, pos, db_txn);
+        res = push_transaction_index(id, tx, height, median_time_past, pos, db_txn);
         if (res != result_code::success) {
             return res;
         }
@@ -141,6 +142,7 @@ result_code internal_database_basis<Clock>::push_block_height(uint32_t height, M
         //TODO (Mario): Remove transaction unconfirmed ?????
 
         ++pos;
+        ++id;
     }
 
     return result_code::success;
@@ -172,13 +174,18 @@ result_code internal_database_basis<Clock>::insert_block_index_db(chain::block b
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::push_transaction_index(chain::transaction tx, uint32_t height, uint32_t tx_pos, MDB_txn* db_txn) {
+result_code internal_database_basis<Clock>::push_transaction_index(uint64_t id, chain::transaction tx, uint32_t height, uint32_t median_time_past, uint32_t tx_pos, MDB_txn* db_txn) {
 
-    auto const& tx_id = tx.hash();
+    auto res = insert_transaction(id, tx, height, median_time_past, tx_pos, db_txn);
+    if (res != result_code::success && res != result_code::duplicated_key) {
+        return res;
+    }
+        
+    auto const& tx_hash = tx.hash();
 
     uint32_t pos = 0;
     for (auto const& output : tx.outputs()) {
-        auto res = insert_output_history(tx_id, height, pos, output, db_txn);
+        auto res = insert_output_history(tx_hash, height, pos, output, db_txn);
         if (res != result_code::success) {
             return res;
         }
@@ -187,7 +194,7 @@ result_code internal_database_basis<Clock>::push_transaction_index(chain::transa
 
     pos = 0;
     for (auto const& input : tx.inputs()) {
-        chain::input_point const inpoint {tx_id, pos};
+        chain::input_point const inpoint {tx_hash, pos};
         auto const& prevout = input.previous_output();
 
         auto res = insert_input_history_transaction(inpoint, height, input, db_txn);            

@@ -317,7 +317,7 @@ private:
 
     result_code insert_block_index_db(chain::block block, uint32_t height, uint64_t tx_count, MDB_txn* db_txn);
 
-    result_code push_transaction_index(chain::transaction tx, uint32_t height, uint32_t tx_pos, MDB_txn* db_txn);
+    result_code push_transaction_index(uint64_t id, chain::transaction tx, uint32_t height, uint32_t median_time_past, uint32_t tx_pos, MDB_txn* db_txn);
 
     bool get_last_indexed_height(uint32_t& out_height, MDB_txn* db_txn);
 
