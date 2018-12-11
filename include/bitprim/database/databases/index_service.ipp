@@ -124,7 +124,7 @@ result_code internal_database_basis<Clock>::push_block_height(uint32_t height, M
     //get block by height
     auto const block = get_serialized_block(height, db_txn);
     auto const median_time_past = block.header().validation.median_time_past;
-    auto const& txs = block.transactions();
+    
     auto tx_count = get_tx_count(db_txn);
     
     //insert block_index
@@ -135,6 +135,7 @@ result_code internal_database_basis<Clock>::push_block_height(uint32_t height, M
 
     auto id = tx_count;
     uint32_t pos = 0;
+    auto const& txs = block.transactions();
     for (auto const& tx : txs) {
 
         //insert transaction        
@@ -196,22 +197,24 @@ result_code internal_database_basis<Clock>::push_transaction_index(uint64_t id, 
         ++pos;
     }    
 
-    pos = 0;
-    for (auto const& input : tx.inputs()) {
-        chain::input_point const inpoint {tx_hash, pos};
-        auto const& prevout = input.previous_output();
+    if (tx_pos > 0) {
+        pos = 0;
+        for (auto const& input : tx.inputs()) {
+            chain::input_point const inpoint {tx_hash, pos};
+            auto const& prevout = input.previous_output();
 
-        auto res = insert_input_history_transaction(inpoint, height, input, db_txn);            
-        if (res != result_code::success) {
-            return res;
+            auto res = insert_input_history_transaction(inpoint, height, input, db_txn);            
+            if (res != result_code::success) {
+                return res;
+            }
+        
+            res = insert_spend(prevout, inpoint, db_txn);
+            if (res != result_code::success) {
+                return res;
+            }
+        
+            ++pos;
         }
-
-        res = insert_spend(prevout, inpoint, db_txn);
-        if (res != result_code::success) {
-            return res;
-        }
-
-        ++pos;
     }
     
     return result_code::success;

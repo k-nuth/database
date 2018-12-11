@@ -156,7 +156,7 @@ chain::block internal_database_basis<Clock>::get_serialized_block(uint32_t heigh
     MDB_val value;
 
     if (mdb_get(db_txn, dbi_block_db_, &key, &value) != MDB_SUCCESS) {
-        return chain::block{};
+        return {};
     }
 
     auto data = db_value_to_data_chunk(value);
