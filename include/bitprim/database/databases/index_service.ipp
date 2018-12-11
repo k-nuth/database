@@ -137,17 +137,28 @@ result_code internal_database_basis<Clock>::push_block_height(uint32_t height, M
     uint32_t pos = 0;
     auto const& txs = block.transactions();
     for (auto const& tx : txs) {
-
-        //insert transaction        
-        res = push_transaction_index(id, tx, height, median_time_past, pos, db_txn);
-        if (res != result_code::success) {
+    
+        auto res = insert_transaction(id, tx, height, median_time_past, pos, db_txn);
+        if (res != result_code::success && res != result_code::duplicated_key) {
             return res;
         }
 
+   
         //TODO (Mario): Remove transaction unconfirmed ?????
 
         ++pos;
         ++id;
+    }
+
+    pos = 0;
+    for (auto const& tx : txs) {
+    
+        //push outputs and inputs        
+        res = push_transaction_points(tx, height, pos, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
+        ++pos;
     }
 
     return result_code::success;
@@ -179,13 +190,8 @@ result_code internal_database_basis<Clock>::insert_block_index_db(chain::block b
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::push_transaction_index(uint64_t id, chain::transaction tx, uint32_t height, uint32_t median_time_past, uint32_t tx_pos, MDB_txn* db_txn) {
+result_code internal_database_basis<Clock>::push_transaction_points(chain::transaction tx, uint32_t height, uint32_t tx_pos, MDB_txn* db_txn) {
 
-    auto res = insert_transaction(id, tx, height, median_time_past, tx_pos, db_txn);
-    if (res != result_code::success && res != result_code::duplicated_key) {
-        return res;
-    }
-        
     auto const& tx_hash = tx.hash();
 
     uint32_t pos = 0;
