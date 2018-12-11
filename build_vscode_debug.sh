@@ -1,5 +1,5 @@
 mkdir build
 cd build
 # rm -rf *
-conan install .. -o use_domain=False -o db=new_full  -o with_tests=True -s build_type=Debug
+conan install .. -o db=new_full_async -o use_domain=False -s build_type=Debug -o with_tests=True
 conan build ..
