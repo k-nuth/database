@@ -71,7 +71,7 @@ result_code internal_database_basis<Clock>::start_indexing() {
     while (last_indexed < last_height) {
         ++last_indexed;
 
-        LOG_INFO(LOG_DATABASE) << "Indexing height " << last_indexed;
+        //LOG_INFO(LOG_DATABASE) << "Indexing height " << last_indexed;
 
         //process block
         res1 = push_block_height(last_indexed, db_txn);
