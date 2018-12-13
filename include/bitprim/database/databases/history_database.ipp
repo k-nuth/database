@@ -80,7 +80,7 @@ result_code internal_database_basis<Clock>::insert_input_history_transaction(cha
 
             //auto entry = get_utxo(prevout, db_txn);
 
-            auto entry = get_transaction(prevout.hash(), max_uint32, db_txn);
+            auto entry = get_transaction(prevout.hash(), max_size_t, db_txn);
 
             if (entry.is_valid()) {
                 
