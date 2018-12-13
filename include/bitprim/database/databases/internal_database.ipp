@@ -937,7 +937,28 @@ result_code internal_database_basis<Clock>::push_genesis(chain::block const& blo
 #if defined(BITPRIM_DB_NEW_BLOCKS)
     res = insert_block(block, 0, db_txn);
 #elif defined(BITPRIM_DB_NEW_FULL) 
-    res = insert_block(block, 0, 0, db_txn);
+    auto tx_count = get_tx_count(db_txn);
+    res = insert_block(block, 0, tx_count, db_txn);
+    
+    if (res != result_code::success) {
+        return res;
+    }
+
+    auto const& txs = block.transactions();
+    auto const& coinbase = txs.front();
+    auto const& hash = coinbase.hash();
+    auto const median_time_past = block.header().validation.median_time_past;
+    
+    res = insert_transaction(tx_count, coinbase, 0, median_time_past, 0, db_txn);
+    if (res != result_code::success && res != result_code::duplicated_key) {
+        return res;
+    }
+        
+    res = insert_output_history(hash, 0, 0, coinbase.outputs()[0], db_txn);
+    if (res != result_code::success) {
+        return res;
+    }
+
 #endif 
 
     return res;
