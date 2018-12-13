@@ -106,16 +106,8 @@ transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest co
     }
 
     auto tx_id = *static_cast<uint32_t*>(value.mv_data);;
-    MDB_val key_tx {sizeof(tx_id), &tx_id};
-
-    res = mdb_get(db_txn, dbi_transaction_db_, &key_tx, &value);
     
-    if (res != MDB_SUCCESS) {
-        return {};
-    }
-
-    auto data = db_value_to_data_chunk(value);
-    auto entry = transaction_entry::factory_from_data(data);
+    auto const entry = get_transaction(tx_id, db_txn);
 
     if (entry.height() > fork_height) {
         return {};

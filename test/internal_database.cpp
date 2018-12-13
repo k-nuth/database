@@ -815,6 +815,47 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_duplicate_block) {
     BOOST_REQUIRE( ! succeed(res));
 } 
 
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL) 
+
+BOOST_AUTO_TEST_CASE(internal_database__insert_block_genesis_and_get) {
+    auto const genesis = get_genesis();
+
+    internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
+    BOOST_REQUIRE(db.open());
+    auto res = db.push_genesis(genesis);
+    
+    BOOST_REQUIRE(res == result_code::success);
+    BOOST_REQUIRE(succeed(res));
+    
+    auto const block = db.get_block(0);
+
+
+    auto const& m = block.generate_merkle_root();
+    auto const& m2 = block.header().merkle();
+
+    BOOST_REQUIRE(block.is_valid_merkle_root() == true);
+}
+
+BOOST_AUTO_TEST_CASE(internal_database__insert_block_genesis_and_get_transaction) {
+    auto const genesis = get_genesis();
+
+    internal_database db(DIRECTORY "/internal_db", 10000000, db_size);
+    BOOST_REQUIRE(db.open());
+    auto res = db.push_genesis(genesis);
+    
+    BOOST_REQUIRE(res == result_code::success);
+    BOOST_REQUIRE(succeed(res));
+    
+    hash_digest txid;
+    auto txid_enc = "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b";
+    BOOST_REQUIRE(decode_hash(txid, txid_enc));
+
+    auto const tx2 = db.get_transaction(txid,max_size_t);
+    BOOST_REQUIRE(tx2.is_valid() == true);
+}
+
+#endif
+
 BOOST_AUTO_TEST_CASE(internal_database__insert_duplicate_block_by_hash) {
     auto const genesis = get_genesis();
 

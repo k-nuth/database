@@ -213,6 +213,11 @@ chain::block internal_database_basis<Clock>::get_block(uint32_t height, MDB_txn*
        
         auto tx_id = *static_cast<uint32_t*>(value.mv_data);;
         auto const entry = get_transaction(tx_id, db_txn);
+        
+        if (!entry.is_valid()) {
+            return {};
+        }
+        
         tx_list.push_back(std::move(entry.transaction()));
     
         while ((rc = mdb_cursor_get(cursor, &key, &value, MDB_NEXT_DUP)) == 0) {
