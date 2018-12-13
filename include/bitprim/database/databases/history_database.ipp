@@ -216,7 +216,7 @@ std::vector<hash_digest> internal_database_basis<Clock>::get_history_txns(short_
     std::vector<hash_digest> result;
 
     // Stop once we reach the limit (if specified).
-    if (limit > 0 && result.size() >= limit)
+    if (limit == 0)
         return result;
 
     MDB_txn* db_txn;
