@@ -804,16 +804,23 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_block_genesis_and_get_transaction
     
     BOOST_REQUIRE(res == result_code::success);
     BOOST_REQUIRE(succeed(res));
-    
+
+#if defined(BITPRIM_DB_NEW_FULL)
+
     hash_digest txid;
     auto txid_enc = "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b";
     BOOST_REQUIRE(decode_hash(txid, txid_enc));
 
     auto const tx2 = db.get_transaction(txid,max_size_t);
     BOOST_REQUIRE(tx2.is_valid() == true);
+
+#endif
+
 }
 
 #endif
+
+
 
 BOOST_AUTO_TEST_CASE(internal_database__insert_duplicate_block_by_hash) {
     auto const genesis = get_genesis();
