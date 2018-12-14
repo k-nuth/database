@@ -62,20 +62,25 @@ data_base::data_base(const settings& settings)
 #endif
     , store(settings.directory, settings.index_start_height < without_indexes, settings.flush_writes)
 {
-    LOG_DEBUG(LOG_DATABASE)
-        << "Buckets: "
-
+   
 #ifdef BITPRIM_DB_LEGACY
+        LOG_DEBUG(LOG_DATABASE)
+        << "Buckets: "
         << "block [" << settings.block_table_buckets << "], "
         << "transaction [" << settings.transaction_table_buckets << "], "
 #endif // BITPRIM_DB_LEGACY
+
 #ifdef BITPRIM_DB_SPENDS
         << "spend [" << settings.spend_table_buckets << "], "
 #endif // BITPRIM_DB_SPENDS
+
 #ifdef BITPRIM_DB_HISTORY
         << "history [" << settings.history_table_buckets << "]"
 #endif // BITPRIM_DB_HISTORY
+
+#ifdef BITPRIM_DB_LEGACY
         ;
+#endif // BITPRIM_DB_LEGACY        
 }
 
 data_base::~data_base() {
