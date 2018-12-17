@@ -647,12 +647,25 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
 
 template <typename Clock>
 bool internal_database_basis<Clock>::set_fast_flags_environment(const bool enabled) const {
+    
+    if (fast_mode && enabled) {
+        return true;
+    }
+
+    if (!fast_mode && !enabled) {
+        return true;
+    }
+
+    LOG_INFO(LOG_DATABASE) << "Setting LMDB Environment Flags. Fast mode: " << (enabled ? "yes" : "no" );
+
     //MDB_WRITEMAP | 
     auto res = mdb_env_set_flags(env_, MDB_MAPASYNC, enabled ? 1 : 0);
     if ( res != MDB_SUCCESS ) {
         LOG_ERROR(LOG_DATABASE) << "Error setting LMDB Environmet flags. [set_fast_flags_environment] " << static_cast<int32_t>(res);      
         return false;
     }
+    
+    fast_mode = enabled;
     return true;
 }
 

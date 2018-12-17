@@ -303,6 +303,7 @@ private:
     bool env_created_ = false;
     bool db_opened_ = false;
     uint64_t db_max_size_;
+    bool fast_mode = false;
 
     MDB_env* env_;
     MDB_dbi dbi_block_header_;
