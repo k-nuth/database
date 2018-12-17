@@ -90,7 +90,8 @@ bool internal_database_basis<Clock>::create_db_mode_property() {
     MDB_val value {sizeof(db_mode_), &db_mode_};
 
     res = mdb_put(db_txn, dbi_properties_, &key, &value, MDB_NOOVERWRITE);
-    if (res != MDB_SUCCESS) {  
+    if (res != MDB_SUCCESS) {
+        LOG_ERROR(LOG_DATABASE) << "Failed saving in DB Properties [create_db_mode_property] " << static_cast<int32_t>(res);  
         mdb_txn_abort(db_txn);
         return false;
     }
@@ -147,6 +148,7 @@ bool internal_database_basis<Clock>::verify_db_mode_property() {
 
     res = mdb_get(db_txn, dbi_properties_, &key, &value);
     if (res != MDB_SUCCESS) {  
+        LOG_ERROR(LOG_DATABASE) << "Failed getting DB Properties [verify_db_mode_property] " << static_cast<int32_t>(res);  
         mdb_txn_abort(db_txn);
         return false;
     }
@@ -171,6 +173,10 @@ bool internal_database_basis<Clock>::verify_db_mode_property() {
 template <typename Clock>
 bool internal_database_basis<Clock>::close() {
     if (db_opened_) {
+
+        //Force synchronous flush (use with MDB_NOSYNC or MDB_NOMETASYNC, with other flags do nothing)
+        mdb_env_sync(env_, true);
+
         mdb_dbi_close(env_, dbi_block_header_);
         mdb_dbi_close(env_, dbi_block_header_by_hash_);
         mdb_dbi_close(env_, dbi_utxo_);
@@ -234,7 +240,7 @@ result_code internal_database_basis<Clock>::push_block(chain::block const& block
     MDB_txn* db_txn;
     auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
     if (res0 != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error begining LMDB Transaction [push_block] " << res0;
+        LOG_ERROR(LOG_DATABASE) << "Error begining LMDB Transaction [push_block] " << res0;
         return result_code::other;
     }
 
@@ -246,7 +252,7 @@ result_code internal_database_basis<Clock>::push_block(chain::block const& block
 
     auto res2 = mdb_txn_commit(db_txn);
     if (res2 != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error commiting LMDB Transaction [push_block] " << res2;
+        LOG_ERROR(LOG_DATABASE) << "Error commiting LMDB Transaction [push_block] " << res2;
         return result_code::other;
     }
 
@@ -275,9 +281,7 @@ utxo_entry internal_database_basis<Clock>::get_utxo(chain::output_point const& p
     MDB_txn* db_txn;
     auto res0 = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
     if (res0 != MDB_SUCCESS) {
-        
-        //std::cout << "bbbbbbbbbbbb" << static_cast<uint32_t>(res0) << std::endl;
-        LOG_INFO(LOG_DATABASE) << "Error begining LMDB Transaction [get_utxo] " << res0;
+        LOG_ERROR(LOG_DATABASE) << "Error begining LMDB Transaction [get_utxo] " << res0;
         return {};
     }
 
@@ -285,8 +289,7 @@ utxo_entry internal_database_basis<Clock>::get_utxo(chain::output_point const& p
 
     res0 = mdb_txn_commit(db_txn);
     if (res0 != MDB_SUCCESS) {
-        //std::cout << "cccc" << static_cast<uint32_t>(res0) << std::endl;
-        LOG_DEBUG(LOG_DATABASE) << "Error commiting LMDB Transaction [get_utxo] " << res0;        
+        LOG_ERROR(LOG_DATABASE) << "Error commiting LMDB Transaction [get_utxo] " << res0;        
         return {};
     }
 
@@ -460,7 +463,7 @@ result_code internal_database_basis<Clock>::insert_reorg_into_pool(utxo_pool_t& 
     }
 
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error in reorg pool [insert_reorg_into_pool] " << res;        
+        LOG_ERROR(LOG_DATABASE) << "Error in reorg pool [insert_reorg_into_pool] " << res;        
         return result_code::other;
     }
 
@@ -626,8 +629,26 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
 
     //Bitprim: fastest flags
     //for more secure flags use: MDB_NORDAHEAD | MDB_NOSYNC  | MDB_NOTLS
-    res = mdb_env_open(env_, db_dir_.string().c_str() , MDB_NORDAHEAD | MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC | MDB_NOTLS, env_open_mode_);
+
+    int mdb_flags = MDB_NORDAHEAD | MDB_NOSYNC | MDB_NOTLS;
+    /*
+    if (fast) {
+        mdb_flags |= MDB_WRITEMAP | MDB_MAPASYNC;
+    }*/
+    
+    res = mdb_env_open(env_, db_dir_.string().c_str(), mdb_flags, env_open_mode_);
     return res == MDB_SUCCESS;
+}
+
+template <typename Clock>
+bool internal_database_basis<Clock>::set_fast_flags_environment(const bool enabled) const {
+
+    auto res = mdb_env_set_flags(env_, MDB_WRITEMAP | MDB_MAPASYNC, enabled);
+    if ( res != MDB_SUCCESS ) {
+        
+        return false;
+    }
+    return true;
 }
 
 inline 
@@ -1112,8 +1133,6 @@ result_code internal_database_basis<Clock>::remove_block(chain::block const& blo
     }
     return result_code::success;
 }
-
-
 
 } // namespace database
 } // namespace libbitcoin

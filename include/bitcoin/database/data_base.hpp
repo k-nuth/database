@@ -154,6 +154,8 @@ public:
 
     code prune_reorg();
 
+    bool set_database_flags(bool fast);
+
     // Asynchronous writers.
     // ------------------------------------------------------------------------
 

@@ -465,22 +465,6 @@ void BlockchainLMDB::close()
   m_open = false;
 }
 
-void BlockchainLMDB::sync()
-{
-  LOG_PRINT_L3("BlockchainLMDB::" << __func__);
-  check_open();
-
-  if (is_read_only())
-    return;
-
-  // Does nothing unless LMDB environment was opened with MDB_NOSYNC or in part
-  // MDB_NOMETASYNC. Force flush to be synchronous.
-  if (auto result = mdb_env_sync(m_env, true))
-  {
-    throw0(DB_ERROR(lmdb_error("Failed to sync database: ", result).c_str()));
-  }
-}
-
 void BlockchainLMDB::safesyncmode(const bool onoff)
 {
   MINFO("switching safe mode " << (onoff ? "on" : "off"));
@@ -562,7 +546,8 @@ uint64_t BlockchainLMDB::get_database_size() const
 /*
 Some Optimization
 If you frequently begin and abort read-only transactions, as an optimization, it is possible to only reset and renew a transaction.
-mdb_txn_reset() releases any old copies of data kept around for a read-only transaction. To reuse this reset transaction, call mdb_txn_renew() on it. Any cursors in this transaction must also be renewed using mdb_cursor_renew().
+mdb_txn_reset() releases any old copies of data kept around for a read-only transaction. To reuse this reset transaction, call mdb_txn_renew() on it. 
+Any cursors in this transaction must also be renewed using mdb_cursor_renew().
 Note that mdb_txn_reset() is similar to mdb_txn_abort() and will close any databases you opened within the transaction.
 To permanently free a transaction, reset or not, use mdb_txn_abort().
 */

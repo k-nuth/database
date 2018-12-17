@@ -1345,6 +1345,15 @@ code data_base::prune_reorg() {
     return error::success;
 }
 
+
+bool data_base::set_database_flags(bool fast) {
+#ifdef BITPRIM_DB_NEW
+    return internal_db_->set_fast_flags_environment(fast);
+#endif // BITPRIM_DB_NEW
+    return true;
+}
+
+
 // This is designed for write exclusivity and read concurrency.
 void data_base::reorganize(const checkpoint& fork_point, block_const_ptr_list_const_ptr incoming_blocks, block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch, result_handler handler) {
     auto const next_height = safe_add(fork_point.height(), size_t(1));
