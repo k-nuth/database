@@ -646,7 +646,7 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
 }
 
 template <typename Clock>
-bool internal_database_basis<Clock>::set_fast_flags_environment(const bool enabled) const {
+bool internal_database_basis<Clock>::set_fast_flags_environment(const bool enabled) {
     
     if (fast_mode && enabled) {
         return true;
@@ -664,7 +664,7 @@ bool internal_database_basis<Clock>::set_fast_flags_environment(const bool enabl
         LOG_ERROR(LOG_DATABASE) << "Error setting LMDB Environmet flags. [set_fast_flags_environment] " << static_cast<int32_t>(res);      
         return false;
     }
-    
+
     fast_mode = enabled;
     return true;
 }
