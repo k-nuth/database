@@ -161,13 +161,20 @@ bool internal_database_basis<Clock>::verify_db_mode_property() {
     }
 
 #if defined(BITPRIM_DB_NEW_FULL)
-    return  db_mode_ == db_mode_code::db_new_full;     
+    auto db_mode_node_ = db_mode_code::db_new_full;     
 #elif defined(BITPRIM_DB_NEW_BLOCKS)
-    return  db_mode_ == db_mode_code::db_new_with_blocks;
+    auto db_mode_node_ = db_mode_code::db_new_with_blocks;
 #else
-    return  db_mode_ == db_mode_code::db_new;
+    auto db_mode_node_ = db_mode_code::db_new;
 #endif
 
+    if (db_mode_ != db_mode_node_) {
+        LOG_ERROR(LOG_DATABASE) << "Error validating DB Mode, the node is compiled for another DB mode. Node DB Mode:" << static_cast<uint32_t>(db_mode_node_) 
+        << " Actual DB Mode:" << static_cast<uint32_t>(db_mode_);     
+        return false;
+    }
+
+    return true;
 }
 
 template <typename Clock>
@@ -619,6 +626,7 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
 
     auto res = mdb_env_set_mapsize(env_, adjust_db_size(db_max_size_));
     if (res != MDB_SUCCESS) {
+        LOG_ERROR(LOG_DATABASE) << "Error setting max memory map size. Verify do you have enough free space. [create_and_open_environment] " << static_cast<int32_t>(res);  
         return false;
     }
 
@@ -628,13 +636,10 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
     }
 
     //Bitprim: fastest flags
+    //MDB_NORDAHEAD | MDB_NOSYNC  | MDB_NOTLS | MDB_WRITEMAP | MDB_MAPASYNC
     //for more secure flags use: MDB_NORDAHEAD | MDB_NOSYNC  | MDB_NOTLS
 
     int mdb_flags = MDB_NORDAHEAD | MDB_NOSYNC | MDB_NOTLS;
-    /*
-    if (fast) {
-        mdb_flags |= MDB_WRITEMAP | MDB_MAPASYNC;
-    }*/
     
     res = mdb_env_open(env_, db_dir_.string().c_str(), mdb_flags, env_open_mode_);
     return res == MDB_SUCCESS;
@@ -645,7 +650,7 @@ bool internal_database_basis<Clock>::set_fast_flags_environment(const bool enabl
 
     auto res = mdb_env_set_flags(env_, MDB_WRITEMAP | MDB_MAPASYNC, enabled);
     if ( res != MDB_SUCCESS ) {
-        
+        LOG_ERROR(LOG_DATABASE) << "Error setting LMDB Environmet flags. [set_fast_flags_environment] " << static_cast<int32_t>(res);      
         return false;
     }
     return true;
