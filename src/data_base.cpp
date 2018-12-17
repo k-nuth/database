@@ -1348,7 +1348,7 @@ code data_base::prune_reorg() {
 
 bool data_base::set_database_flags(bool fast) {
 #ifdef BITPRIM_DB_NEW
-    LOG_DEBUG(LOG_DATABASE) << "Setting LMDB Environment Flags. Fast mode: " << (fast ? "yes" : "no" );
+    LOG_INFO(LOG_DATABASE) << "Setting LMDB Environment Flags. Fast mode: " << (fast ? "yes" : "no" );
     return internal_db_->set_fast_flags_environment(fast);
 #endif // BITPRIM_DB_NEW
     return true;
