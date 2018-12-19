@@ -268,7 +268,7 @@ void data_base::start() {
 #endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_NEW
-    internal_db_ = std::make_shared<internal_database>(internal_db_dir, settings_.reorg_pool_limit, settings_.db_max_size);
+    internal_db_ = std::make_shared<internal_database>(internal_db_dir, settings_.reorg_pool_limit, settings_.db_max_size, settings_.safe_mode);
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
@@ -1345,14 +1345,14 @@ code data_base::prune_reorg() {
     return error::success;
 }
 
-
+/*
 bool data_base::set_database_flags(bool fast) {
 #ifdef BITPRIM_DB_NEW
     return internal_db_->set_fast_flags_environment(fast);
 #endif // BITPRIM_DB_NEW
     return true;
 }
-
+*/
 
 // This is designed for write exclusivity and read concurrency.
 void data_base::reorganize(const checkpoint& fork_point, block_const_ptr_list_const_ptr incoming_blocks, block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch, result_handler handler) {

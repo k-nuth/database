@@ -26,11 +26,12 @@ namespace database {
 using utxo_pool_t = std::unordered_map<chain::point, utxo_entry>;
 
 template <typename Clock>
-internal_database_basis<Clock>::internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size)
+internal_database_basis<Clock>::internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size, bool safe_mode)
     : db_dir_(db_dir)
     , reorg_pool_limit_(reorg_pool_limit)
     , limit_(blocks_to_seconds(reorg_pool_limit))
     , db_max_size_(db_max_size)
+    , safe_mode_(safe_mode)
 {}
 
 template <typename Clock>
@@ -251,6 +252,7 @@ result_code internal_database_basis<Clock>::push_block(chain::block const& block
         return result_code::other;
     }
 
+    //TODO: save reorg blocks after the last checkpoint
     auto res = push_block(block, height, median_time_past, ! is_old_block(block), db_txn);
     if (! succeed(res)) {
         mdb_txn_abort(db_txn);
@@ -641,12 +643,16 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
 
     int mdb_flags = MDB_NORDAHEAD | MDB_NOSYNC | MDB_NOTLS;
     
+    if ( ! safe_mode_) {
+        mdb_flags |= MDB_WRITEMAP | MDB_MAPASYNC;
+    }
+
     res = mdb_env_open(env_, db_dir_.string().c_str(), mdb_flags, env_open_mode_);
     return res == MDB_SUCCESS;
 }
-
+/*
 template <typename Clock>
-bool internal_database_basis<Clock>::set_fast_flags_environment(const bool enabled) {
+bool internal_database_basis<Clock>::set_fast_flags_environment(bool enabled) {
     
     if (fast_mode && enabled) {
         return true;
@@ -668,7 +674,7 @@ bool internal_database_basis<Clock>::set_fast_flags_environment(const bool enabl
     fast_mode = enabled;
     return true;
 }
-
+*/
 inline 
 int compare_uint64(const MDB_val *a, const MDB_val *b) {
     const uint64_t va = *(const uint64_t *)a->mv_data;
@@ -786,7 +792,7 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
         }
 
         //set spender height in tx database
-        //Commented because we don't validate transaction duplicates (BIP-30)
+        //Bitprim: Commented because we don't validate transaction duplicates (BIP-30)
         /*res = set_spend(prevout, height, db_txn);
         if (res != result_code::success) {
             return res;
@@ -846,7 +852,6 @@ result_code internal_database_basis<Clock>::insert_outputs_error_treatment(uint3
     auto res = insert_outputs(txid,height, outputs, fixed_data, db_txn);
     
     if (res == result_code::duplicated_key) {
-        // std::cout << "bbbhhhhhhhhhhh" << static_cast<uint32_t>(res) << "\n";
         //TODO(fernando): log and continue
         return result_code::success_duplicate_coinbase;
     }
@@ -941,24 +946,19 @@ result_code internal_database_basis<Clock>::push_block(chain::block const& block
         }
     }
 
-    
     auto const& coinbase = txs.front();
 
     auto fixed = utxo_entry::to_data_fixed(height, median_time_past, true);                                     //TODO(fernando): podría estar afuera de la DBTx
     auto res0 = insert_outputs_error_treatment(height, fixed, coinbase.hash(), coinbase.outputs(), db_txn);     //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
     if ( ! succeed(res0)) {
-        // std::cout << "aaaaaaaaaaaaaaa" << static_cast<uint32_t>(res0) << "\n";
         return res0;
     }
 
     fixed.back() = 0;   //The last byte equal to 0 means NonCoinbaseTx    
     res = push_transactions_non_coinbase(height, fixed, txs.begin() + 1, txs.end(), insert_reorg, db_txn);
     if (res != result_code::success) {
-        // std::cout << "bbb" << static_cast<uint32_t>(res) << "\n";
         return res;
     }
-
-    // std::cout << "ddd" << static_cast<uint32_t>(res0) << "\n";
     
     if (res == result_code::success_duplicate_coinbase)
         return res;

@@ -24,9 +24,11 @@ namespace database {
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::push_block_header(chain::block const& block, uint32_t height, MDB_txn* db_txn) {
+    
     auto valuearr = block.header().to_data(true);               //TODO(fernando): podría estar afuera de la DBTx
     MDB_val key {sizeof(height), &height};                      //TODO(fernando): podría estar afuera de la DBTx
     MDB_val value {valuearr.size(), valuearr.data()};           //TODO(fernando): podría estar afuera de la DBTx
+    
     auto res = mdb_put(db_txn, dbi_block_header_, &key, &value, MDB_APPEND);
     if (res == MDB_KEYEXIST) {
         //TODO(fernando): El logging en general no está bueno que esté en la DbTx.
@@ -40,6 +42,7 @@ result_code internal_database_basis<Clock>::push_block_header(chain::block const
     
     auto key_by_hash_arr = block.hash();                                    //TODO(fernando): podría estar afuera de la DBTx
     MDB_val key_by_hash {key_by_hash_arr.size(), key_by_hash_arr.data()};   //TODO(fernando): podría estar afuera de la DBTx
+    
     res = mdb_put(db_txn, dbi_block_header_by_hash_, &key_by_hash, &key, MDB_NOOVERWRITE);
     if (res == MDB_KEYEXIST) {
         LOG_INFO(LOG_DATABASE) << "Duplicate key inserting block header by hash [push_block_header] " << res;        

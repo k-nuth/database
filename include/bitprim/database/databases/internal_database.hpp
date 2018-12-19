@@ -86,7 +86,7 @@ public:
     constexpr static char transaction_unconfirmed_db_name[] = "transaction_unconfirmed";
 #endif  //BITPRIM_DB_NEW_FULL
 
-    internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size);
+    internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size, bool safe_mode);
     ~internal_database_basis();
 
     // Non-copyable, non-movable
@@ -114,10 +114,9 @@ public:
     
     result_code prune();
     
-    result_code insert_reorg_into_pool(utxo_pool_t& pool, MDB_val key_point, MDB_txn* db_txn) const;
     std::pair<result_code, utxo_pool_t> get_utxo_pool_from(uint32_t from, uint32_t to) const;
 
-    bool set_fast_flags_environment(const bool enabled);
+    //bool set_fast_flags_environment(bool enabled);
 
 #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     std::pair<chain::block, uint32_t> get_block(hash_digest const& hash) const;
@@ -227,6 +226,7 @@ private:
     
     result_code get_first_reorg_block_height(uint32_t& out_height) const;
 
+    result_code insert_reorg_into_pool(utxo_pool_t& pool, MDB_val key_point, MDB_txn* db_txn) const;
 
 #if defined(BITPRIM_DB_NEW_BLOCKS)
     result_code insert_block(chain::block const& block, uint32_t height, MDB_txn* db_txn);
@@ -303,7 +303,8 @@ private:
     bool env_created_ = false;
     bool db_opened_ = false;
     uint64_t db_max_size_;
-    bool fast_mode = false;
+    bool safe_mode_;
+    //bool fast_mode = false;
 
     MDB_env* env_;
     MDB_dbi dbi_block_header_;

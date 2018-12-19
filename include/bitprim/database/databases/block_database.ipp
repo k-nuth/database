@@ -113,6 +113,7 @@ MDB_val key {sizeof(height), &height};
 
 #if defined(BITPRIM_DB_NEW_BLOCKS)
 
+    //TODO: store tx hash
     auto data = block.to_data(false);
     MDB_val value {data.size(), data.data()};
 

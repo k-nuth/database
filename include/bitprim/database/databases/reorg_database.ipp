@@ -25,6 +25,7 @@ namespace database {
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_reorg_pool(uint32_t height, MDB_val& key, MDB_txn* db_txn) {
     MDB_val value;
+    //TODO: use cursors
     auto res = mdb_get(db_txn, dbi_utxo_, &key, &value);
     if (res == MDB_NOTFOUND) {
         LOG_INFO(LOG_DATABASE) << "Key not found getting UTXO [insert_reorg_pool] " << res;        
@@ -61,12 +62,14 @@ result_code internal_database_basis<Clock>::insert_reorg_pool(uint32_t height, M
     return result_code::success;
 }
 
+//TODO : remove this database in db_new_with_blocks and db_new_full
 template <typename Clock>
 result_code internal_database_basis<Clock>::push_block_reorg(chain::block const& block, uint32_t height, MDB_txn* db_txn) {
 
     auto valuearr = block.to_data(false);               //TODO(fernando): podría estar afuera de la DBTx
     MDB_val key {sizeof(height), &height};              //TODO(fernando): podría estar afuera de la DBTx
     MDB_val value {valuearr.size(), valuearr.data()};   //TODO(fernando): podría estar afuera de la DBTx
+    
     auto res = mdb_put(db_txn, dbi_reorg_block_, &key, &value, MDB_NOOVERWRITE);
     if (res == MDB_KEYEXIST) {
         LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in reorg block [push_block_reorg] " << res;
