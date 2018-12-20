@@ -42,6 +42,7 @@ public:
 #ifdef BITPRIM_DB_NEW
     uint32_t reorg_pool_limit;
     uint64_t db_max_size;
+    bool safe_mode;
 #endif // BITPRIM_DB_NEW
 
 

@@ -154,6 +154,8 @@ public:
 
     code prune_reorg();
 
+    //bool set_database_flags(bool fast);
+
     // Asynchronous writers.
     // ------------------------------------------------------------------------
 
@@ -223,7 +225,7 @@ private:
     bool push_heights(const chain::block& block, size_t height);
 #endif
 
-#if defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY)
+#if defined(BITPRIM_DB_LEGACY) && (defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY))
     void push_inputs(const hash_digest& tx_hash, size_t height, const inputs& inputs);
 #endif // defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY)    
 
@@ -255,7 +257,10 @@ private:
     bool pop_outputs(const outputs& outputs, size_t height);
     code verify_insert(const chain::block& block, size_t height);
     code verify_push(const chain::block& block, size_t height);
+
+#if defined(BITPRIM_DB_LEGACY)
     code verify_push(const chain::transaction& tx);
+#endif
 
     // Asynchronous writers.
     // ------------------------------------------------------------------------

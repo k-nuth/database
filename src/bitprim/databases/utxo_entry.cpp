@@ -195,15 +195,14 @@ bool utxo_entry::from_data(std::istream& stream) {
 bool utxo_entry::from_data(reader& source) {
     reset();
     
-    output_.from_data(source, false);
-    height_ = source.read_4_bytes_little_endian();
-    median_time_past_ = source.read_4_bytes_little_endian();
-    coinbase_ = source.read_byte();
-    
+     output_.from_data(source, false);
+     height_ = source.read_4_bytes_little_endian();
+     median_time_past_ = source.read_4_bytes_little_endian();
+     coinbase_ = source.read_byte();
 
-    if ( ! source) {
-        reset();
-    }
+     if ( ! source) {
+         reset();
+     }
 
     return source;
 }

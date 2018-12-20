@@ -62,20 +62,25 @@ data_base::data_base(const settings& settings)
 #endif
     , store(settings.directory, settings.index_start_height < without_indexes, settings.flush_writes)
 {
-    LOG_DEBUG(LOG_DATABASE)
-        << "Buckets: "
-
+   
 #ifdef BITPRIM_DB_LEGACY
+        LOG_DEBUG(LOG_DATABASE)
+        << "Buckets: "
         << "block [" << settings.block_table_buckets << "], "
         << "transaction [" << settings.transaction_table_buckets << "], "
 #endif // BITPRIM_DB_LEGACY
+
 #ifdef BITPRIM_DB_SPENDS
         << "spend [" << settings.spend_table_buckets << "], "
 #endif // BITPRIM_DB_SPENDS
+
 #ifdef BITPRIM_DB_HISTORY
         << "history [" << settings.history_table_buckets << "]"
 #endif // BITPRIM_DB_HISTORY
+
+#ifdef BITPRIM_DB_LEGACY
         ;
+#endif // BITPRIM_DB_LEGACY        
 }
 
 data_base::~data_base() {
@@ -263,7 +268,7 @@ void data_base::start() {
 #endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_NEW
-    internal_db_ = std::make_shared<internal_database>(internal_db_dir, settings_.reorg_pool_limit, settings_.db_max_size);
+    internal_db_ = std::make_shared<internal_database>(internal_db_dir, settings_.reorg_pool_limit, settings_.db_max_size, settings_.safe_mode);
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
@@ -433,15 +438,45 @@ hash_digest get_previous_hash(const block_database& blocks, size_t height) {
 }
 #endif // BITPRIM_DB_LEGACY
 
+
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+static inline 
+uint32_t get_next_height(internal_database const& db) {
+    uint32_t current_height;
+    auto res = db.get_last_height(current_height);
+
+    if (res != result_code::success) {
+        return 0;
+    }
+
+    return current_height + 1;
+}
+
+static inline 
+hash_digest get_previous_hash(internal_database const& db, size_t height) {
+    return height == 0 ? null_hash : db.get_header(height - 1).hash();
+}
+#endif // defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+
+
 code data_base::verify_insert(const block& block, size_t height) {
     if (block.transactions().empty()) {
         return error::empty_block;
     }
 
-#ifdef BITPRIM_DB_LEGACY
+#if defined(BITPRIM_DB_LEGACY)
     if (blocks_->exists(height)) {
         return error::store_block_duplicate;
     }
+
+#elif defined(BITPRIM_DB_NEW)
+
+    auto res = internal_db_->get_header(height);
+
+    if (res.is_valid()) {
+        return error::store_block_duplicate;
+    }
+
 #endif // BITPRIM_DB_LEGACY
 
     return error::success;
@@ -452,7 +487,7 @@ code data_base::verify_push(const block& block, size_t height) {
         return error::empty_block;
     }
 
-#ifdef BITPRIM_DB_LEGACY
+#if defined(BITPRIM_DB_LEGACY)
     if (get_next_height(blocks()) != height) {
         return error::store_block_invalid_height;
     }
@@ -460,19 +495,33 @@ code data_base::verify_push(const block& block, size_t height) {
     if (block.header().previous_block_hash() != get_previous_hash(blocks(), height)) {
         return error::store_block_missing_parent;
     }
+
+#elif defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+
+    if (get_next_height(internal_db()) != height) {
+        return error::store_block_invalid_height;
+    }
+
+    if (block.header().previous_block_hash() != get_previous_hash(internal_db(), height)) {
+        return error::store_block_missing_parent;
+    }
+
 #endif // BITPRIM_DB_LEGACY
 
     return error::success;
 }
 
+
+//Bitprim: We don't store spend information
+#if defined(BITPRIM_DB_LEGACY)
 code data_base::verify_push(const transaction& tx) {
-#ifdef BITPRIM_DB_LEGACY
+
     auto const result = transactions_->get(tx.hash(), max_size_t, false);
     return result && ! result.is_spent(max_size_t) ? error::unspent_duplicate : error::success;
-#else
-    return error::success;
-#endif // BITPRIM_DB_LEGACY    
+   
 }
+#endif // defined(BITPRIM_DB_LEGACY)
+
 
 #ifdef BITPRIM_DB_LEGACY
 bool data_base::begin_insert() const {
@@ -497,7 +546,10 @@ bool data_base::end_insert() const {
 code data_base::insert(const chain::block& block, size_t height) {
 
     auto const median_time_past = block.header().validation.median_time_past;
-    // std::cout << "data_base::insert - median_time_past: " << median_time_past << std::endl;
+    
+    auto const ec = verify_insert(block, height);
+
+    if (ec) return ec;
 
 #ifdef BITPRIM_DB_NEW
     auto res = internal_db_->push_block(block, height, median_time_past);
@@ -507,14 +559,7 @@ code data_base::insert(const chain::block& block, size_t height) {
 #endif // BITPRIM_DB_NEW
 
 #ifdef BITPRIM_DB_LEGACY
-    auto const ec = verify_insert(block, height);
-
-    if (ec) return ec;
-
-    // auto const median_time_past = block.header().validation.median_time_past;
-    // median_time_past = block.header().validation.median_time_past;
-    // std::cout << "data_base::insert - median_time_past(2): " << median_time_past << std::endl;
-
+    
     if ( ! push_transactions(block, height, median_time_past) || ! push_heights(block, height)) {
         return error::operation_failed_1;
     }
@@ -555,9 +600,7 @@ code data_base::push(const chain::transaction& tx, uint32_t forks) {
     transactions_unconfirmed_->store(tx); //, forks, transaction_unconfirmed_database::unconfirmed);
 #endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
 
-#ifdef BITPRIM_DB_LEGACY
     transactions_->synchronize();
-#endif // BITPRIM_DB_LEGACY
 
 #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
     transactions_unconfirmed_->synchronize();
@@ -568,9 +611,15 @@ code data_base::push(const chain::transaction& tx, uint32_t forks) {
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     ///////////////////////////////////////////////////////////////////////////
 
-#else
+#elif defined(BITPRIM_DB_NEW_FULL)
+    //We insert only in transaction unconfirmed here
+    internal_db_->push_transaction_unconfirmed(tx, forks);
     return error::success;  //TODO(fernando): store the transactions in a new mempool
+
+#else 
+    return error::success;
 #endif // BITPRIM_DB_LEGACY
+
 }
 
 
@@ -1295,6 +1344,15 @@ code data_base::prune_reorg() {
 #endif // BITPRIM_DB_NEW
     return error::success;
 }
+
+/*
+bool data_base::set_database_flags(bool fast) {
+#ifdef BITPRIM_DB_NEW
+    return internal_db_->set_fast_flags_environment(fast);
+#endif // BITPRIM_DB_NEW
+    return true;
+}
+*/
 
 // This is designed for write exclusivity and read concurrency.
 void data_base::reorganize(const checkpoint& fork_point, block_const_ptr_list_const_ptr incoming_blocks, block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch, result_handler handler) {
