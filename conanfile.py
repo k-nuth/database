@@ -114,6 +114,7 @@ class BitprimDatabaseConan(BitprimConanFile):
         self.options["*"].currency = self.options.currency
         self.output.info("Compiling for currency: %s" % (self.options.currency,))
         self.output.info("Compiling with measurements: %s" % (self.options.measurements,))
+        self.output.info("Compiling for DB: %s" % (self.options.db,))
 
     def package_id(self):
         BitprimConanFile.package_id(self)
