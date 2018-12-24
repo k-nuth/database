@@ -54,7 +54,7 @@ public:
 #ifdef BITPRIM_USE_DOMAIN
     template <Writer W, BITPRIM_IS_WRITER(W)>
     void to_data(W& sink) const {
-        factory_to_data(sink, transaction_, arrival_time_);
+        factory_to_data(sink, transaction_, arrival_time_, height_);
     }
 
 #else
