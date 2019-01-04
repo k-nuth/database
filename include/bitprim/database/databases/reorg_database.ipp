@@ -167,6 +167,36 @@ chain::block internal_database_basis<Clock>::get_block_reorg(uint32_t height, MD
     return res;
 }
 
+//public
+template <typename Clock>
+std::pair<chain::block, uint32_t> internal_database_basis<Clock>::get_block_reorg(hash_digest const& hash) const {
+    MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
+
+    MDB_txn* db_txn;
+    auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
+    if (res != MDB_SUCCESS) {
+        return {};
+    }
+
+    MDB_val value;
+    if (mdb_get(db_txn, dbi_block_header_by_hash_, &key, &value) != MDB_SUCCESS) {
+        mdb_txn_commit(db_txn);
+        // mdb_txn_abort(db_txn);
+        return {};
+    }
+
+    // assert value.mv_size == 4;
+    auto height = *static_cast<uint32_t*>(value.mv_data);
+
+    auto block = get_block_reorg(height, db_txn);
+
+    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+        return {};
+    }
+
+    return {block, height};
+}
+
 template <typename Clock>
 chain::block internal_database_basis<Clock>::get_block_reorg(uint32_t height) const {
     MDB_txn* db_txn;
