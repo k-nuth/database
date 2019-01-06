@@ -118,16 +118,11 @@ public:
 
     //bool set_fast_flags_environment(bool enabled);
     
-
-#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+// #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     std::pair<chain::block, uint32_t> get_block(hash_digest const& hash) const;
     
     chain::block get_block(uint32_t height) const;
-#endif //BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL
-
-    std::pair<chain::block, uint32_t> get_block_reorg(hash_digest const& hash) const;
-
-    chain::block get_block_reorg(uint32_t height) const;
+// #endif //BITPRIM_DB_NEW_BLOCKS || BITPRIM_DB_NEW_FULL
 
 #if defined(BITPRIM_DB_NEW_FULL)
     transaction_entry get_transaction(hash_digest const& hash, size_t fork_height) const;
@@ -220,6 +215,8 @@ private:
 
     chain::block get_block_reorg(uint32_t height, MDB_txn* db_txn) const;
        
+    chain::block get_block_reorg(uint32_t height) const;
+
     result_code remove_block(chain::block const& block, uint32_t height);
     
     result_code prune_reorg_index(uint32_t remove_until, MDB_txn* db_txn);
@@ -237,9 +234,9 @@ private:
 
 #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
     result_code remove_blocks_db(uint32_t height, MDB_txn* db_txn);
-    
-    chain::block get_block(uint32_t height, MDB_txn* db_txn) const;
 #endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+
+    chain::block get_block(uint32_t height, MDB_txn* db_txn) const;
 
 #if defined(BITPRIM_DB_NEW_FULL)
     
