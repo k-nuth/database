@@ -582,6 +582,8 @@ result_code internal_database_basis<Clock>::push_transaction_unconfirmed(chain::
     if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
         return result_code::other;
     }
+
+    return result_code::success;
 }
 
 #endif
