@@ -42,7 +42,6 @@ data_chunk internal_database_basis<Clock>::serialize_txs(chain::block const& blo
 */
 
 
-#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
 //public
 template <typename Clock>
 std::pair<chain::block, uint32_t> internal_database_basis<Clock>::get_block(hash_digest const& hash) const {
@@ -91,8 +90,94 @@ chain::block internal_database_basis<Clock>::get_block(uint32_t height) const {
     return block;
 }
 
+template <typename Clock>
+chain::block internal_database_basis<Clock>::get_block(uint32_t height, MDB_txn* db_txn) const {
+
+    MDB_val key {sizeof(height), &height};
+    
+#if defined(BITPRIM_DB_NEW_BLOCKS)
+    
+    MDB_val value;
+
+    if (mdb_get(db_txn, dbi_block_db_, &key, &value) != MDB_SUCCESS) {
+        return chain::block{};
+    }
+
+    auto data = db_value_to_data_chunk(value);
+    auto res = chain::block::factory_from_data(data);
+    return res;
+
+#elif defined(BITPRIM_DB_NEW_FULL)
+
+    auto header = get_header(height, db_txn);
+    if ( ! header.is_valid()) {
+        return {};
+    }
+
+    chain::transaction::list tx_list;
+
+    MDB_cursor* cursor;
+    if (mdb_cursor_open(db_txn, dbi_block_db_, &cursor) != MDB_SUCCESS) {
+        return {};
+    }
+
+    MDB_val value;
+    int rc;
+    if ((rc = mdb_cursor_get(cursor, &key, &value, MDB_SET)) == 0) {
+       
+        auto tx_id = *static_cast<uint32_t*>(value.mv_data);;
+        auto const entry = get_transaction(tx_id, db_txn);
+        
+        if ( ! entry.is_valid()) {
+            return {};
+        }
+        
+        tx_list.push_back(std::move(entry.transaction()));
+    
+        while ((rc = mdb_cursor_get(cursor, &key, &value, MDB_NEXT_DUP)) == 0) {
+            auto tx_id = *static_cast<uint32_t*>(value.mv_data);;
+            auto const entry = get_transaction(tx_id, db_txn);
+            tx_list.push_back(std::move(entry.transaction()));    
+        }
+    } 
+    
+    mdb_cursor_close(cursor);
+
+    /*auto n = value.mv_size;
+    auto f = static_cast<uint8_t*>(value.mv_data); 
+    //precondition: mv_size es multiplo de 32
+    
+    chain::transaction::list tx_list;
+    tx_list.reserve(n / libbitcoin::hash_size);
+    
+    while (n != 0) {
+        hash_digest h;
+        std::copy(f, f + libbitcoin::hash_size, h.data());
+        
+        auto tx_entry = get_transaction(h,max_uint32, db_txn);
+        
+        if ( ! tx_entry.is_valid() ) {
+            return chain::block{};
+        }
+
+        auto const& tx = tx_entry.transaction();
+
+        tx_list.push_back(std::move(tx));
+
+        n -= libbitcoin::hash_size;
+        f += libbitcoin::hash_size;
+    }*/
+    
+    return chain::block{header, std::move(tx_list)};
+
+#else
+    auto block = get_block_reorg(height, db_txn);
+    return block;
+#endif //defined(BITPRIM_DB_NEW_FULL)
+}
 
 
+#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
 
 #if defined(BITPRIM_DB_NEW_BLOCKS)
 template <typename Clock>
@@ -101,7 +186,6 @@ result_code internal_database_basis<Clock>::insert_block(chain::block const& blo
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_block(chain::block const& block, uint32_t height, uint64_t tx_count, MDB_txn* db_txn) {
 #endif
-
 
 /*#if defined(BITPRIM_DB_NEW_BLOCKS)
     auto data = block.to_data(false);
@@ -151,90 +235,6 @@ MDB_val key {sizeof(height), &height};
 #endif
 
     return result_code::success;
-}
-
-
-template <typename Clock>
-chain::block internal_database_basis<Clock>::get_block(uint32_t height, MDB_txn* db_txn) const {
-
-    MDB_val key {sizeof(height), &height};
-    
-#if defined(BITPRIM_DB_NEW_BLOCKS)
-    
-    MDB_val value;
-
-    if (mdb_get(db_txn, dbi_block_db_, &key, &value) != MDB_SUCCESS) {
-        return chain::block{};
-    }
-
-    auto data = db_value_to_data_chunk(value);
-    auto res = chain::block::factory_from_data(data);
-    return res;
-
-#elif defined(BITPRIM_DB_NEW_FULL)
-
-    auto header = get_header(height, db_txn);
-    if ( ! header.is_valid() )
-    {
-        return {};
-    }
-
-    chain::transaction::list tx_list;
-
-    MDB_cursor* cursor;
-    if (mdb_cursor_open(db_txn, dbi_block_db_, &cursor) != MDB_SUCCESS) {
-        return {};
-    }
-
-    MDB_val value;
-    int rc;
-    if ((rc = mdb_cursor_get(cursor, &key, &value, MDB_SET)) == 0) {
-       
-        auto tx_id = *static_cast<uint32_t*>(value.mv_data);;
-        auto const entry = get_transaction(tx_id, db_txn);
-        
-        if (!entry.is_valid()) {
-            return {};
-        }
-        
-        tx_list.push_back(std::move(entry.transaction()));
-    
-        while ((rc = mdb_cursor_get(cursor, &key, &value, MDB_NEXT_DUP)) == 0) {
-            auto tx_id = *static_cast<uint32_t*>(value.mv_data);;
-            auto const entry = get_transaction(tx_id, db_txn);
-            tx_list.push_back(std::move(entry.transaction()));    
-        }
-    } 
-    
-    mdb_cursor_close(cursor);
-
-    /*auto n = value.mv_size;
-    auto f = static_cast<uint8_t*>(value.mv_data); 
-    //precondition: mv_size es multiplo de 32
-    
-    chain::transaction::list tx_list;
-    tx_list.reserve(n / libbitcoin::hash_size);
-    
-    while (n != 0) {
-        hash_digest h;
-        std::copy(f, f + libbitcoin::hash_size, h.data());
-        
-        auto tx_entry = get_transaction(h,max_uint32, db_txn);
-        
-        if ( ! tx_entry.is_valid() ) {
-            return chain::block{};
-        }
-
-        auto const& tx = tx_entry.transaction();
-
-        tx_list.push_back(std::move(tx));
-
-        n -= libbitcoin::hash_size;
-        f += libbitcoin::hash_size;
-    }*/
-    
-    return chain::block{header, std::move(tx_list)};
-#endif //defined(BITPRIM_DB_NEW_FULL)
 }
 
 template <typename Clock>
