@@ -40,6 +40,10 @@ if __name__ == "__main__":
             opts_bch_full = copy.deepcopy(opts_bch)
             opts_bch_full["%s:db" % name] = "full"
 
+            opts_btc_full = copy.deepcopy(opts_btc)
+            opts_btc_full["%s:db" % name] = "full"
+
+            handle_microarchs("%s:microarchitecture" % name, marchs, filtered_builds, settings, opts_btc_full, env_vars, build_requires)
             handle_microarchs("%s:microarchitecture" % name, marchs, filtered_builds, settings, opts_bch_full, env_vars, build_requires)
             handle_microarchs("%s:microarchitecture" % name, marchs, filtered_builds, settings, opts_bch_domain, env_vars, build_requires)
             handle_microarchs("%s:microarchitecture" % name, marchs, filtered_builds, settings, opts_bch, env_vars, build_requires)
