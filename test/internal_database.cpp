@@ -723,7 +723,8 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_genesis) {
     auto const& tx = db.get_transaction(txid, max_uint32);
     BOOST_REQUIRE(tx.is_valid());
 
-    auto const& address = wallet::payment_address("bitcoincash:qp3wjpa3tjlj042z2wv7hahsldgwhwy0rq9sywjpyy");
+
+    auto const& address = wallet::payment_address("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa");
     BOOST_REQUIRE(address);
 
     auto history_list = db.get_history(address.hash(),max_uint32,0);
@@ -736,6 +737,7 @@ BOOST_AUTO_TEST_CASE(internal_database__insert_genesis) {
     BOOST_REQUIRE(history_item.point.index() == 0);
     BOOST_REQUIRE(history_item.height == 0);
     BOOST_REQUIRE(history_item.value == 5000000000);
+
 
 #endif
 
@@ -1015,12 +1017,14 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg) {
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_ ,  0);
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
 
-    auto const& address = wallet::payment_address("bitcoincash:qz78x4gvzcfwaqg4t55j2sshe0tqpp9x6yyrx8jdvp");
+
+    auto const& address = wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
     BOOST_REQUIRE(address);
     
     //std::cout << "aaaaaaaaaa" << db_count_db_by_address(env_, dbi_history_db_, address) << std::endl;
 
     BOOST_REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address) == 2);
+
 
 #endif 
 
@@ -1703,7 +1707,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
 #elif defined(BITPRIM_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 0);
 
-    auto const& address = wallet::payment_address("bitcoincash:qz78x4gvzcfwaqg4t55j2sshe0tqpp9x6yyrx8jdvp");
+
+    auto const& address = wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
     BOOST_REQUIRE(address);
     
     BOOST_REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address) == 1);
@@ -1796,7 +1801,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         BOOST_REQUIRE(history_item.height == 1);
         BOOST_REQUIRE(history_item.previous_checksum ==  point.checksum());
 
-        auto const& address2 = wallet::payment_address("bitcoincash:qpqyxutst75m67y69lx495k9szm96d25n53frahv6a");
+
+        auto const& address2 = wallet::payment_address("16ro3Jptwo4asSevZnsRX6vfRS24TGE6uK");
         BOOST_REQUIRE(address2);
 
         history_list = db.get_history(address2.hash(),max_uint32,0);
@@ -1811,6 +1817,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         BOOST_REQUIRE(history_item.point.index() == 0);
         BOOST_REQUIRE(history_item.height == 1);
         BOOST_REQUIRE(history_item.value == 5000000000);
+
 
         auto const& in_point = db.get_spend(output_point{txid, 0});
         BOOST_REQUIRE(in_point.is_valid());
@@ -1847,14 +1854,16 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
 
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
 
-    auto const& address4 = wallet::payment_address("bitcoincash:qpg4uetn4v79s7rh0su9lf60paqvvvxaxveesl8p43");
+
+    auto const& address4 = wallet::payment_address("18REpJroZy5eYCtqK1jwwgQUvVkPojy2rR");
     BOOST_REQUIRE(address4);
     BOOST_REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address4) == 1);
 
-    auto const& address1 = wallet::payment_address("bitcoincash:qpqyxutst75m67y69lx495k9szm96d25n53frahv6a");
+    auto const& address1 = wallet::payment_address("16ro3Jptwo4asSevZnsRX6vfRS24TGE6uK");
     BOOST_REQUIRE(address1);    
     BOOST_REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address1) == 1);
     
+
 
     print_db_entries_count(env_, dbi_transaction_db_);
     check_transactions_db_just_existence(env_,dbi_transaction_db_,0);
@@ -2057,7 +2066,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
 
 
 
-        auto const& address2 = wallet::payment_address("bitcoincash:qpqyxutst75m67y69lx495k9szm96d25n53frahv6a");
+
+        auto const& address2 = wallet::payment_address("16ro3Jptwo4asSevZnsRX6vfRS24TGE6uK");
         BOOST_REQUIRE(address2);
 
         history_list = db.get_history(address2.hash(),max_uint32,0);
@@ -2072,6 +2082,8 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
         BOOST_REQUIRE(history_item.point.index() == 0);
         BOOST_REQUIRE(history_item.height == 1);
         BOOST_REQUIRE(history_item.value == 5000000000);
+
+
 
         auto const& in_point = db.get_spend(output_point{txid, 0});
         BOOST_REQUIRE(in_point.is_valid());
