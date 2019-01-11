@@ -97,9 +97,6 @@ result_code internal_database_basis<Clock>::insert_input_history(chain::input_po
             
                 auto const& out_output = entry.output();
                 for (auto const& address : out_output.addresses()) {
-
-                    //std::cout << "ccc " << encode_hash(tx_hash) << std::endl;
-
                     auto valuearr = history_entry::factory_to_data(id, inpoint, chain::point_kind::spend, height, inpoint.index(), prevout.checksum());
                     auto res = insert_history_db(address, valuearr, db_txn); 
                     if (res != result_code::success) {
@@ -132,8 +129,6 @@ result_code internal_database_basis<Clock>::insert_output_history(hash_digest co
 
     // Standard outputs contain unambiguous address data.
     for (auto const& address : output.addresses()) {
-        //std::cout << "eee " << address << std::endl;
-        //std::cout << "ddd " << encode_hash(tx_hash) << std::endl; 
         auto valuearr = history_entry::factory_to_data(id, outpoint, chain::point_kind::output, height, index, value);
         auto res = insert_history_db(address, valuearr, db_txn); 
         if (res != result_code::success) {

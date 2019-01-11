@@ -996,7 +996,6 @@ bool data_base::pop(block& out_block) {
 
         // std::cout << encode_hash(tx_hash) << std::endl;
     }
-    // std::cout << "----------------------------------" << std::endl;
 
     if (count > 1) {
         if ( ! pop_transactions_non_coinbase(height, transactions.begin() + 1, transactions.end())) {

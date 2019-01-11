@@ -42,7 +42,7 @@ result_code internal_database_basis<Clock>::insert_reorg_pool(uint32_t height, M
         return result_code::duplicated_key;
     }
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error inseting in reorg pool [insert_reorg_pool] " << res;        
+        LOG_INFO(LOG_DATABASE) << "Error inserting in reorg pool [insert_reorg_pool] " << res;        
         return result_code::other;
     }
 
