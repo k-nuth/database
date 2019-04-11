@@ -59,7 +59,7 @@ class BitprimDatabaseConan(BitprimConanFile):
         "fix_march=False", \
         "verbose=False", \
         "measurements=False", \
-        "use_domain=False", \
+        "use_domain=True", \
         "db=default", \
         "cached_rpc_data=False", \
         "cxxflags=_DUMMY_", \
@@ -79,7 +79,7 @@ class BitprimDatabaseConan(BitprimConanFile):
             self.requires("lmdb/0.9.22@bitprim/stable")
 
         if self.options.use_domain:
-            self.requires("boost/1.68.0@bitprim/stable")
+            self.requires("boost/1.69.0@bitprim/stable")
             self.requires("bitprim-domain/0.X@%s/%s" % (self.user, self.channel))
         else:
             self.requires("boost/1.66.0@bitprim/stable")
