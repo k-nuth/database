@@ -13,7 +13,7 @@
 #include <bitcoin/database/databases/transaction_unconfirmed_database.hpp>
 #include <bitcoin/database/memory/memory.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 using namespace bc::chain;

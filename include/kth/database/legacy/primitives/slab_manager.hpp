@@ -11,7 +11,7 @@
 #include <bitcoin/database/memory/memory.hpp>
 #include <bitcoin/database/memory/memory_map.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 constexpr size_t minimum_slabs_size = sizeof(file_offset);

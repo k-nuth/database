@@ -10,7 +10,7 @@
 #include <bitcoin/bitcoin.hpp>
 #include <bitcoin/database/memory/memory.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 /**

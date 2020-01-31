@@ -9,7 +9,7 @@
 #include <bitcoin/database/primitives/record_manager.hpp>
 #include <bitcoin/database/primitives/record_multimap_iterator.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 /// Result of a multimap database query. This is a container wrapper allowing

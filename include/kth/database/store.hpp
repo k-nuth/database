@@ -14,7 +14,7 @@
 #define KTH_DB_WITH_INDEXES
 #endif
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 class BCD_API store {

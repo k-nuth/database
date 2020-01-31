@@ -9,7 +9,7 @@
 #include <bitcoin/database/define.hpp>
 #include <bitcoin/database/primitives/record_list.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 /// Forward iterator for multimap record values.

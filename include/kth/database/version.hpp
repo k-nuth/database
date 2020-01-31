@@ -16,8 +16,8 @@
 #define KTH_DATABASE_VERSION "0.0.0"
 #endif
 
-namespace libbitcoin { namespace database {
+namespace kth { namespace database {
 char const* version();
-}} /*namespace libbitcoin::database*/
+}} // namespace kth
 
 #endif // KTH_DATABASE_VERSION_HPP_

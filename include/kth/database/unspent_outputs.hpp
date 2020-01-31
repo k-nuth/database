@@ -17,7 +17,7 @@
 #include <bitcoin/database/define.hpp>
 #include <bitcoin/database/unspent_transaction.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 /// This class is thread safe.

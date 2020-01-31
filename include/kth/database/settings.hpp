@@ -9,7 +9,7 @@
 #include <boost/filesystem.hpp>
 #include <bitcoin/database/define.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 /// Common database configuration settings, properties not thread safe.

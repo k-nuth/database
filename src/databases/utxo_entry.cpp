@@ -10,7 +10,7 @@
 #include <cstdint>
 // #include <bitcoin/bitcoin.hpp>
 
-namespace libbitcoin { 
+namespace kth { 
 namespace database {
 
 utxo_entry::utxo_entry(chain::output output, uint32_t height, uint32_t median_time_past, bool coinbase)

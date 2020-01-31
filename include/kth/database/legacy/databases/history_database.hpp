@@ -14,7 +14,7 @@
 #include <bitcoin/database/memory/memory_map.hpp>
 #include <bitcoin/database/primitives/record_multimap.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 struct BCD_API history_statinfo

@@ -6,7 +6,7 @@
 #define KTH_DATABASE_INTERNAL_DATABASE_IPP_
 
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 using utxo_pool_t = std::unordered_map<chain::point, utxo_entry>;

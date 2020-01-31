@@ -5,7 +5,7 @@
 #ifndef KTH_DATABASE_HISTORY_DATABASE_IPP_
 #define KTH_DATABASE_HISTORY_DATABASE_IPP_
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 #if defined(KTH_DB_NEW_FULL)

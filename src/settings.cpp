@@ -6,7 +6,7 @@
 
 #include <boost/filesystem.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 using namespace boost::filesystem;

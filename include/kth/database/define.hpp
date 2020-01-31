@@ -9,7 +9,7 @@
 #include <vector>
 #include <bitcoin/bitcoin.hpp>
 
-// Now we use the generic helper definitions in libbitcoin to
+// Now we use the generic helper definitions to
 // define BCD_API and BCD_INTERNAL.
 // BCD_API is used for the public API symbols. It either DLL imports or
 // DLL exports (or does nothing for static build)
@@ -35,7 +35,7 @@
 // Allocate safety is required for support of concurrent write operations.
 #define ALLOCATE_SAFETY
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 typedef uint32_t array_index;

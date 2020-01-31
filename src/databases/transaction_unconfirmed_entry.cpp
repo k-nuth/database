@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace libbitcoin { 
+namespace kth { 
 namespace database {
 
 transaction_unconfirmed_entry::transaction_unconfirmed_entry(chain::transaction const& tx, uint32_t arrival_time, uint32_t height)

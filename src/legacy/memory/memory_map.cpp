@@ -32,7 +32,7 @@
 // requires a larger file this is neither validated nor supported.
 static_assert(sizeof(void*) == sizeof(uint64_t), "Not a 64 bit system!");
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 #define FAIL -1

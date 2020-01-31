@@ -5,7 +5,7 @@
 #ifndef KTH_DATABASE_PROPERTY_CODE_HPP_
 #define KTH_DATABASE_PROPERTY_CODE_HPP_
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 enum class property_code {

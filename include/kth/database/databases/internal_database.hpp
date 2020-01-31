@@ -30,7 +30,7 @@
 #define KTH_INTERNAL_DB_WIRE false
 #endif
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 #if defined(KTH_DB_NEW_BLOCKS)

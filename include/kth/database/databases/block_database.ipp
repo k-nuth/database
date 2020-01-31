@@ -5,7 +5,7 @@
 #ifndef KTH_DATABASE_BLOCK_DATABASE_IPP_
 #define KTH_DATABASE_BLOCK_DATABASE_IPP_
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 /*
@@ -15,7 +15,7 @@ template <typename Clock>
 data_chunk internal_database_basis<Clock>::serialize_txs(chain::block const& block) {
     data_chunk ret;
     auto const& txs = block.transactions();
-    ret.reserve(txs.size() * libbitcoin::hash_size);
+    ret.reserve(txs.size() * kth::hash_size);
 
     for (auto const& tx : txs) {
         auto hash = tx.hash();
@@ -134,11 +134,11 @@ chain::block internal_database_basis<Clock>::get_block(uint32_t height, MDB_txn*
     //precondition: mv_size es multiplo de 32
     
     chain::transaction::list tx_list;
-    tx_list.reserve(n / libbitcoin::hash_size);
+    tx_list.reserve(n / kth::hash_size);
     
     while (n != 0) {
         hash_digest h;
-        std::copy(f, f + libbitcoin::hash_size, h.data());
+        std::copy(f, f + kth::hash_size, h.data());
         
         auto tx_entry = get_transaction(h,max_uint32, db_txn);
         
@@ -150,8 +150,8 @@ chain::block internal_database_basis<Clock>::get_block(uint32_t height, MDB_txn*
 
         tx_list.push_back(std::move(tx));
 
-        n -= libbitcoin::hash_size;
-        f += libbitcoin::hash_size;
+        n -= kth::hash_size;
+        f += kth::hash_size;
     }*/
     
     return chain::block{header, std::move(tx_list)};

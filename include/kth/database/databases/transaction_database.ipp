@@ -5,7 +5,7 @@
 #ifndef KTH_DATABASE_TRANSACTION_DATABASE_HPP_
 #define KTH_DATABASE_TRANSACTION_DATABASE_HPP_
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 
@@ -318,7 +318,7 @@ result_code internal_database_basis<Clock>::remove_transactions(chain::block con
     uint32_t pos = 0;
     while (n != 0) {
         hash_digest h;
-        std::copy(f, f + libbitcoin::hash_size, h.data());
+        std::copy(f, f + kth::hash_size, h.data());
         
         MDB_val key_tx {h.size(), h.data()};
         
@@ -351,8 +351,8 @@ result_code internal_database_basis<Clock>::remove_transactions(chain::block con
             return result_code::other;
         }
     
-        n -= libbitcoin::hash_size;
-        f += libbitcoin::hash_size;
+        n -= kth::hash_size;
+        f += kth::hash_size;
         ++pos;
     }*/
 

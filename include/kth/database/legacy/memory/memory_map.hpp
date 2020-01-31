@@ -18,7 +18,7 @@
 #include <bitcoin/database/define.hpp>
 #include <bitcoin/database/memory/memory.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 /// This class is thread safe, allowing concurent read and write.

@@ -13,7 +13,7 @@
 #include <bitcoin/database/memory/memory.hpp>
 #include <bitcoin/database/result/transaction_result.hpp>
 
-namespace libbitcoin { namespace database {
+namespace kth { namespace database {
 
 using namespace bc::chain;
 using namespace bc::machine;

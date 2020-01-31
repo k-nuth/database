@@ -5,11 +5,11 @@
 
 #include <bitcoin/database/version.hpp>
 
-namespace libbitcoin { namespace database {
+namespace kth { namespace database {
 
 char const* version() {
     return KTH_DATABASE_VERSION;
 }
 
-}} /*namespace libbitcoin::database*/
+}} // namespace kth
 

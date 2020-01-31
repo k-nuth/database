@@ -9,7 +9,7 @@
 #include <functional>
 #include <bitcoin/bitcoin.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 /// Return a hash of the key reduced to the domain of the divisor.

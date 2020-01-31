@@ -12,7 +12,7 @@
 #include <bitcoin/database/primitives/hash_table_header.hpp>
 #include <bitcoin/database/primitives/slab_manager.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 typedef hash_table_header<array_index, file_offset> slab_hash_table_header;

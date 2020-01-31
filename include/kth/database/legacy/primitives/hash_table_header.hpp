@@ -8,7 +8,7 @@
 #include <bitcoin/bitcoin.hpp>
 #include <bitcoin/database/memory/memory_map.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 /**

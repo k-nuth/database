@@ -18,7 +18,7 @@
 #include <bitcoin/database/result/block_result.hpp>
 
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 /// Stores block_headers each with a list of transaction indexes.

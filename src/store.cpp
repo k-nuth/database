@@ -8,7 +8,7 @@
 #include <memory>
 #include <bitcoin/bitcoin.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 using namespace bc::chain;

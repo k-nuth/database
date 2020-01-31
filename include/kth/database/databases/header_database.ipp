@@ -5,7 +5,7 @@
 #ifndef KTH_DATABASE_HEADER_DATABASE_IPP_
 #define KTH_DATABASE_HEADER_DATABASE_IPP_
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 template <typename Clock>

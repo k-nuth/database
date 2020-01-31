@@ -8,7 +8,7 @@
 #include <bitcoin/database/memory/memory.hpp>
 #include <bitcoin/database/primitives/record_list.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 template <typename KeyType>

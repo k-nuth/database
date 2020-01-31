@@ -25,7 +25,7 @@
 /// ...
 /// [ record ]
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 // TODO: guard against overflows.

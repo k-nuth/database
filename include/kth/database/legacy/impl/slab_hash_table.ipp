@@ -10,7 +10,7 @@
 #include "../impl/remainder.ipp"
 #include "../impl/slab_row.ipp"
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 template <typename KeyType>

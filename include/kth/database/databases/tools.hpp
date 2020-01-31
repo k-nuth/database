@@ -23,7 +23,7 @@
 
 #include <bitcoin/bitcoin.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 //Note: same logic as is_stale()

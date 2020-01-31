@@ -19,7 +19,7 @@
 #ifndef KTH_DATABASE_RESULT_CODE_HPP_
 #define KTH_DATABASE_RESULT_CODE_HPP_
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 enum class result_code {

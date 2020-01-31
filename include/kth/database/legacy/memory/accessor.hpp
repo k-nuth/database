@@ -11,7 +11,7 @@
 #include <bitcoin/database/define.hpp>
 #include <bitcoin/database/memory/memory.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 #ifdef REMAP_SAFETY

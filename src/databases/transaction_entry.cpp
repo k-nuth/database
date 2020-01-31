@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace libbitcoin { 
+namespace kth { 
 namespace database {
 
 // void write_position(writer& serial, uint32_t position) {

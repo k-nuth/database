@@ -13,7 +13,7 @@
 #include <bitcoin/database/primitives/hash_table_header.hpp>
 #include <bitcoin/database/primitives/record_manager.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 template <typename KeyType>

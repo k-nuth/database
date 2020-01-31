@@ -15,7 +15,7 @@
 #include <bitcoin/database/primitives/record_hash_table.hpp>
 #include <bitcoin/database/memory/memory_map.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 struct BCD_API spend_statinfo

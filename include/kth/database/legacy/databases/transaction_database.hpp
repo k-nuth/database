@@ -21,7 +21,7 @@
 #include <bitcoin/database/unspent_outputs.hpp>
 #endif // KTH_DB_UNSPENT_LEGACY
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 /// This enables lookups of transactions by hash.

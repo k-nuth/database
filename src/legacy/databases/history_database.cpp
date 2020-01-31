@@ -14,7 +14,7 @@
 #include <bitcoin/database/primitives/record_multimap.hpp>
 #include <bitcoin/database/primitives/record_multimap_iterable.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 using namespace bc::chain;

@@ -10,7 +10,7 @@
 #include <bitcoin/bitcoin.hpp>
 #include <bitcoin/database/define.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 class BCD_API history_entry {

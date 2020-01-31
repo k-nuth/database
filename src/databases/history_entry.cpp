@@ -10,7 +10,7 @@
 #include <cstdint>
 // #include <bitcoin/bitcoin.hpp>
 
-namespace libbitcoin { 
+namespace kth { 
 namespace database {
 
 history_entry::history_entry(uint64_t id, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum)
@@ -46,7 +46,7 @@ uint64_t history_entry::value_or_checksum() const {
 void history_entry::reset() {
     id_ = max_uint64;
     point_ = chain::point{};
-    point_kind_ = libbitcoin::chain::point_kind::output;
+    point_kind_ = kth::chain::point_kind::output;
     height_ = max_uint32;
     index_ = max_uint32;
     value_or_checksum_ = max_uint64;

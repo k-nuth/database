@@ -7,7 +7,7 @@
 #include <bitcoin/database/primitives/record_list.hpp>
 #include <bitcoin/database/primitives/record_manager.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 record_multimap_iterator::record_multimap_iterator(

@@ -11,7 +11,7 @@
 #include "../impl/record_row.ipp"
 #include "../impl/remainder.ipp"
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 template <typename KeyType>

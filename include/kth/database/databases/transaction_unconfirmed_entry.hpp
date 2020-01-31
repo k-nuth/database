@@ -10,7 +10,7 @@
 #include <bitcoin/database/currency_config.hpp>
 #include <bitcoin/database/define.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 

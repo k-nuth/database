@@ -44,7 +44,7 @@
 #include <bitcoin/database/settings.hpp>
 #include <bitcoin/database/store.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 /// This class is thread safe and implements the sequential locking pattern.

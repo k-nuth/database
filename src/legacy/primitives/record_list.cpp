@@ -8,7 +8,7 @@
 #include <bitcoin/database/memory/memory.hpp>
 #include <bitcoin/database/primitives/record_manager.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 record_list::record_list(record_manager& manager, array_index index)

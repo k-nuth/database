@@ -5,7 +5,7 @@
 #ifndef KTH_DATABASE_UTXO_DATABASE_HPP_
 #define KTH_DATABASE_UTXO_DATABASE_HPP_
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 template <typename Clock>

@@ -13,7 +13,7 @@
 #include <bitcoin/database/memory/memory.hpp>
 #include <bitcoin/database/memory/memory_map.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 static constexpr auto minimum_records_size = sizeof(array_index);

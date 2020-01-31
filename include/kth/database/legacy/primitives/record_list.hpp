@@ -12,7 +12,7 @@
 #include <bitcoin/database/memory/memory.hpp>
 #include <bitcoin/database/primitives/record_manager.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 class BCD_API record_list
