@@ -5,7 +5,7 @@
 #ifndef KTH_DATABASE_UNSPENT_OUTPUTS_HPP_
 #define KTH_DATABASE_UNSPENT_OUTPUTS_HPP_
 
-#ifdef KTH_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LEGACY
 
 #include <atomic>
 #include <cstddef>
@@ -83,6 +83,6 @@ private:
 } // namespace database
 } // namespace kth
 
-#endif // KTH_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LEGACY
 
 #endif // KTH_DATABASE_UNSPENT_OUTPUTS_HPP_

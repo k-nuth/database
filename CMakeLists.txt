@@ -113,12 +113,12 @@ if (DB_STEALTH)
   add_definitions(-DKTH_DB_STEALTH)
 endif()
 
-# Implement and declare DB_UNSPENT_LIBBITCOIN.
+# Implement and declare DB_UNSPENT_LEGACY.
 #------------------------------------------------------------------------------
-option(DB_UNSPENT_LIBBITCOIN "DB Unspent Libbitcoin enabled." OFF)
-if (DB_UNSPENT_LIBBITCOIN)
-  message(STATUS "Bitprim: DB Unspent Libbitcoin enabled")
-  add_definitions(-DKTH_DB_UNSPENT_LIBBITCOIN)
+option(DB_UNSPENT_LEGACY "DB Unspent Legacy enabled." OFF)
+if (DB_UNSPENT_LEGACY)
+  message(STATUS "Bitprim: DB Unspent Legacy enabled")
+  add_definitions(-DKTH_DB_UNSPENT_LEGACY)
 endif()
 
 # Implement and declare DB_LEGACY.
@@ -364,7 +364,7 @@ if (DB_STEALTH)
     )
 endif()
 
-if (DB_UNSPENT_LIBBITCOIN)
+if (DB_UNSPENT_LEGACY)
     set(bitprim_database_sources_just_libbitcoin 
         ${bitprim_database_sources_just_libbitcoin}
         src/unspent_outputs.cpp

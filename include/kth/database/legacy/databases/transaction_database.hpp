@@ -17,9 +17,9 @@
 #include <bitcoin/database/primitives/slab_hash_table.hpp>
 #include <bitcoin/database/primitives/slab_manager.hpp>
 
-#ifdef KTH_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LEGACY
 #include <bitcoin/database/unspent_outputs.hpp>
-#endif // KTH_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LEGACY
 
 namespace libbitcoin {
 namespace database {
@@ -107,10 +107,10 @@ public:
     slab_manager lookup_manager_;
     slab_map lookup_map_;
 
-#ifdef KTH_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LEGACY
     // This is thread safe, and as a cache is mutable.
     mutable unspent_outputs cache_;
-#endif // KTH_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LEGACY
 
     // This provides atomicity for height and position.
     mutable shared_mutex metadata_mutex_;

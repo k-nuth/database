@@ -5,7 +5,7 @@
 #ifndef KTH_DATABASE_UNSPENT_TRANSACTION_HPP_
 #define KTH_DATABASE_UNSPENT_TRANSACTION_HPP_
 
-#ifdef KTH_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LEGACY
 
 #include <cstddef>
 #include <cstdint>
@@ -85,6 +85,6 @@ struct hash<bc::database::unspent_transaction>
 
 } // namespace boost
 
-#endif // KTH_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LEGACY
 
 #endif // KTH_DATABASE_UNSPENT_TRANSACTION_HPP_

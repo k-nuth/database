@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 
-#ifdef KTH_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LEGACY
 
 #include <bitcoin/database/unspent_outputs.hpp>
 
@@ -240,4 +240,4 @@ bool unspent_outputs::get_is_confirmed(output& out_output, size_t& out_height,
 } // namespace database
 } // namespace kth
 
-#endif // KTH_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LEGACY

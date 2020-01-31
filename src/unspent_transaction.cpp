@@ -2,7 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifdef KTH_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LEGACY
 
 #include <bitcoin/database/unspent_transaction.hpp>
 
@@ -132,4 +132,4 @@ unspent_transaction& unspent_transaction::operator=(
 } // namespace database
 } // namespace kth
 
-#endif // KTH_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LEGACY

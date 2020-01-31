@@ -49,9 +49,9 @@ settings::settings()
     , history_table_buckets(0)
 #endif // KTH_DB_HISTORY    
 
-// #ifdef KTH_DB_UNSPENT_LIBBITCOIN
+// #ifdef KTH_DB_UNSPENT_LEGACY
     , cache_capacity(0)
-// #endif // KTH_DB_UNSPENT_LIBBITCOIN
+// #endif // KTH_DB_UNSPENT_LEGACY
 {}
 
 settings::settings(config::settings context)

@@ -47,9 +47,9 @@ transaction_database::transaction_database(const path& map_filename, size_t buck
     , lookup_header_(lookup_file_, buckets)
     , lookup_manager_(lookup_file_, slab_hash_table_header_size(buckets))
     , lookup_map_(lookup_header_, lookup_manager_)
-#ifdef KTH_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LEGACY
     , cache_(cache_capacity)
-#endif // KTH_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LEGACY
 {}
 
 transaction_database::~transaction_database() {
@@ -162,7 +162,7 @@ transaction_result transaction_database::get(const hash_digest& hash, size_t for
 bool transaction_database::get_output(output& out_output, size_t& out_height, uint32_t& out_median_time_past, 
     bool& out_coinbase, output_point const& point, size_t fork_height, bool require_confirmed) const {
 
-#ifdef KTH_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LEGACY
     if (cache_.get(out_output, out_height, out_median_time_past, out_coinbase, point, fork_height, require_confirmed)) {
         return true;
     }
@@ -193,11 +193,11 @@ bool transaction_database::get_output(output& out_output, size_t& out_height, ui
 bool transaction_database::get_output_is_confirmed(output& out_output, size_t& out_height,
     bool& out_coinbase, bool& out_is_confirmed, const output_point& point, size_t fork_height, bool require_confirmed) const {
 
-#ifdef KTH_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LEGACY
     if (cache_.get_is_confirmed(out_output, out_height, out_coinbase, out_is_confirmed, point, fork_height, require_confirmed)) {
         return true;
     }
-#endif // KTH_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LEGACY
 
     auto const hash = point.hash();
     auto const slab = find(hash, fork_height, require_confirmed);
@@ -243,9 +243,9 @@ void transaction_database::store(const chain::transaction& tx, size_t height, ui
     // A false pooled flag saves the cost of predictable confirm failure.
     if (position != unconfirmed && position != 0 && tx.validation.pooled) {
         if (confirm(hash, height, median_time_past, position)) {
-#ifdef KTH_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LEGACY
             cache_.add(tx, height, median_time_past, true);
-#endif // KTH_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LEGACY
             return;
         }
 
@@ -280,7 +280,7 @@ void transaction_database::store(const chain::transaction& tx, size_t height, ui
     // Create slab for the new tx instance.
     lookup_map_.store(hash, write, total_size);
 
-#ifdef KTH_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LEGACY
     cache_.add(tx, height, median_time_past, position != unconfirmed);
 
     // We report this here because its a steady interval (block announce).
@@ -289,16 +289,16 @@ void transaction_database::store(const chain::transaction& tx, size_t height, ui
             << "Output cache hit rate: " << cache_.hit_rate() << ", size: "
             << cache_.size();
     }
-#endif // KTH_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LEGACY
 }
 
 bool transaction_database::spend(const output_point& point, size_t spender_height) {
-#ifdef KTH_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LEGACY
     // If unspent we could restore the spend to the cache, but not worth it.
     if (spender_height != output::validation::not_spent) {
         cache_.remove(point);
     }
-#endif // KTH_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LEGACY
 
 
     // Limit search to confirmed transactions at or below the spender height,

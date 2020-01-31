@@ -17,9 +17,9 @@
 #include <bitcoin/database/primitives/slab_hash_table.hpp>
 #include <bitcoin/database/primitives/slab_manager.hpp>
 
-// #ifdef KTH_DB_UNSPENT_LIBBITCOIN
+// #ifdef KTH_DB_UNSPENT_LEGACY
 // #include <bitcoin/database/unspent_outputs.hpp>
-// #endif // KTH_DB_UNSPENT_LIBBITCOIN
+// #endif // KTH_DB_UNSPENT_LEGACY
 
 
 namespace libbitcoin {

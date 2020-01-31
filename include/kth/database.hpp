@@ -1,9 +1,7 @@
-///////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2014-2015 libbitcoin-database developers (see COPYING).
-//
-//        GENERATED SOURCE CODE, DO NOT EDIT EXCEPT EXPERIMENTALLY
-//
-///////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #ifndef KTH_DATABASE_HPP
 #define KTH_DATABASE_HPP
 
@@ -20,10 +18,10 @@
 #include <bitcoin/database/settings.hpp>
 #include <bitcoin/database/store.hpp>
 
-#ifdef KTH_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LEGACY
 #include <bitcoin/database/unspent_outputs.hpp>
 #include <bitcoin/database/unspent_transaction.hpp>
-#endif // KTH_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LEGACY
 
 #include <bitcoin/database/version.hpp>
 

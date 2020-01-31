@@ -49,9 +49,9 @@ public:
     uint32_t history_table_buckets;
 #endif // KTH_DB_HISTORY
 
-// #ifdef KTH_DB_UNSPENT_LIBBITCOIN
+// #ifdef KTH_DB_UNSPENT_LEGACY
     uint32_t cache_capacity;
-// #endif // KTH_DB_UNSPENT_LIBBITCOIN
+// #endif // KTH_DB_UNSPENT_LEGACY
 
 #if defined(WITH_REMOTE_DATABASE)    
     config::endpoint replier;
