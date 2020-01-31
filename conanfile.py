@@ -14,7 +14,7 @@ class KnuthDatabaseConan(KnuthConanFile):
     name = "database"
     # version = get_version()
     license = "http://www.boost.org/users/license.html"
-    url = "https://github.com/k-nuth/kth-database/tree/conan-build/conanfile.py"
+    url = "https://github.com/k-nuth/database/tree/conan-build/conanfile.py"
     description = "High Performance Blockchain Database"
     settings = "os", "compiler", "build_type", "arch"
 
@@ -58,9 +58,9 @@ class KnuthDatabaseConan(KnuthConanFile):
 
     generators = "cmake"
     exports = "conan_*", "ci_utils/*"
-    exports_sources = "src/*", "CMakeLists.txt", "cmake/*", "bitprim-databaseConfig.cmake.in", "bitprimbuildinfo.cmake", "include/*", "test/*", "tools/*"
+    exports_sources = "src/*", "CMakeLists.txt", "cmake/*", "kth-databaseConfig.cmake.in", "knuthbuildinfo.cmake", "include/*", "test/*", "tools/*"
 
-    package_files = "build/lbitprim-database.a"
+    package_files = "build/lkth-database.a"
     build_policy = "missing"
 
     def _is_legacy_db(self):
@@ -182,4 +182,4 @@ class KnuthDatabaseConan(KnuthConanFile):
 
     def package_info(self):
         self.cpp_info.includedirs = ['include']
-        self.cpp_info.libs = ["bitprim-database"]
+        self.cpp_info.libs = ["kth-database"]

@@ -90,15 +90,15 @@ jobs:
         - |
           conan user
           conan remote add kth_temp https://api.bintray.com/conan/k-nuth/kth
-          echo "waiting for bitprim-core/0.X@kth/staging ..."
-          conan search bitprim-core/0.X@kth/staging -r bitprim_temp > /dev/null
+          echo "waiting for domain/0.X@kth/staging ..."
+          conan search domain/0.X@kth/staging -r kth_temp > /dev/null
           while [ $? == 1 ]
           do
             printf "."
             sleep 10
-            conan search bitprim-core/0.X@kth/staging -r bitprim_temp > /dev/null
+            conan search domain/0.X@kth/staging -r kth_temp > /dev/null
           done
-          echo "bitprim-core/0.X@kth/staging found"
+          echo "domain/0.X@kth/staging found"
 
 # Static Checks ------------------------------------------------------
     - stage: static checks
@@ -271,10 +271,10 @@ jobs:
         #TODO(fernando): configure the remote and user using environment variables
         - conan remote add kth_temp https://api.bintray.com/conan/k-nuth/kth
         - conan user
-        - conan user ${CONAN_LOGIN_USERNAME} -r bitprim_temp -p ${CONAN_PASSWORD}
+        - conan user ${CONAN_LOGIN_USERNAME} -r kth_temp -p ${CONAN_PASSWORD}
         - conan user
         - conan alias "${REPO_NAME}/0.X@kth/${KTH_CONAN_CHANNEL}" "${REPO_NAME}/${KTH_CONAN_VERSION}@kth/${KTH_CONAN_CHANNEL}"
-        - conan upload "${REPO_NAME}/0.X@kth/${KTH_CONAN_CHANNEL}" --all -r bitprim_temp
+        - conan upload "${REPO_NAME}/0.X@kth/${KTH_CONAN_CHANNEL}" --all -r kth_temp
 
 # Push to repos ------------------------------------------------------
     - stage: push to repos

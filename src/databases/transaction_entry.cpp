@@ -181,7 +181,7 @@ bool transaction_entry::confirmed() {
     return position_ != position_max;
 }
 
-//Bitprim: We don't have spent information
+//Note(Knuth): We don't have spent information
 /*
 bool transaction_entry::is_spent(size_t fork_height) const {
 

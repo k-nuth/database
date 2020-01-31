@@ -625,7 +625,7 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
         return false;
     }
 
-    //Bitprim: fastest flags
+    //Note(knuth): fastest flags
     //MDB_NORDAHEAD | MDB_NOSYNC  | MDB_NOTLS | MDB_WRITEMAP | MDB_MAPASYNC
     //for more secure flags use: MDB_NORDAHEAD | MDB_NOSYNC  | MDB_NOTLS
 
@@ -780,7 +780,7 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
         }
 
         //set spender height in tx database
-        //Bitprim: Commented because we don't validate transaction duplicates (BIP-30)
+        //Note(Knuth): Commented because we don't validate transaction duplicates (BIP-30)
         /*res = set_spend(prevout, height, db_txn);
         if (res != result_code::success) {
             return res;

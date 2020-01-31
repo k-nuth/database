@@ -95,7 +95,7 @@ public:
 
     bool confirmed();
 
-    //Bitprim: we don't have spent information
+    //Note(Knuth): we don't have spent information
     //bool is_spent(size_t fork_height) const;
 
     static

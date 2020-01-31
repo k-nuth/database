@@ -258,7 +258,7 @@ void data_base::start() {
 #endif // KTH_DB_NEW
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
-    //TODO: BITPRIM: FER: transaction_table_buckets and file_growth_rate
+    //TODO(fernando): transaction_table_buckets and file_growth_rate
     transactions_unconfirmed_ = std::make_shared<transaction_unconfirmed_database>(transaction_unconfirmed_table,
         settings_.transaction_unconfirmed_table_buckets, settings_.file_growth_rate, remap_mutex_);
 #endif // KTH_DB_TRANSACTION_UNCONFIRMED
@@ -498,7 +498,7 @@ code data_base::verify_push(const block& block, size_t height) {
 }
 
 
-//Bitprim: We don't store spend information
+//Note(Knuth): We don't store spend information
 #if defined(KTH_DB_LEGACY)
 code data_base::verify_push(const transaction& tx) {
 

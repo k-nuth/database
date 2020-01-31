@@ -6,7 +6,7 @@
 get_filename_component(KTH_DATABASE_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 set(KTH_DATABASE_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
 
-include("${KTH_DATABASE_CMAKE_DIR}/bitprim-databaseTargets.cmake")
-set(KTH_DATABASE_LIBRARIES bitprim-database)
+include("${KTH_DATABASE_CMAKE_DIR}/kth-databaseTargets.cmake")
+set(KTH_DATABASE_LIBRARIES kth-database)
 
-find_package(bitprim-core 0 REQUIRED)
+find_package(kth-domain 0 REQUIRED)
