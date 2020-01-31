@@ -1,21 +1,7 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include <bitcoin/database/primitives/slab_manager.hpp>
 
 #include <cstddef>
@@ -76,7 +62,7 @@ bool slab_manager::start()
     ALLOCATE_WRITE(mutex_);
 
     read_size();
-    const auto minimum = header_size_ + payload_size_;
+    auto const minimum = header_size_ + payload_size_;
 
     // Slabs size exceeds file size.
     return minimum <= file_.size();
@@ -113,7 +99,7 @@ file_offset slab_manager::new_slab(size_t size)
     ALLOCATE_WRITE(mutex_);
 
     // Always write after the last slab.
-    const auto next_slab_position = payload_size_;
+    auto const next_slab_position = payload_size_;
 
     const size_t required_size = header_size_ + payload_size_ + size;
     file_.reserve(required_size);
@@ -143,8 +129,8 @@ void slab_manager::read_size()
     BITCOIN_ASSERT(header_size_ + sizeof(file_offset) <= file_.size());
 
     // The accessor must remain in scope until the end of the block.
-    const auto memory = file_.access();
-    const auto payload_size_address = REMAP_ADDRESS(memory) + header_size_;
+    auto const memory = file_.access();
+    auto const payload_size_address = REMAP_ADDRESS(memory) + header_size_;
     payload_size_ = from_little_endian_unsafe<file_offset>(
         payload_size_address);
 }
@@ -155,11 +141,11 @@ void slab_manager::write_size() const
     BITCOIN_ASSERT(header_size_ + sizeof(file_offset) <= file_.size());
 
     // The accessor must remain in scope until the end of the block.
-    const auto memory = file_.access();
-    const auto payload_size_address = REMAP_ADDRESS(memory) + header_size_;
+    auto const memory = file_.access();
+    auto const payload_size_address = REMAP_ADDRESS(memory) + header_size_;
     auto serial = make_unsafe_serializer(payload_size_address);
     serial.write_little_endian(payload_size_);
 }
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth

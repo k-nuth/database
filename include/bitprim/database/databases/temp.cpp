@@ -221,7 +221,7 @@ estim:
 }
 
 
-void BlockchainLMDB::open(const std::string& filename, const int db_flags)
+void BlockchainLMDB::open(const std::string& filename, int const db_flags)
 {
   int result;
   int mdb_flags = MDB_NORDAHEAD;

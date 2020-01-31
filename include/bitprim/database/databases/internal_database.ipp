@@ -1,23 +1,9 @@
-/**
- * Copyright (c) 2016-2018 Bitprim Inc.
- *
- * This file is part of Bitprim.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifndef BITPRIM_DATABASE_INTERNAL_DATABASE_IPP_
-#define BITPRIM_DATABASE_INTERNAL_DATABASE_IPP_
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifndef KTH_DATABASE_INTERNAL_DATABASE_IPP_
+#define KTH_DATABASE_INTERNAL_DATABASE_IPP_
 
 
 namespace libbitcoin {
@@ -77,9 +63,9 @@ bool internal_database_basis<Clock>::create_db_mode_property() {
 
     db_mode_code db_mode_;
 
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
     db_mode_ = db_mode_code::db_new_full;
-#elif defined(BITPRIM_DB_NEW_BLOCKS)
+#elif defined(KTH_DB_NEW_BLOCKS)
     db_mode_ = db_mode_code::db_new_with_blocks;
 #else
     db_mode_ = db_mode_code::db_new;
@@ -161,9 +147,9 @@ bool internal_database_basis<Clock>::verify_db_mode_property() {
         return false;
     }
 
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
     auto db_mode_node_ = db_mode_code::db_new_full;     
-#elif defined(BITPRIM_DB_NEW_BLOCKS)
+#elif defined(KTH_DB_NEW_BLOCKS)
     auto db_mode_node_ = db_mode_code::db_new_with_blocks;
 #else
     auto db_mode_node_ = db_mode_code::db_new;
@@ -193,11 +179,11 @@ bool internal_database_basis<Clock>::close() {
         mdb_dbi_close(env_, dbi_reorg_block_);
         mdb_dbi_close(env_, dbi_properties_);
 
-        #if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL) 
+        #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) 
         mdb_dbi_close(env_, dbi_block_db_);
         #endif
         
-        #if defined(BITPRIM_DB_NEW_FULL)
+        #if defined(KTH_DB_NEW_FULL)
         mdb_dbi_close(env_, dbi_transaction_db_);
         mdb_dbi_close(env_, dbi_transaction_hash_db_);
         mdb_dbi_close(env_, dbi_history_db_);
@@ -272,7 +258,7 @@ result_code internal_database_basis<Clock>::push_block(chain::block const& block
 template <typename Clock>
 utxo_entry internal_database_basis<Clock>::get_utxo(chain::output_point const& point, MDB_txn* db_txn) const {
 
-    auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);
+    auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);
     MDB_val key {keyarr.size(), keyarr.data()};
     MDB_val value;
 
@@ -480,7 +466,7 @@ result_code internal_database_basis<Clock>::insert_reorg_into_pool(utxo_pool_t& 
     auto entry = utxo_entry::factory_from_data(entry_data);
 
     auto point_data = db_value_to_data_chunk(key_point);
-    auto point = chain::output_point::factory_from_data(point_data, BITPRIM_INTERNAL_DB_WIRE);
+    auto point = chain::output_point::factory_from_data(point_data, KTH_INTERNAL_DB_WIRE);
     pool.insert({point, std::move(entry)});
 
     return result_code::success;
@@ -563,7 +549,7 @@ std::pair<result_code, utxo_pool_t> internal_database_basis<Clock>::get_utxo_poo
     return {result_code::success, pool};
 }
 
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::push_transaction_unconfirmed(chain::transaction const& tx, uint32_t height) {
@@ -732,14 +718,14 @@ bool internal_database_basis<Clock>::open_databases() {
         return false;
     }
 
-#if defined(BITPRIM_DB_NEW_BLOCKS)  
+#if defined(KTH_DB_NEW_BLOCKS)  
     res = mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_db_);
     if (res != MDB_SUCCESS) {
         return false;
     }
 #endif 
 
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
     
     res = mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED  | MDB_INTEGERDUP, &dbi_block_db_);
     if (res != MDB_SUCCESS) {
@@ -773,7 +759,7 @@ bool internal_database_basis<Clock>::open_databases() {
 
     mdb_set_dupsort(db_txn, dbi_history_db_, compare_uint64);
 
-#endif //BITPRIM_DB_NEW_FULL
+#endif //KTH_DB_NEW_FULL
 
     db_opened_ = mdb_txn_commit(db_txn) == MDB_SUCCESS;
     return db_opened_;
@@ -787,7 +773,7 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
         chain::input_point const inpoint {tx_id, pos};
         auto const& prevout = input.previous_output();
         
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
         auto res = insert_input_history(inpoint, height, input, db_txn);            
         if (res != result_code::success) {
             return res;
@@ -809,7 +795,7 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
             return res;
         }
 
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
 
         //insert in spend database
         res = insert_spend(prevout, inpoint, db_txn);
@@ -835,7 +821,7 @@ result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx
             return res;
         }
 
-        #if defined(BITPRIM_DB_NEW_FULL)
+        #if defined(KTH_DB_NEW_FULL)
         
         res = insert_output_history(tx_id, height, pos, output, db_txn);
         if (res != result_code::success) {
@@ -915,14 +901,14 @@ result_code internal_database_basis<Clock>::push_block(chain::block const& block
 
     auto const& txs = block.transactions();     
 
-#if defined(BITPRIM_DB_NEW_BLOCKS) 
+#if defined(KTH_DB_NEW_BLOCKS) 
     res = insert_block(block, height, db_txn);        
     if (res != result_code::success) {
         // std::cout << "22222222222222" << static_cast<uint32_t>(res) << "\n";
         return res;
     }
 
-#elif defined(BITPRIM_DB_NEW_FULL)
+#elif defined(KTH_DB_NEW_FULL)
 
     auto tx_count = get_tx_count(db_txn);
     
@@ -975,9 +961,9 @@ result_code internal_database_basis<Clock>::push_genesis(chain::block const& blo
         return res;
     }
 
-#if defined(BITPRIM_DB_NEW_BLOCKS)
+#if defined(KTH_DB_NEW_BLOCKS)
     res = insert_block(block, 0, db_txn);
-#elif defined(BITPRIM_DB_NEW_FULL) 
+#elif defined(KTH_DB_NEW_FULL) 
     auto tx_count = get_tx_count(db_txn);
     res = insert_block(block, 0, tx_count, db_txn);
     
@@ -1115,20 +1101,20 @@ result_code internal_database_basis<Clock>::remove_block(chain::block const& blo
         return res;
     }
 
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
     //Transaction Database
     res = remove_transactions(block, height, db_txn);
     if (res != result_code::success) {
         return res;
     }
-#endif //defined(BITPRIM_DB_NEW_FULL)
+#endif //defined(KTH_DB_NEW_FULL)
 
-#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
     res = remove_blocks_db(height, db_txn);
     if (res != result_code::success) {
         return res;
     }
-#endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+#endif //defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
 
     return result_code::success;
 }
@@ -1155,7 +1141,7 @@ result_code internal_database_basis<Clock>::remove_block(chain::block const& blo
 }
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
 
-#endif // BITPRIM_DATABASE_INTERNAL_DATABASE_IPP_
+#endif // KTH_DATABASE_INTERNAL_DATABASE_IPP_

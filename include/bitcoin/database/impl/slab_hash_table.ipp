@@ -1,23 +1,9 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifndef LIBBITCOIN_DATABASE_SLAB_HASH_TABLE_IPP
-#define LIBBITCOIN_DATABASE_SLAB_HASH_TABLE_IPP
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifndef KTH_DATABASE_SLAB_HASH_TABLE_IPP
+#define KTH_DATABASE_SLAB_HASH_TABLE_IPP
 
 #include <bitcoin/bitcoin.hpp>
 #include <bitcoin/database/memory/memory.hpp>
@@ -44,7 +30,7 @@ file_offset slab_hash_table<KeyType>::store(const KeyType& key,
 {
     // Allocate and populate new unlinked record.
     slab_row<KeyType> slab(manager_);
-    const auto position = slab.create(key, write, value_size);
+    auto const position = slab.create(key, write, value_size);
 
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
@@ -80,7 +66,7 @@ file_offset slab_hash_table<KeyType>::update(const KeyType& key,
         // Found.
         if (item.compare(key))
         {
-            const auto memory = item.data();
+            auto const memory = item.data();
             auto serial = make_unsafe_serializer(REMAP_ADDRESS(memory));
             write(serial);
             return item.offset();
@@ -134,7 +120,7 @@ bool slab_hash_table<KeyType>::unlink(const KeyType& key)
     if (begin_item.compare(key))
     {
         //*********************************************************************
-        const auto next = begin_item.next_position();
+        auto const next = begin_item.next_position();
         //*********************************************************************
 
         link(key, next);
@@ -160,7 +146,7 @@ bool slab_hash_table<KeyType>::unlink(const KeyType& key)
             // Critical Section
             ///////////////////////////////////////////////////////////////////
             update_mutex_.lock_upgrade();
-            const auto next = item.next_position();
+            auto const next = item.next_position();
             update_mutex_.unlock_upgrade_and_lock();
             //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             previous_item.write_next_position(next);
@@ -184,7 +170,7 @@ bool slab_hash_table<KeyType>::unlink(const KeyType& key)
 template <typename KeyType>
 array_index slab_hash_table<KeyType>::bucket_index(const KeyType& key) const
 {
-    const auto bucket = remainder(key, header_.size());
+    auto const bucket = remainder(key, header_.size());
     BITCOIN_ASSERT(bucket < header_.size());
     return bucket;
 }
@@ -193,7 +179,7 @@ template <typename KeyType>
 file_offset slab_hash_table<KeyType>::read_bucket_value(
     const KeyType& key) const
 {
-    const auto value = header_.read(bucket_index(key));
+    auto const value = header_.read(bucket_index(key));
     static_assert(sizeof(value) == sizeof(file_offset), "Invalid size");
     return value;
 }
@@ -207,7 +193,7 @@ void slab_hash_table<KeyType>::link(const KeyType& key, file_offset begin)
 template <typename KeyType>
 file_offset slab_hash_table<KeyType>::read_bucket_value_by_index(array_index index) const
 {
-    const auto value = header_.read(index);
+    auto const value = header_.read(index);
     static_assert(sizeof(value) == sizeof(file_offset), "Invalid size");
     return value;
 }
@@ -231,7 +217,7 @@ void slab_hash_table<KeyType>::for_each(UnaryFunction f) const {
                 return;
             }
 
-            const auto previous = current;
+            auto const previous = current;
             current = item.next_position();
 
             // This may otherwise produce an infinite loop here.
@@ -247,6 +233,6 @@ void slab_hash_table<KeyType>::for_each(UnaryFunction f) const {
 }
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
 #endif

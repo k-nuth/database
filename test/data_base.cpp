@@ -1,21 +1,7 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include <boost/test/unit_test.hpp>
 
 #include <future>
@@ -30,13 +16,13 @@ using namespace bc::wallet;
 using namespace boost::system;
 using namespace boost::filesystem;
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
 void test_block_exists(const data_base& interface, size_t height, const block& block0, bool indexed) {
-#ifdef BITPRIM_DB_HISTORY
-    const auto& history_store = interface.history();
-#endif // BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
+    auto const& history_store = interface.history();
+#endif // KTH_DB_HISTORY
 
-    const auto block_hash = block0.hash();
+    auto const block_hash = block0.hash();
     auto r0 = interface.blocks().get(height);
     auto r0_byhash = interface.blocks().get(block_hash);
 
@@ -53,8 +39,8 @@ void test_block_exists(const data_base& interface, size_t height, const block& b
 
     for (size_t i = 0; i < block0.transactions().size(); ++i)
     {
-        const auto& tx = block0.transactions()[i];
-        const auto tx_hash = tx.hash();
+        auto const& tx = block0.transactions()[i];
+        auto const tx_hash = tx.hash();
         ////BOOST_REQUIRE(r0.transaction_hash(i) == tx_hash);
         ////BOOST_REQUIRE(r0_byhash.transaction_hash(i) == tx_hash);
 
@@ -69,31 +55,31 @@ void test_block_exists(const data_base& interface, size_t height, const block& b
         {
             for (uint32_t j = 0; j < tx.inputs().size(); ++j)
             {
-                const auto& input = tx.inputs()[j];
+                auto const& input = tx.inputs()[j];
                 input_point spend{ tx_hash, j };
                 BOOST_REQUIRE_EQUAL(spend.index(), j);
 
-#ifdef BITPRIM_DB_SPENDS
+#ifdef KTH_DB_SPENDS
                 auto r0_spend = interface.spends().get(input.previous_output());
                 BOOST_REQUIRE(r0_spend.is_valid());
                 BOOST_REQUIRE(r0_spend.hash() == spend.hash());
                 BOOST_REQUIRE_EQUAL(r0_spend.index(), spend.index());
-#endif // BITPRIM_DB_SPENDS
+#endif // KTH_DB_SPENDS
 
                 if (!indexed)
                     continue;
 
-                const auto addresses = input.addresses();
-                ////const auto& prevout = input.previous_output();
-                ////const auto address = prevout.validation.cache.addresses();
+                auto const addresses = input.addresses();
+                ////auto const& prevout = input.previous_output();
+                ////auto const address = prevout.validation.cache.addresses();
 
-#ifdef BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
                 for (auto const& address : addresses)
                 {
                     auto history = history_store.get(address.hash(), 0, 0);
                     auto found = false;
 
-                    for (const auto& row: history)
+                    for (auto const& row: history)
                     {
                         if (row.point == spend)
                         {
@@ -105,7 +91,7 @@ void test_block_exists(const data_base& interface, size_t height, const block& b
 
                     BOOST_REQUIRE(found);
                 }
-#endif // BITPRIM_DB_HISTORY                
+#endif // KTH_DB_HISTORY                
             }
         }
 
@@ -114,17 +100,17 @@ void test_block_exists(const data_base& interface, size_t height, const block& b
 
         for (size_t j = 0; j < tx.outputs().size(); ++j)
         {
-            const auto& output = tx.outputs()[j];
+            auto const& output = tx.outputs()[j];
             output_point outpoint{ tx_hash, static_cast<uint32_t>(j) };
-            const auto addresses = output.addresses();
+            auto const addresses = output.addresses();
 
-#ifdef BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
             for (auto const& address : addresses)
             {
                 auto history = history_store.get(address.hash(), 0, 0);
                 auto found = false;
 
-                for (const auto& row: history)
+                for (auto const& row: history)
                 {
                     ////BOOST_REQUIRE(row.is_valid());
 
@@ -139,7 +125,7 @@ void test_block_exists(const data_base& interface, size_t height, const block& b
 
                 BOOST_REQUIRE(found);
             }
-#endif // BITPRIM_DB_HISTORY
+#endif // KTH_DB_HISTORY
 
         }
     }
@@ -149,43 +135,43 @@ void test_block_exists(const data_base& interface, size_t height, const block& b
 void test_block_not_exists(const data_base& interface, const block& block0,
     bool indexed)
 {
-#ifdef BITPRIM_DB_HISTORY
-    const auto& history_store = interface.history();
-#endif // BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
+    auto const& history_store = interface.history();
+#endif // KTH_DB_HISTORY
 
-    ////const auto r0_byhash = interface.blocks().get(block0.hash());
+    ////auto const r0_byhash = interface.blocks().get(block0.hash());
     ////BOOST_REQUIRE(!r0_byhash);
     for (size_t i = 0; i < block0.transactions().size(); ++i)
     {
-        const auto& tx = block0.transactions()[i];
-        const auto tx_hash = tx.hash();
+        auto const& tx = block0.transactions()[i];
+        auto const tx_hash = tx.hash();
 
         if (!tx.is_coinbase())
         {
             for (size_t j = 0; j < tx.inputs().size(); ++j)
             {
-                const auto& input = tx.inputs()[j];
+                auto const& input = tx.inputs()[j];
                 input_point spend{ tx_hash, static_cast<uint32_t>(j) };
 
-#ifdef BITPRIM_DB_SPENDS                
+#ifdef KTH_DB_SPENDS                
                 auto r0_spend = interface.spends().get(input.previous_output());
                 BOOST_REQUIRE(!r0_spend.is_valid());
-#endif // BITPRIM_DB_SPENDS
+#endif // KTH_DB_SPENDS
 
                 if (!indexed)
                     continue;
 
-                const auto addresses = input.addresses();
-                ////const auto& prevout = input.previous_output();
-                ////const auto address = prevout.validation.cache.addresses();
+                auto const addresses = input.addresses();
+                ////auto const& prevout = input.previous_output();
+                ////auto const address = prevout.validation.cache.addresses();
 
-#ifdef BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
                 for (auto const& address : addresses)
                 {
                     auto history = history_store.get(address.hash(), 0, 0);
                     auto found = false;
 
-                    for (const auto& row: history)
+                    for (auto const& row: history)
                     {
                         if (row.point == spend)
                         {
@@ -196,7 +182,7 @@ void test_block_not_exists(const data_base& interface, const block& block0,
 
                     BOOST_REQUIRE(!found);
                 }
-#endif // BITPRIM_DB_HISTORY                
+#endif // KTH_DB_HISTORY                
             }
         }
 
@@ -205,17 +191,17 @@ void test_block_not_exists(const data_base& interface, const block& block0,
 
         for (size_t j = 0; j < tx.outputs().size(); ++j)
         {
-            const auto& output = tx.outputs()[j];
+            auto const& output = tx.outputs()[j];
             output_point outpoint{ tx_hash, static_cast<uint32_t>(j) };
-            const auto addresses = output.addresses();
+            auto const addresses = output.addresses();
 
-#ifdef BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
             for (auto const& address : addresses)
             {
                 auto history = history_store.get(address.hash(), 0, 0);
                 auto found = false;
 
-                for (const auto& row: history)
+                for (auto const& row: history)
                 {
                     if (row.point == outpoint)
                     {
@@ -226,11 +212,11 @@ void test_block_not_exists(const data_base& interface, const block& block0,
 
                 BOOST_REQUIRE(!found);
             }
-#endif // BITPRIM_DB_HISTORY            
+#endif // KTH_DB_HISTORY            
         }
     }
 }
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
 block read_block(const std::string hex)
 {
@@ -308,7 +294,7 @@ static code push_all_result(data_base_accessor& instance,
     dispatcher& dispatch)
 {
     std::promise<code> promise;
-    const auto handler = [&promise](code ec)
+    auto const handler = [&promise](code ec)
     {
         promise.set_value(ec);
     };
@@ -321,7 +307,7 @@ static code pop_above_result(data_base_accessor& instance,
     dispatcher& dispatch)
 {
     std::promise<code> promise;
-    const auto handler = [&promise](code ec)
+    auto const handler = [&promise](code ec)
     {
         promise.set_value(ec);
     };
@@ -329,7 +315,7 @@ static code pop_above_result(data_base_accessor& instance,
     return promise.get_future().get();
 }
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
 BOOST_AUTO_TEST_CASE(data_base__pushpop__test)
 {
     std::cout << "begin data_base push/pop test" << std::endl;
@@ -341,33 +327,33 @@ BOOST_AUTO_TEST_CASE(data_base__pushpop__test)
     settings.file_growth_rate = 42;
     settings.index_start_height = 0;
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
     settings.block_table_buckets = 42;
     settings.transaction_table_buckets = 42;
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
-#ifdef BITPRIM_DB_SPENDS
+#ifdef KTH_DB_SPENDS
     settings.spend_table_buckets = 42;
-#endif // BITPRIM_DB_SPENDS
+#endif // KTH_DB_SPENDS
 
-#ifdef BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
     settings.history_table_buckets = 42;
-#endif // BITPRIM_DB_HISTORY
+#endif // KTH_DB_HISTORY
 
-#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
     settings.transaction_unconfirmed_table_buckets = 42;
-#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED    
      
 
     // If index_height is set to anything other than 0 or max it can cause
     // false negatives since it excludes entries below the specified height.
-    const auto indexed = settings.index_start_height < store::without_indexes;
+    auto const indexed = settings.index_start_height < store::without_indexes;
 
     size_t height;
     threadpool pool(1);
     dispatcher dispatch(pool, "test");
     data_base_accessor instance(settings);
-    const auto block0 = block::genesis_mainnet();
+    auto const block0 = block::genesis_mainnet();
     BOOST_REQUIRE(instance.create(block0));
     test_block_exists(instance, 0, block0, indexed);
     BOOST_REQUIRE(instance.blocks().top(height));
@@ -381,7 +367,7 @@ BOOST_AUTO_TEST_CASE(data_base__pushpop__test)
     BOOST_REQUIRE_EQUAL(instance.push(invalid_block1, 1), error::store_block_missing_parent);
 
     std::cout << "push block #1" << std::endl;
-    const auto block1 = read_block(MAINNET_BLOCK1);
+    auto const block1 = read_block(MAINNET_BLOCK1);
     test_block_not_exists(instance, block1, indexed);
     BOOST_REQUIRE_EQUAL(instance.push(block1, 1), error::success);
     test_block_exists(instance, 0, block0, indexed);
@@ -390,9 +376,9 @@ BOOST_AUTO_TEST_CASE(data_base__pushpop__test)
     test_block_exists(instance, 1, block1, indexed);
 
     std::cout << "push_all blocks #2 & #3" << std::endl;
-    const auto block2_ptr = std::make_shared<const message::block>(read_block(MAINNET_BLOCK2));
-    const auto block3_ptr = std::make_shared<const message::block>(read_block(MAINNET_BLOCK3));
-    const auto blocks_push_ptr = std::make_shared<const block_const_ptr_list>(block_const_ptr_list{ block2_ptr, block3_ptr });
+    auto const block2_ptr = std::make_shared<const message::block>(read_block(MAINNET_BLOCK2));
+    auto const block3_ptr = std::make_shared<const message::block>(read_block(MAINNET_BLOCK3));
+    auto const blocks_push_ptr = std::make_shared<const block_const_ptr_list>(block_const_ptr_list{ block2_ptr, block3_ptr });
     test_block_not_exists(instance, *block2_ptr, indexed);
     test_block_not_exists(instance, *block3_ptr, indexed);
     BOOST_REQUIRE_EQUAL(push_all_result(instance, blocks_push_ptr, 2, dispatch), error::success);
@@ -406,7 +392,7 @@ BOOST_AUTO_TEST_CASE(data_base__pushpop__test)
     BOOST_REQUIRE_EQUAL(instance.insert(*block2_ptr, 2), error::store_block_duplicate);
 
     std::cout << "pop_above block 1 (blocks #2 & #3)" << std::endl;
-    const auto blocks_popped_ptr = std::make_shared<block_const_ptr_list>();
+    auto const blocks_popped_ptr = std::make_shared<block_const_ptr_list>();
     BOOST_REQUIRE_EQUAL(pop_above_result(instance, blocks_popped_ptr, block1.hash(), dispatch), error::success);
     BOOST_REQUIRE(instance.blocks().top(height));
     BOOST_REQUIRE_EQUAL(height, 1u);
@@ -439,6 +425,6 @@ BOOST_AUTO_TEST_CASE(data_base__pushpop__test)
 
     std::cout << "end push/pop test" << std::endl;
 }
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
 BOOST_AUTO_TEST_SUITE_END()

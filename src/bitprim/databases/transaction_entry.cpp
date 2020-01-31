@@ -1,24 +1,10 @@
-/**
- * Copyright (c) 2016-2018 Bitprim Inc.
- *
- * This file is part of Bitprim.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-// #ifdef BITPRIM_DB_NEW
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <bitprim/database/databases/transaction_entry.hpp>
+// #ifdef KTH_DB_NEW
+
+#include <knuth/database/databases/transaction_entry.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -27,12 +13,12 @@ namespace libbitcoin {
 namespace database {
 
 // void write_position(writer& serial, uint32_t position) {
-//     serial.BITPRIM_POSITION_WRITER(position);
+//     serial.KTH_POSITION_WRITER(position);
 // }
 
 // template <typename Deserializer>
 // uint32_t read_position(Deserializer& deserial) {
-//     return deserial.BITPRIM_POSITION_READER();
+//     return deserial.KTH_POSITION_READER();
 // }
 
 transaction_entry::transaction_entry(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position)
@@ -73,7 +59,7 @@ bool transaction_entry::is_valid() const {
 // constexpr
 //TODO(fernando): make this constexpr 
 size_t transaction_entry::serialized_size(chain::transaction const& tx) {
-#if ! defined(BITPRIM_USE_DOMAIN) || defined(BITPRIM_CACHED_RPC_DATA)
+#if ! defined(KTH_USE_DOMAIN) || defined(KTH_CACHED_RPC_DATA)
     return tx.serialized_size(false, true, false) 
 #else
     return tx.serialized_size(false, true) 
@@ -105,7 +91,7 @@ void transaction_entry::factory_to_data(std::ostream& stream, chain::transaction
 }
 
 
-#if ! defined(BITPRIM_USE_DOMAIN)
+#if ! defined(KTH_USE_DOMAIN)
 // static
 void transaction_entry::factory_to_data(writer& sink, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position) {
     tx.to_data(sink, false,true,false);
@@ -135,7 +121,7 @@ void transaction_entry::to_data(std::ostream& stream) const {
     to_data(sink);
 }
 
-#ifndef BITPRIM_USE_DOMAIN
+#ifndef KTH_USE_DOMAIN
 void transaction_entry::to_data(writer& sink) const {
     factory_to_data(sink, transaction_, height_, median_time_past_, position_ );
 }
@@ -156,7 +142,7 @@ transaction_entry transaction_entry::factory_from_data(std::istream& stream) {
     return instance;
 }
 
-#ifndef BITPRIM_USE_DOMAIN
+#ifndef KTH_USE_DOMAIN
 transaction_entry transaction_entry::factory_from_data(reader& source) {
     transaction_entry instance;
     instance.from_data(source);
@@ -174,7 +160,7 @@ bool transaction_entry::from_data(std::istream& stream) {
     return from_data(source);
 }
 
-#ifndef BITPRIM_USE_DOMAIN
+#ifndef KTH_USE_DOMAIN
 bool transaction_entry::from_data(reader& source) {
     reset();
     
@@ -204,7 +190,7 @@ bool transaction_entry::is_spent(size_t fork_height) const {
         return false;
 
     for (auto const& output : transaction_.outputs()) {
-        const auto spender_height =  output.validation.spender_height;
+        auto const spender_height =  output.validation.spender_height;
 
         // A spend from above the fork height is not an actual spend.
         if (spender_height == chain::output::validation::not_spent || spender_height > fork_height)
@@ -215,5 +201,5 @@ bool transaction_entry::is_spent(size_t fork_height) const {
 
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 

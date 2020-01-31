@@ -1,25 +1,11 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifndef LIBBITCOIN_DATABASE_TRANSACTION_DATABASE_HPP_
-#define LIBBITCOIN_DATABASE_TRANSACTION_DATABASE_HPP_
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifdef BITPRIM_DB_LEGACY
+#ifndef KTH_DATABASE_TRANSACTION_DATABASE_HPP_
+#define KTH_DATABASE_TRANSACTION_DATABASE_HPP_
+
+#ifdef KTH_DB_LEGACY
 
 #include <cstddef>
 #include <memory>
@@ -31,9 +17,9 @@
 #include <bitcoin/database/primitives/slab_hash_table.hpp>
 #include <bitcoin/database/primitives/slab_manager.hpp>
 
-#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LIBBITCOIN
 #include <bitcoin/database/unspent_outputs.hpp>
-#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LIBBITCOIN
 
 namespace libbitcoin {
 namespace database {
@@ -121,18 +107,18 @@ public:
     slab_manager lookup_manager_;
     slab_map lookup_map_;
 
-#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LIBBITCOIN
     // This is thread safe, and as a cache is mutable.
     mutable unspent_outputs cache_;
-#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LIBBITCOIN
 
     // This provides atomicity for height and position.
     mutable shared_mutex metadata_mutex_;
 };
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
-#endif // LIBBITCOIN_DATABASE_TRANSACTION_DATABASE_HPP_
+#endif // KTH_DATABASE_TRANSACTION_DATABASE_HPP_

@@ -1,28 +1,14 @@
-/**
- * Copyright (c) 2016-2018 Bitprim Inc.
- *
- * This file is part of Bitprim.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifndef BITPRIM_DATABASE_HISTORY_DATABASE_IPP_
-#define BITPRIM_DATABASE_HISTORY_DATABASE_IPP_
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifndef KTH_DATABASE_HISTORY_DATABASE_IPP_
+#define KTH_DATABASE_HISTORY_DATABASE_IPP_
 
 namespace libbitcoin {
 namespace database {
 
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_history_db(wallet::payment_address const& address, data_chunk const& entry, MDB_txn* db_txn) {
@@ -236,7 +222,7 @@ std::vector<hash_digest> internal_database_basis<Clock>::get_history_txns(short_
         
         if (from_height == 0 || entry.height() >= from_height) {
             // Avoid inserting the same tx
-            const auto & pair = temp.insert(entry.point().hash());
+            auto const & pair = temp.insert(entry.point().hash());
             if (pair.second){
                 // Add valid txns to the result vector
                 result.push_back(*pair.first);
@@ -254,7 +240,7 @@ std::vector<hash_digest> internal_database_basis<Clock>::get_history_txns(short_
 
             if (from_height == 0 || entry.height() >= from_height) {
                 // Avoid inserting the same tx
-                const auto & pair = temp.insert(entry.point().hash());
+                auto const & pair = temp.insert(entry.point().hash());
                 if (pair.second){
                     // Add valid txns to the result vector
                     result.push_back(*pair.first);
@@ -383,9 +369,9 @@ uint64_t internal_database_basis<Clock>::get_history_count(MDB_txn* db_txn) {
   return db_stats.ms_entries;
 }
 
-#endif //BITPRIM_NEW_DB_FULL
+#endif //KTH_NEW_DB_FULL
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
-#endif // BITPRIM_DATABASE_HISTORY_DATABASE_IPP_
+#endif // KTH_DATABASE_HISTORY_DATABASE_IPP_

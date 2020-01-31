@@ -26,7 +26,7 @@
 
 /* local utilities */
 
-static const int large = (sizeof(oft__) > sizeof(DWORD));
+static int const large = (sizeof(oft__) > sizeof(DWORD));
 
 static int last_error(int default_value)
 {

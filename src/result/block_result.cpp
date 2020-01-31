@@ -1,22 +1,8 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifdef BITPRIM_DB_LEGACY
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifdef KTH_DB_LEGACY
 #include <bitcoin/database/result/block_result.hpp>
 
 #include <cstdint>
@@ -88,7 +74,7 @@ const hash_digest& block_result::hash() const
 chain::header block_result::header() const
 {
     BITCOIN_ASSERT(slab_);
-    const auto memory = REMAP_ADDRESS(slab_);
+    auto const memory = REMAP_ADDRESS(slab_);
     auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab_));
 
     // READ THE HEADER (including median_time_past metadata).
@@ -110,28 +96,28 @@ size_t block_result::height() const
 uint32_t block_result::bits() const
 {
     BITCOIN_ASSERT(slab_);
-    const auto memory = REMAP_ADDRESS(slab_);
+    auto const memory = REMAP_ADDRESS(slab_);
     return from_little_endian_unsafe<uint32_t>(memory + bits_offset);
 }
 
 uint32_t block_result::timestamp() const
 {
     BITCOIN_ASSERT(slab_);
-    const auto memory = REMAP_ADDRESS(slab_);
+    auto const memory = REMAP_ADDRESS(slab_);
     return from_little_endian_unsafe<uint32_t>(memory + time_offset);
 }
 
 uint32_t block_result::version() const
 {
     BITCOIN_ASSERT(slab_);
-    const auto memory = REMAP_ADDRESS(slab_);
+    auto const memory = REMAP_ADDRESS(slab_);
     return from_little_endian_unsafe<uint32_t>(memory + version_offset);
 }
 
 size_t block_result::transaction_count() const
 {
     BITCOIN_ASSERT(slab_);
-    const auto memory = REMAP_ADDRESS(slab_);
+    auto const memory = REMAP_ADDRESS(slab_);
     auto deserial = make_unsafe_deserializer(memory + count_offset);
     return deserial.read_size_little_endian();
 }
@@ -139,9 +125,9 @@ size_t block_result::transaction_count() const
 hash_digest block_result::transaction_hash(size_t index) const
 {
     BITCOIN_ASSERT(slab_);
-    const auto memory = REMAP_ADDRESS(slab_);
+    auto const memory = REMAP_ADDRESS(slab_);
     auto deserial = make_unsafe_deserializer(memory + count_offset);
-    const auto tx_count = deserial.read_size_little_endian();
+    auto const tx_count = deserial.read_size_little_endian();
 
     BITCOIN_ASSERT(index < tx_count);
     deserial.skip(index * hash_size);
@@ -151,9 +137,9 @@ hash_digest block_result::transaction_hash(size_t index) const
 hash_list block_result::transaction_hashes() const
 {
     BITCOIN_ASSERT(slab_);
-    const auto memory = REMAP_ADDRESS(slab_);
+    auto const memory = REMAP_ADDRESS(slab_);
     auto deserial = make_unsafe_deserializer(memory + count_offset);
-    const auto tx_count = deserial.read_size_little_endian();
+    auto const tx_count = deserial.read_size_little_endian();
     hash_list hashes;
     hashes.reserve(tx_count);
 
@@ -166,12 +152,12 @@ hash_list block_result::transaction_hashes() const
 uint64_t block_result::serialized_size() const
 {
     BITCOIN_ASSERT(slab_);
-    const auto memory = REMAP_ADDRESS(slab_);
+    auto const memory = REMAP_ADDRESS(slab_);
     auto deserial = make_unsafe_deserializer(memory + serialized_size_offset);
     return deserial.read_8_bytes_little_endian();
 }
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY

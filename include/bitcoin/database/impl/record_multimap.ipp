@@ -1,23 +1,9 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifndef LIBBITCOIN_DATABASE_RECORD_MULTIMAP_IPP
-#define LIBBITCOIN_DATABASE_RECORD_MULTIMAP_IPP
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifndef KTH_DATABASE_RECORD_MULTIMAP_IPP
+#define KTH_DATABASE_RECORD_MULTIMAP_IPP
 
 #include <bitcoin/database/memory/memory.hpp>
 #include <bitcoin/database/primitives/record_list.hpp>
@@ -38,13 +24,13 @@ void record_multimap<KeyType>::store(const KeyType& key,
 {
     // Allocate and populate new unlinked row.
     record_list record(manager_);
-    const auto begin = record.create(write);
+    auto const begin = record.create(write);
 
     // Critical Section.
     ///////////////////////////////////////////////////////////////////////////
     unique_lock lock(create_mutex_);
 
-    const auto old_begin = find(key);
+    auto const old_begin = find(key);
 
     // Link the row to the previous first element (or terminator).
     record.link(old_begin);
@@ -75,12 +61,12 @@ void record_multimap<KeyType>::store(const KeyType& key,
 template <typename KeyType>
 array_index record_multimap<KeyType>::find(const KeyType& key) const
 {
-    const auto begin_address = map_.find(key);
+    auto const begin_address = map_.find(key);
 
     if (!begin_address)
         return record_list::empty;
 
-    const auto memory = REMAP_ADDRESS(begin_address);
+    auto const memory = REMAP_ADDRESS(begin_address);
 
     // Critical Section.
     ///////////////////////////////////////////////////////////////////////////
@@ -101,13 +87,13 @@ memory_ptr record_multimap<KeyType>::get(array_index index) const
 template <typename KeyType>
 bool record_multimap<KeyType>::unlink(const KeyType& key)
 {
-    const auto begin = find(key);
+    auto const begin = find(key);
 
     // No rows exist.
     if (begin == record_list::empty)
         return false;
 
-    const auto next_index = record_list(manager_, begin).next_index();
+    auto const next_index = record_list(manager_, begin).next_index();
 
     // Remove the hash table entry, which delinks the single row.
     if (next_index == record_list::empty)
@@ -127,6 +113,6 @@ bool record_multimap<KeyType>::unlink(const KeyType& key)
 }
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
 #endif

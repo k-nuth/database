@@ -1,24 +1,10 @@
-/**
- * Copyright (c) 2016-2018 Bitprim Inc.
- *
- * This file is part of Bitprim.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-// #ifdef BITPRIM_DB_NEW
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <bitprim/database/databases/transaction_unconfirmed_entry.hpp>
+// #ifdef KTH_DB_NEW
+
+#include <knuth/database/databases/transaction_unconfirmed_entry.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -59,7 +45,7 @@ bool transaction_unconfirmed_entry::is_valid() const {
 // constexpr
 //TODO(fernando): make this constexpr 
 size_t transaction_unconfirmed_entry::serialized_size(chain::transaction const& tx) {
-#if ! defined(BITPRIM_USE_DOMAIN) || defined(BITPRIM_CACHED_RPC_DATA)
+#if ! defined(KTH_USE_DOMAIN) || defined(KTH_CACHED_RPC_DATA)
     return tx.serialized_size(false, true, true) 
 #else
     return tx.serialized_size(false, true) 
@@ -91,7 +77,7 @@ void transaction_unconfirmed_entry::factory_to_data(std::ostream& stream, chain:
 }
 
 
-#if ! defined(BITPRIM_USE_DOMAIN)
+#if ! defined(KTH_USE_DOMAIN)
 // static
 void transaction_unconfirmed_entry::factory_to_data(writer& sink, chain::transaction const& tx, uint32_t arrival_time, uint32_t height) {
     tx.to_data(sink, false,true,true);
@@ -120,7 +106,7 @@ void transaction_unconfirmed_entry::to_data(std::ostream& stream) const {
     to_data(sink);
 }
 
-#ifndef BITPRIM_USE_DOMAIN
+#ifndef KTH_USE_DOMAIN
 void transaction_unconfirmed_entry::to_data(writer& sink) const {
     factory_to_data(sink, transaction_, arrival_time_, height_);
 }
@@ -141,7 +127,7 @@ transaction_unconfirmed_entry transaction_unconfirmed_entry::factory_from_data(s
     return instance;
 }
 
-#ifndef BITPRIM_USE_DOMAIN
+#ifndef KTH_USE_DOMAIN
 transaction_unconfirmed_entry transaction_unconfirmed_entry::factory_from_data(reader& source) {
     transaction_unconfirmed_entry instance;
     instance.from_data(source);
@@ -159,7 +145,7 @@ bool transaction_unconfirmed_entry::from_data(std::istream& stream) {
     return from_data(source);
 }
 
-#ifndef BITPRIM_USE_DOMAIN
+#ifndef KTH_USE_DOMAIN
 bool transaction_unconfirmed_entry::from_data(reader& source) {
     reset();
     
@@ -178,5 +164,5 @@ bool transaction_unconfirmed_entry::from_data(reader& source) {
 
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 

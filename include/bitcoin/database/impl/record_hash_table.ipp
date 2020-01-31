@@ -1,23 +1,9 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifndef LIBBITCOIN_DATABASE_RECORD_HASH_TABLE_IPP
-#define LIBBITCOIN_DATABASE_RECORD_HASH_TABLE_IPP
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifndef KTH_DATABASE_RECORD_HASH_TABLE_IPP
+#define KTH_DATABASE_RECORD_HASH_TABLE_IPP
 
 #include <string>
 #include <bitcoin/bitcoin.hpp>
@@ -46,7 +32,7 @@ void record_hash_table<KeyType>::store(const KeyType& key,
 {
     // Allocate and populate new unlinked record.
     record_row<KeyType> record(manager_);
-    const auto position = record.create(key, write);
+    auto const position = record.create(key, write);
 
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
@@ -78,7 +64,7 @@ void record_hash_table<KeyType>::update(const KeyType& key,
         // Found.
         if (item.compare(key))
         {
-            const auto memory = item.data();
+            auto const memory = item.data();
             auto serial = make_unsafe_serializer(REMAP_ADDRESS(memory));
             write(serial);
             return;
@@ -130,7 +116,7 @@ bool record_hash_table<KeyType>::unlink(const KeyType& key)
     if (begin_item.compare(key))
     {
         //*********************************************************************
-        const auto next = begin_item.next_index();
+        auto const next = begin_item.next_index();
         //*********************************************************************
 
         link(key, next);
@@ -156,7 +142,7 @@ bool record_hash_table<KeyType>::unlink(const KeyType& key)
             // Critical Section
             ///////////////////////////////////////////////////////////////////
             update_mutex_.lock_upgrade();
-            const auto next = item.next_index();
+            auto const next = item.next_index();
             update_mutex_.unlock_upgrade_and_lock();
             //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             previous_item.write_next_index(next);
@@ -180,7 +166,7 @@ bool record_hash_table<KeyType>::unlink(const KeyType& key)
 template <typename KeyType>
 array_index record_hash_table<KeyType>::bucket_index(const KeyType& key) const
 {
-    const auto bucket = remainder(key, header_.size());
+    auto const bucket = remainder(key, header_.size());
     BITCOIN_ASSERT(bucket < header_.size());
     return bucket;
 }
@@ -201,6 +187,6 @@ void record_hash_table<KeyType>::link(const KeyType& key, array_index begin)
 }
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
 #endif

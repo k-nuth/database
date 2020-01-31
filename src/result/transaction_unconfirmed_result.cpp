@@ -1,22 +1,8 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
 
 #include <bitcoin/database/result/transaction_unconfirmed_result.hpp>
 
@@ -86,9 +72,9 @@ uint32_t transaction_unconfirmed_result::arrival_time() const
 chain::output transaction_unconfirmed_result::output(uint32_t index) const
 {
     BITCOIN_ASSERT(slab_);
-    const auto tx_start = REMAP_ADDRESS(slab_) + metadata_size;
+    auto const tx_start = REMAP_ADDRESS(slab_) + metadata_size;
     auto deserial = make_unsafe_deserializer(tx_start);
-    const auto outputs = deserial.read_size_little_endian();
+    auto const outputs = deserial.read_size_little_endian();
     BITCOIN_ASSERT(deserial);
 
     if (index >= outputs)
@@ -125,14 +111,14 @@ chain::output transaction_unconfirmed_result::output(uint32_t index) const
 // spender_heights are unguarded and will be inconsistent during write.
 chain::transaction transaction_unconfirmed_result::transaction(bool witness) const
 {
-#ifdef BITPRIM_CURRENCY_BCH
+#ifdef KTH_CURRENCY_BCH
     witness = false;
     bool from_data_witness = false;
 #else
     bool from_data_witness = true;
 #endif
     BITCOIN_ASSERT(slab_);
-    const auto tx_start = REMAP_ADDRESS(slab_) + metadata_size;
+    auto const tx_start = REMAP_ADDRESS(slab_) + metadata_size;
     auto deserial = make_unsafe_deserializer(tx_start);
 
     // READ THE TX
@@ -146,6 +132,6 @@ chain::transaction transaction_unconfirmed_result::transaction(bool witness) con
     return chain::transaction(std::move(tx), hash_digest(hash_));
 }
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
-#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED

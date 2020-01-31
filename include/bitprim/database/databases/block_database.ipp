@@ -1,29 +1,15 @@
-/**
- * Copyright (c) 2016-2018 Bitprim Inc.
- *
- * This file is part of Bitprim.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifndef BITPRIM_DATABASE_BLOCK_DATABASE_IPP_
-#define BITPRIM_DATABASE_BLOCK_DATABASE_IPP_
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifndef KTH_DATABASE_BLOCK_DATABASE_IPP_
+#define KTH_DATABASE_BLOCK_DATABASE_IPP_
 
 namespace libbitcoin {
 namespace database {
 
 /*
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
     
 template <typename Clock>
 data_chunk internal_database_basis<Clock>::serialize_txs(chain::block const& block) {
@@ -38,7 +24,7 @@ data_chunk internal_database_basis<Clock>::serialize_txs(chain::block const& blo
     return ret;
 }
 
-#endif // defined(BITPRIM_DB_NEW_FULL)
+#endif // defined(KTH_DB_NEW_FULL)
 */
 
 
@@ -95,7 +81,7 @@ chain::block internal_database_basis<Clock>::get_block(uint32_t height, MDB_txn*
 
     MDB_val key {sizeof(height), &height};
     
-#if defined(BITPRIM_DB_NEW_BLOCKS)
+#if defined(KTH_DB_NEW_BLOCKS)
     
     MDB_val value;
 
@@ -107,7 +93,7 @@ chain::block internal_database_basis<Clock>::get_block(uint32_t height, MDB_txn*
     auto res = chain::block::factory_from_data(data);
     return res;
 
-#elif defined(BITPRIM_DB_NEW_FULL)
+#elif defined(KTH_DB_NEW_FULL)
 
     auto header = get_header(height, db_txn);
     if ( ! header.is_valid()) {
@@ -173,29 +159,29 @@ chain::block internal_database_basis<Clock>::get_block(uint32_t height, MDB_txn*
 #else
     auto block = get_block_reorg(height, db_txn);
     return block;
-#endif //defined(BITPRIM_DB_NEW_FULL)
+#endif //defined(KTH_DB_NEW_FULL)
 }
 
 
-#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
 
-#if defined(BITPRIM_DB_NEW_BLOCKS)
+#if defined(KTH_DB_NEW_BLOCKS)
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_block(chain::block const& block, uint32_t height, MDB_txn* db_txn) {
-#elif defined(BITPRIM_DB_NEW_FULL)
+#elif defined(KTH_DB_NEW_FULL)
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_block(chain::block const& block, uint32_t height, uint64_t tx_count, MDB_txn* db_txn) {
 #endif
 
-/*#if defined(BITPRIM_DB_NEW_BLOCKS)
+/*#if defined(KTH_DB_NEW_BLOCKS)
     auto data = block.to_data(false);
-#elif defined(BITPRIM_DB_NEW_FULL)
+#elif defined(KTH_DB_NEW_FULL)
     auto data = serialize_txs(block);
 #endif
 */
 MDB_val key {sizeof(height), &height};
 
-#if defined(BITPRIM_DB_NEW_BLOCKS)
+#if defined(KTH_DB_NEW_BLOCKS)
 
     //TODO: store tx hash
     auto data = block.to_data(false);
@@ -212,7 +198,7 @@ MDB_val key {sizeof(height), &height};
         return result_code::other;
     }
 
-#elif defined(BITPRIM_DB_NEW_FULL)
+#elif defined(KTH_DB_NEW_FULL)
 
     auto const& txs = block.transactions();
     
@@ -242,7 +228,7 @@ result_code internal_database_basis<Clock>::remove_blocks_db(uint32_t height, MD
     
     MDB_val key {sizeof(height), &height};
     
- #if defined(BITPRIM_DB_NEW_BLOCKS)   
+ #if defined(KTH_DB_NEW_BLOCKS)   
     
     auto res = mdb_del(db_txn, dbi_block_db_, &key, NULL);
     if (res == MDB_NOTFOUND) {
@@ -254,7 +240,7 @@ result_code internal_database_basis<Clock>::remove_blocks_db(uint32_t height, MD
         return result_code::other;
     }
 
-#elif defined(BITPRIM_DB_NEW_FULL)
+#elif defined(KTH_DB_NEW_FULL)
 
     MDB_cursor* cursor;
     if (mdb_cursor_open(db_txn, dbi_block_db_, &cursor) != MDB_SUCCESS) {
@@ -284,10 +270,10 @@ result_code internal_database_basis<Clock>::remove_blocks_db(uint32_t height, MD
 
     return result_code::success;
 }
-#endif //defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+#endif //defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
 
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
-#endif // BITPRIM_DATABASE_BLOCK_DATABASE_IPP_
+#endif // KTH_DATABASE_BLOCK_DATABASE_IPP_

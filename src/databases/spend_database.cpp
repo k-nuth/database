@@ -1,22 +1,8 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifdef BITPRIM_DB_SPENDS
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifdef KTH_DB_SPENDS
 
 #include <bitcoin/database/databases/spend_database.hpp>
 
@@ -34,7 +20,7 @@ using namespace bc::chain;
 
 // The spend database keys off of output point and has input point value.
 static constexpr auto value_size = std::tuple_size<point>::value;
-static BC_CONSTEXPR auto record_size = hash_table_record_size<point>(value_size);
+static constexpr auto record_size = hash_table_record_size<point>(value_size);
 
 // Spends use a hash table index, O(1).
 spend_database::spend_database(const path& filename, size_t buckets,
@@ -112,7 +98,7 @@ bool spend_database::flush() const
 input_point spend_database::get(const output_point& outpoint) const
 {
     input_point spend;
-    const auto slab = lookup_map_.find(outpoint);
+    auto const slab = lookup_map_.find(outpoint);
 
     if (!slab)
         return spend;
@@ -129,8 +115,8 @@ void spend_database::store(const chain::output_point& outpoint,
 {
     //OLD before merge (Feb2017)
     //std::cout << "void spend_database::store(const chain::output_point& outpoint, const chain::input_point& spend)\n";
-    // const auto write = [&spend](memory_ptr data)
-    const auto write = [&](serializer<uint8_t*>& serial)
+    // auto const write = [&spend](memory_ptr data)
+    auto const write = [&](serializer<uint8_t*>& serial)
     {
         spend.to_data(serial, false);
     };
@@ -160,6 +146,6 @@ spend_statinfo spend_database::statinfo() const
 }
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
-#endif // BITPRIM_DB_SPENDS
+#endif // KTH_DB_SPENDS

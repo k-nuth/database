@@ -1,34 +1,20 @@
-/**
- * Copyright (c) 2016-2018 Bitprim Inc.
- *
- * This file is part of Bitprim.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifndef BITPRIM_DATABASE_SPEND_DATABASE_IPP_
-#define BITPRIM_DATABASE_SPEND_DATABASE_IPP_
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifndef KTH_DATABASE_SPEND_DATABASE_IPP_
+#define KTH_DATABASE_SPEND_DATABASE_IPP_
 
 namespace libbitcoin {
 namespace database {
 
-#if defined(BITPRIM_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
 
 //public
 template <typename Clock>
 chain::input_point internal_database_basis<Clock>::get_spend(chain::output_point const& point) const {
 
-    auto keyarr = point.to_data(BITPRIM_INTERNAL_DB_WIRE);
+    auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);
     MDB_val key {keyarr.size(), keyarr.data()};
     MDB_val value;
 
@@ -63,7 +49,7 @@ chain::input_point internal_database_basis<Clock>::get_spend(chain::output_point
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_spend(chain::output_point const& out_point, chain::input_point const& in_point, MDB_txn* db_txn) {
 
-    auto keyarr = out_point.to_data(BITPRIM_INTERNAL_DB_WIRE);
+    auto keyarr = out_point.to_data(KTH_INTERNAL_DB_WIRE);
     MDB_val key {keyarr.size(), keyarr.data()};   
 
     auto value_arr = in_point.to_data();
@@ -106,7 +92,7 @@ result_code internal_database_basis<Clock>::remove_transaction_spend_db(chain::t
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_spend(chain::output_point const& out_point, MDB_txn* db_txn) {
 
-    auto keyarr = out_point.to_data(BITPRIM_INTERNAL_DB_WIRE);      //TODO(fernando): podría estar afuera de la DBTx
+    auto keyarr = out_point.to_data(KTH_INTERNAL_DB_WIRE);      //TODO(fernando): podría estar afuera de la DBTx
     MDB_val key {keyarr.size(), keyarr.data()};                     //TODO(fernando): podría estar afuera de la DBTx
 
     auto res = mdb_del(db_txn, dbi_spend_db_, &key, NULL);
@@ -123,9 +109,9 @@ result_code internal_database_basis<Clock>::remove_spend(chain::output_point con
 }
 
 
-#endif // defined(BITPRIM_DB_NEW_FULL)
+#endif // defined(KTH_DB_NEW_FULL)
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
-#endif // BITPRIM_DATABASE_SPEND_DATABASE_IPP_
+#endif // KTH_DATABASE_SPEND_DATABASE_IPP_

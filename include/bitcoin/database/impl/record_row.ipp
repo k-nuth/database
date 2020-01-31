@@ -1,23 +1,9 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifndef LIBBITCOIN_DATABASE_RECORD_ROW_IPP
-#define LIBBITCOIN_DATABASE_RECORD_ROW_IPP
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifndef KTH_DATABASE_RECORD_ROW_IPP
+#define KTH_DATABASE_RECORD_ROW_IPP
 
 #include <cstddef>
 #include <cstdint>
@@ -38,11 +24,11 @@ template <typename KeyType>
 class record_row
 {
 public:
-    static BC_CONSTEXPR array_index empty = bc::max_uint32;
-    static BC_CONSTEXPR size_t index_size = sizeof(array_index);
-    static BC_CONSTEXPR size_t key_start = 0;
-    static BC_CONSTEXPR size_t key_size = std::tuple_size<KeyType>::value;
-    static BC_CONSTEXPR file_offset prefix_size = key_size + index_size;
+    static constexpr array_index empty = bc::max_uint32;
+    static constexpr size_t index_size = sizeof(array_index);
+    static constexpr size_t key_start = 0;
+    static constexpr size_t key_size = std::tuple_size<KeyType>::value;
+    static constexpr file_offset prefix_size = key_size + index_size;
 
     typedef serializer<uint8_t*>::functor write_function;
 
@@ -95,8 +81,8 @@ array_index record_row<KeyType>::create(const KeyType& key,
     //   [ value... ]
     index_ = manager_.new_records(1);
 
-    const auto memory = raw_data(key_start);
-    const auto record = REMAP_ADDRESS(memory);
+    auto const memory = raw_data(key_start);
+    auto const record = REMAP_ADDRESS(memory);
     auto serial = make_unsafe_serializer(record);
     serial.write_forward(key);
     serial.skip(index_size);
@@ -114,8 +100,8 @@ void record_row<KeyType>::link(array_index next)
     //   [ value... ]
 
     // Write record.
-    const auto memory = raw_data(key_size);
-    const auto next_data = REMAP_ADDRESS(memory);
+    auto const memory = raw_data(key_size);
+    auto const next_data = REMAP_ADDRESS(memory);
     auto serial = make_unsafe_serializer(next_data);
 
     //*************************************************************************
@@ -127,7 +113,7 @@ template <typename KeyType>
 bool record_row<KeyType>::compare(const KeyType& key) const
 {
     // Key data is at the start.
-    const auto memory = raw_data(key_start);
+    auto const memory = raw_data(key_start);
     return std::equal(key.begin(), key.end(), REMAP_ADDRESS(memory));
 }
 
@@ -153,8 +139,8 @@ file_offset record_row<KeyType>::offset() const
 template <typename KeyType>
 array_index record_row<KeyType>::next_index() const
 {
-    const auto memory = raw_data(key_size);
-    const auto next_address = REMAP_ADDRESS(memory);
+    auto const memory = raw_data(key_size);
+    auto const next_address = REMAP_ADDRESS(memory);
 
     //*************************************************************************
     return from_little_endian_unsafe<array_index>(next_address);
@@ -164,7 +150,7 @@ array_index record_row<KeyType>::next_index() const
 template <typename KeyType>
 void record_row<KeyType>::write_next_index(array_index next)
 {
-    const auto memory = raw_data(key_size);
+    auto const memory = raw_data(key_size);
     auto serial = make_unsafe_serializer(REMAP_ADDRESS(memory));
 
     //*************************************************************************
@@ -181,6 +167,6 @@ memory_ptr record_row<KeyType>::raw_data(file_offset offset) const
 }
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
 #endif

@@ -1,24 +1,10 @@
-/**
- * Copyright (c) 2016-2018 Bitprim Inc.
- *
- * This file is part of Bitprim.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-// #ifdef BITPRIM_DB_NEW
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <bitprim/database/databases/utxo_entry.hpp>
+// #ifdef KTH_DB_NEW
+
+#include <knuth/database/databases/utxo_entry.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -95,7 +81,7 @@ void utxo_entry::to_data_fixed(std::ostream& stream, uint32_t height, uint32_t m
     to_data_fixed(sink, height, median_time_past, coinbase);
 }
 
-#ifndef BITPRIM_USE_DOMAIN
+#ifndef KTH_USE_DOMAIN
 // static
 void utxo_entry::to_data_fixed(writer& sink, uint32_t height, uint32_t median_time_past, bool coinbase) {
     sink.write_4_bytes_little_endian(height);
@@ -123,7 +109,7 @@ void utxo_entry::to_data_with_fixed(std::ostream& stream, chain::output const& o
     to_data_with_fixed(sink, output, fixed);
 }
 
-#ifndef BITPRIM_USE_DOMAIN
+#ifndef KTH_USE_DOMAIN
 // static
 void utxo_entry::to_data_with_fixed(writer& sink, chain::output const& output, data_chunk const& fixed) {
     output.to_data(sink, false);
@@ -151,7 +137,7 @@ void utxo_entry::to_data(std::ostream& stream) const {
     to_data(sink);
 }
 
-#ifndef BITPRIM_USE_DOMAIN
+#ifndef KTH_USE_DOMAIN
 void utxo_entry::to_data(writer& sink) const {
     output_.to_data(sink, false);
     to_data_fixed(sink, height_, median_time_past_, coinbase_);
@@ -173,7 +159,7 @@ utxo_entry utxo_entry::factory_from_data(std::istream& stream) {
     return instance;
 }
 
-#ifndef BITPRIM_USE_DOMAIN
+#ifndef KTH_USE_DOMAIN
 utxo_entry utxo_entry::factory_from_data(reader& source) {
     utxo_entry instance;
     instance.from_data(source);
@@ -191,7 +177,7 @@ bool utxo_entry::from_data(std::istream& stream) {
     return from_data(source);
 }
 
-#ifndef BITPRIM_USE_DOMAIN
+#ifndef KTH_USE_DOMAIN
 bool utxo_entry::from_data(reader& source) {
     reset();
     
@@ -209,6 +195,6 @@ bool utxo_entry::from_data(reader& source) {
 #endif
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
-// #endif // BITPRIM_DB_NEW
+// #endif // KTH_DB_NEW

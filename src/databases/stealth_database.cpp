@@ -1,22 +1,8 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifdef BITPRIM_DB_STEALTH
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifdef KTH_DB_STEALTH
 
 #include <bitcoin/database/databases/stealth_database.hpp>
 
@@ -117,16 +103,16 @@ stealth_compact::list stealth_database::scan(const binary& filter,
 
     for (array_index row = 0; row < rows_manager_.count(); ++row)
     {
-        const auto record = rows_manager_.get(row);
+        auto const record = rows_manager_.get(row);
         auto memory = REMAP_ADDRESS(record);
-        const auto field = from_little_endian_unsafe<uint32_t>(memory);
+        auto const field = from_little_endian_unsafe<uint32_t>(memory);
 
         // Skip if prefix doesn't match.
         if (!filter.is_prefix_of(field))
             continue;
 
         memory += prefix_size;
-        const auto height = from_little_endian_unsafe<uint32_t>(memory);
+        auto const height = from_little_endian_unsafe<uint32_t>(memory);
 
         // Skip if height is too low.
         if (height < from_height)
@@ -151,9 +137,9 @@ void stealth_database::store(uint32_t prefix, uint32_t height,
     const stealth_compact& row)
 {
     // Allocate new row.
-    const auto index = rows_manager_.new_records(1);
-    const auto record = rows_manager_.get(index);
-    const auto memory = REMAP_ADDRESS(record);
+    auto const index = rows_manager_.new_records(1);
+    auto const record = rows_manager_.get(index);
+    auto const memory = REMAP_ADDRESS(record);
 
     // Write data.
     auto serial = make_unsafe_serializer(memory);
@@ -175,6 +161,6 @@ void stealth_database::store(uint32_t prefix, uint32_t height,
 ////}
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
-#endif // BITPRIM_DB_STEALTH
+#endif // KTH_DB_STEALTH

@@ -1,21 +1,7 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include <bitcoin/database/primitives/record_manager.hpp>
 
 #include <cstddef>
@@ -78,7 +64,7 @@ bool record_manager::start()
     ALLOCATE_WRITE(mutex_);
 
     read_count();
-    const auto minimum = header_size_ + record_to_position(record_count_);
+    auto const minimum = header_size_ + record_to_position(record_count_);
 
     // Records size exceeds file size.
     return minimum <= file_.size();
@@ -126,7 +112,7 @@ array_index record_manager::new_records(size_t count)
     ALLOCATE_WRITE(mutex_);
 
     // Always write after the last index.
-    const auto next_record_index = record_count_;
+    auto const next_record_index = record_count_;
 
     const size_t position = record_to_position(record_count_ + count);
     const size_t required_size = header_size_ + position;
@@ -157,8 +143,8 @@ void record_manager::read_count()
     BITCOIN_ASSERT(header_size_ + sizeof(array_index) <= file_.size());
 
     // The accessor must remain in scope until the end of the block.
-    const auto memory = file_.access();
-    const auto count_address = REMAP_ADDRESS(memory) + header_size_;
+    auto const memory = file_.access();
+    auto const count_address = REMAP_ADDRESS(memory) + header_size_;
     record_count_ = from_little_endian_unsafe<array_index>(count_address);
 }
 
@@ -185,4 +171,4 @@ file_offset record_manager::record_to_position(array_index record) const
 }
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth

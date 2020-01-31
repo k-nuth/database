@@ -1,23 +1,9 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
+
+#ifdef KTH_DB_UNSPENT_LIBBITCOIN
 
 #include <bitcoin/database/unspent_outputs.hpp>
 
@@ -106,7 +92,7 @@ void unspent_outputs::remove(const hash_digest& tx_hash)
     mutex_.lock_upgrade();
 
     // Find the unspent tx entry.
-    const auto tx = unspent_.left.find(key);
+    auto const tx = unspent_.left.find(key);
 
     if (tx == unspent_.left.end())
     {
@@ -144,7 +130,7 @@ void unspent_outputs::remove(const output_point& point)
         return;
     }
 
-    const auto outputs = tx->first.outputs();
+    auto const outputs = tx->first.outputs();
     mutex_.unlock_upgrade_and_lock();
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -175,23 +161,23 @@ bool unspent_outputs::get(output& out_output, size_t& out_height,
     shared_lock lock(mutex_);
 
     // Find the unspent tx entry.
-    const auto tx = unspent_.left.find(key);
+    auto const tx = unspent_.left.find(key);
 
     if (tx == unspent_.left.end() ||
         (require_confirmed && !tx->first.is_confirmed()))
         return false;
 
     // Find the output at the specified index for the found unspent tx.
-    const auto outputs = tx->first.outputs();
-    const auto output = outputs->find(point.index());
+    auto const outputs = tx->first.outputs();
+    auto const output = outputs->find(point.index());
 
     if (output == outputs->end())
         return false;
 
     // Determine if the cached unspent tx is above specified fork_height.
     // Since the hash table does not allow duplicates there are no others.
-    const auto& unspent = tx->first;
-    const auto height = unspent.height();
+    auto const& unspent = tx->first;
+    auto const height = unspent.height();
 
     if (height > fork_height)
         return false;
@@ -220,23 +206,23 @@ bool unspent_outputs::get_is_confirmed(output& out_output, size_t& out_height,
     shared_lock lock(mutex_);
 
     // Find the unspent tx entry.
-    const auto tx = unspent_.left.find(key);
+    auto const tx = unspent_.left.find(key);
 
     if (tx == unspent_.left.end() ||
         (require_confirmed && !tx->first.is_confirmed()))
         return false;
 
     // Find the output at the specified index for the found unspent tx.
-    const auto outputs = tx->first.outputs();
-    const auto output = outputs->find(point.index());
+    auto const outputs = tx->first.outputs();
+    auto const output = outputs->find(point.index());
 
     if (output == outputs->end())
         return false;
 
     // Determine if the cached unspent tx is above specified fork_height.
     // Since the hash table does not allow duplicates there are no others.
-    const auto& unspent = tx->first;
-    const auto height = unspent.height();
+    auto const& unspent = tx->first;
+    auto const height = unspent.height();
 
     if (height > fork_height)
         return false;
@@ -252,6 +238,6 @@ bool unspent_outputs::get_is_confirmed(output& out_output, size_t& out_height,
 
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
-#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LIBBITCOIN

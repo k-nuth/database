@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2017 Bitprim developers (see AUTHORS)
 #
-# This file is part of Bitprim.
+# This file is part of the Knuth Project.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -30,7 +30,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Check for baseline language coverage in the compiler for the C++14 standard.
 #------------------------------------------------------------------------------
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Process options.
@@ -62,13 +62,13 @@ option(WITH_TESTS "Compile with unit tests." ON)
 option(WITH_TOOLS "Compile with tools." OFF)
 
 
-set(BITPRIM_PROJECT_VERSION "-" CACHE STRING "Specify the Bitprim Project Version.")
-# message(${BITPRIM_PROJECT_VERSION})
+set(KTH_PROJECT_VERSION "-" CACHE STRING "Specify the Bitprim Project Version.")
+# message(${KTH_PROJECT_VERSION})
 
 set(MICROARCHITECTURE "x86_64" CACHE STRING "Specify the Microarchitecture (x86_64|...).")
 message( STATUS "Bitprim: Compiling for ${MICROARCHITECTURE}")
-# add_definitions(-DBITPRIM_MICROARCHITECTURE=${MICROARCHITECTURE})
-# add_definitions(-DBITPRIM_MICROARCHITECTURE_STR="${MICROARCHITECTURE}")
+# add_definitions(-DKTH_MICROARCHITECTURE=${MICROARCHITECTURE})
+# add_definitions(-DKTH_MICROARCHITECTURE_STR="${MICROARCHITECTURE}")
 
 
 # Implement --with-mining and declare WITH_MEASUREMENTS.
@@ -84,7 +84,7 @@ endif()
 option(USE_DOMAIN "Domain enabled." ON)
 if (USE_DOMAIN)
   message(STATUS "Bitprim: Using Domain enabled")
-  add_definitions(-DBITPRIM_USE_DOMAIN)
+  add_definitions(-DKTH_USE_DOMAIN)
 endif()
 
 # Implement --with-cached-rpc-data and declare WITH_CACHED_RPC_DATA.
@@ -92,7 +92,7 @@ endif()
 option(WITH_CACHED_RPC_DATA "Cached RPC data enabled." OFF)
 if (WITH_CACHED_RPC_DATA)
   message(STATUS "Bitprim: Cached RPC data enabled")
-  add_definitions(-DBITPRIM_CACHED_RPC_DATA)
+  add_definitions(-DKTH_CACHED_RPC_DATA)
 endif()
 
 
@@ -101,7 +101,7 @@ endif()
 option(DB_TRANSACTION_UNCONFIRMED "DB Transactions Unconfirmed enabled." OFF)
 if (DB_TRANSACTION_UNCONFIRMED)
   message(STATUS "Bitprim: DB Transactions Unconfirmed enabled")
-  add_definitions(-DBITPRIM_DB_TRANSACTION_UNCONFIRMED)
+  add_definitions(-DKTH_DB_TRANSACTION_UNCONFIRMED)
 endif()
 
 # Implement and declare DB_SPENDS.
@@ -109,7 +109,7 @@ endif()
 option(DB_SPENDS "DB Spends enabled." OFF)
 if (DB_SPENDS)
   message(STATUS "Bitprim: DB Spends enabled")
-  add_definitions(-DBITPRIM_DB_SPENDS)
+  add_definitions(-DKTH_DB_SPENDS)
 endif()
 
 # Implement and declare DB_HISTORY.
@@ -117,7 +117,7 @@ endif()
 option(DB_HISTORY "DB History enabled." OFF)
 if (DB_HISTORY)
   message(STATUS "Bitprim: DB History enabled")
-  add_definitions(-DBITPRIM_DB_HISTORY)
+  add_definitions(-DKTH_DB_HISTORY)
 endif()
 
 # Implement and declare DB_STEALTH.
@@ -125,7 +125,7 @@ endif()
 option(DB_STEALTH "DB Stealth enabled." OFF)
 if (DB_STEALTH)
   message(STATUS "Bitprim: DB Stealth enabled")
-  add_definitions(-DBITPRIM_DB_STEALTH)
+  add_definitions(-DKTH_DB_STEALTH)
 endif()
 
 # Implement and declare DB_UNSPENT_LIBBITCOIN.
@@ -133,7 +133,7 @@ endif()
 option(DB_UNSPENT_LIBBITCOIN "DB Unspent Libbitcoin enabled." OFF)
 if (DB_UNSPENT_LIBBITCOIN)
   message(STATUS "Bitprim: DB Unspent Libbitcoin enabled")
-  add_definitions(-DBITPRIM_DB_UNSPENT_LIBBITCOIN)
+  add_definitions(-DKTH_DB_UNSPENT_LIBBITCOIN)
 endif()
 
 # Implement and declare DB_LEGACY.
@@ -141,7 +141,7 @@ endif()
 option(DB_LEGACY "DB Legacy enabled." OFF)
 if (DB_LEGACY)
   message(STATUS "Bitprim: DB Legacy enabled")
-  add_definitions(-DBITPRIM_DB_LEGACY)
+  add_definitions(-DKTH_DB_LEGACY)
 endif()
 
 # Implement and declare DB_NEW.
@@ -149,7 +149,7 @@ endif()
 option(DB_NEW "DB New enabled." OFF)
 if (DB_NEW)
   message(STATUS "Bitprim: DB New enabled")
-  add_definitions(-DBITPRIM_DB_NEW)
+  add_definitions(-DKTH_DB_NEW)
 endif()
 
 # Implement and declare DB_NEW_BLOCKS.
@@ -157,7 +157,7 @@ endif()
 option(DB_NEW_BLOCKS "DB Blocks New enabled." OFF)
 if (DB_NEW_BLOCKS)
   message(STATUS "Bitprim: DB Blocks New enabled")
-  add_definitions(-DBITPRIM_DB_NEW_BLOCKS)
+  add_definitions(-DKTH_DB_NEW_BLOCKS)
 endif()
 
 # Implement and declare DB_NEW_FULL.
@@ -165,13 +165,13 @@ endif()
 option(DB_NEW_FULL "DB New Full enabled." OFF)
 if (DB_NEW_FULL)
   message(STATUS "Bitprim: DB New Full enabled")
-  add_definitions(-DBITPRIM_DB_NEW_FULL)
+  add_definitions(-DKTH_DB_NEW_FULL)
 endif()
 
-# Implement --JUST_BITPRIM_SOURCES for linting.
+# Implement --JUST_KTH_SOURCES for linting.
 #------------------------------------------------------------------------------
-option(JUST_BITPRIM_SOURCES "Just Bitprim source code to be linted." OFF)
-if (JUST_BITPRIM_SOURCES)
+option(JUST_KTH_SOURCES "Just Bitprim source code to be linted." OFF)
+if (JUST_KTH_SOURCES)
   message(STATUS "Bitprim: Just Bitprim source code to be linted: enabled")
 endif()
 
@@ -180,11 +180,11 @@ endif()
 set(CURRENCY "BCH" CACHE STRING "Specify the Cryptocurrency (BCH|BTC|LTC).")
 
 if (${CURRENCY} STREQUAL "BCH")
-  add_definitions(-DBITPRIM_CURRENCY_BCH)
+  add_definitions(-DKTH_CURRENCY_BCH)
 elseif (${CURRENCY} STREQUAL "BTC")
-  add_definitions(-DBITPRIM_CURRENCY_BTC)
+  add_definitions(-DKTH_CURRENCY_BTC)
 elseif (${CURRENCY} STREQUAL "LTC")
-  add_definitions(-DBITPRIM_CURRENCY_LTC)
+  add_definitions(-DKTH_CURRENCY_LTC)
 else()
   message(FATAL_ERROR "Invalid Cryptocurrency: ${CURRENCY}")
 endif()
@@ -416,7 +416,7 @@ if (DB_NEW_FULL)
     )
 endif()
 
-if (NOT JUST_BITPRIM_SOURCES)
+if (NOT JUST_KTH_SOURCES)
   set(bitprim_database_sources 
     ${bitprim_database_sources_just_libbitcoin}
   )
@@ -470,7 +470,7 @@ target_include_directories(bitprim-database PUBLIC
         $<INSTALL_INTERFACE:include>)
 
 
-target_compile_definitions(bitprim-database PUBLIC -DBITPRIM_PROJECT_VERSION="\\"${BITPRIM_PROJECT_VERSION}\\"") #TODO(fernando): manage with Conan????
+target_compile_definitions(bitprim-database PUBLIC -DKTH_PROJECT_VERSION="\\"${KTH_PROJECT_VERSION}\\"") #TODO(fernando): manage with Conan????
 
 if (NOT ENABLE_SHARED)
     target_compile_definitions(bitprim-database PUBLIC -DBCD_STATIC -DBC_STATIC)

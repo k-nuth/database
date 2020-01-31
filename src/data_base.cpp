@@ -1,21 +1,7 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include <bitcoin/database/data_base.hpp>
 
 #include <algorithm>
@@ -57,30 +43,30 @@ using namespace std::placeholders;
 data_base::data_base(const settings& settings)
     : closed_(true)
     , settings_(settings)
-#ifdef BITPRIM_DB_LEGACY    
+#ifdef KTH_DB_LEGACY    
     , remap_mutex_(std::make_shared<shared_mutex>())
 #endif
     , store(settings.directory, settings.index_start_height < without_indexes, settings.flush_writes)
 {
    
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
         LOG_DEBUG(LOG_DATABASE)
         << "Buckets: "
         << "block [" << settings.block_table_buckets << "], "
         << "transaction [" << settings.transaction_table_buckets << "], "
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
-#ifdef BITPRIM_DB_SPENDS
+#ifdef KTH_DB_SPENDS
         << "spend [" << settings.spend_table_buckets << "], "
-#endif // BITPRIM_DB_SPENDS
+#endif // KTH_DB_SPENDS
 
-#ifdef BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
         << "history [" << settings.history_table_buckets << "]"
-#endif // BITPRIM_DB_HISTORY
+#endif // KTH_DB_HISTORY
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
         ;
-#endif // BITPRIM_DB_LEGACY        
+#endif // KTH_DB_LEGACY        
 }
 
 data_base::~data_base() {
@@ -93,7 +79,7 @@ data_base::~data_base() {
 // Throws if there is insufficient disk space, not idempotent.
 bool data_base::create(const block& genesis) {
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
     ///////////////////////////////////////////////////////////////////////////
     // Lock exclusive file access.
     if ( ! store::open()) {
@@ -104,41 +90,41 @@ bool data_base::create(const block& genesis) {
     if ( ! store::create()) {
         return false;
     }
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
     start();
 
     // These leave the databases open.
     auto created = true
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
                 && blocks_->create()
                 && transactions_->create()
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
-#ifdef BITPRIM_DB_NEW
+#ifdef KTH_DB_NEW
                 && internal_db_->create()
-#endif // BITPRIM_DB_NEW
+#endif // KTH_DB_NEW
 
-#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
                 && transactions_unconfirmed_->create()
-#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
                 ;
 
-#ifdef BITPRIM_DB_WITH_INDEXES
+#ifdef KTH_DB_WITH_INDEXES
     if (use_indexes()) {
         created = created 
-#ifdef BITPRIM_DB_SPENDS
+#ifdef KTH_DB_SPENDS
                 && spends_->create() 
-#endif // BITPRIM_DB_SPENDS
-#ifdef BITPRIM_DB_HISTORY
+#endif // KTH_DB_SPENDS
+#ifdef KTH_DB_HISTORY
                 && history_->create() 
-#endif // BITPRIM_DB_HISTORY
-#ifdef BITPRIM_DB_STEALTH                
+#endif // KTH_DB_HISTORY
+#ifdef KTH_DB_STEALTH                
                 && stealth_->create()
-#endif // BITPRIM_DB_STEALTH                
+#endif // KTH_DB_STEALTH                
                 ;
     }
-#endif // BITPRIM_DB_WITH_INDEXES    
+#endif // KTH_DB_WITH_INDEXES    
 
     if ( ! created) {
         return false;
@@ -156,46 +142,46 @@ bool data_base::create(const block& genesis) {
 // May be called after stop and/or after close in order to reopen.
 bool data_base::open() {
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
     ///////////////////////////////////////////////////////////////////////////
     // Lock exclusive file access and conditionally the global flush lock.
     if ( ! store::open()) {
         return false;
     }
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
     start();
 
     auto opened = true
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
                 && blocks_->open() 
                 && transactions_->open() 
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
-#ifdef BITPRIM_DB_NEW
+#ifdef KTH_DB_NEW
                 && internal_db_->open() 
-#endif // BITPRIM_DB_NEW
+#endif // KTH_DB_NEW
 
-#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
                 && transactions_unconfirmed_->open()
-#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
                 ;
 
-#ifdef BITPRIM_DB_WITH_INDEXES
+#ifdef KTH_DB_WITH_INDEXES
     if (use_indexes()) {
         opened = opened 
-#ifdef BITPRIM_DB_SPENDS
+#ifdef KTH_DB_SPENDS
                 && spends_->open()
-#endif // BITPRIM_DB_SPENDS
-#ifdef BITPRIM_DB_HISTORY
+#endif // KTH_DB_SPENDS
+#ifdef KTH_DB_HISTORY
                 && history_->open() 
-#endif // BITPRIM_DB_HISTORY
-#ifdef BITPRIM_DB_STEALTH                
+#endif // KTH_DB_HISTORY
+#ifdef KTH_DB_STEALTH                
                 && stealth_->open()
-#endif // BITPRIM_DB_STEALTH                
+#endif // KTH_DB_STEALTH                
                 ;
     }
-#endif // BITPRIM_DB_WITH_INDEXES
+#endif // KTH_DB_WITH_INDEXES
 
 
     closed_ = false;
@@ -213,43 +199,43 @@ bool data_base::close() {
     closed_ = true;
 
     auto closed = true
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
                 && blocks_->close() 
                 && transactions_->close() 
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
-#ifdef BITPRIM_DB_NEW
+#ifdef KTH_DB_NEW
                 && internal_db_->close() 
-#endif // BITPRIM_DB_NEW
+#endif // KTH_DB_NEW
 
-#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
                 && transactions_unconfirmed_->close()
-#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
                 ;
 
-#ifdef BITPRIM_DB_WITH_INDEXES
+#ifdef KTH_DB_WITH_INDEXES
     if (use_indexes()) {
         closed = closed 
-#ifdef BITPRIM_DB_SPENDS
+#ifdef KTH_DB_SPENDS
                 && spends_->close()
-#endif // BITPRIM_DB_SPENDS
-#ifdef BITPRIM_DB_HISTORY
+#endif // KTH_DB_SPENDS
+#ifdef KTH_DB_HISTORY
                 && history_->close() 
-#endif // BITPRIM_DB_HISTORY
-#ifdef BITPRIM_DB_STEALTH                
+#endif // KTH_DB_HISTORY
+#ifdef KTH_DB_STEALTH                
                 && stealth_->close()
-#endif // BITPRIM_DB_STEALTH                
+#endif // KTH_DB_STEALTH                
                 ;
     }
-#endif // BITPRIM_DB_WITH_INDEXES
+#endif // KTH_DB_WITH_INDEXES
 
 
     return closed 
-#ifdef BITPRIM_DB_LEGACY    
+#ifdef KTH_DB_LEGACY    
             && store::close()
     // Unlock exclusive file access and conditionally the global flush lock.
     ///////////////////////////////////////////////////////////////////////////
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
             ;
 }
 
@@ -257,7 +243,7 @@ bool data_base::close() {
 void data_base::start() {
     // TODO: parameterize initial file sizes as record count or slab bytes?
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
     blocks_ = std::make_shared<block_database>(block_table, block_index,
         settings_.block_table_buckets, settings_.file_growth_rate,
         remap_mutex_);
@@ -265,45 +251,45 @@ void data_base::start() {
     transactions_ = std::make_shared<transaction_database>(transaction_table,
         settings_.transaction_table_buckets, settings_.file_growth_rate,
         settings_.cache_capacity, remap_mutex_);
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
-#ifdef BITPRIM_DB_NEW
+#ifdef KTH_DB_NEW
     internal_db_ = std::make_shared<internal_database>(internal_db_dir, settings_.reorg_pool_limit, settings_.db_max_size, settings_.safe_mode);
-#endif // BITPRIM_DB_NEW
+#endif // KTH_DB_NEW
 
-#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
     //TODO: BITPRIM: FER: transaction_table_buckets and file_growth_rate
     transactions_unconfirmed_ = std::make_shared<transaction_unconfirmed_database>(transaction_unconfirmed_table,
         settings_.transaction_unconfirmed_table_buckets, settings_.file_growth_rate, remap_mutex_);
-#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
 
-#ifdef BITPRIM_DB_WITH_INDEXES
+#ifdef KTH_DB_WITH_INDEXES
     if (use_indexes()) {
 
-#ifdef BITPRIM_DB_SPENDS
+#ifdef KTH_DB_SPENDS
         spends_ = std::make_shared<spend_database>(spend_table,
             settings_.spend_table_buckets, settings_.file_growth_rate,
             remap_mutex_);
-#endif // BITPRIM_DB_SPENDS
+#endif // KTH_DB_SPENDS
 
-#ifdef BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
         history_ = std::make_shared<history_database>(history_table,
             history_rows, settings_.history_table_buckets,
             settings_.file_growth_rate, remap_mutex_);
-#endif // BITPRIM_DB_HISTORY
+#endif // KTH_DB_HISTORY
 
-#ifdef BITPRIM_DB_STEALTH
+#ifdef KTH_DB_STEALTH
         stealth_ = std::make_shared<stealth_database>(stealth_rows,
             settings_.file_growth_rate, remap_mutex_);
-#endif // BITPRIM_DB_STEALTH
+#endif // KTH_DB_STEALTH
     }
-#endif // BITPRIM_DB_WITH_INDEXES
+#endif // KTH_DB_WITH_INDEXES
 
 }
 
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
 // protected
 bool data_base::flush() const {
     // Avoid a race between flush and close whereby flush is skipped because
@@ -317,26 +303,26 @@ bool data_base::flush() const {
                 && blocks_->flush() 
                 && transactions_->flush() 
 
-#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
                 && transactions_unconfirmed_->flush()
-#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
                 ;
 
-#ifdef BITPRIM_DB_WITH_INDEXES
+#ifdef KTH_DB_WITH_INDEXES
     if (use_indexes()) {
         flushed = flushed 
-#ifdef BITPRIM_DB_SPENDS
+#ifdef KTH_DB_SPENDS
                 && spends_->flush() 
-#endif // BITPRIM_DB_SPENDS
-#ifdef BITPRIM_DB_HISTORY
+#endif // KTH_DB_SPENDS
+#ifdef KTH_DB_HISTORY
                 && history_->flush() 
-#endif // BITPRIM_DB_HISTORY
-#ifdef BITPRIM_DB_STEALTH                
+#endif // KTH_DB_HISTORY
+#ifdef KTH_DB_STEALTH                
                 && stealth_->flush()
-#endif // BITPRIM_DB_STEALTH                
+#endif // KTH_DB_STEALTH                
                 ;
     }
-#endif // BITPRIM_DB_WITH_INDEXES
+#endif // KTH_DB_WITH_INDEXES
 
     // Just for the log.
     code ec(flushed ? error::success : error::operation_failed_0);
@@ -348,36 +334,36 @@ bool data_base::flush() const {
 
 // protected
 void data_base::synchronize() {
-#ifdef BITPRIM_DB_WITH_INDEXES
+#ifdef KTH_DB_WITH_INDEXES
     if (use_indexes()) {
-#ifdef BITPRIM_DB_SPENDS
+#ifdef KTH_DB_SPENDS
         spends_->synchronize();
-#endif // BITPRIM_DB_SPENDS
+#endif // KTH_DB_SPENDS
 
-#ifdef BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
         history_->synchronize();
-#endif // BITPRIM_DB_HISTORY
+#endif // KTH_DB_HISTORY
 
-#ifdef BITPRIM_DB_STEALTH                
+#ifdef KTH_DB_STEALTH                
         stealth_->synchronize();
-#endif // BITPRIM_DB_STEALTH                
+#endif // KTH_DB_STEALTH                
     }
-#endif // BITPRIM_DB_WITH_INDEXES
+#endif // KTH_DB_WITH_INDEXES
 
     transactions_->synchronize();
 
-#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
     transactions_unconfirmed_->synchronize();
-#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
     blocks_->synchronize();
 }
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
 // Readers.
 // ----------------------------------------------------------------------------
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
 const block_database& data_base::blocks() const {
     return *blocks_;
 }
@@ -385,46 +371,46 @@ const block_database& data_base::blocks() const {
 const transaction_database& data_base::transactions() const {
     return *transactions_;
 }
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
-#ifdef BITPRIM_DB_NEW
+#ifdef KTH_DB_NEW
 internal_database const& data_base::internal_db() const {
     return *internal_db_;
 }
-#endif // BITPRIM_DB_NEW
+#endif // KTH_DB_NEW
 
 
-#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
 const transaction_unconfirmed_database& data_base::transactions_unconfirmed() const {
     return *transactions_unconfirmed_;
 }
-#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
-#ifdef BITPRIM_DB_SPENDS
+#ifdef KTH_DB_SPENDS
 // Invalid if indexes not initialized.
 const spend_database& data_base::spends() const {
     return *spends_;
 }
-#endif // BITPRIM_DB_SPENDS
+#endif // KTH_DB_SPENDS
 
-#ifdef BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
 // Invalid if indexes not initialized.
 const history_database& data_base::history() const {
     return *history_;
 }
-#endif // BITPRIM_DB_HISTORY
+#endif // KTH_DB_HISTORY
 
-#ifdef BITPRIM_DB_STEALTH
+#ifdef KTH_DB_STEALTH
 // Invalid if indexes not initialized.
 const stealth_database& data_base::stealth() const {
     return *stealth_;
 }
-#endif // BITPRIM_DB_STEALTH
+#endif // KTH_DB_STEALTH
 
 // Synchronous writers.
 // ----------------------------------------------------------------------------
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
 static inline 
 size_t get_next_height(const block_database& blocks) {
     size_t current_height;
@@ -436,10 +422,10 @@ static inline
 hash_digest get_previous_hash(const block_database& blocks, size_t height) {
     return height == 0 ? null_hash : blocks.get(height - 1).header().hash();
 }
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
 
-#if defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
 static inline 
 uint32_t get_next_height(internal_database const& db) {
     uint32_t current_height;
@@ -456,7 +442,7 @@ static inline
 hash_digest get_previous_hash(internal_database const& db, size_t height) {
     return height == 0 ? null_hash : db.get_header(height - 1).hash();
 }
-#endif // defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+#endif // defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
 
 
 code data_base::verify_insert(const block& block, size_t height) {
@@ -464,12 +450,12 @@ code data_base::verify_insert(const block& block, size_t height) {
         return error::empty_block;
     }
 
-#if defined(BITPRIM_DB_LEGACY)
+#if defined(KTH_DB_LEGACY)
     if (blocks_->exists(height)) {
         return error::store_block_duplicate;
     }
 
-#elif defined(BITPRIM_DB_NEW)
+#elif defined(KTH_DB_NEW)
 
     auto res = internal_db_->get_header(height);
 
@@ -477,7 +463,7 @@ code data_base::verify_insert(const block& block, size_t height) {
         return error::store_block_duplicate;
     }
 
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
     return error::success;
 }
@@ -487,7 +473,7 @@ code data_base::verify_push(const block& block, size_t height) {
         return error::empty_block;
     }
 
-#if defined(BITPRIM_DB_LEGACY)
+#if defined(KTH_DB_LEGACY)
     if (get_next_height(blocks()) != height) {
         return error::store_block_invalid_height;
     }
@@ -496,7 +482,7 @@ code data_base::verify_push(const block& block, size_t height) {
         return error::store_block_missing_parent;
     }
 
-#elif defined(BITPRIM_DB_NEW_BLOCKS) || defined(BITPRIM_DB_NEW_FULL)
+#elif defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
 
     if (get_next_height(internal_db()) != height) {
         return error::store_block_invalid_height;
@@ -506,24 +492,24 @@ code data_base::verify_push(const block& block, size_t height) {
         return error::store_block_missing_parent;
     }
 
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
     return error::success;
 }
 
 
 //Bitprim: We don't store spend information
-#if defined(BITPRIM_DB_LEGACY)
+#if defined(KTH_DB_LEGACY)
 code data_base::verify_push(const transaction& tx) {
 
     auto const result = transactions_->get(tx.hash(), max_size_t, false);
     return result && ! result.is_spent(max_size_t) ? error::unspent_duplicate : error::success;
    
 }
-#endif // defined(BITPRIM_DB_LEGACY)
+#endif // defined(KTH_DB_LEGACY)
 
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
 bool data_base::begin_insert() const {
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
@@ -539,7 +525,7 @@ bool data_base::end_insert() const {
 
     return end_write();
 }
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
 // Add block to the database at the given height (gaps allowed/created).
 // This is designed for write concurrency but only with itself.
@@ -551,14 +537,14 @@ code data_base::insert(const chain::block& block, size_t height) {
 
     if (ec) return ec;
 
-#ifdef BITPRIM_DB_NEW
+#ifdef KTH_DB_NEW
     auto res = internal_db_->push_block(block, height, median_time_past);
     if ( ! succeed(res)) {
         return error::operation_failed_1;   //TODO(fernando): create a new operation_failed
     }
-#endif // BITPRIM_DB_NEW
+#endif // KTH_DB_NEW
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
     
     if ( ! push_transactions(block, height, median_time_past) || ! push_heights(block, height)) {
         return error::operation_failed_1;
@@ -567,14 +553,14 @@ code data_base::insert(const chain::block& block, size_t height) {
     blocks_->store(block, height);
 
     synchronize();
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
     return error::success;
 }
 
 // This is designed for write exclusivity and read concurrency.
 code data_base::push(const chain::transaction& tx, uint32_t forks) {
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
 
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
@@ -596,34 +582,34 @@ code data_base::push(const chain::transaction& tx, uint32_t forks) {
     // When position is unconfirmed, height is used to store validation forks.
     transactions_->store(tx, forks, 0, transaction_database::unconfirmed);
 
-#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
     transactions_unconfirmed_->store(tx); //, forks, transaction_unconfirmed_database::unconfirmed);
-#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
     transactions_->synchronize();
 
-#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
     transactions_unconfirmed_->synchronize();
-#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
     return end_write() ? error::success : error::operation_failed_3;
     // End Sequential Lock and Flush Lock
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     ///////////////////////////////////////////////////////////////////////////
 
-#elif defined(BITPRIM_DB_NEW_FULL)
+#elif defined(KTH_DB_NEW_FULL)
     //We insert only in transaction unconfirmed here
     internal_db_->push_transaction_unconfirmed(tx, forks);
     return error::success;  //TODO(fernando): store the transactions in a new mempool
 
 #else 
     return error::success;
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
 }
 
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
 /// TODO comment
 code data_base::push_legacy(block const& block, size_t height) {
     // Critical Section
@@ -658,7 +644,7 @@ code data_base::push_legacy(block const& block, size_t height) {
 
     return error::success;
 }
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
 // Add a block in order (creates no gaps, must be at top).
 // This is designed for write exclusivity and read concurrency.
@@ -666,16 +652,16 @@ code data_base::push(block const& block, size_t height) {
 
     auto const median_time_past = block.header().validation.median_time_past;
 
-#ifdef BITPRIM_DB_NEW
+#ifdef KTH_DB_NEW
     auto res = internal_db_->push_block(block, height, median_time_past);
     if ( ! succeed(res)) {
         return error::operation_failed_6;   //TODO(fernando): create a new operation_failed
     }
-#endif // BITPRIM_DB_NEW
+#endif // KTH_DB_NEW
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
     return push_legacy(block, height);
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
     return error::success;
 }
@@ -684,17 +670,17 @@ code data_base::push(block const& block, size_t height) {
 // Add the Genesis block
 code data_base::push_genesis(block const& block) {
 
-#ifdef BITPRIM_DB_NEW
+#ifdef KTH_DB_NEW
     auto res = internal_db_->push_genesis(block);
     if ( ! succeed(res)) {
         return error::operation_failed_6;   //TODO(fernando): create a new operation_failed
     }
-#endif // BITPRIM_DB_NEW
+#endif // KTH_DB_NEW
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
     size_t const height = 0;
     return push_legacy(block, height);
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
     return error::success;
 }
@@ -708,13 +694,13 @@ bool data_base::push_transactions(const chain::block& block, size_t height, uint
     for (auto position = bucket; position < count; position = ceiling_add(position, buckets)) {
         auto const& tx = txs[position];
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
         transactions_->store(tx, height, median_time_past, position);
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
-#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
         transactions_unconfirmed_->unlink_if_exists(tx.hash());
-#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
         if (height < settings_.index_start_height) {
             continue;
@@ -722,25 +708,25 @@ bool data_base::push_transactions(const chain::block& block, size_t height, uint
 
         auto const tx_hash = tx.hash();
 
-#if defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY)
+#if defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY)
         if (position != 0) {
             push_inputs(tx_hash, height, tx.inputs());
         }
-#endif // defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY)        
+#endif // defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY)        
 
-#ifdef BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
         push_outputs(tx_hash, height, tx.outputs());
-#endif // BITPRIM_DB_HISTORY
+#endif // KTH_DB_HISTORY
 
-#ifdef BITPRIM_DB_STEALTH
+#ifdef KTH_DB_STEALTH
         push_stealth(tx_hash, height, tx.outputs());
-#endif // BITPRIM_DB_STEALTH        
+#endif // KTH_DB_STEALTH        
     }
 
     return true;
 }
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
 bool data_base::push_heights(const chain::block& block, size_t height) {
     transactions_->synchronize();
     auto const& txs = block.transactions();
@@ -755,9 +741,9 @@ bool data_base::push_heights(const chain::block& block, size_t height) {
     }
     return true;
 }
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
-#if defined(BITPRIM_DB_LEGACY) && (defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY))
+#if defined(KTH_DB_LEGACY) && (defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY))
 void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const input::list& inputs) {
     
     for (uint32_t index = 0; index < inputs.size(); ++index) {
@@ -765,11 +751,11 @@ void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const inp
         const input_point inpoint {tx_hash, index};
         auto const& prevout = input.previous_output();
 
-#ifdef BITPRIM_DB_SPENDS
+#ifdef KTH_DB_SPENDS
         spends_->store(prevout, inpoint);
-#endif // BITPRIM_DB_SPENDS
+#endif // KTH_DB_SPENDS
 
-#ifdef BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
         if (prevout.validation.cache.is_valid()) {
             // This results in a complete and unambiguous history for the
             // address since standard outputs contain unambiguous address data.
@@ -808,13 +794,13 @@ void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const inp
                 }
             }
         }
-#endif // BITPRIM_DB_HISTORY
+#endif // KTH_DB_HISTORY
     }
 }
-#endif // defined(BITPRIM_DB_SPENDS) || defined(BITPRIM_DB_HISTORY)
+#endif // defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY)
 
 
-#ifdef BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
 void data_base::push_outputs(const hash_digest& tx_hash, size_t height, const output::list& outputs) {
     for (uint32_t index = 0; index < outputs.size(); ++index) {
         auto const outpoint = output_point {tx_hash, index};
@@ -827,9 +813,9 @@ void data_base::push_outputs(const hash_digest& tx_hash, size_t height, const ou
         }
     }
 }
-#endif // BITPRIM_DB_HISTORY    
+#endif // KTH_DB_HISTORY    
 
-#ifdef BITPRIM_DB_STEALTH
+#ifdef KTH_DB_STEALTH
 void data_base::push_stealth(hash_digest const& tx_hash, size_t height, const output::list& outputs) {
     if (outputs.empty())
         return;
@@ -864,12 +850,12 @@ void data_base::push_stealth(hash_digest const& tx_hash, size_t height, const ou
         stealth_->store(prefix, height, row);
     }
 }
-#endif // BITPRIM_DB_STEALTH
+#endif // KTH_DB_STEALTH
 
 
-#ifdef BITPRIM_CURRENCY_BCH
+#ifdef KTH_CURRENCY_BCH
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
 
 // bool data_base::pop_input_and_unconfirm(size_t height, chain::transaction const& tx) {
    
@@ -877,11 +863,11 @@ void data_base::push_stealth(hash_digest const& tx_hash, size_t height, const ou
 //         return false;
 //     }
 
-// // #ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+// // #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
 // //     // if ( ! tx.is_coinbase()) {       //Note(fernando): satisfied by the precondition
 // //     transactions_unconfirmed_->store(tx);
 // //     // }
-// // #endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+// // #endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
 // //     if ( ! transactions_->unconfirm(tx.hash())) {
 // //         return false;
@@ -896,11 +882,11 @@ bool data_base::pop_output_and_unconfirm(size_t height, chain::transaction const
         return false;
     }
 
-#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
     // if ( ! tx.is_coinbase()) {       //Note(fernando): satisfied by the precondition
     transactions_unconfirmed_->store(tx);
     // }
-#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
     if ( ! transactions_->unconfirm(tx.hash())) {
         return false;
@@ -951,7 +937,7 @@ bool data_base::pop_transactions_non_coinbase(size_t height, I f, I l) {
     }
     return pop_transactions_outputs_non_coinbase(height, f, l);
 }
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
 
 // A false return implies store corruption.
@@ -959,13 +945,13 @@ bool data_base::pop(block& out_block) {
     
     auto const start_time = asio::steady_clock::now();
 
-#ifdef BITPRIM_DB_NEW
+#ifdef KTH_DB_NEW
     if (internal_db_->pop_block(out_block) != result_code::success) {
         return false;
     }
 #endif
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
     size_t height;
     
     // The blockchain is empty (nothing to pop, not even genesis).
@@ -1023,27 +1009,27 @@ bool data_base::pop(block& out_block) {
     // Return the block (with header/block metadata and pop start time). 
     out_block = chain::block(block.header(), std::move(transactions));
 
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
     out_block.validation.error = error::success;
     out_block.validation.start_pop = start_time;
     return true;
 }
 
-#else // BITPRIM_CURRENCY_BCH
+#else // KTH_CURRENCY_BCH
 
 // A false return implies store corruption.
 bool data_base::pop(block& out_block) {
     
     auto const start_time = asio::steady_clock::now();
 
-#ifdef BITPRIM_DB_NEW
+#ifdef KTH_DB_NEW
     if (internal_db_->pop_block(out_block) != result_code::success) {
         return false;
     }
 #endif
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
     size_t height;
     
     // The blockchain is empty (nothing to pop, not even genesis).
@@ -1081,9 +1067,9 @@ bool data_base::pop(block& out_block) {
         }
 
         if (!tx.is_coinbase()) {
-#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
             transactions_unconfirmed_->store(tx);
-#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
         }
 
         if ( ! pop_outputs(tx.outputs(), height)) {
@@ -1105,13 +1091,13 @@ bool data_base::pop(block& out_block) {
     // Return the block (with header/block metadata and pop start time). 
     out_block = chain::block(block.header(), std::move(transactions));
 
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
     out_block.validation.error = error::success;
     out_block.validation.start_pop = start_time;
     return true;
 }
-#endif // BITPRIM_CURRENCY_BCH
+#endif // KTH_CURRENCY_BCH
 
 
 
@@ -1120,28 +1106,28 @@ bool data_base::pop_inputs(const input::list& inputs, size_t height) {
     // Loop in reverse.
     for (auto const& input: reverse(inputs)) {
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
         if ( ! transactions_->unspend(input.previous_output())) {
             return false;
         }
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
         if (height < settings_.index_start_height)
             continue;
 
-#ifdef BITPRIM_DB_SPENDS
+#ifdef KTH_DB_SPENDS
         // All spends are confirmed.
         // This can fail if index start has been changed between restarts.
         // So ignore the error here and succeed even if not found.
         /* bool */ spends_->unlink(input.previous_output());
-#endif // BITPRIM_DB_SPENDS
+#endif // KTH_DB_SPENDS
 
-#ifdef BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
         // Delete can fail if index start has been changed between restarts.
         for (auto const& address : input.addresses()) {
             /* bool */ history_->delete_last_row(address.hash());
         }
-#endif // BITPRIM_DB_HISTORY
+#endif // KTH_DB_HISTORY
     }
 
     return true;
@@ -1153,7 +1139,7 @@ bool data_base::pop_outputs(const output::list& outputs, size_t height) {
         return true;
     }
 
-#ifdef BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
     // Loop in reverse.
     for (auto const output : reverse(outputs)) {
         // Delete can fail if index start has been changed between restarts.
@@ -1164,7 +1150,7 @@ bool data_base::pop_outputs(const output::list& outputs, size_t height) {
         // All stealth entries are confirmed.
         // Stealth unlink is not implemented as there is no way to correlate.
     }
-#endif // BITPRIM_DB_HISTORY
+#endif // KTH_DB_HISTORY
 
     return true;
 }
@@ -1203,7 +1189,7 @@ void data_base::push_next(const code& ec, block_const_ptr_list_const_ptr blocks,
 
 void data_base::do_push(block_const_ptr block, size_t height, uint32_t median_time_past, dispatcher& dispatch, result_handler handler) {
 
-#ifdef BITPRIM_DB_NEW
+#ifdef KTH_DB_NEW
     // LOG_DEBUG(LOG_DATABASE) << "Write flushed to disk: " << ec.message();
     auto res = internal_db_->push_block(*block, height, median_time_past);
     if ( ! succeed(res)) {
@@ -1213,9 +1199,9 @@ void data_base::do_push(block_const_ptr block, size_t height, uint32_t median_ti
     block->validation.end_push = asio::steady_clock::now();
     // This is the end of the block sub-sequence.
     handler(error::success);
-#endif // BITPRIM_DB_NEW
+#endif // KTH_DB_NEW
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
     result_handler block_complete = std::bind(&data_base::handle_push_transactions, this, _1, block, height, handler);
 
     // This ensures linkage and that the there is at least one tx.
@@ -1235,7 +1221,7 @@ void data_base::do_push(block_const_ptr block, size_t height, uint32_t median_ti
     for (size_t bucket = 0; bucket < buckets; ++bucket) {
         dispatch.concurrent(&data_base::do_push_transactions, this, block, height, median_time_past, bucket, buckets, join_handler);
     }
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 }
 
 void data_base::do_push_transactions(block_const_ptr block, size_t height, uint32_t median_time_past, size_t bucket, size_t buckets, result_handler handler) {
@@ -1248,7 +1234,7 @@ void data_base::handle_push_transactions(const code& ec, block_const_ptr block, 
         handler(ec);
         return;
     }
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
     if ( ! push_heights(*block, height)) {
         handler(error::operation_failed_8);
         return;
@@ -1259,7 +1245,7 @@ void data_base::handle_push_transactions(const code& ec, block_const_ptr block, 
 
     // Synchronize tx updates, indexes and block.
     synchronize();
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
     // Set push end time for the block.
     block->validation.end_push = asio::steady_clock::now();
@@ -1273,7 +1259,7 @@ void data_base::handle_push_transactions(const code& ec, block_const_ptr block, 
 void data_base::pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest& fork_hash, dispatcher&, result_handler handler) {
     out_blocks->clear();
 
-#ifdef BITPRIM_DB_NEW
+#ifdef KTH_DB_NEW
     auto const header_result = internal_db_->get_header(fork_hash);
 
     uint32_t top;
@@ -1288,7 +1274,7 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest
     
 #endif
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
     size_t top;
     auto const result = blocks_->get(fork_hash);
 
@@ -1301,7 +1287,7 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest
 
     auto const fork = result.height();
 
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
     auto const size = top - fork;
 
@@ -1334,21 +1320,21 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest
 }
 
 code data_base::prune_reorg() {
-#ifdef BITPRIM_DB_NEW
+#ifdef KTH_DB_NEW
     auto res = internal_db_->prune();
     if ( ! succeed_prune(res)) {
         LOG_ERROR(LOG_DATABASE) << "Error pruning the reorganization pool, code: " << static_cast<std::underlying_type<result_code>::type>(res);
         return error::unknown;
     }
-#endif // BITPRIM_DB_NEW
+#endif // KTH_DB_NEW
     return error::success;
 }
 
 /*
 bool data_base::set_database_flags(bool fast) {
-#ifdef BITPRIM_DB_NEW
+#ifdef KTH_DB_NEW
     return internal_db_->set_fast_flags_environment(fast);
-#endif // BITPRIM_DB_NEW
+#endif // KTH_DB_NEW
     return true;
 }
 */
@@ -1359,7 +1345,7 @@ void data_base::reorganize(const checkpoint& fork_point, block_const_ptr_list_co
     const result_handler pop_handler = std::bind(&data_base::handle_pop, this, _1, incoming_blocks, next_height, std::ref(dispatch), handler);
 
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
     // Critical Section.
     ///////////////////////////////////////////////////////////////////////////
     write_mutex_.lock();
@@ -1371,7 +1357,7 @@ void data_base::reorganize(const checkpoint& fork_point, block_const_ptr_list_co
         pop_handler(error::operation_failed_11);
         return;
     }
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
     pop_above(outgoing_blocks, fork_point.hash(), dispatch, pop_handler);
 }
@@ -1391,28 +1377,28 @@ void data_base::handle_pop(const code& ec, block_const_ptr_list_const_ptr incomi
 // the mutex, and we always invoke the caller's handler exactly once.
 void data_base::handle_push(const code& ec, result_handler handler) const {
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
     write_mutex_.unlock();
     // End Critical Section.
     ///////////////////////////////////////////////////////////////////////////
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
     if (ec) {
         handler(ec);
         return;
     }
 
-#if defined(BITPRIM_DB_LEGACY)
+#if defined(KTH_DB_LEGACY)
     handler(end_write() ? error::success : error::operation_failed_12);
     // End Sequential Lock and Flush Lock
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#elif defined(BITPRIM_DB_NEW)
+#elif defined(KTH_DB_NEW)
     handler(error::success);
 #else
-#error You must define BITPRIM_DB_LEGACY or BITPRIM_DB_NEW
+#error You must define KTH_DB_LEGACY or KTH_DB_NEW
 #endif
 
 }
 
 } // namespace data_base
-} // namespace libbitcoin
+} // namespace kth

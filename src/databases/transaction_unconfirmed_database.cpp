@@ -1,23 +1,9 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
 
 #include <bitcoin/database/databases/transaction_unconfirmed_database.hpp>
 
@@ -37,7 +23,7 @@ static constexpr auto value_size = sizeof(uint64_t);
 static constexpr auto arrival_time_size = sizeof(uint32_t);
 static constexpr auto metadata_size = arrival_time_size;
 
-#ifdef BITPRIM_CURRENCY_BCH
+#ifdef KTH_CURRENCY_BCH
 const size_t transaction_unconfirmed_database::unconfirmed = max_uint32;
 #else 
 const size_t transaction_unconfirmed_database::unconfirmed = max_uint16;
@@ -124,12 +110,12 @@ memory_ptr transaction_unconfirmed_database::find(const hash_digest& hash) const
 transaction_unconfirmed_result transaction_unconfirmed_database::get(const hash_digest& hash) const {
     // Limit search to confirmed transactions at or below the fork height.
     // Caller should set fork height to max_size_t for unconfirmed search.
-    const auto slab = find(hash);
+    auto const slab = find(hash);
     if (slab) {
         ///////////////////////////////////////////////////////////////////////
         metadata_mutex_.lock_shared();
         auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab));
-        const auto arrival_time = deserial.read_4_bytes_little_endian();
+        auto const arrival_time = deserial.read_4_bytes_little_endian();
         metadata_mutex_.unlock_shared();
         ///////////////////////////////////////////////////////////////////////
 
@@ -146,15 +132,15 @@ uint32_t get_clock_now() {
 
 void transaction_unconfirmed_database::store(const chain::transaction& tx) {
     uint32_t arrival_time = get_clock_now();
-#ifdef BITPRIM_CURRENCY_BCH
+#ifdef KTH_CURRENCY_BCH
         bool witness = false;
 #else
         bool witness = true;
 #endif
-    const auto hash = tx.hash();
+    auto const hash = tx.hash();
 
     // Unconfirmed txs: position is unconfirmed and height is validation forks.
-    const auto write = [&](serializer<uint8_t*>& serial) {
+    auto const write = [&](serializer<uint8_t*>& serial) {
         ///////////////////////////////////////////////////////////////////////
         // Critical Section
         metadata_mutex_.lock();
@@ -168,9 +154,9 @@ void transaction_unconfirmed_database::store(const chain::transaction& tx) {
     };
 
 
-    const auto tx_size = tx.serialized_size(false, witness, true);
+    auto const tx_size = tx.serialized_size(false, witness, true);
     BITCOIN_ASSERT(tx_size <= max_size_t - metadata_size);
-    const auto total_size = metadata_size + static_cast<size_t>(tx_size);
+    auto const total_size = metadata_size + static_cast<size_t>(tx_size);
 
     // Create slab for the new tx instance.
     lookup_map_.store(hash, write, total_size);
@@ -195,6 +181,6 @@ bool transaction_unconfirmed_database::unlink_if_exists(hash_digest const& hash)
     return unlink(hash);
 }
 
-}} // namespace libbitcoin::database
+}} // namespace kth::database
 
-#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED

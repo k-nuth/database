@@ -1,21 +1,7 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
 #include <bitcoin/database.hpp>
@@ -47,7 +33,7 @@ public:
 
 BOOST_FIXTURE_TEST_SUITE(database_tests, transaction_database_directory_setup_fixture)
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
 BOOST_AUTO_TEST_CASE(transaction_database__test)
 {
     data_chunk wire_tx1;
@@ -56,7 +42,7 @@ BOOST_AUTO_TEST_CASE(transaction_database__test)
     transaction tx1;
     BOOST_REQUIRE(tx1.from_data(wire_tx1, true));
 
-    const auto h1 = tx1.hash();
+    auto const h1 = tx1.hash();
 
     data_chunk wire_tx2;
     BOOST_REQUIRE(decode_base16(wire_tx2, "010000000147811c3fc0c0e750af5d0ea7343b16ea2d0c291c002e3db778669216eb689de80000000000ffffffff0118ddf505000000001976a914575c2f0ea88fcbad2389a372d942dea95addc25b88ac00000000"));
@@ -64,7 +50,7 @@ BOOST_AUTO_TEST_CASE(transaction_database__test)
     transaction tx2;
     BOOST_REQUIRE(tx2.from_data(wire_tx2, true));
 
-    const auto h2 = tx2.hash();
+    auto const h2 = tx2.hash();
 
     store::create(DIRECTORY "/transaction");
     transaction_database db(DIRECTORY "/transaction", 1000, 50, 0);
@@ -73,14 +59,14 @@ BOOST_AUTO_TEST_CASE(transaction_database__test)
     db.store(tx1, 110, 0, 88);
     db.store(tx2, 4, 0, 6);
 
-    const auto result1 = db.get(h1, max_size_t, false);
+    auto const result1 = db.get(h1, max_size_t, false);
     BOOST_REQUIRE(result1.transaction().hash() == h1);
 
-    const auto result2 = db.get(h2, max_size_t, false);
+    auto const result2 = db.get(h2, max_size_t, false);
     BOOST_REQUIRE(result2.transaction().hash() == h2);
 
     db.synchronize();
 }
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
 BOOST_AUTO_TEST_SUITE_END()

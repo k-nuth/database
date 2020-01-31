@@ -1,23 +1,9 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifndef LIBBITCOIN_DATABASE_SLAB_LIST_IPP
-#define LIBBITCOIN_DATABASE_SLAB_LIST_IPP
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifndef KTH_DATABASE_SLAB_LIST_IPP
+#define KTH_DATABASE_SLAB_LIST_IPP
 
 #include <cstddef>
 #include <cstdint>
@@ -38,11 +24,11 @@ template <typename KeyType>
 class slab_row
 {
 public:
-    static BC_CONSTEXPR file_offset empty = bc::max_uint64;
-    static BC_CONSTEXPR size_t position_size = sizeof(file_offset);
-    static BC_CONSTEXPR size_t key_start = 0;
-    static BC_CONSTEXPR size_t key_size = std::tuple_size<KeyType>::value;
-    static BC_CONSTEXPR file_offset prefix_size = key_size + position_size;
+    static constexpr file_offset empty = bc::max_uint64;
+    static constexpr size_t position_size = sizeof(file_offset);
+    static constexpr size_t key_start = 0;
+    static constexpr size_t key_size = std::tuple_size<KeyType>::value;
+    static constexpr file_offset prefix_size = key_size + position_size;
 
     typedef serializer<uint8_t*>::functor write_function;
 
@@ -98,8 +84,8 @@ file_offset slab_row<KeyType>::create(const KeyType& key, write_function write,
     const size_t slab_size = prefix_size + value_size;
     position_ = manager_.new_slab(slab_size);
 
-    const auto memory = raw_data(key_start);
-    const auto key_data = REMAP_ADDRESS(memory);
+    auto const memory = raw_data(key_start);
+    auto const key_data = REMAP_ADDRESS(memory);
     auto serial = make_unsafe_serializer(key_data);
     serial.write_forward(key);
     serial.skip(position_size);
@@ -117,8 +103,8 @@ void slab_row<KeyType>::link(file_offset next)
     //   [ value... ]
 
     // Write next pointer after the key.
-    const auto memory = raw_data(key_size);
-    const auto next_data = REMAP_ADDRESS(memory);
+    auto const memory = raw_data(key_size);
+    auto const next_data = REMAP_ADDRESS(memory);
     auto serial = make_unsafe_serializer(next_data);
 
     //*************************************************************************
@@ -129,7 +115,7 @@ void slab_row<KeyType>::link(file_offset next)
 template <typename KeyType>
 bool slab_row<KeyType>::compare(const KeyType& key) const
 {
-    const auto memory = raw_data(key_start);
+    auto const memory = raw_data(key_start);
     return std::equal(key.begin(), key.end(), REMAP_ADDRESS(memory));
 }
 
@@ -155,8 +141,8 @@ file_offset slab_row<KeyType>::offset() const
 template <typename KeyType>
 file_offset slab_row<KeyType>::next_position() const
 {
-    const auto memory = raw_data(key_size);
-    const auto next_address = REMAP_ADDRESS(memory);
+    auto const memory = raw_data(key_size);
+    auto const next_address = REMAP_ADDRESS(memory);
 
     //*************************************************************************
     return from_little_endian_unsafe<file_offset>(next_address);
@@ -166,7 +152,7 @@ file_offset slab_row<KeyType>::next_position() const
 template <typename KeyType>
 void slab_row<KeyType>::write_next_position(file_offset next)
 {
-    const auto memory = raw_data(key_size);
+    auto const memory = raw_data(key_size);
     auto serial = make_unsafe_serializer(REMAP_ADDRESS(memory));
 
     //*************************************************************************
@@ -183,6 +169,6 @@ memory_ptr slab_row<KeyType>::raw_data(file_offset offset) const
 }
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
 #endif

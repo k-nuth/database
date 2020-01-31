@@ -1,21 +1,7 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include <bitcoin/database/memory/memory_map.hpp>
 
 #include <iostream>
@@ -100,9 +86,9 @@ bool memory_map::handle_error(const std::string& context,
     const path& filename)
 {
 #ifdef _WIN32
-    const auto error = GetLastError();
+    auto const error = GetLastError();
 #else
-    const auto error = errno;
+    auto const error = errno;
 #endif
     LOG_FATAL(LOG_DATABASE)
         << "The file failed to " << context << ": " << filename << " : "
@@ -345,7 +331,7 @@ memory_ptr memory_map::reserve(size_t size, size_t expansion)
 
     // Critical Section (internal)
     ///////////////////////////////////////////////////////////////////////////
-    const auto memory = REMAP_ALLOCATOR(mutex_);
+    auto const memory = REMAP_ALLOCATOR(mutex_);
 
     // The store should only have been closed after all threads terminated.
     if (closed_)
@@ -391,7 +377,7 @@ size_t memory_map::page() const
     return configuration.dwPageSize;
 #else
     errno = 0;
-    const auto page_size = sysconf(_SC_PAGESIZE);
+    auto const page_size = sysconf(_SC_PAGESIZE);
 
     // -1 is both a return code and a potentially valid value, so use errno.
     if (errno != 0)
@@ -404,7 +390,7 @@ size_t memory_map::page() const
 
 bool memory_map::unmap()
 {
-    const auto success = (munmap(data_, file_size_) != FAIL);
+    auto const success = (munmap(data_, file_size_) != FAIL);
     file_size_ = 0;
     data_ = nullptr;
     return success;
@@ -475,4 +461,4 @@ bool memory_map::validate(size_t size)
 }
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth

@@ -1,24 +1,10 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include <bitcoin/database/databases/history_database.hpp>
 
-#ifdef BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
 
 #include <cstdint>
 #include <cstddef>
@@ -43,9 +29,9 @@ static constexpr auto checksum_size = sizeof(uint64_t);
 static constexpr auto value_size = flag_size + point_size + height_size +
     checksum_size;
 
-static BC_CONSTEXPR auto table_record_size =
+static constexpr auto table_record_size =
     hash_table_multimap_record_size<short_hash>();
-static const auto row_record_size = multimap_record_size(value_size);
+static auto const row_record_size = multimap_record_size(value_size);
 
 // History uses a hash table index, O(1).
 history_database::history_database(const path& lookup_filename,
@@ -139,9 +125,9 @@ bool history_database::flush() const
 void history_database::add_output(const short_hash& key,
     const output_point& outpoint, size_t output_height, uint64_t value)
 {
-    const auto output_height32 = safe_unsigned<uint32_t>(output_height);
+    auto const output_height32 = safe_unsigned<uint32_t>(output_height);
 
-    const auto write = [&](serializer<uint8_t*>& serial)
+    auto const write = [&](serializer<uint8_t*>& serial)
     {
         serial.write_byte(static_cast<uint8_t>(point_kind::output));
         outpoint.to_data(serial, false);
@@ -156,9 +142,9 @@ void history_database::add_input(const short_hash& key,
     const output_point& inpoint, size_t input_height,
     const input_point& previous)
 {
-    const auto input_height32 = safe_unsigned<uint32_t>(input_height);
+    auto const input_height32 = safe_unsigned<uint32_t>(input_height);
 
-    const auto write = [&](serializer<uint8_t*>& serial)
+    auto const write = [&](serializer<uint8_t*>& serial)
     {
         serial.write_byte(static_cast<uint8_t>(point_kind::spend));
         inpoint.to_data(serial, false);
@@ -179,14 +165,14 @@ history_compact::list history_database::get(const short_hash& key,
     size_t limit, size_t from_height) const
 {
     // Read the height value from the row.
-    const auto read_height = [](uint8_t* data)
+    auto const read_height = [](uint8_t* data)
     {
         return from_little_endian_unsafe<uint32_t>(data + height_position);
     };
 
     // TODO: add serialization to history_compact.
     // Read a row from the data for the history list.
-    const auto read_row = [](uint8_t* data)
+    auto const read_row = [](uint8_t* data)
     {
         auto deserial = make_unsafe_deserializer(data);
         return history_compact
@@ -206,18 +192,18 @@ history_compact::list history_database::get(const short_hash& key,
     };
 
     history_compact::list result;
-    const auto start = rows_multimap_.find(key);
-    const auto records = record_multimap_iterable(rows_manager_, start);
+    auto const start = rows_multimap_.find(key);
+    auto const records = record_multimap_iterable(rows_manager_, start);
 
-    for (const auto index: records)
+    for (auto const index: records)
     {
         // Stop once we reach the limit (if specified).
         if (limit > 0 && result.size() >= limit)
             break;
 
         // This obtains a remap safe address pointer against the rows file.
-        const auto record = rows_multimap_.get(index);
-        const auto address = REMAP_ADDRESS(record);
+        auto const record = rows_multimap_.get(index);
+        auto const address = REMAP_ADDRESS(record);
 
         // Skip rows below from_height.
         if (from_height == 0 || read_height(address) >= from_height)
@@ -233,7 +219,7 @@ std::vector<hash_digest> history_database::get_txns(const short_hash& key, size_
 {
 
     // Read the height value from the row.
-    const auto read_hash = [](uint8_t* data)
+    auto const read_hash = [](uint8_t* data)
     {
         auto deserial = make_unsafe_deserializer(data+flag_size);
         return deserial.read_hash();
@@ -241,19 +227,19 @@ std::vector<hash_digest> history_database::get_txns(const short_hash& key, size_
 
     std::set<hash_digest> temp;
     std::vector<hash_digest> result;
-    const auto start = rows_multimap_.find(key);
-    const auto records = record_multimap_iterable(rows_manager_, start);
+    auto const start = rows_multimap_.find(key);
+    auto const records = record_multimap_iterable(rows_manager_, start);
 
-    for (const auto index: records)
+    for (auto const index: records)
     {
         // Stop once we reach the limit (if specified).
         if (limit > 0 && temp.size() >= limit)
             break;
         // This obtains a remap safe address pointer against the rows file.
-        const auto record = rows_multimap_.get(index);
-        const auto address = REMAP_ADDRESS(record);
+        auto const record = rows_multimap_.get(index);
+        auto const address = REMAP_ADDRESS(record);
         // Avoid inserting the same tx
-        const auto & pair = temp.insert(read_hash(address));
+        auto const & pair = temp.insert(read_hash(address));
         if (pair.second){
             // Add valid txns to the result vector
             result.push_back(*pair.first);
@@ -273,6 +259,6 @@ history_statinfo history_database::statinfo() const
 }
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
-#endif // BITPRIM_DB_HISTORY
+#endif // KTH_DB_HISTORY

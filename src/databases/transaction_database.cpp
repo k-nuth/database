@@ -1,22 +1,8 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifdef BITPRIM_DB_LEGACY
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifdef KTH_DB_LEGACY
 
 #include <bitcoin/database/databases/transaction_database.hpp>
 
@@ -36,17 +22,17 @@ static constexpr auto value_size = sizeof(uint64_t);
 static constexpr auto height_size = sizeof(uint32_t);
 
 void write_position(serializer<uint8_t*>& serial, size_t position) {
-    serial.BITPRIM_POSITION_WRITER(static_cast<uint32_t>(position));
+    serial.KTH_POSITION_WRITER(static_cast<uint32_t>(position));
 }
 
 template <typename Deserializer>
 position_t read_position(Deserializer& deserial) {
-    return deserial.BITPRIM_POSITION_READER();
+    return deserial.KTH_POSITION_READER();
 }
 
 template <typename Deserializer>
 bool read_coinbase(Deserializer& deserial) {
-    return deserial.BITPRIM_POSITION_READER() == 0;
+    return deserial.KTH_POSITION_READER() == 0;
 }
 
 const size_t transaction_database::unconfirmed = position_max;
@@ -61,9 +47,9 @@ transaction_database::transaction_database(const path& map_filename, size_t buck
     , lookup_header_(lookup_file_, buckets)
     , lookup_manager_(lookup_file_, slab_hash_table_header_size(buckets))
     , lookup_map_(lookup_header_, lookup_manager_)
-#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LIBBITCOIN
     , cache_(cache_capacity)
-#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LIBBITCOIN
 {}
 
 transaction_database::~transaction_database() {
@@ -176,7 +162,7 @@ transaction_result transaction_database::get(const hash_digest& hash, size_t for
 bool transaction_database::get_output(output& out_output, size_t& out_height, uint32_t& out_median_time_past, 
     bool& out_coinbase, output_point const& point, size_t fork_height, bool require_confirmed) const {
 
-#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LIBBITCOIN
     if (cache_.get(out_output, out_height, out_median_time_past, out_coinbase, point, fork_height, require_confirmed)) {
         return true;
     }
@@ -207,11 +193,11 @@ bool transaction_database::get_output(output& out_output, size_t& out_height, ui
 bool transaction_database::get_output_is_confirmed(output& out_output, size_t& out_height,
     bool& out_coinbase, bool& out_is_confirmed, const output_point& point, size_t fork_height, bool require_confirmed) const {
 
-#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LIBBITCOIN
     if (cache_.get_is_confirmed(out_output, out_height, out_coinbase, out_is_confirmed, point, fork_height, require_confirmed)) {
         return true;
     }
-#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LIBBITCOIN
 
     auto const hash = point.hash();
     auto const slab = find(hash, fork_height, require_confirmed);
@@ -257,9 +243,9 @@ void transaction_database::store(const chain::transaction& tx, size_t height, ui
     // A false pooled flag saves the cost of predictable confirm failure.
     if (position != unconfirmed && position != 0 && tx.validation.pooled) {
         if (confirm(hash, height, median_time_past, position)) {
-#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LIBBITCOIN
             cache_.add(tx, height, median_time_past, true);
-#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LIBBITCOIN
             return;
         }
 
@@ -284,17 +270,17 @@ void transaction_database::store(const chain::transaction& tx, size_t height, ui
         ///////////////////////////////////////////////////////////////////////
 
         // WRITE THE TX
-        tx.to_data(serial, false, BITPRIM_WITNESS_DEFAULT, false);
+        tx.to_data(serial, false, KTH_WITNESS_DEFAULT, false);
     };
 
-    auto const tx_size = tx.serialized_size(false, BITPRIM_WITNESS_DEFAULT);
+    auto const tx_size = tx.serialized_size(false, KTH_WITNESS_DEFAULT);
     BITCOIN_ASSERT(tx_size <= max_size_t - metadata_size);
     auto const total_size = metadata_size + static_cast<size_t>(tx_size);
 
     // Create slab for the new tx instance.
     lookup_map_.store(hash, write, total_size);
 
-#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LIBBITCOIN
     cache_.add(tx, height, median_time_past, position != unconfirmed);
 
     // We report this here because its a steady interval (block announce).
@@ -303,16 +289,16 @@ void transaction_database::store(const chain::transaction& tx, size_t height, ui
             << "Output cache hit rate: " << cache_.hit_rate() << ", size: "
             << cache_.size();
     }
-#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LIBBITCOIN
 }
 
 bool transaction_database::spend(const output_point& point, size_t spender_height) {
-#ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
+#ifdef KTH_DB_UNSPENT_LIBBITCOIN
     // If unspent we could restore the spend to the cache, but not worth it.
     if (spender_height != output::validation::not_spent) {
         cache_.remove(point);
     }
-#endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
+#endif // KTH_DB_UNSPENT_LIBBITCOIN
 
 
     // Limit search to confirmed transactions at or below the spender height,
@@ -384,6 +370,6 @@ bool transaction_database::unconfirm(const hash_digest& hash) {
 }
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY

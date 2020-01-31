@@ -1,23 +1,9 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifdef BITPRIM_DB_LEGACY
+
+#ifdef KTH_DB_LEGACY
 
 #include <bitcoin/database/databases/block_database.hpp>
 
@@ -150,13 +136,13 @@ block_result block_database::get(size_t height) const
         return{};
 
     // No need to read height here since it's the key.
-    const auto position = read_position(height);
-    const auto slab = lookup_manager_.get(position);
+    auto const position = read_position(height);
+    auto const slab = lookup_manager_.get(position);
 
     //*************************************************************************
     // HACK: back up into the slab to obtain the key (optimization).
-    static const auto prefix_size = slab_row<hash_digest>::prefix_size;
-    const auto memory = REMAP_ADDRESS(slab);
+    static auto const prefix_size = slab_row<hash_digest>::prefix_size;
+    auto const memory = REMAP_ADDRESS(slab);
     auto deserial = make_unsafe_deserializer(memory - prefix_size);
     //*************************************************************************
 
@@ -165,14 +151,14 @@ block_result block_database::get(size_t height) const
 
 block_result block_database::get(const hash_digest& hash) const
 {
-    const auto slab = lookup_map_.find(hash);
+    auto const slab = lookup_map_.find(hash);
 
     if (slab)
     {
         ///////////////////////////////////////////////////////////////////////
         metadata_mutex_.lock_shared();
-        const auto height_start = REMAP_ADDRESS(slab) + height_offset;
-        const auto height = from_little_endian_unsafe<uint32_t>(height_start);
+        auto const height_start = REMAP_ADDRESS(slab) + height_offset;
+        auto const height = from_little_endian_unsafe<uint32_t>(height_start);
         metadata_mutex_.unlock_shared();
         ///////////////////////////////////////////////////////////////////////
 
@@ -186,11 +172,11 @@ block_result block_database::get(const hash_digest& hash) const
 void block_database::store(const block& block, size_t height)
 {
     BITCOIN_ASSERT(height <= max_uint32);
-    const auto height32 = static_cast<uint32_t>(height);
-    const auto tx_count = block.transactions().size();
+    auto const height32 = static_cast<uint32_t>(height);
+    auto const tx_count = block.transactions().size();
 
     // Write block data.
-    const auto write = [&](serializer<uint8_t*>& serial)
+    auto const write = [&](serializer<uint8_t*>& serial)
     {
         // WRITE THE BLOCK HEADER (including median_time_past metadata).
         block.header().to_data(serial, false);
@@ -205,16 +191,16 @@ void block_database::store(const block& block, size_t height)
         ///////////////////////////////////////////////////////////////////////
 
         // WRITE THE TX HASHES
-        for (const auto& tx: block.transactions())
+        for (auto const& tx: block.transactions())
             serial.write_hash(tx.hash());
     };
 
-    const auto& header = block.header();
-    const auto key = header.hash();
-    const auto size = header.serialized_size(false) + sizeof(height32) +
+    auto const& header = block.header();
+    auto const key = header.hash();
+    auto const size = header.serialized_size(false) + sizeof(height32) +
         message::variable_uint_size(tx_count) + (tx_count * hash_size) + sizeof(uint64_t);
 
-    const auto position = lookup_map_.store(key, write, size);
+    auto const position = lookup_map_.store(key, write, size);
 
     // Write position to index.
     write_position(position, height32);
@@ -222,7 +208,7 @@ void block_database::store(const block& block, size_t height)
 
 bool block_database::gaps(heights& out_gaps) const
 {
-    const auto count = index_manager_.count();
+    auto const count = index_manager_.count();
 
     for (size_t height = 0; height < count; ++height)
         if (read_position(height) == empty)
@@ -247,7 +233,7 @@ void block_database::zeroize(array_index first, array_index count)
 {
     for (auto index = first; index < (first + count); ++index)
     {
-        const auto slab = index_manager_.get(index);
+        auto const slab = index_manager_.get(index);
         auto serial = make_unsafe_serializer(REMAP_ADDRESS(slab));
         serial.write_8_bytes_little_endian(empty);
     }
@@ -256,14 +242,14 @@ void block_database::zeroize(array_index first, array_index count)
 void block_database::write_position(file_offset position, array_index height)
 {
     BITCOIN_ASSERT(height < max_uint32);
-    const auto new_count = height + 1;
+    auto const new_count = height + 1;
 
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
     mutex_.lock_upgrade();
 
     // Guard index_manager to prevent interim count increase.
-    const auto initial_count = index_manager_.count();
+    auto const initial_count = index_manager_.count();
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     mutex_.unlock_upgrade_and_lock();
@@ -271,13 +257,13 @@ void block_database::write_position(file_offset position, array_index height)
     // Guard write to prevent overwriting preceding height write.
     if (new_count > initial_count)
     {
-        const auto create_count = new_count - initial_count;
+        auto const create_count = new_count - initial_count;
         index_manager_.new_records(create_count);
         zeroize(initial_count, create_count - 1);
     }
 
     // Guard write to prevent subsequent zeroize from erasing.
-    const auto slab = index_manager_.get(height);
+    auto const slab = index_manager_.get(height);
     auto serial = make_unsafe_serializer(REMAP_ADDRESS(slab));
     serial.write_8_bytes_little_endian(position);
 
@@ -287,7 +273,7 @@ void block_database::write_position(file_offset position, array_index height)
 
 file_offset block_database::read_position(array_index height) const
 {
-    const auto slab = index_manager_.get(height);
+    auto const slab = index_manager_.get(height);
 
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
@@ -299,7 +285,7 @@ file_offset block_database::read_position(array_index height) const
 // The index of the highest existing block, independent of gaps.
 bool block_database::top(size_t& out_height) const
 {
-    const auto count = index_manager_.count();
+    auto const count = index_manager_.count();
 
     // Guard against no genesis block.
     if (count == 0)
@@ -310,6 +296,6 @@ bool block_database::top(size_t& out_height) const
 }
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY

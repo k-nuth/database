@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2017 Bitprim Inc.
  *
- * This file is part of Bitprim.
+ * This file is part of the Knuth Project.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef BITPRIM_DATABASE_RESULT_CODE_HPP_
-#define BITPRIM_DATABASE_RESULT_CODE_HPP_
+#ifndef KTH_DATABASE_RESULT_CODE_HPP_
+#define KTH_DATABASE_RESULT_CODE_HPP_
 
 namespace libbitcoin {
 namespace database {
@@ -47,6 +47,6 @@ bool succeed_prune(result_code code) {
 
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
-#endif // BITPRIM_DATABASE_RESULT_CODE_HPP_
+#endif // KTH_DATABASE_RESULT_CODE_HPP_

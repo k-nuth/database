@@ -1,23 +1,9 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifndef LIBBITCOIN_DATABASE_HASH_TABLE_HEADER_IPP
-#define LIBBITCOIN_DATABASE_HASH_TABLE_HEADER_IPP
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifndef KTH_DATABASE_HASH_TABLE_HEADER_IPP
+#define KTH_DATABASE_HASH_TABLE_HEADER_IPP
 
 #include <cstring>
 #include <stdexcept>
@@ -27,8 +13,8 @@
 namespace libbitcoin {
 namespace database {
 
-static BC_CONSTEXPR uint64_t empty_fill = 0xffffffffffffffff;
-static BC_CONSTEXPR uint8_t empty_byte = (uint8_t)empty_fill;
+static constexpr uint64_t empty_fill = 0xffffffffffffffff;
+static constexpr uint8_t empty_byte = (uint8_t)empty_fill;
 
 // This VC++ workaround is OK because ValueType must be unsigned.
 //static constexpr ValueType empty = std::numeric_limits<ValueType>::max();
@@ -56,17 +42,17 @@ bool hash_table_header<IndexType, ValueType>::create()
         return false;
 
     // Calculate the minimum file size.
-    const auto minimum_file_size = item_position(buckets_);
+    auto const minimum_file_size = item_position(buckets_);
 
     // The accessor must remain in scope until the end of the block.
-    const auto memory = file_.resize(minimum_file_size);
-    const auto buckets_address = REMAP_ADDRESS(memory);
+    auto const memory = file_.resize(minimum_file_size);
+    auto const buckets_address = REMAP_ADDRESS(memory);
     auto serial = make_unsafe_serializer(buckets_address);
     serial.write_little_endian(buckets_);
 
     // optimized fill implementation
     // This optimization makes it possible to debug full size headers.
-    const auto start = buckets_address + sizeof(IndexType);
+    auto const start = buckets_address + sizeof(IndexType);
     memset(start, empty_byte, buckets_ * sizeof(ValueType));
 
     // rationalized fill implementation
@@ -79,18 +65,18 @@ bool hash_table_header<IndexType, ValueType>::create()
 template <typename IndexType, typename ValueType>
 bool hash_table_header<IndexType, ValueType>::start()
 {
-    const auto minimum_file_size = item_position(buckets_);
+    auto const minimum_file_size = item_position(buckets_);
 
     // Header file is too small.
     if (minimum_file_size > file_.size())
         return false;
 
     // The accessor must remain in scope until the end of the block.
-    const auto memory = file_.access();
-    const auto buckets_address = REMAP_ADDRESS(memory);
+    auto const memory = file_.access();
+    auto const buckets_address = REMAP_ADDRESS(memory);
 
     // Does not require atomicity (no concurrency during start).
-    const auto buckets = from_little_endian_unsafe<IndexType>(buckets_address);
+    auto const buckets = from_little_endian_unsafe<IndexType>(buckets_address);
 
     // If buckets_ == 0 we trust what is read from the file.
     return buckets_ == 0 || buckets == buckets_;
@@ -103,8 +89,8 @@ ValueType hash_table_header<IndexType, ValueType>::read(IndexType index) const
     BITCOIN_ASSERT(index < buckets_);
 
     // The accessor must remain in scope until the end of the block.
-    const auto memory = file_.access();
-    const auto value_address = REMAP_ADDRESS(memory) + item_position(index);
+    auto const memory = file_.access();
+    auto const value_address = REMAP_ADDRESS(memory) + item_position(index);
 
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
@@ -121,8 +107,8 @@ void hash_table_header<IndexType, ValueType>::write(IndexType index,
     BITCOIN_ASSERT(index < buckets_);
 
     // The accessor must remain in scope until the end of the block.
-    const auto memory = file_.access();
-    const auto value_address = REMAP_ADDRESS(memory) + item_position(index);
+    auto const memory = file_.access();
+    auto const value_address = REMAP_ADDRESS(memory) + item_position(index);
     auto serial = make_unsafe_serializer(value_address);
 
     // Critical Section
@@ -146,6 +132,6 @@ file_offset hash_table_header<IndexType, ValueType>::item_position(
 }
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth
 
 #endif
