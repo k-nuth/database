@@ -2,11 +2,11 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <bitcoin/database/primitives/record_list.hpp>
+#include <kth/database/legacy/primitives/record_list.hpp>
 
-#include <bitcoin/database/define.hpp>
-#include <bitcoin/database/memory/memory.hpp>
-#include <bitcoin/database/primitives/record_manager.hpp>
+#include <kth/database/define.hpp>
+#include <kth/database/legacy/memory/memory.hpp>
+#include <kth/database/legacy/primitives/record_manager.hpp>
 
 namespace kth {
 namespace database {

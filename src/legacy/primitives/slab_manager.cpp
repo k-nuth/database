@@ -2,13 +2,13 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <bitcoin/database/primitives/slab_manager.hpp>
+#include <kth/database/legacy/primitives/slab_manager.hpp>
 
 #include <cstddef>
 #include <stdexcept>
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/memory/memory.hpp>
-#include <bitcoin/database/memory/memory_map.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/legacy/memory/memory.hpp>
+#include <kth/database/legacy/memory/memory_map.hpp>
 
 /// -- file --
 /// [ header ]

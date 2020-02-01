@@ -2,10 +2,10 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <bitcoin/database/primitives/record_multimap_iterator.hpp>
+#include <kth/database/legacy/primitives/record_multimap_iterator.hpp>
 
-#include <bitcoin/database/primitives/record_list.hpp>
-#include <bitcoin/database/primitives/record_manager.hpp>
+#include <kth/database/legacy/primitives/record_list.hpp>
+#include <kth/database/legacy/primitives/record_manager.hpp>
 
 namespace kth {
 namespace database {

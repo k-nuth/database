@@ -12,8 +12,8 @@
 #include <memory>
 #include <unordered_map>
 #include <boost/functional/hash_fwd.hpp>
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/define.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/define.hpp>
 
 namespace kth {
 namespace database {

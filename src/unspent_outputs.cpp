@@ -5,10 +5,10 @@
 
 #ifdef KTH_DB_UNSPENT_LEGACY
 
-#include <bitcoin/database/unspent_outputs.hpp>
+#include <kth/database/unspent_outputs.hpp>
 
 #include <cstddef>
-#include <bitcoin/bitcoin.hpp>
+#include <kth/domain.hpp>
 
 namespace kth {
 namespace database {

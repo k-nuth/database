@@ -7,7 +7,7 @@
 
 #include <cstdint>
 #include <boost/filesystem.hpp>
-#include <bitcoin/database/define.hpp>
+#include <kth/database/define.hpp>
 
 namespace kth {
 namespace database {

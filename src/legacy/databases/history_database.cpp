@@ -2,17 +2,17 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <bitcoin/database/databases/history_database.hpp>
+#include <kth/database/databases/history_database.hpp>
 
 #ifdef KTH_DB_HISTORY
 
 #include <cstdint>
 #include <cstddef>
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/memory/memory.hpp>
-#include <bitcoin/database/primitives/record_hash_table.hpp>
-#include <bitcoin/database/primitives/record_multimap.hpp>
-#include <bitcoin/database/primitives/record_multimap_iterable.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/legacy/memory/memory.hpp>
+#include <kth/database/legacy/primitives/record_hash_table.hpp>
+#include <kth/database/legacy/primitives/record_multimap.hpp>
+#include <kth/database/legacy/primitives/record_multimap_iterable.hpp>
 
 namespace kth {
 namespace database {

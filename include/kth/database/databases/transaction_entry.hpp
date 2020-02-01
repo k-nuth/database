@@ -5,10 +5,10 @@
 #ifndef KTH_DATABASE_TRANSACTION_ENTRY_HPP_
 #define KTH_DATABASE_TRANSACTION_ENTRY_HPP_
 
-#include <bitcoin/bitcoin.hpp>
+#include <kth/domain.hpp>
 
-#include <bitcoin/database/currency_config.hpp>
-#include <bitcoin/database/define.hpp>
+#include <kth/database/currency_config.hpp>
+#include <kth/database/define.hpp>
 
 namespace kth {
 namespace database {

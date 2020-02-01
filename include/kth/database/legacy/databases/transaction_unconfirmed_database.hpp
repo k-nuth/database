@@ -10,15 +10,15 @@
 #include <cstddef>
 #include <memory>
 #include <boost/filesystem.hpp>
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/define.hpp>
-#include <bitcoin/database/memory/memory_map.hpp>
-#include <bitcoin/database/result/transaction_unconfirmed_result.hpp>
-#include <bitcoin/database/primitives/slab_hash_table.hpp>
-#include <bitcoin/database/primitives/slab_manager.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/define.hpp>
+#include <kth/database/legacy/memory/memory_map.hpp>
+#include <kth/database/result/transaction_unconfirmed_result.hpp>
+#include <kth/database/legacy/primitives/slab_hash_table.hpp>
+#include <kth/database/legacy/primitives/slab_manager.hpp>
 
 // #ifdef KTH_DB_UNSPENT_LEGACY
-// #include <bitcoin/database/unspent_outputs.hpp>
+// #include <kth/database/unspent_outputs.hpp>
 // #endif // KTH_DB_UNSPENT_LEGACY
 
 

@@ -5,9 +5,9 @@
 #ifndef KTH_DATABASE_RECORD_MULTIMAP_ITERABLE_HPP
 #define KTH_DATABASE_RECORD_MULTIMAP_ITERABLE_HPP
 
-#include <bitcoin/database/define.hpp>
-#include <bitcoin/database/primitives/record_manager.hpp>
-#include <bitcoin/database/primitives/record_multimap_iterator.hpp>
+#include <kth/database/define.hpp>
+#include <kth/database/legacy/primitives/record_manager.hpp>
+#include <kth/database/legacy/primitives/record_multimap_iterator.hpp>
 
 namespace kth {
 namespace database {

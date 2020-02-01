@@ -7,8 +7,8 @@
 
 // #ifdef KTH_DB_NEW
 
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/define.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/define.hpp>
 
 namespace kth {
 namespace database {

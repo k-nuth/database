@@ -6,8 +6,8 @@
 #define KTH_DATABASE_RECORD_MULTIMAP_ITERATOR_HPP
 
 #include <cstdint>
-#include <bitcoin/database/define.hpp>
-#include <bitcoin/database/primitives/record_list.hpp>
+#include <kth/database/define.hpp>
+#include <kth/database/legacy/primitives/record_list.hpp>
 
 namespace kth {
 namespace database {

@@ -6,7 +6,7 @@
 #include <boost/functional/hash_fwd.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
-#include <bitcoin/database.hpp>
+#include <kth/database.hpp>
 
 using namespace boost::system;
 using namespace boost::filesystem;

@@ -6,8 +6,8 @@
 #define KTH_DATABASE_RECORD_HASH_TABLE_IPP
 
 #include <string>
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/memory/memory.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/legacy/memory/memory.hpp>
 #include "../impl/record_row.ipp"
 #include "../impl/remainder.ipp"
 

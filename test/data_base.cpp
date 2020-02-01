@@ -7,7 +7,7 @@
 #include <future>
 #include <memory>
 #include <boost/filesystem.hpp>
-#include <bitcoin/database.hpp>
+#include <kth/database.hpp>
 
 using namespace bc;
 using namespace bc::chain;

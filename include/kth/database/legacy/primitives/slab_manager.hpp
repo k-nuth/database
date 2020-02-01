@@ -6,10 +6,10 @@
 #define KTH_DATABASE_SLAB_MANAGER_HPP
 
 #include <cstddef>
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/define.hpp>
-#include <bitcoin/database/memory/memory.hpp>
-#include <bitcoin/database/memory/memory_map.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/define.hpp>
+#include <kth/database/legacy/memory/memory.hpp>
+#include <kth/database/legacy/memory/memory_map.hpp>
 
 namespace kth {
 namespace database {

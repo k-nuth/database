@@ -4,14 +4,14 @@
 
 #ifdef KTH_DB_LEGACY
 
-#include <bitcoin/database/databases/transaction_database.hpp>
+#include <kth/database/databases/transaction_database.hpp>
 
 #include <cstddef>
 #include <cstdint>
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/currency_config.hpp>
-#include <bitcoin/database/memory/memory.hpp>
-#include <bitcoin/database/result/transaction_result.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/currency_config.hpp>
+#include <kth/database/legacy/memory/memory.hpp>
+#include <kth/database/result/transaction_result.hpp>
 
 namespace kth { namespace database {
 

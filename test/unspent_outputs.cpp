@@ -4,7 +4,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <bitcoin/database.hpp>
+#include <kth/database.hpp>
 
 using namespace bc;
 using namespace bc::chain;

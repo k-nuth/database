@@ -5,8 +5,8 @@
 #ifndef KTH_DATABASE_HASH_TABLE_HEADER_HPP
 #define KTH_DATABASE_HASH_TABLE_HEADER_HPP
 
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/memory/memory_map.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/legacy/memory/memory_map.hpp>
 
 namespace kth {
 namespace database {
@@ -59,6 +59,6 @@ private:
 } // namespace database
 } // namespace kth
 
-#include <bitcoin/database/impl/hash_table_header.ipp>
+#include <kth/database/legacy/impl/hash_table_header.ipp>
 
 #endif

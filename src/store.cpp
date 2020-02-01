@@ -2,11 +2,11 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <bitcoin/database/store.hpp>
+#include <kth/database/store.hpp>
 
 #include <cstddef>
 #include <memory>
-#include <bitcoin/bitcoin.hpp>
+#include <kth/domain.hpp>
 
 namespace kth {
 namespace database {

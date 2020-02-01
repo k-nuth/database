@@ -7,7 +7,7 @@
 
 #include <chrono>
 
-#include <bitcoin/bitcoin.hpp>
+#include <kth/domain.hpp>
 
 namespace kth {
 namespace database {

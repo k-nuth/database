@@ -3,13 +3,13 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifdef KTH_DB_LEGACY
-#include <bitcoin/database/result/block_result.hpp>
+#include <kth/database/result/block_result.hpp>
 
 #include <cstdint>
 #include <cstddef>
 #include <utility>
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/memory/memory.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/legacy/memory/memory.hpp>
 
 namespace kth {
 namespace database {

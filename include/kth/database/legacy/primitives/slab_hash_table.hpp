@@ -7,10 +7,10 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/memory/memory.hpp>
-#include <bitcoin/database/primitives/hash_table_header.hpp>
-#include <bitcoin/database/primitives/slab_manager.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/legacy/memory/memory.hpp>
+#include <kth/database/legacy/primitives/hash_table_header.hpp>
+#include <kth/database/legacy/primitives/slab_manager.hpp>
 
 namespace kth {
 namespace database {
@@ -85,6 +85,6 @@ private:
 } // namespace database
 } // namespace kth
 
-#include <bitcoin/database/impl/slab_hash_table.ipp>
+#include <kth/database/legacy/impl/slab_hash_table.ipp>
 
 #endif

@@ -5,8 +5,8 @@
 #ifndef KTH_DATABASE_SLAB_HASH_TABLE_IPP
 #define KTH_DATABASE_SLAB_HASH_TABLE_IPP
 
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/memory/memory.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/legacy/memory/memory.hpp>
 #include "../impl/remainder.ipp"
 #include "../impl/slab_row.ipp"
 

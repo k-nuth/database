@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 
-#include <bitcoin/database/version.hpp>
+#include <kth/database/version.hpp>
 
 namespace kth { namespace database {
 

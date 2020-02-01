@@ -4,12 +4,12 @@
 
 #ifdef KTH_DB_UNSPENT_LEGACY
 
-#include <bitcoin/database/unspent_transaction.hpp>
+#include <kth/database/unspent_transaction.hpp>
 
 #include <cstddef>
 #include <cstdint>
 #include <utility>
-#include <bitcoin/bitcoin.hpp>
+#include <kth/domain.hpp>
 
 namespace kth {
 namespace database {

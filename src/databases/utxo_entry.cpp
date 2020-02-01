@@ -4,11 +4,11 @@
 
 // #ifdef KTH_DB_NEW
 
-#include <knuth/database/databases/utxo_entry.hpp>
+#include <kth/database/databases/utxo_entry.hpp>
 
 #include <cstddef>
 #include <cstdint>
-// #include <bitcoin/bitcoin.hpp>
+// #include <kth/domain.hpp>
 
 namespace kth { 
 namespace database {

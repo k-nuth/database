@@ -10,10 +10,10 @@
 #include <cstdint>
 #include <memory>
 #include <boost/filesystem.hpp>
-#include <bitcoin/database/define.hpp>
-#include <bitcoin/database/memory/memory.hpp>
-#include <bitcoin/database/memory/memory_map.hpp>
-#include <bitcoin/database/primitives/record_manager.hpp>
+#include <kth/database/define.hpp>
+#include <kth/database/legacy/memory/memory.hpp>
+#include <kth/database/legacy/memory/memory_map.hpp>
+#include <kth/database/legacy/primitives/record_manager.hpp>
 
 namespace kth {
 namespace database {

@@ -7,11 +7,11 @@
 
 #include <cstdint>
 #include <string>
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/define.hpp>
-#include <bitcoin/database/memory/memory.hpp>
-#include <bitcoin/database/primitives/record_hash_table.hpp>
-#include <bitcoin/database/primitives/record_manager.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/define.hpp>
+#include <kth/database/legacy/memory/memory.hpp>
+#include <kth/database/legacy/primitives/record_hash_table.hpp>
+#include <kth/database/legacy/primitives/record_manager.hpp>
 
 namespace kth {
 namespace database {
@@ -68,6 +68,6 @@ private:
 } // namespace database
 } // namespace kth
 
-#include <bitcoin/database/impl/record_multimap.ipp>
+#include <kth/database/legacy/impl/record_multimap.ipp>
 
 #endif

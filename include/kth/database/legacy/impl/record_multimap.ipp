@@ -5,8 +5,8 @@
 #ifndef KTH_DATABASE_RECORD_MULTIMAP_IPP
 #define KTH_DATABASE_RECORD_MULTIMAP_IPP
 
-#include <bitcoin/database/memory/memory.hpp>
-#include <bitcoin/database/primitives/record_list.hpp>
+#include <kth/database/legacy/memory/memory.hpp>
+#include <kth/database/legacy/primitives/record_list.hpp>
 
 namespace kth {
 namespace database {

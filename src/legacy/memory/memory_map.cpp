@@ -2,7 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <bitcoin/database/memory/memory_map.hpp>
+#include <kth/database/legacy/memory/memory_map.hpp>
 
 #include <iostream>
 
@@ -23,10 +23,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <boost/filesystem.hpp>
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/memory/accessor.hpp>
-#include <bitcoin/database/memory/allocator.hpp>
-#include <bitcoin/database/memory/memory.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/legacy/memory/accessor.hpp>
+#include <kth/database/legacy/memory/allocator.hpp>
+#include <kth/database/legacy/memory/memory.hpp>
 
 // memory_map is able to support 32 bit, but because the database
 // requires a larger file this is neither validated nor supported.

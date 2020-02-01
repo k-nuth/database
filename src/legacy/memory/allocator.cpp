@@ -2,12 +2,12 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <bitcoin/database/memory/allocator.hpp>
+#include <kth/database/legacy/memory/allocator.hpp>
 
 #include <cstdint>
 #include <cstddef>
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/define.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/define.hpp>
 
 namespace kth {
 namespace database {

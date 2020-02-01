@@ -9,40 +9,40 @@
 #include <cstddef>
 #include <memory>
 #include <boost/filesystem.hpp>
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/define.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/define.hpp>
 
 #ifdef KTH_DB_LEGACY
-#include <bitcoin/database/databases/block_database.hpp>
+#include <kth/database/databases/block_database.hpp>
 #endif // KTH_DB_LEGACY
 
 #ifdef KTH_DB_NEW
-#include <knuth/database/databases/internal_database.hpp>
+#include <kth/database/databases/internal_database.hpp>
 #endif // KTH_DB_NEW
 
 #ifdef KTH_DB_SPENDS
-#include <bitcoin/database/databases/spend_database.hpp>
+#include <kth/database/databases/spend_database.hpp>
 #endif // KTH_DB_SPENDS
 
 #ifdef KTH_DB_LEGACY
-#include <bitcoin/database/databases/transaction_database.hpp>
+#include <kth/database/databases/transaction_database.hpp>
 #endif // KTH_DB_LEGACY
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
-#include <bitcoin/database/databases/transaction_unconfirmed_database.hpp>
+#include <kth/database/databases/transaction_unconfirmed_database.hpp>
 #endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
 #ifdef KTH_DB_HISTORY
-#include <bitcoin/database/databases/history_database.hpp>
+#include <kth/database/databases/history_database.hpp>
 #endif // KTH_DB_HISTORY
 
 #ifdef KTH_DB_STEALTH
-#include <bitcoin/database/databases/stealth_database.hpp>
+#include <kth/database/databases/stealth_database.hpp>
 #endif // KTH_DB_STEALTH
 
-#include <bitcoin/database/define.hpp>
-#include <bitcoin/database/settings.hpp>
-#include <bitcoin/database/store.hpp>
+#include <kth/database/define.hpp>
+#include <kth/database/settings.hpp>
+#include <kth/database/store.hpp>
 
 namespace kth {
 namespace database {

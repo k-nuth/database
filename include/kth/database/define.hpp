@@ -7,7 +7,7 @@
 
 #include <cstdint>
 #include <vector>
-#include <bitcoin/bitcoin.hpp>
+#include <kth/domain.hpp>
 
 // Now we use the generic helper definitions to
 // define BCD_API and BCD_INTERNAL.

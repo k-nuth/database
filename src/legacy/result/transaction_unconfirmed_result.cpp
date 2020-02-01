@@ -4,14 +4,14 @@
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
 
-#include <bitcoin/database/result/transaction_unconfirmed_result.hpp>
+#include <kth/database/result/transaction_unconfirmed_result.hpp>
 
 #include <cstddef>
 #include <cstdint>
 #include <utility>
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/databases/transaction_unconfirmed_database.hpp>
-#include <bitcoin/database/memory/memory.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/databases/transaction_unconfirmed_database.hpp>
+#include <kth/database/legacy/memory/memory.hpp>
 
 namespace kth {
 namespace database {

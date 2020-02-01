@@ -9,9 +9,9 @@
 
 #include <cstdint>
 #include <cstddef>
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/define.hpp>
-#include <bitcoin/database/memory/memory.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/define.hpp>
+#include <kth/database/legacy/memory/memory.hpp>
 
 namespace kth {
 namespace database {

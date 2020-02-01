@@ -9,8 +9,8 @@
 #include <cstdint>
 #include <memory>
 #include <boost/thread.hpp>
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/define.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/define.hpp>
 
 namespace kth {
 namespace database {

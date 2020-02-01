@@ -7,8 +7,8 @@
 
 #include <memory>
 #include <boost/filesystem.hpp>
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/define.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/define.hpp>
 
 #if defined(KTH_DB_LEGACY) && (defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY) || defined(KTH_DB_STEALTH))
 #define KTH_DB_WITH_INDEXES
@@ -88,7 +88,7 @@ public:
 #endif // KTH_DB_LEGACY
 
 #ifdef KTH_DB_NEW
-    path int consternal_db_dir;
+    path const internal_db_dir;
 #endif // KTH_DB_NEW
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED

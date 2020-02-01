@@ -2,7 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <bitcoin/database/data_base.hpp>
+#include <kth/database/data_base.hpp>
 
 #include <algorithm>
 #include <cstdint>
@@ -14,10 +14,10 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/range/adaptor/reversed.hpp>
-#include <bitcoin/bitcoin.hpp>
-#include <bitcoin/database/define.hpp>
-#include <bitcoin/database/settings.hpp>
-#include <bitcoin/database/store.hpp>
+#include <kth/domain.hpp>
+#include <kth/database/define.hpp>
+#include <kth/database/settings.hpp>
+#include <kth/database/store.hpp>
 
 namespace kth {
 namespace database {
