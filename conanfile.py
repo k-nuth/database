@@ -100,7 +100,10 @@ class KnuthDatabaseConan(KnuthConanFile):
 
         # cmake.definitions["CURRENCY"] = self.options.currency
         cmake.definitions["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
-        cmake.definitions["USE_DOMAIN"] = option_on_off(self.options.use_domain)
+
+        # cmake.definitions["USE_DOMAIN"] = option_on_off(self.options.use_domain)
+        cmake.definitions["USE_DOMAIN"] = option_on_off(True)
+
         cmake.definitions["WITH_CACHED_RPC_DATA"] = option_on_off(self.options.cached_rpc_data)
 
         if self.options.db == "legacy":
