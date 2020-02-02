@@ -15,7 +15,7 @@
 #include <kth/database/legacy/memory/memory_map.hpp>
 #include <kth/database/legacy/primitives/record_manager.hpp>
 #include <kth/database/legacy/primitives/slab_hash_table.hpp>
-#include <kth/database/result/block_result.hpp>
+#include <kth/database/legacy/result/block_result.hpp>
 
 
 namespace kth {

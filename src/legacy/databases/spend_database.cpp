@@ -4,7 +4,7 @@
 
 #ifdef KTH_DB_SPENDS
 
-#include <kth/database/databases/spend_database.hpp>
+#include <kth/database/legacy/databases/spend_database.hpp>
 
 
 #include <algorithm>

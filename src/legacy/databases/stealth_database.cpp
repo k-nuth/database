@@ -4,7 +4,7 @@
 
 #ifdef KTH_DB_STEALTH
 
-#include <kth/database/databases/stealth_database.hpp>
+#include <kth/database/legacy/databases/stealth_database.hpp>
 
 #include <cstddef>
 #include <cstdint>

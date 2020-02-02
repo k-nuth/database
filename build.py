@@ -18,7 +18,7 @@ if __name__ == "__main__":
             copy_env_vars(env_vars)
 
             if os.getenv('KTH_RUN_TESTS', 'false') == 'true':
-                options["%s:with_tests" % name] = "True"
+                options["%s:tests" % name] = "True"
 
             march_ids = get_base_march_ids()
 
@@ -45,7 +45,7 @@ if __name__ == "__main__":
             handle_microarchs("%s:march_id" % name, march_ids, filtered_builds, settings, opts_bch, env_vars, build_requires)
             handle_microarchs("%s:march_id" % name, march_ids, filtered_builds, settings, opts_btc, env_vars, build_requires)
             # handle_microarchs("%s:march_id" % name, march_ids, filtered_builds, settings, opts_ltc, env_vars, build_requires)
-            filter_marchs_tests(name, filtered_builds, ["%s:with_tests" % name])
+            filter_marchs_tests(name, filtered_builds, ["%s:tests" % name])
 
     builder.builds = filtered_builds
     builder.run()

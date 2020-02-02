@@ -110,7 +110,8 @@ test_script:
         conan remote add kth_temp https://api.bintray.com/conan/k-nuth/kth
         $ErrorActionPreference = 'Continue'
 
-        python ci_utils/wait_for_deps.py database
+        # python ci_utils/wait_for_deps.py domain
+        python ci_utils/wait_for_deps.py
       }
 
   #- PowerShell .\.appveyor\build.ps1

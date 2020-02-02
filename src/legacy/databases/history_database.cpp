@@ -2,7 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <kth/database/databases/history_database.hpp>
+#include <kth/database/legacy/databases/history_database.hpp>
 
 #ifdef KTH_DB_HISTORY
 

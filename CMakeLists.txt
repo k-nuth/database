@@ -309,26 +309,26 @@ set(kth_database_sources_just_legacy
 if (DB_LEGACY)
     set(kth_database_sources_just_legacy 
         ${kth_database_sources_just_legacy}
-        src/memory/accessor.cpp
-        src/memory/allocator.cpp
-        src/memory/memory_map.cpp
+        src/legacy/memory/accessor.cpp
+        src/legacy/memory/allocator.cpp
+        src/legacy/memory/memory_map.cpp
         # src/mman-win32/mman.c
-        src/primitives/record_list.cpp
-        src/primitives/record_manager.cpp
-        src/primitives/record_multimap_iterable.cpp
-        src/primitives/record_multimap_iterator.cpp
-        src/primitives/slab_manager.cpp
+        src/legacy/primitives/record_list.cpp
+        src/legacy/primitives/record_manager.cpp
+        src/legacy/primitives/record_multimap_iterable.cpp
+        src/legacy/primitives/record_multimap_iterator.cpp
+        src/legacy/primitives/slab_manager.cpp
     
-        src/databases/block_database.cpp
-        src/databases/transaction_database.cpp
-        src/result/block_result.cpp
-        src/result/transaction_result.cpp
+        src/legacy/databases/block_database.cpp
+        src/legacy/databases/transaction_database.cpp
+        src/legacy/result/block_result.cpp
+        src/legacy/result/transaction_result.cpp
     )
 
     if (MSVC) # OR MINGW)
         set(kth_database_sources_just_legacy 
             ${kth_database_sources_just_legacy}
-            src/mman-win32/mman.c
+            src/legacy/mman-win32/mman.c
         )
     endif()
   
@@ -338,47 +338,47 @@ endif()
 if (DB_TRANSACTION_UNCONFIRMED)
     set(kth_database_sources_just_legacy 
         ${kth_database_sources_just_legacy}
-        src/databases/transaction_unconfirmed_database.cpp
-        src/result/transaction_unconfirmed_result.cpp
+        src/legacy/databases/transaction_unconfirmed_database.cpp
+        src/legacy/result/transaction_unconfirmed_result.cpp
         )
 endif()
 
 if (DB_SPENDS)
     set(kth_database_sources_just_legacy 
         ${kth_database_sources_just_legacy}
-        src/databases/spend_database.cpp
+        src/legacy/databases/spend_database.cpp
     )
 endif()
 
 if (DB_HISTORY)
     set(kth_database_sources_just_legacy 
         ${kth_database_sources_just_legacy}
-        src/databases/history_database.cpp
+        src/legacy/databases/history_database.cpp
     )
 endif()
 
 if (DB_STEALTH)
     set(kth_database_sources_just_legacy 
         ${kth_database_sources_just_legacy}
-        src/databases/stealth_database.cpp
+        src/legacy/databases/stealth_database.cpp
     )
 endif()
 
 if (DB_UNSPENT_LEGACY)
     set(kth_database_sources_just_legacy 
         ${kth_database_sources_just_legacy}
-        src/unspent_outputs.cpp
-        src/unspent_transaction.cpp
+        src/legacy/unspent_outputs.cpp
+        src/legacy/unspent_transaction.cpp
     )
 endif()
 
 if (DB_LEGACY)
     set(kth_database_sources_just_legacy 
         ${kth_database_sources_just_legacy}
-            src/databases/block_database.cpp
-            src/databases/transaction_database.cpp
-            src/result/block_result.cpp
-            src/result/transaction_result.cpp
+            src/legacy/databases/block_database.cpp
+            src/legacy/databases/transaction_database.cpp
+            src/legacy/result/block_result.cpp
+            src/legacy/result/transaction_result.cpp
         )
 endif()
 
@@ -431,15 +431,15 @@ add_library(kth-database ${MODE} ${kth_database_sources})
 #     src/databases/transaction_database.cpp
 #     src/databases/transaction_unconfirmed_database.cpp
 
-#     src/memory/accessor.cpp
-#     src/memory/allocator.cpp
-#     src/memory/memory_map.cpp
+#     src/legacy/memory/accessor.cpp
+#     src/legacy/memory/allocator.cpp
+#     src/legacy/memory/memory_map.cpp
 #     src/mman-win32/mman.c
-#     src/primitives/record_list.cpp
-#     src/primitives/record_manager.cpp
-#     src/primitives/record_multimap_iterable.cpp
-#     src/primitives/record_multimap_iterator.cpp
-#     src/primitives/slab_manager.cpp
+#     src/legacy/primitives/record_list.cpp
+#     src/legacy/primitives/record_manager.cpp
+#     src/legacy/primitives/record_multimap_iterable.cpp
+#     src/legacy/primitives/record_multimap_iterator.cpp
+#     src/legacy/primitives/slab_manager.cpp
 #     src/result/block_result.cpp
 #     src/result/transaction_result.cpp
 #     src/result/transaction_unconfirmed_result.cpp

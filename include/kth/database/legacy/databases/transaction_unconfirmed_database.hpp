@@ -13,7 +13,7 @@
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 #include <kth/database/legacy/memory/memory_map.hpp>
-#include <kth/database/result/transaction_unconfirmed_result.hpp>
+#include <kth/database/legacy/result/transaction_unconfirmed_result.hpp>
 #include <kth/database/legacy/primitives/slab_hash_table.hpp>
 #include <kth/database/legacy/primitives/slab_manager.hpp>
 

@@ -24,6 +24,12 @@ env:
      #   via the "travis encrypt" command using the project repo's public key
      - secure: "zmnprZPwibJ3tet1PRZvt3W3UkARdVb19lsSkAhfQCfq0GU2psBy8F8MAY92cHBOVwUNEOoxBIZUfPq6J+/S0V0qNTT2hvTmv8SlyZ5GdpUOJYURNHZarVneTm+43Gpd93o0M33heIz2/w0khXZUydKFSoK/pKi7wwc5Lpt5IaW9QzFl5LchfVtD+Cwhgd7Nwrw7w7hlcJyOwuDfJzXxZER2YxE4zIWQoWF4ZLln+BXWH+bxjCM8FuLG7GjMCp4NFM6ap8nfxTd6pSgJ1COUweOeyhC9DAE17KebU2kPoflDAtANGo+6fBWCEdUCx2gm+dKjfyTvT2r1d3XGdiYX4vxxVjOgWJkc+mSoefDuysQwbU00X6hDMKaK3OmFMGlirmZoGjoNOrT8yA+GqF6bgdah3eQ/vBGXyIoKIf07/OvCdPEsSujJHZupFBzDYSby/X3uY9JdhMOH8mJrADgpmMMAqFAOd0HOGBq83WH11od1ZozCIAfhmNjXWWcnNxVF2vtzMpFC1sXUiVN8CwNxH5Mg5rWjJe44yDJQWDNafq1mIExvi3sPjrSfTBSav0Q3WVBDn63F/HKKwCqCAbKd7SGkM5a5UQQQeAu+yzmhuWROi/kYx+TqB/iCN7Rw7I3g70RExcIXDitmubHCUYqw6KPmREMew4+OuXz6uwODD1g="
 
+cache:
+  timeout: 600
+  ccache: true
+  directories:
+    - $HOME/Library/Caches/Homebrew
+
 linux: &linux
    os: linux
    sudo: required
@@ -40,6 +46,9 @@ osx: &osx
 # windows: &windows
 #    os: windows
 #    language: generic
+
+before_cache:
+  - if [ "${TRAVIS_OS_NAME}" = "osx" ]; then brew cleanup; fi
 
 before_install:
   - |
@@ -175,9 +184,10 @@ jobs:
         - |
           conan user
           conan remote add kth_temp https://api.bintray.com/conan/k-nuth/kth
-          REPO_NAME=$(echo $TRAVIS_REPO_SLUG| cut -d'/' -f 2)
-          echo $REPO_NAME
-          python ci_utils/wait_for_deps.py $REPO_NAME
+          # REPO_NAME=$(echo $TRAVIS_REPO_SLUG| cut -d'/' -f 2)
+          # echo $REPO_NAME
+          # python ci_utils/wait_for_deps.py $REPO_NAME
+          python ci_utils/wait_for_deps.py
 
 
 # Static Checks ------------------------------------------------------
@@ -189,7 +199,9 @@ jobs:
       python: "3.7"
       services:
         - docker
-      if: branch =~ /^(release|hotfix|dev|feature).*$/    #Avoid master
+      # if: branch =~ /^(release|hotfix|dev|feature).*$/    #Avoid master
+      if: branch =~ /^(release|hotfix|dev).*$/ OR type IN (pull_request)
+      
       # install: skip
       install:
 

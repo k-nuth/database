@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifdef KTH_DB_LEGACY
-#include <kth/database/result/block_result.hpp>
+#include <kth/database/legacy/result/block_result.hpp>
 
 #include <cstdint>
 #include <cstddef>

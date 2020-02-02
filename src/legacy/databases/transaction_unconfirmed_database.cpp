@@ -5,13 +5,13 @@
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
 
-#include <kth/database/databases/transaction_unconfirmed_database.hpp>
+#include <kth/database/legacy/databases/transaction_unconfirmed_database.hpp>
 
 #include <cstddef>
 #include <cstdint>
 #include <kth/domain.hpp>
 #include <kth/database/legacy/memory/memory.hpp>
-#include <kth/database/result/transaction_result.hpp>
+#include <kth/database/legacy/result/transaction_result.hpp>
 
 namespace kth {
 namespace database {

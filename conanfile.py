@@ -23,8 +23,8 @@ class KnuthDatabaseConan(KnuthConanFile):
 
     options = {"shared": [True, False],
                "fPIC": [True, False],
-               "with_tests": [True, False],
-               "with_tools": [True, False],
+               "tests": [True, False],
+               "tools": [True, False],
                "currency": ['BCH', 'BTC', 'LTC'],
                "microarchitecture": "ANY",
                "fix_march": [True, False],
@@ -41,8 +41,8 @@ class KnuthDatabaseConan(KnuthConanFile):
 
     default_options = "shared=False", \
         "fPIC=True", \
-        "with_tests=False", \
-        "with_tools=False", \
+        "tests=False", \
+        "tools=False", \
         "currency=BCH", \
         "microarchitecture=_DUMMY_",  \
         "fix_march=False", \
@@ -68,7 +68,7 @@ class KnuthDatabaseConan(KnuthConanFile):
 
     def requirements(self):
         if not self._is_legacy_db():
-            self.requires("lmdb/0.9.22@kth/stable")
+            self.requires("lmdb/0.9.24@kth/stable")
 
         self.requires("boost/1.72.0@kth/stable")
         self.requires("domain/0.X@%s/%s" % (self.user, self.channel))
@@ -88,17 +88,15 @@ class KnuthDatabaseConan(KnuthConanFile):
 
     def package_id(self):
         KnuthConanFile.package_id(self)
-        self.info.options.with_tests = "ANY"
-        self.info.options.with_tools = "ANY"
-        self.info.options.cmake_export_compile_commands = "ANY" #TODO(fernando): put in general code
+        self.info.options.tools = "ANY"
 
     def build(self):
         cmake = self.cmake_basis()
 
-        cmake.definitions["WITH_TESTS"] = option_on_off(self.options.with_tests)
-        cmake.definitions["WITH_TOOLS"] = option_on_off(self.options.with_tools)
-
+        # cmake.definitions["WITH_TESTS"] = option_on_off(self.options.tests)
+        # cmake.definitions["WITH_TOOLS"] = option_on_off(self.options.tools)
         # cmake.definitions["CURRENCY"] = self.options.currency
+
         cmake.definitions["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
 
         # cmake.definitions["USE_DOMAIN"] = option_on_off(self.options.use_domain)
@@ -166,7 +164,7 @@ class KnuthDatabaseConan(KnuthConanFile):
             cmake.build()
 
             #Note: Cmake Tests and Visual Studio doesn't work
-            if self.options.with_tests:
+            if self.options.tests:
                 cmake.test()
                 # cmake.test(target="tests")
 

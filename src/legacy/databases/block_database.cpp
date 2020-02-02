@@ -4,13 +4,13 @@
 
 #ifdef KTH_DB_LEGACY
 
-#include <kth/database/databases/block_database.hpp>
+#include <kth/database/legacy/databases/block_database.hpp>
 
 #include <cstdint>
 #include <cstddef>
 #include <kth/domain.hpp>
 #include <kth/database/legacy/memory/memory.hpp>
-#include <kth/database/result/block_result.hpp>
+#include <kth/database/legacy/result/block_result.hpp>
 
 namespace kth {
 namespace database {

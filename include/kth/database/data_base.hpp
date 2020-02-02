@@ -13,31 +13,31 @@
 #include <kth/database/define.hpp>
 
 #ifdef KTH_DB_LEGACY
-#include <kth/database/databases/block_database.hpp>
+#include <kth/database/legacy/databases/block_database.hpp>
 #endif // KTH_DB_LEGACY
 
 #ifdef KTH_DB_NEW
-#include <kth/database/databases/internal_database.hpp>
+#include <kth/database/legacy/databases/internal_database.hpp>
 #endif // KTH_DB_NEW
 
 #ifdef KTH_DB_SPENDS
-#include <kth/database/databases/spend_database.hpp>
+#include <kth/database/legacy/databases/spend_database.hpp>
 #endif // KTH_DB_SPENDS
 
 #ifdef KTH_DB_LEGACY
-#include <kth/database/databases/transaction_database.hpp>
+#include <kth/database/legacy/databases/transaction_database.hpp>
 #endif // KTH_DB_LEGACY
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
-#include <kth/database/databases/transaction_unconfirmed_database.hpp>
+#include <kth/database/legacy/databases/transaction_unconfirmed_database.hpp>
 #endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
 #ifdef KTH_DB_HISTORY
-#include <kth/database/databases/history_database.hpp>
+#include <kth/database/legacy/databases/history_database.hpp>
 #endif // KTH_DB_HISTORY
 
 #ifdef KTH_DB_STEALTH
-#include <kth/database/databases/stealth_database.hpp>
+#include <kth/database/legacy/databases/stealth_database.hpp>
 #endif // KTH_DB_STEALTH
 
 #include <kth/database/define.hpp>

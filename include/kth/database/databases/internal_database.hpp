@@ -16,13 +16,13 @@
 
 #include <kth/database/define.hpp>
 
-#include <kth/database/databases/result_code.hpp>
-#include <kth/database/databases/property_code.hpp>
-#include <kth/database/databases/tools.hpp>
-#include <kth/database/databases/utxo_entry.hpp>
-#include <kth/database/databases/history_entry.hpp>
-#include <kth/database/databases/transaction_entry.hpp>
-#include <kth/database/databases/transaction_unconfirmed_entry.hpp>
+#include <kth/database/legacy/databases/result_code.hpp>
+#include <kth/database/legacy/databases/property_code.hpp>
+#include <kth/database/legacy/databases/tools.hpp>
+#include <kth/database/legacy/databases/utxo_entry.hpp>
+#include <kth/database/legacy/databases/history_entry.hpp>
+#include <kth/database/legacy/databases/transaction_entry.hpp>
+#include <kth/database/legacy/databases/transaction_unconfirmed_entry.hpp>
 
 #ifdef KTH_INTERNAL_DB_4BYTES_INDEX
 #define KTH_INTERNAL_DB_WIRE true
@@ -366,14 +366,14 @@ using internal_database = internal_database_basis<std::chrono::system_clock>;
 } // namespace kth
 
 
-#include <kth/database/databases/block_database.ipp>
-#include <kth/database/databases/header_database.ipp>
-#include <kth/database/databases/history_database.ipp>
-#include <kth/database/databases/spend_database.ipp>
-#include <kth/database/databases/transaction_unconfirmed_database.ipp>
-#include <kth/database/databases/internal_database.ipp>
-#include <kth/database/databases/reorg_database.ipp>
-#include <kth/database/databases/transaction_database.ipp>
-#include <kth/database/databases/utxo_database.ipp>
+#include <kth/database/legacy/databases/block_database.ipp>
+#include <kth/database/legacy/databases/header_database.ipp>
+#include <kth/database/legacy/databases/history_database.ipp>
+#include <kth/database/legacy/databases/spend_database.ipp>
+#include <kth/database/legacy/databases/transaction_unconfirmed_database.ipp>
+#include <kth/database/legacy/databases/internal_database.ipp>
+#include <kth/database/legacy/databases/reorg_database.ipp>
+#include <kth/database/legacy/databases/transaction_database.ipp>
+#include <kth/database/legacy/databases/utxo_database.ipp>
 
 #endif // KTH_DATABASE_INTERNAL_DATABASE_HPP_

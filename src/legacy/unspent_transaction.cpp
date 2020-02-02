@@ -23,8 +23,7 @@ unspent_transaction::unspent_transaction(unspent_transaction&& other)
     is_confirmed_(other.is_confirmed_),
     hash_(std::move(other.hash_)),
     outputs_(other.outputs_)
-{
-}
+{}
 
 unspent_transaction::unspent_transaction(const unspent_transaction& other)
   : height_(other.height_),

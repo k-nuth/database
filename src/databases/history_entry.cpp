@@ -4,7 +4,7 @@
 
 // #ifdef KTH_DB_NEW
 
-#include <kth/database/databases/history_entry.hpp>
+#include <kth/database/legacy/databases/history_entry.hpp>
 
 #include <cstddef>
 #include <cstdint>
