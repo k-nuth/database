@@ -28,7 +28,7 @@ settings::settings()
     , db_max_size(100 * (uint64_t(1) << 30))  //100 GiB     //TODO(fernando): look for a good default
 #endif // KTH_DB_NEW_BLOCKS
 
-    ,safe_mode(true)
+    , safe_mode(true)
 
 #endif // KTH_DB_NEW
 

@@ -270,7 +270,11 @@ void transaction_database::store(const chain::transaction& tx, size_t height, ui
         ///////////////////////////////////////////////////////////////////////
 
         // WRITE THE TX
-        tx.to_data(serial, false, KTH_WITNESS_DEFAULT, false);
+        tx.to_data(serial, false, KTH_WITNESS_DEFAULT
+        #ifdef KTH_CACHED_RPC_DATA
+            , false
+        #endif
+        );
     };
 
     auto const tx_size = tx.serialized_size(false, KTH_WITNESS_DEFAULT);

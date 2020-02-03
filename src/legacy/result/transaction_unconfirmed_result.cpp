@@ -109,8 +109,7 @@ chain::output transaction_unconfirmed_result::output(uint32_t index) const
 // ----------------------------------------------------------------------------
 
 // spender_heights are unguarded and will be inconsistent during write.
-chain::transaction transaction_unconfirmed_result::transaction(bool witness) const
-{
+chain::transaction transaction_unconfirmed_result::transaction(bool witness) const {
 #ifdef KTH_CURRENCY_BCH
     witness = false;
     bool from_data_witness = false;
@@ -124,11 +123,19 @@ chain::transaction transaction_unconfirmed_result::transaction(bool witness) con
     // READ THE TX
     //TODO WITNESS
     chain::transaction tx;
+#if defined(KTH_CACHED_RPC_DATA)    
     tx.from_data(deserial, false, from_data_witness, true);
-    if (!witness)
-        tx.strip_witness();
+#else
+    tx.from_data(deserial, false, from_data_witness);
+#endif
 
-    // TODO: add hash param to deserialization to eliminate this construction.
+#ifndef KTH_CURRENCY_BCH
+    if ( ! witness) {
+        tx.strip_witness();
+    }
+#endif
+
+    //TODO(legacy): add hash param to deserialization to eliminate this construction.
     return chain::transaction(std::move(tx), hash_digest(hash_));
 }
 } // namespace database

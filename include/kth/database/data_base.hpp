@@ -17,7 +17,7 @@
 #endif // KTH_DB_LEGACY
 
 #ifdef KTH_DB_NEW
-#include <kth/database/legacy/databases/internal_database.hpp>
+#include <kth/database/databases/internal_database.hpp>
 #endif // KTH_DB_NEW
 
 #ifdef KTH_DB_SPENDS

@@ -158,13 +158,20 @@ chain::transaction transaction_result::transaction(bool witness) const
     // READ THE TX
     //TODO WITNESS
     chain::transaction tx;
-    tx.from_data(deserial, false, from_data_witness, false);
+    tx.from_data(deserial, false, from_data_witness
+    #ifdef KTH_CACHED_RPC_DATA
+        , false
+    #endif
+    );
 
-    // TODO: optimize so that witness reads are skipped.
-    if (!witness)
+#ifndef KTH_CURRENCY_BCH
+    //TODO(legacy): optimize so that witness reads are skipped.
+    if ( ! witness) {
         tx.strip_witness();
+    }
+#endif
 
-    // TODO: add hash param to deserialization to eliminate this construction.
+    //TODO(legacy): add hash param to deserialization to eliminate this construction.
     return chain::transaction(std::move(tx), hash_digest(hash_));
 }
 

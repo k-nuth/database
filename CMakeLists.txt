@@ -30,6 +30,7 @@ if (NO_CONAN_AT_ALL)
   set(USE_CONAN OFF)
 endif()
 
+
 # Inherit --enable-shared and define BOOST_TEST_DYN_LINK.
 #------------------------------------------------------------------------------
 option(ENABLE_SHARED "" OFF)
@@ -54,6 +55,9 @@ set(MICROARCHITECTURE "x86_64" CACHE STRING "Specify the Microarchitecture (x86_
 message( STATUS "Knuth: Compiling for ${MICROARCHITECTURE}")
 # add_definitions(-DKTH_MICROARCHITECTURE=${MICROARCHITECTURE})
 # add_definitions(-DKTH_MICROARCHITECTURE_STR="${MICROARCHITECTURE}")
+
+set(MARCH_ID "" CACHE STRING "Specify the Microarchitecture ID (x86_64|...).")
+message( STATUS "Knuth: Compiling for Microarchitecture ID ${MARCH_ID}")
 
 
 # Implement --with-mining and declare WITH_MEASUREMENTS.

@@ -150,11 +150,20 @@ void transaction_unconfirmed_database::store(const chain::transaction& tx) {
 
         // WRITE THE TX
         //TODO WITNESS
+#if defined(KTH_CACHED_RPC_DATA)    
         tx.to_data(serial, false, witness, true);
+#else
+        tx.to_data(serial, false, witness);
+#endif
     };
 
 
+#if defined(KTH_CACHED_RPC_DATA)    
     auto const tx_size = tx.serialized_size(false, witness, true);
+#else
+    auto const tx_size = tx.serialized_size(false, witness);
+#endif
+
     BITCOIN_ASSERT(tx_size <= max_size_t - metadata_size);
     auto const total_size = metadata_size + static_cast<size_t>(tx_size);
 
