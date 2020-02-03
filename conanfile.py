@@ -88,72 +88,13 @@ class KnuthDatabaseConan(KnuthConanFile):
 
     def package_id(self):
         KnuthConanFile.package_id(self)
-        self.info.options.tools = "ANY"
 
     def build(self):
         cmake = self.cmake_basis()
-
-        # cmake.definitions["WITH_TESTS"] = option_on_off(self.options.tests)
-        # cmake.definitions["WITH_TOOLS"] = option_on_off(self.options.tools)
-        # cmake.definitions["CURRENCY"] = self.options.currency
-
         cmake.definitions["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
-
         # cmake.definitions["USE_DOMAIN"] = option_on_off(self.options.use_domain)
         cmake.definitions["USE_DOMAIN"] = option_on_off(True)
-
         cmake.definitions["WITH_CACHED_RPC_DATA"] = option_on_off(self.options.cached_rpc_data)
-
-        if self.options.db == "legacy":
-            cmake.definitions["DB_TRANSACTION_UNCONFIRMED"] = option_on_off(False)
-            cmake.definitions["DB_SPENDS"] = option_on_off(False)
-            cmake.definitions["DB_HISTORY"] = option_on_off(False)
-            cmake.definitions["DB_STEALTH"] = option_on_off(False)
-            cmake.definitions["DB_UNSPENT_LEGACY"] = option_on_off(True)
-            cmake.definitions["DB_LEGACY"] = option_on_off(True)
-            cmake.definitions["DB_NEW"] = option_on_off(False)
-            cmake.definitions["DB_NEW_BLOCKS"] = option_on_off(False)
-            cmake.definitions["DB_NEW_FULL"] = option_on_off(False)
-        elif self.options.db == "legacy_full":
-            cmake.definitions["DB_TRANSACTION_UNCONFIRMED"] = option_on_off(True)
-            cmake.definitions["DB_SPENDS"] = option_on_off(True)
-            cmake.definitions["DB_HISTORY"] = option_on_off(True)
-            cmake.definitions["DB_STEALTH"] = option_on_off(True)
-            cmake.definitions["DB_UNSPENT_LEGACY"] = option_on_off(True)
-            cmake.definitions["DB_LEGACY"] = option_on_off(True)
-            cmake.definitions["DB_NEW"] = option_on_off(False)
-            cmake.definitions["DB_NEW_BLOCKS"] = option_on_off(False)
-            cmake.definitions["DB_NEW_FULL"] = option_on_off(False)
-        elif self.options.db == "pruned":
-            cmake.definitions["DB_TRANSACTION_UNCONFIRMED"] = option_on_off(False)
-            cmake.definitions["DB_SPENDS"] = option_on_off(False)
-            cmake.definitions["DB_HISTORY"] = option_on_off(False)
-            cmake.definitions["DB_STEALTH"] = option_on_off(False)
-            cmake.definitions["DB_UNSPENT_LEGACY"] = option_on_off(False)
-            cmake.definitions["DB_LEGACY"] = option_on_off(False)
-            cmake.definitions["DB_NEW"] = option_on_off(True)
-            cmake.definitions["DB_NEW_BLOCKS"] = option_on_off(False)
-            cmake.definitions["DB_NEW_FULL"] = option_on_off(False)
-        elif self.options.db == "default":
-            cmake.definitions["DB_TRANSACTION_UNCONFIRMED"] = option_on_off(False)
-            cmake.definitions["DB_SPENDS"] = option_on_off(False)
-            cmake.definitions["DB_HISTORY"] = option_on_off(False)
-            cmake.definitions["DB_STEALTH"] = option_on_off(False)
-            cmake.definitions["DB_UNSPENT_LEGACY"] = option_on_off(False)
-            cmake.definitions["DB_LEGACY"] = option_on_off(False)
-            cmake.definitions["DB_NEW"] = option_on_off(True)
-            cmake.definitions["DB_NEW_BLOCKS"] = option_on_off(True)
-            cmake.definitions["DB_NEW_FULL"] = option_on_off(False)
-        elif self.options.db == "full":
-            cmake.definitions["DB_TRANSACTION_UNCONFIRMED"] = option_on_off(False)
-            cmake.definitions["DB_SPENDS"] = option_on_off(False)
-            cmake.definitions["DB_HISTORY"] = option_on_off(False)
-            cmake.definitions["DB_STEALTH"] = option_on_off(False)
-            cmake.definitions["DB_UNSPENT_LEGACY"] = option_on_off(False)
-            cmake.definitions["DB_LEGACY"] = option_on_off(False)
-            cmake.definitions["DB_NEW"] = option_on_off(True)
-            cmake.definitions["DB_NEW_BLOCKS"] = option_on_off(False)
-            cmake.definitions["DB_NEW_FULL"] = option_on_off(True)
 
         if self.options.cmake_export_compile_commands:
             cmake.definitions["CMAKE_EXPORT_COMPILE_COMMANDS"] = option_on_off(self.options.cmake_export_compile_commands)
@@ -162,7 +103,6 @@ class KnuthDatabaseConan(KnuthConanFile):
 
         if not self.options.cmake_export_compile_commands:
             cmake.build()
-
             #Note: Cmake Tests and Visual Studio doesn't work
             if self.options.tests:
                 cmake.test()
