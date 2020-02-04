@@ -1,24 +1,10 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
-#include <bitcoin/database.hpp>
+#include <kth/database.hpp>
 
 using namespace boost::system;
 using namespace boost::filesystem;
@@ -28,7 +14,7 @@ using namespace bc::database;
 
 transaction random_tx(size_t fudge)
 {
-    static const auto genesis = block::genesis_mainnet();
+    static auto const genesis = block::genesis_mainnet();
     auto result = genesis.transactions()[0];
     result.inputs()[0].previous_output().set_index(fudge);
     return result;
@@ -55,13 +41,13 @@ public:
 
 BOOST_FIXTURE_TEST_SUITE(database_tests, block_database_directory_setup_fixture)
 
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
 BOOST_AUTO_TEST_CASE(block_database__test)
 {
     auto block0 = block::genesis_mainnet();
     block0.transactions().push_back(random_tx(0));
     block0.transactions().push_back(random_tx(1));
-    //const auto h0 = block0.header.hash();
+    //auto const h0 = block0.header.hash();
 
     block block1;
     block1.set_header(header(block0.header()));
@@ -70,7 +56,7 @@ BOOST_AUTO_TEST_CASE(block_database__test)
     block1.transactions().push_back(random_tx(3));
     block1.transactions().push_back(random_tx(4));
     block1.transactions().push_back(random_tx(5));
-    //const auto h1 = block1.header.hash();
+    //auto const h1 = block1.header.hash();
 
     block block2;
     block2.set_header(header(block0.header()));
@@ -80,7 +66,7 @@ BOOST_AUTO_TEST_CASE(block_database__test)
     block2.transactions().push_back(random_tx(8));
     block2.transactions().push_back(random_tx(9));
     block2.transactions().push_back(random_tx(10));
-    const auto h2 = block2.header().hash();
+    auto const h2 = block2.header().hash();
 
     block block3;
     block3.set_header(header(block0.header()));
@@ -88,7 +74,7 @@ BOOST_AUTO_TEST_CASE(block_database__test)
     block3.transactions().push_back(random_tx(11));
     block3.transactions().push_back(random_tx(12));
     block3.transactions().push_back(random_tx(13));
-    //const auto h3 = block3.header().hash();
+    //auto const h3 = block3.header().hash();
 
     block block4a;
     block4a.set_header(header(block0.header()));
@@ -96,7 +82,7 @@ BOOST_AUTO_TEST_CASE(block_database__test)
     block4a.transactions().push_back(random_tx(14));
     block4a.transactions().push_back(random_tx(15));
     block4a.transactions().push_back(random_tx(16));
-    const auto h4a = block4a.header().hash();
+    auto const h4a = block4a.header().hash();
 
     block block5a;
     block5a.set_header(header(block0.header()));
@@ -106,7 +92,7 @@ BOOST_AUTO_TEST_CASE(block_database__test)
     block5a.transactions().push_back(random_tx(19));
     block5a.transactions().push_back(random_tx(20));
     block5a.transactions().push_back(random_tx(21));
-    const auto h5a = block5a.header().hash();
+    auto const h5a = block5a.header().hash();
 
     block block4b;
     block4b.set_header(header(block0.header()));
@@ -114,7 +100,7 @@ BOOST_AUTO_TEST_CASE(block_database__test)
     block4b.transactions().push_back(random_tx(22));
     block4b.transactions().push_back(random_tx(23));
     block4b.transactions().push_back(random_tx(24));
-    const auto h4b = block4b.header().hash();
+    auto const h4b = block4b.header().hash();
 
     block block5b;
     block5b.set_header(header(block0.header()));
@@ -124,7 +110,7 @@ BOOST_AUTO_TEST_CASE(block_database__test)
     block5b.transactions().push_back(random_tx(27));
     block5b.transactions().push_back(random_tx(28));
     block5b.transactions().push_back(random_tx(29));
-    const auto h5b = block5b.header().hash();
+    auto const h5b = block5b.header().hash();
 
     store::create(DIRECTORY "/block_lookup");
     store::create(DIRECTORY "/block_rows");
@@ -217,6 +203,6 @@ BOOST_AUTO_TEST_CASE(block_database__test)
         db.synchronize();
     }
 }
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
 BOOST_AUTO_TEST_SUITE_END()

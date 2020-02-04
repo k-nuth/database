@@ -1,0 +1,12 @@
+# - Config file for the KTH_DATABASE package
+#
+#  KTH_DATABASE_INCLUDE_DIRS - include directories for KTH_DATABASE
+#  KTH_DATABASE_LIBRARIES    - libraries to link against
+
+get_filename_component(KTH_DATABASE_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+set(KTH_DATABASE_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
+
+include("${KTH_DATABASE_CMAKE_DIR}/kth-databaseTargets.cmake")
+set(KTH_DATABASE_LIBRARIES kth-database)
+
+find_package(kth-domain 0 REQUIRED)

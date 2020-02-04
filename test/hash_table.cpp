@@ -1,35 +1,21 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include <random>
 #include <boost/functional/hash_fwd.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
-#include <bitcoin/database.hpp>
+#include <kth/database.hpp>
 
 using namespace boost::system;
 using namespace boost::filesystem;
 using namespace bc;
 using namespace bc::database;
 
-BC_CONSTEXPR size_t total_txs = 200;
-BC_CONSTEXPR size_t tx_size = 200;
-BC_CONSTEXPR size_t buckets = 100;
+constexpr size_t total_txs = 200;
+constexpr size_t tx_size = 200;
+constexpr size_t buckets = 100;
 #define DIRECTORY "hash_table"
 
 typedef byte_array<4> tiny_hash;
@@ -71,7 +57,7 @@ data_chunk generate_random_bytes(std::default_random_engine& engine,
 
 void create_database_file()
 {
-    BC_CONSTEXPR size_t header_size = slab_hash_table_header_size(buckets);
+    constexpr size_t header_size = slab_hash_table_header_size(buckets);
 
     store::create(DIRECTORY "/slab_hash_table__write_read");
     memory_map file(DIRECTORY "/slab_hash_table__write_read");
@@ -138,7 +124,7 @@ BOOST_AUTO_TEST_CASE(slab_hash_table__write_read__test)
     BOOST_REQUIRE(header.start());
     BOOST_REQUIRE(header.size() == buckets);
 
-    const auto slab_start = slab_hash_table_header_size(buckets);
+    auto const slab_start = slab_hash_table_header_size(buckets);
 
     slab_manager alloc(file, slab_start);
     BOOST_REQUIRE(alloc.start());
@@ -148,10 +134,10 @@ BOOST_AUTO_TEST_CASE(slab_hash_table__write_read__test)
     std::default_random_engine engine;
     for (size_t i = 0; i < total_txs; ++i)
     {
-        const auto value = generate_random_bytes(engine, tx_size);
-        const auto key = bitcoin_hash(value);
-        const auto memory = ht.find(key);
-        const auto slab = REMAP_ADDRESS(memory);
+        auto const value = generate_random_bytes(engine, tx_size);
+        auto const key = bitcoin_hash(value);
+        auto const memory = ht.find(key);
+        auto const slab = REMAP_ADDRESS(memory);
 
         BOOST_REQUIRE(slab);
         BOOST_REQUIRE(std::equal(value.begin(), value.end(), slab));
@@ -175,7 +161,7 @@ BOOST_AUTO_TEST_CASE(slab_hash_table__test)
     BOOST_REQUIRE(alloc.start());
 
     slab_hash_table<tiny_hash> ht(header, alloc);
-    const auto write = [](serializer<uint8_t*>& serial)
+    auto const write = [](serializer<uint8_t*>& serial)
     {
         serial.write_byte(110);
         serial.write_byte(110);
@@ -183,23 +169,23 @@ BOOST_AUTO_TEST_CASE(slab_hash_table__test)
         serial.write_byte(99);
     };
     ht.store(tiny_hash{ { 0xde, 0xad, 0xbe, 0xef } }, write, 8);
-    const auto memory1 = ht.find(tiny_hash{ { 0xde, 0xad, 0xbe, 0xef } });
-    const auto slab1 = REMAP_ADDRESS(memory1);
+    auto const memory1 = ht.find(tiny_hash{ { 0xde, 0xad, 0xbe, 0xef } });
+    auto const slab1 = REMAP_ADDRESS(memory1);
     BOOST_REQUIRE(slab1);
     BOOST_REQUIRE(slab1[0] == 110);
     BOOST_REQUIRE(slab1[1] == 110);
     BOOST_REQUIRE(slab1[2] == 4);
     BOOST_REQUIRE(slab1[3] == 99);
 
-    const auto memory2 = ht.find(tiny_hash{ { 0xde, 0xad, 0xbe, 0xee } });
-    const auto slab2 = REMAP_ADDRESS(memory1);
+    auto const memory2 = ht.find(tiny_hash{ { 0xde, 0xad, 0xbe, 0xee } });
+    auto const slab2 = REMAP_ADDRESS(memory1);
     BOOST_REQUIRE(slab2);
 }
 
 ////BOOST_AUTO_TEST_CASE(record_hash_table__32bit__test)
 ////{
-////    BC_CONSTEXPR size_t record_buckets = 2;
-////    BC_CONSTEXPR size_t header_size = record_hash_table_header_size(record_buckets);
+////    constexpr size_t record_buckets = 2;
+////    constexpr size_t header_size = record_hash_table_header_size(record_buckets);
 ////
 ////    store::create(DIRECTORY "/record_hash_table__32bit");
 ////    memory_map file(DIRECTORY "/record_hash_table__32bit");
@@ -214,7 +200,7 @@ BOOST_AUTO_TEST_CASE(slab_hash_table__test)
 ////    BOOST_REQUIRE(header.start());
 ////
 ////    typedef byte_array<4> tiny_hash;
-////    BC_CONSTEXPR size_t record_size = hash_table_record_size<tiny_hash>(4);
+////    constexpr size_t record_size = hash_table_record_size<tiny_hash>(4);
 ////    const file_offset records_start = header_size;
 ////
 ////    record_manager alloc(file, records_start, record_size);
@@ -225,7 +211,7 @@ BOOST_AUTO_TEST_CASE(slab_hash_table__test)
 ////    tiny_hash key{ { 0xde, 0xad, 0xbe, 0xef } };
 ////    tiny_hash key1{ { 0xb0, 0x0b, 0xb0, 0x0b } };
 ////
-////    const auto write = [](serializer<uint8_t*>& serial)
+////    auto const write = [](serializer<uint8_t*>& serial)
 ////    {
 ////        serial.write_byte(110);
 ////        serial.write_byte(110);
@@ -233,7 +219,7 @@ BOOST_AUTO_TEST_CASE(slab_hash_table__test)
 ////        serial.write_byte(88);
 ////    };
 ////
-////    const auto write1 = [](serializer<uint8_t*>& serial)
+////    auto const write1 = [](serializer<uint8_t*>& serial)
 ////    {
 ////        serial.write_byte(99);
 ////        serial.write_byte(98);
@@ -327,8 +313,8 @@ BOOST_AUTO_TEST_CASE(slab_hash_table__test)
 ////}
 ////BOOST_AUTO_TEST_CASE(record_hash_table__64bit__test)
 ////{
-////    BC_CONSTEXPR size_t record_buckets = 2;
-////    BC_CONSTEXPR size_t header_size = record_hash_table_header_size(record_buckets);
+////    constexpr size_t record_buckets = 2;
+////    constexpr size_t header_size = record_hash_table_header_size(record_buckets);
 ////
 ////    store::create(DIRECTORY "/record_hash_table_64bit");
 ////    memory_map file(DIRECTORY "/record_hash_table_64bit");
@@ -343,7 +329,7 @@ BOOST_AUTO_TEST_CASE(slab_hash_table__test)
 ////    BOOST_REQUIRE(header.start());
 ////
 ////    typedef byte_array<8> little_hash;
-////    BC_CONSTEXPR size_t record_size = hash_table_record_size<little_hash>(8);
+////    constexpr size_t record_size = hash_table_record_size<little_hash>(8);
 ////    const file_offset records_start = header_size;
 ////
 ////    record_manager alloc(file, records_start, record_size);
@@ -355,7 +341,7 @@ BOOST_AUTO_TEST_CASE(slab_hash_table__test)
 ////    little_hash key{ { 0xde, 0xad, 0xbe, 0xef, 0xde, 0xad, 0xbe, 0xef } };
 ////    little_hash key1{ { 0xb0, 0x0b, 0xb0, 0x0b, 0xb0, 0x0b, 0xb0, 0x0b } };
 ////
-////    const auto write = [](serializer<uint8_t*>& serial)
+////    auto const write = [](serializer<uint8_t*>& serial)
 ////    {
 ////        serial.write_byte(110);
 ////        serial.write_byte(110);
@@ -367,7 +353,7 @@ BOOST_AUTO_TEST_CASE(slab_hash_table__test)
 ////        serial.write_byte(88);
 ////    };
 ////
-////    const auto write1 = [](serializer<uint8_t*>& serial)
+////    auto const write1 = [](serializer<uint8_t*>& serial)
 ////    {
 ////        serial.write_byte(99);
 ////        serial.write_byte(98);

@@ -1,26 +1,12 @@
-/**
- * Copyright (c) 2011-2017 libbitcoin developers (see AUTHORS)
- *
- * This file is part of libbitcoin.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#include <bitcoin/database/settings.hpp>
+// Copyright (c) 2016-2020 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <kth/database/settings.hpp>
 
 #include <boost/filesystem.hpp>
 
-namespace libbitcoin {
+namespace kth {
 namespace database {
 
 using namespace boost::filesystem;
@@ -31,41 +17,41 @@ settings::settings()
     , file_growth_rate(50)
     , index_start_height(0)
 
-#if defined(BITPRIM_DB_NEW)
+#if defined(KTH_DB_NEW)
     , reorg_pool_limit(100)      //TODO(fernando): look for a good default
                                 
-#if defined(BITPRIM_DB_NEW_BLOCKS)
+#if defined(KTH_DB_NEW_BLOCKS)
     , db_max_size(200 * (uint64_t(1) << 30))  //200 GiB     //TODO(fernando): look for a good default
-#elif defined(BITPRIM_DB_NEW_FULL)
+#elif defined(KTH_DB_NEW_FULL)
     , db_max_size(600 * (uint64_t(1) << 30))  //600 GiB     //TODO(fernando): look for a good default
 #else                                                         
     , db_max_size(100 * (uint64_t(1) << 30))  //100 GiB     //TODO(fernando): look for a good default
-#endif // BITPRIM_DB_NEW_BLOCKS
+#endif // KTH_DB_NEW_BLOCKS
 
-    ,safe_mode(true)
+    , safe_mode(true)
 
-#endif // BITPRIM_DB_NEW
+#endif // KTH_DB_NEW
 
     // Hash table sizes (must be configured).
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
     , block_table_buckets(0)
     , transaction_table_buckets(0)
-#endif // BITPRIM_DB_LEGACY
-#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#endif // KTH_DB_LEGACY
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
     , transaction_unconfirmed_table_buckets(0)
-#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED    
 
-#ifdef BITPRIM_DB_SPENDS
+#ifdef KTH_DB_SPENDS
     , spend_table_buckets(0)
-#endif // BITPRIM_DB_SPENDS
+#endif // KTH_DB_SPENDS
 
-#ifdef BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
     , history_table_buckets(0)
-#endif // BITPRIM_DB_HISTORY    
+#endif // KTH_DB_HISTORY    
 
-// #ifdef BITPRIM_DB_UNSPENT_LIBBITCOIN
+// #ifdef KTH_DB_UNSPENT_LEGACY
     , cache_capacity(0)
-// #endif // BITPRIM_DB_UNSPENT_LIBBITCOIN
+// #endif // KTH_DB_UNSPENT_LEGACY
 {}
 
 settings::settings(config::settings context)
@@ -73,42 +59,42 @@ settings::settings(config::settings context)
 {
     switch (context) {
         case config::settings::mainnet: {
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
             block_table_buckets = 650000;
             transaction_table_buckets = 110000000;
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
-#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
             transaction_unconfirmed_table_buckets = 10000;
-#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED    
 
-#ifdef BITPRIM_DB_SPENDS
+#ifdef KTH_DB_SPENDS
             spend_table_buckets = 250000000;
-#endif // BITPRIM_DB_SPENDS
+#endif // KTH_DB_SPENDS
 
-#ifdef BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
             history_table_buckets = 107000000;
-#endif // BITPRIM_DB_HISTORY    
+#endif // KTH_DB_HISTORY    
             break;
         }
         case config::settings::testnet: {
             // TODO: optimize for testnet.
-#ifdef BITPRIM_DB_LEGACY
+#ifdef KTH_DB_LEGACY
             block_table_buckets = 650000;
             transaction_table_buckets = 110000000;
-#endif // BITPRIM_DB_LEGACY
+#endif // KTH_DB_LEGACY
 
-#ifdef BITPRIM_DB_TRANSACTION_UNCONFIRMED
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
             transaction_unconfirmed_table_buckets = 10000;
-#endif // BITPRIM_DB_TRANSACTION_UNCONFIRMED    
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED    
 
-#ifdef BITPRIM_DB_SPENDS
+#ifdef KTH_DB_SPENDS
             spend_table_buckets = 250000000;
-#endif // BITPRIM_DB_SPENDS
+#endif // KTH_DB_SPENDS
 
-#ifdef BITPRIM_DB_HISTORY
+#ifdef KTH_DB_HISTORY
             history_table_buckets = 107000000;
-#endif // BITPRIM_DB_HISTORY    
+#endif // KTH_DB_HISTORY    
 
             break;
         }
@@ -118,4 +104,4 @@ settings::settings(config::settings context)
 }
 
 } // namespace database
-} // namespace libbitcoin
+} // namespace kth

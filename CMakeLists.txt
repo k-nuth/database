@@ -1,27 +1,12 @@
-#
-# Copyright (c) 2017 Bitprim developers (see AUTHORS)
-#
-# This file is part of Bitprim.
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+# Copyright (c) 2016-2020 Knuth Project developers.
+# Distributed under the MIT software license, see the accompanying
+# file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 cmake_minimum_required(VERSION 3.4)
 
-# bitprim-database
+# kth-database
 #==============================================================================
-project(bitprim-database
+project(kth-database
         VERSION 0
         LANGUAGES CXX C)
 #        VERSION 0.11.0
@@ -30,7 +15,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Check for baseline language coverage in the compiler for the C++14 standard.
 #------------------------------------------------------------------------------
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Process options.
@@ -44,6 +29,7 @@ option(NO_CONAN_AT_ALL "Conan totally disabled." OFF)
 if (NO_CONAN_AT_ALL)
   set(USE_CONAN OFF)
 endif()
+
 
 # Inherit --enable-shared and define BOOST_TEST_DYN_LINK.
 #------------------------------------------------------------------------------
@@ -62,20 +48,23 @@ option(WITH_TESTS "Compile with unit tests." ON)
 option(WITH_TOOLS "Compile with tools." OFF)
 
 
-set(BITPRIM_PROJECT_VERSION "-" CACHE STRING "Specify the Bitprim Project Version.")
-# message(${BITPRIM_PROJECT_VERSION})
+set(KTH_PROJECT_VERSION "-" CACHE STRING "Specify the Knuth Project Version.")
+# message(${KTH_PROJECT_VERSION})
 
 set(MICROARCHITECTURE "x86_64" CACHE STRING "Specify the Microarchitecture (x86_64|...).")
-message( STATUS "Bitprim: Compiling for ${MICROARCHITECTURE}")
-# add_definitions(-DBITPRIM_MICROARCHITECTURE=${MICROARCHITECTURE})
-# add_definitions(-DBITPRIM_MICROARCHITECTURE_STR="${MICROARCHITECTURE}")
+message( STATUS "Knuth: Compiling for ${MICROARCHITECTURE}")
+# add_definitions(-DKTH_MICROARCHITECTURE=${MICROARCHITECTURE})
+# add_definitions(-DKTH_MICROARCHITECTURE_STR="${MICROARCHITECTURE}")
+
+set(MARCH_ID "" CACHE STRING "Specify the Microarchitecture ID (x86_64|...).")
+message( STATUS "Knuth: Compiling for Microarchitecture ID ${MARCH_ID}")
 
 
 # Implement --with-mining and declare WITH_MEASUREMENTS.
 #------------------------------------------------------------------------------
 option(WITH_MEASUREMENTS "Measurements enabled." OFF)
 if (WITH_MEASUREMENTS)
-  message(STATUS "Bitprim: MEASUREMENTS enabled")
+  message(STATUS "Knuth: MEASUREMENTS enabled")
   add_definitions(-DWITH_MEASUREMENTS)
 endif()
 
@@ -83,16 +72,16 @@ endif()
 #------------------------------------------------------------------------------
 option(USE_DOMAIN "Domain enabled." ON)
 if (USE_DOMAIN)
-  message(STATUS "Bitprim: Using Domain enabled")
-  add_definitions(-DBITPRIM_USE_DOMAIN)
+  message(STATUS "Knuth: Using Domain enabled")
+  add_definitions(-DKTH_USE_DOMAIN)
 endif()
 
 # Implement --with-cached-rpc-data and declare WITH_CACHED_RPC_DATA.
 #------------------------------------------------------------------------------
 option(WITH_CACHED_RPC_DATA "Cached RPC data enabled." OFF)
 if (WITH_CACHED_RPC_DATA)
-  message(STATUS "Bitprim: Cached RPC data enabled")
-  add_definitions(-DBITPRIM_CACHED_RPC_DATA)
+  message(STATUS "Knuth: Cached RPC data enabled")
+  add_definitions(-DKTH_CACHED_RPC_DATA)
 endif()
 
 
@@ -100,79 +89,79 @@ endif()
 #------------------------------------------------------------------------------
 option(DB_TRANSACTION_UNCONFIRMED "DB Transactions Unconfirmed enabled." OFF)
 if (DB_TRANSACTION_UNCONFIRMED)
-  message(STATUS "Bitprim: DB Transactions Unconfirmed enabled")
-  add_definitions(-DBITPRIM_DB_TRANSACTION_UNCONFIRMED)
+  message(STATUS "Knuth: DB Transactions Unconfirmed enabled")
+  add_definitions(-DKTH_DB_TRANSACTION_UNCONFIRMED)
 endif()
 
 # Implement and declare DB_SPENDS.
 #------------------------------------------------------------------------------
 option(DB_SPENDS "DB Spends enabled." OFF)
 if (DB_SPENDS)
-  message(STATUS "Bitprim: DB Spends enabled")
-  add_definitions(-DBITPRIM_DB_SPENDS)
+  message(STATUS "Knuth: DB Spends enabled")
+  add_definitions(-DKTH_DB_SPENDS)
 endif()
 
 # Implement and declare DB_HISTORY.
 #------------------------------------------------------------------------------
 option(DB_HISTORY "DB History enabled." OFF)
 if (DB_HISTORY)
-  message(STATUS "Bitprim: DB History enabled")
-  add_definitions(-DBITPRIM_DB_HISTORY)
+  message(STATUS "Knuth: DB History enabled")
+  add_definitions(-DKTH_DB_HISTORY)
 endif()
 
 # Implement and declare DB_STEALTH.
 #------------------------------------------------------------------------------
 option(DB_STEALTH "DB Stealth enabled." OFF)
 if (DB_STEALTH)
-  message(STATUS "Bitprim: DB Stealth enabled")
-  add_definitions(-DBITPRIM_DB_STEALTH)
+  message(STATUS "Knuth: DB Stealth enabled")
+  add_definitions(-DKTH_DB_STEALTH)
 endif()
 
-# Implement and declare DB_UNSPENT_LIBBITCOIN.
+# Implement and declare DB_UNSPENT_LEGACY.
 #------------------------------------------------------------------------------
-option(DB_UNSPENT_LIBBITCOIN "DB Unspent Libbitcoin enabled." OFF)
-if (DB_UNSPENT_LIBBITCOIN)
-  message(STATUS "Bitprim: DB Unspent Libbitcoin enabled")
-  add_definitions(-DBITPRIM_DB_UNSPENT_LIBBITCOIN)
+option(DB_UNSPENT_LEGACY "DB Unspent Legacy enabled." OFF)
+if (DB_UNSPENT_LEGACY)
+  message(STATUS "Knuth: DB Unspent Legacy enabled")
+  add_definitions(-DKTH_DB_UNSPENT_LEGACY)
 endif()
 
 # Implement and declare DB_LEGACY.
 #------------------------------------------------------------------------------
 option(DB_LEGACY "DB Legacy enabled." OFF)
 if (DB_LEGACY)
-  message(STATUS "Bitprim: DB Legacy enabled")
-  add_definitions(-DBITPRIM_DB_LEGACY)
+  message(STATUS "Knuth: DB Legacy enabled")
+  add_definitions(-DKTH_DB_LEGACY)
 endif()
 
 # Implement and declare DB_NEW.
 #------------------------------------------------------------------------------
 option(DB_NEW "DB New enabled." OFF)
 if (DB_NEW)
-  message(STATUS "Bitprim: DB New enabled")
-  add_definitions(-DBITPRIM_DB_NEW)
+  message(STATUS "Knuth: DB New enabled")
+  add_definitions(-DKTH_DB_NEW)
 endif()
 
 # Implement and declare DB_NEW_BLOCKS.
 #------------------------------------------------------------------------------
 option(DB_NEW_BLOCKS "DB Blocks New enabled." OFF)
 if (DB_NEW_BLOCKS)
-  message(STATUS "Bitprim: DB Blocks New enabled")
-  add_definitions(-DBITPRIM_DB_NEW_BLOCKS)
+  message(STATUS "Knuth: DB Blocks New enabled")
+  add_definitions(-DKTH_DB_NEW_BLOCKS)
 endif()
 
 # Implement and declare DB_NEW_FULL.
 #------------------------------------------------------------------------------
 option(DB_NEW_FULL "DB New Full enabled." OFF)
 if (DB_NEW_FULL)
-  message(STATUS "Bitprim: DB New Full enabled")
-  add_definitions(-DBITPRIM_DB_NEW_FULL)
+  message(STATUS "Knuth: DB New Full enabled")
+  add_definitions(-DKTH_DB_NEW_FULL)
 endif()
 
-# Implement --JUST_BITPRIM_SOURCES for linting.
+# Implement --JUST_KTH_SOURCES for linting.
 #------------------------------------------------------------------------------
-option(JUST_BITPRIM_SOURCES "Just Bitprim source code to be linted." OFF)
-if (JUST_BITPRIM_SOURCES)
-  message(STATUS "Bitprim: Just Bitprim source code to be linted: enabled")
+option(JUST_KTH_SOURCES "Just Knuth source code to be linted." OFF)
+if (JUST_KTH_SOURCES)
+  message(STATUS "Knuth: Just Knuth source code to be linted: enabled")
 endif()
 
 
@@ -180,24 +169,24 @@ endif()
 set(CURRENCY "BCH" CACHE STRING "Specify the Cryptocurrency (BCH|BTC|LTC).")
 
 if (${CURRENCY} STREQUAL "BCH")
-  add_definitions(-DBITPRIM_CURRENCY_BCH)
+  add_definitions(-DKTH_CURRENCY_BCH)
 elseif (${CURRENCY} STREQUAL "BTC")
-  add_definitions(-DBITPRIM_CURRENCY_BTC)
+  add_definitions(-DKTH_CURRENCY_BTC)
 elseif (${CURRENCY} STREQUAL "LTC")
-  add_definitions(-DBITPRIM_CURRENCY_LTC)
+  add_definitions(-DKTH_CURRENCY_LTC)
 else()
   message(FATAL_ERROR "Invalid Cryptocurrency: ${CURRENCY}")
 endif()
 
-message(STATUS "Bitprim: Cryptocurrency: ${CURRENCY}")
+message(STATUS "Knuth: Cryptocurrency: ${CURRENCY}")
 
 
 # Conan infrastructure
 #==============================================================================
-if(EXISTS ${CMAKE_SOURCE_DIR}/ci_utils/cmake/bitprimbuildinfo.cmake)
-    include(${CMAKE_SOURCE_DIR}/ci_utils/cmake/bitprimbuildinfo.cmake)
+if(EXISTS ${CMAKE_SOURCE_DIR}/ci_utils/cmake/knuthbuildinfo.cmake)
+    include(${CMAKE_SOURCE_DIR}/ci_utils/cmake/knuthbuildinfo.cmake)
 else()
-    message( STATUS "bitprimbuildinfo doent exists")
+    message( STATUS "knuthbuildinfo doent exists")
 endif()
 
 
@@ -226,10 +215,10 @@ if (NO_CONAN_AT_ALL)
 endif()
 
 if (NOT USE_CONAN)
-    # Require bitprim-core of at least version 0 and output ${bitprim_core_CPPFLAGS/LIBS/PKG}.
+    # Require kth-domain of at least version 0 and output ${kth_domain_CPPFLAGS/LIBS/PKG}.
     #------------------------------------------------------------------------------
-    if (NOT TARGET bitprim-core)
-            find_package(bitprim-core 0 REQUIRED)
+    if (NOT TARGET kth-domain)
+            find_package(kth-domain 0 REQUIRED)
     endif()
 endif()
 
@@ -242,7 +231,7 @@ include(CheckCXXCompilerFlag)
 #------------------------------------------------------------------------------
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/ci_utils/cmake)
 
-include(BitprimTools)
+include(KnuthTools)
 
 
 # Warn on all stuff.
@@ -305,14 +294,14 @@ endif()
 # Build
 #==============================================================================
 
-# src/bitprim-database.la => ${libdir}
+# src/kth-database.la => ${libdir}
 #------------------------------------------------------------------------------
 set(MODE STATIC)
 if (ENABLE_SHARED)
     set(MODE SHARED)
 endif()
 
-set(bitprim_database_sources_just_libbitcoin
+set(kth_database_sources_just_legacy
     src/data_base.cpp
     src/settings.cpp
     src/store.cpp
@@ -322,28 +311,28 @@ set(bitprim_database_sources_just_libbitcoin
 
 
 if (DB_LEGACY)
-    set(bitprim_database_sources_just_libbitcoin 
-        ${bitprim_database_sources_just_libbitcoin}
-        src/memory/accessor.cpp
-        src/memory/allocator.cpp
-        src/memory/memory_map.cpp
+    set(kth_database_sources_just_legacy 
+        ${kth_database_sources_just_legacy}
+        src/legacy/memory/accessor.cpp
+        src/legacy/memory/allocator.cpp
+        src/legacy/memory/memory_map.cpp
         # src/mman-win32/mman.c
-        src/primitives/record_list.cpp
-        src/primitives/record_manager.cpp
-        src/primitives/record_multimap_iterable.cpp
-        src/primitives/record_multimap_iterator.cpp
-        src/primitives/slab_manager.cpp
+        src/legacy/primitives/record_list.cpp
+        src/legacy/primitives/record_manager.cpp
+        src/legacy/primitives/record_multimap_iterable.cpp
+        src/legacy/primitives/record_multimap_iterator.cpp
+        src/legacy/primitives/slab_manager.cpp
     
-        src/databases/block_database.cpp
-        src/databases/transaction_database.cpp
-        src/result/block_result.cpp
-        src/result/transaction_result.cpp
+        src/legacy/databases/block_database.cpp
+        src/legacy/databases/transaction_database.cpp
+        src/legacy/result/block_result.cpp
+        src/legacy/result/transaction_result.cpp
     )
 
     if (MSVC) # OR MINGW)
-        set(bitprim_database_sources_just_libbitcoin 
-            ${bitprim_database_sources_just_libbitcoin}
-            src/mman-win32/mman.c
+        set(kth_database_sources_just_legacy 
+            ${kth_database_sources_just_legacy}
+            src/legacy/mman-win32/mman.c
         )
     endif()
   
@@ -351,87 +340,87 @@ endif()
 
 
 if (DB_TRANSACTION_UNCONFIRMED)
-    set(bitprim_database_sources_just_libbitcoin 
-        ${bitprim_database_sources_just_libbitcoin}
-        src/databases/transaction_unconfirmed_database.cpp
-        src/result/transaction_unconfirmed_result.cpp
+    set(kth_database_sources_just_legacy 
+        ${kth_database_sources_just_legacy}
+        src/legacy/databases/transaction_unconfirmed_database.cpp
+        src/legacy/result/transaction_unconfirmed_result.cpp
         )
 endif()
 
 if (DB_SPENDS)
-    set(bitprim_database_sources_just_libbitcoin 
-        ${bitprim_database_sources_just_libbitcoin}
-        src/databases/spend_database.cpp
+    set(kth_database_sources_just_legacy 
+        ${kth_database_sources_just_legacy}
+        src/legacy/databases/spend_database.cpp
     )
 endif()
 
 if (DB_HISTORY)
-    set(bitprim_database_sources_just_libbitcoin 
-        ${bitprim_database_sources_just_libbitcoin}
-        src/databases/history_database.cpp
+    set(kth_database_sources_just_legacy 
+        ${kth_database_sources_just_legacy}
+        src/legacy/databases/history_database.cpp
     )
 endif()
 
 if (DB_STEALTH)
-    set(bitprim_database_sources_just_libbitcoin 
-        ${bitprim_database_sources_just_libbitcoin}
-        src/databases/stealth_database.cpp
+    set(kth_database_sources_just_legacy 
+        ${kth_database_sources_just_legacy}
+        src/legacy/databases/stealth_database.cpp
     )
 endif()
 
-if (DB_UNSPENT_LIBBITCOIN)
-    set(bitprim_database_sources_just_libbitcoin 
-        ${bitprim_database_sources_just_libbitcoin}
-        src/unspent_outputs.cpp
-        src/unspent_transaction.cpp
+if (DB_UNSPENT_LEGACY)
+    set(kth_database_sources_just_legacy 
+        ${kth_database_sources_just_legacy}
+        src/legacy/unspent_outputs.cpp
+        src/legacy/unspent_transaction.cpp
     )
 endif()
 
 if (DB_LEGACY)
-    set(bitprim_database_sources_just_libbitcoin 
-        ${bitprim_database_sources_just_libbitcoin}
-            src/databases/block_database.cpp
-            src/databases/transaction_database.cpp
-            src/result/block_result.cpp
-            src/result/transaction_result.cpp
+    set(kth_database_sources_just_legacy 
+        ${kth_database_sources_just_legacy}
+            src/legacy/databases/block_database.cpp
+            src/legacy/databases/transaction_database.cpp
+            src/legacy/result/block_result.cpp
+            src/legacy/result/transaction_result.cpp
         )
 endif()
 
-set(bitprim_database_sources_just_bitprim
+set(kth_database_sources_just_kth
 )
 
 if (DB_NEW)
-    set(bitprim_database_sources_just_bitprim 
-        ${bitprim_database_sources_just_bitprim}
-        src/bitprim/databases/utxo_entry.cpp
+    set(kth_database_sources_just_kth 
+        ${kth_database_sources_just_kth}
+        src/databases/utxo_entry.cpp
     )
 endif()
 
 if (DB_NEW_FULL)
-    set(bitprim_database_sources_just_bitprim 
-        ${bitprim_database_sources_just_bitprim}
-        src/bitprim/databases/history_entry.cpp
-        src/bitprim/databases/transaction_entry.cpp
-        src/bitprim/databases/transaction_unconfirmed_entry.cpp
+    set(kth_database_sources_just_kth 
+        ${kth_database_sources_just_kth}
+        src/databases/history_entry.cpp
+        src/databases/transaction_entry.cpp
+        src/databases/transaction_unconfirmed_entry.cpp
     )
 endif()
 
-if (NOT JUST_BITPRIM_SOURCES)
-  set(bitprim_database_sources 
-    ${bitprim_database_sources_just_libbitcoin}
+if (NOT JUST_KTH_SOURCES)
+  set(kth_database_sources 
+    ${kth_database_sources_just_legacy}
   )
 endif()
 
-set(bitprim_database_sources 
-  ${bitprim_database_sources}   
-  ${bitprim_database_sources_just_bitprim}         
+set(kth_database_sources 
+  ${kth_database_sources}   
+  ${kth_database_sources_just_kth}         
 )
 
-add_library(bitprim-database ${MODE} ${bitprim_database_sources})
+add_library(kth-database ${MODE} ${kth_database_sources})
 
 
 
-# add_library(bitprim-database ${MODE}
+# add_library(kth-database ${MODE}
 #     src/data_base.cpp
 #     src/settings.cpp
 #     src/store.cpp
@@ -446,59 +435,59 @@ add_library(bitprim-database ${MODE} ${bitprim_database_sources})
 #     src/databases/transaction_database.cpp
 #     src/databases/transaction_unconfirmed_database.cpp
 
-#     src/memory/accessor.cpp
-#     src/memory/allocator.cpp
-#     src/memory/memory_map.cpp
+#     src/legacy/memory/accessor.cpp
+#     src/legacy/memory/allocator.cpp
+#     src/legacy/memory/memory_map.cpp
 #     src/mman-win32/mman.c
-#     src/primitives/record_list.cpp
-#     src/primitives/record_manager.cpp
-#     src/primitives/record_multimap_iterable.cpp
-#     src/primitives/record_multimap_iterator.cpp
-#     src/primitives/slab_manager.cpp
+#     src/legacy/primitives/record_list.cpp
+#     src/legacy/primitives/record_manager.cpp
+#     src/legacy/primitives/record_multimap_iterable.cpp
+#     src/legacy/primitives/record_multimap_iterator.cpp
+#     src/legacy/primitives/slab_manager.cpp
 #     src/result/block_result.cpp
 #     src/result/transaction_result.cpp
 #     src/result/transaction_unconfirmed_result.cpp
 # )
 
 if (ENABLE_POSITION_INDEPENDENT_CODE)
-    set_property(TARGET bitprim-database PROPERTY POSITION_INDEPENDENT_CODE ON)
+    set_property(TARGET kth-database PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif(ENABLE_POSITION_INDEPENDENT_CODE)
 
 
-target_include_directories(bitprim-database PUBLIC
+target_include_directories(kth-database PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>)
 
 
-target_compile_definitions(bitprim-database PUBLIC -DBITPRIM_PROJECT_VERSION="\\"${BITPRIM_PROJECT_VERSION}\\"") #TODO(fernando): manage with Conan????
+target_compile_definitions(kth-database PUBLIC -DKTH_PROJECT_VERSION="\\"${KTH_PROJECT_VERSION}\\"") #TODO(fernando): manage with Conan????
 
 if (NOT ENABLE_SHARED)
-    target_compile_definitions(bitprim-database PUBLIC -DBCD_STATIC -DBC_STATIC)
+    target_compile_definitions(kth-database PUBLIC -DBCD_STATIC -DBC_STATIC)
 endif()
 
 # if (NOT NO_CONAN_AT_ALL)
-#   target_link_libraries(bitprim-database PUBLIC ${CONAN_LIBS})
+#   target_link_libraries(kth-database PUBLIC ${CONAN_LIBS})
 # else()
-#   target_link_libraries(bitprim-database bitprim-core)
+#   target_link_libraries(kth-database kth-domain)
 # endif()
 
 
 if (NOT USE_CONAN)
-    target_link_libraries(bitprim-database PUBLIC bitprim-core)
+    target_link_libraries(kth-database PUBLIC kth-domain)
 endif()
 
 if (NOT NO_CONAN_AT_ALL)
-    target_link_libraries(bitprim-database PUBLIC ${CONAN_LIBS})
+    target_link_libraries(kth-database PUBLIC ${CONAN_LIBS})
 endif()
 
 
 # if (USE_CONAN)
     if (MINGW)
-        target_link_libraries(bitprim-database PUBLIC ws2_32 wsock32) #TODO(fernando): manage with Conan
+        target_link_libraries(kth-database PUBLIC ws2_32 wsock32) #TODO(fernando): manage with Conan
     endif()
 # endif()
 
-_group_sources(bitprim-database "${CMAKE_CURRENT_LIST_DIR}")
+_group_sources(kth-database "${CMAKE_CURRENT_LIST_DIR}")
 
 # Tests
 #==============================================================================
@@ -507,11 +496,11 @@ if (WITH_TESTS)
     enable_testing()
 endif()
 
-# local: test/bitprim_database_test
+# local: test/kth_database_test
 #------------------------------------------------------------------------------
 if (WITH_TESTS)
     if (DB_LEGACY)
-        add_executable(bitprim_database_test
+        add_executable(kth_database_test
                 test/block_database.cpp
                 test/data_base.cpp
                 test/hash_table.cpp
@@ -524,23 +513,23 @@ if (WITH_TESTS)
     endif()
 
     if (DB_NEW)
-        add_executable(bitprim_database_test
+        add_executable(kth_database_test
                 test/main.cpp
                 test/internal_database.cpp
                 )
     endif()
 
-    target_link_libraries(bitprim_database_test PUBLIC bitprim-database)
+    target_link_libraries(kth_database_test PUBLIC kth-database)
 
-    _group_sources(bitprim_database_test "${CMAKE_CURRENT_LIST_DIR}/test")
+    _group_sources(kth_database_test "${CMAKE_CURRENT_LIST_DIR}/test")
 
-    # _add_tests(bitprim_database_test
+    # _add_tests(kth_database_test
     #         hash_table_tests
     #         structure_tests
     # )
 
     if (DB_LEGACY)
-        _add_tests(bitprim_database_test
+        _add_tests(kth_database_test
                 database_tests
                 data_base_tests
         )
@@ -548,7 +537,7 @@ if (WITH_TESTS)
 
     
     if (DB_NEW)
-        _add_tests(bitprim_database_test
+        _add_tests(kth_database_test
             internal_db_tests
         )
     endif()
@@ -563,7 +552,7 @@ endif()
 if (WITH_TOOLS)
     add_executable(tools.block_db
             tools/block_db/block_db.cpp)
-    target_link_libraries(tools.block_db bitprim-database)
+    target_link_libraries(tools.block_db kth-database)
     _group_sources(tools.block_db "${CMAKE_CURRENT_LIST_DIR}/tools/block_db")
 endif()
 
@@ -572,7 +561,7 @@ endif()
 if (WITH_TOOLS)
     add_executable(tools.count_records
             tools/count_records/count_records.cpp)
-    target_link_libraries(tools.count_records bitprim-database)
+    target_link_libraries(tools.count_records kth-database)
     _group_sources(tools.count_records "${CMAKE_CURRENT_LIST_DIR}/tools/count_records")
 endif()
 
@@ -581,7 +570,7 @@ endif()
 if (WITH_TOOLS)
     add_executable(tools.history_db
             tools/history_db/history_db.cpp)
-    target_link_libraries(tools.history_db bitprim-database)
+    target_link_libraries(tools.history_db kth-database)
     _group_sources(tools.history_db "${CMAKE_CURRENT_LIST_DIR}/tools/history_db")
 endif()
 
@@ -590,7 +579,7 @@ endif()
 if (WITH_TOOLS)
     add_executable(tools.initchain_db
             tools/initchain/initchain.cpp)
-    target_link_libraries(tools.initchain_db bitprim-database)
+    target_link_libraries(tools.initchain_db kth-database)
     _group_sources(tools.initchain_db "${CMAKE_CURRENT_LIST_DIR}/tools/initchain")
 endif()
 
@@ -599,7 +588,7 @@ endif()
 if (WITH_TOOLS)
     add_executable(tools.mmr_add_row
             tools/mmr_add_row/mmr_add_row.cpp)
-    target_link_libraries(tools.mmr_add_row bitprim-database)
+    target_link_libraries(tools.mmr_add_row kth-database)
     _group_sources(tools.mmr_add_row "${CMAKE_CURRENT_LIST_DIR}/tools/mmr_add_row")
 endif()
 
@@ -608,7 +597,7 @@ endif()
 if (WITH_TOOLS)
     add_executable(tools.mmr_create
             tools/mmr_create/mmr_create.cpp)
-    target_link_libraries(tools.mmr_create bitprim-database)
+    target_link_libraries(tools.mmr_create kth-database)
     _group_sources(tools.mmr_create "${CMAKE_CURRENT_LIST_DIR}/tools/mmr_create")
 endif()
 
@@ -617,7 +606,7 @@ endif()
 if (WITH_TOOLS)
     add_executable(tools.mmr_delete_last_row
             tools/mmr_delete_last_row/mmr_delete_last_row.cpp)
-    target_link_libraries(tools.mmr_delete_last_row bitprim-database)
+    target_link_libraries(tools.mmr_delete_last_row kth-database)
     _group_sources(tools.mmr_delete_last_row "${CMAKE_CURRENT_LIST_DIR}/tools/mmr_delete_last_row")
 endif()
 
@@ -626,7 +615,7 @@ endif()
 if (WITH_TOOLS)
     add_executable(tools.mmr_lookup
             tools/mmr_lookup/mmr_lookup.cpp)
-    target_link_libraries(tools.mmr_lookup bitprim-database)
+    target_link_libraries(tools.mmr_lookup kth-database)
     _group_sources(tools.mmr_lookup "${CMAKE_CURRENT_LIST_DIR}/tools/mmr_lookup")
 endif()
 
@@ -635,7 +624,7 @@ endif()
 if (WITH_TOOLS)
     add_executable(tools.read_htdb_record_value
             tools/read_htdb_record_value/read_htdb_record_value.cpp)
-    target_link_libraries(tools.read_htdb_record_value bitprim-database)
+    target_link_libraries(tools.read_htdb_record_value kth-database)
     _group_sources(tools.read_htdb_record_value "${CMAKE_CURRENT_LIST_DIR}/tools/read_htdb_record_value")
 endif()
 # local: tools/read_htdb_slab_value/read_htdb_slab_value
@@ -643,7 +632,7 @@ endif()
 if (WITH_TOOLS)
     add_executable(tools.read_htdb_slab_value
             tools/read_htdb_slab_value/read_htdb_slab_value.cpp)
-    target_link_libraries(tools.read_htdb_slab_value bitprim-database)
+    target_link_libraries(tools.read_htdb_slab_value kth-database)
     _group_sources(tools.read_htdb_slab_value "${CMAKE_CURRENT_LIST_DIR}/tools/read_htdb_slab_value")
 endif()
 
@@ -652,7 +641,7 @@ endif()
 if (WITH_TOOLS)
     add_executable(tools.show_array
             tools/show_array/show_array.cpp)
-    target_link_libraries(tools.show_array bitprim-database)
+    target_link_libraries(tools.show_array kth-database)
     _group_sources(tools.show_array "${CMAKE_CURRENT_LIST_DIR}/tools/show_array")
 endif()
 
@@ -661,7 +650,7 @@ endif()
 if (WITH_TOOLS)
     add_executable(tools.show_linked_records
             tools/show_linked_records/show_linked_records.cpp)
-    target_link_libraries(tools.show_linked_records bitprim-database)
+    target_link_libraries(tools.show_linked_records kth-database)
     _group_sources(tools.show_linked_records "${CMAKE_CURRENT_LIST_DIR}/tools/initchain")
 endif()
 
@@ -670,7 +659,7 @@ endif()
 if (WITH_TOOLS)
     add_executable(tools.show_records
             tools/show_records/show_records.cpp)
-    target_link_libraries(tools.show_records bitprim-database)
+    target_link_libraries(tools.show_records kth-database)
     _group_sources(tools.show_records "${CMAKE_CURRENT_LIST_DIR}/tools/show_records")
 endif()
 
@@ -679,7 +668,7 @@ endif()
 if (WITH_TOOLS)
     add_executable(tools.spend_db
             tools/spend_db/spend_db.cpp)
-    target_link_libraries(tools.spend_db bitprim-database)
+    target_link_libraries(tools.spend_db kth-database)
     _group_sources(tools.spend_db "${CMAKE_CURRENT_LIST_DIR}/tools/spend_db")
 endif()
 
@@ -688,7 +677,7 @@ endif()
 if (WITH_TOOLS)
     add_executable(tools.stealth_db
             tools/stealth_db/stealth_db.cpp)
-    target_link_libraries(tools.stealth_db bitprim-database)
+    target_link_libraries(tools.stealth_db kth-database)
     _group_sources(tools.stealth_db "${CMAKE_CURRENT_LIST_DIR}/tools/stealth_db")
 endif()
 
@@ -697,7 +686,7 @@ endif()
 if (WITH_TOOLS)
     add_executable(tools.transaction_db
             tools/transaction_db/transaction_db.cpp)
-    target_link_libraries(tools.transaction_db bitprim-database)
+    target_link_libraries(tools.transaction_db kth-database)
     _group_sources(tools.transaction_db "${CMAKE_CURRENT_LIST_DIR}/tools/transaction_db")
 endif()
 
@@ -706,7 +695,7 @@ endif()
 # if (WITH_TOOLS)
 #   add_executable(tools.unspent_db
 #     tools/unspent_db/unspent_db.cpp)
-#   target_link_libraries(tools.unspent_db bitprim-database)
+#   target_link_libraries(tools.unspent_db kth-database)
 # endif()
 
 # local: tools/build_utxo/build_utxo
@@ -714,7 +703,7 @@ endif()
 # if (WITH_TOOLS)
 #   add_executable(tools.build_utxo
 #     tools/build_utxo/build_utxo.cpp)
-#   target_link_libraries(tools.build_utxo bitprim-database)
+#   target_link_libraries(tools.build_utxo kth-database)
 #   _group_sources(tools.transaction_db "${CMAKE_CURRENT_LIST_DIR}/tools/build_utxo")
 # endif()
 
@@ -724,57 +713,57 @@ endif()
 # if (WITH_TOOLS)
 #   add_executable(tools.check_scripts
 #     tools/check_scripts/check_scripts.cpp)
-#   target_link_libraries(tools.check_scripts bitprim-database)
+#   target_link_libraries(tools.check_scripts kth-database)
 #   _group_sources(tools.transaction_db "${CMAKE_CURRENT_LIST_DIR}/tools/check_scripts")
 # endif()
 
 
 # Install
 #==============================================================================
-install(TARGETS bitprim-database
-        EXPORT bitprim-database
+install(TARGETS kth-database
+        EXPORT kth-database
         ARCHIVE DESTINATION lib)
 
-set(_bitprim_headers
-        bitcoin/database/data_base.hpp
-        bitcoin/database/unspent_outputs.hpp
-        bitcoin/database/unspent_transaction.hpp
-        bitcoin/database/databases/block_database.hpp
-        bitcoin/database/databases/history_database.hpp
-        bitcoin/database/databases/spend_database.hpp
-        bitcoin/database/databases/stealth_database.hpp
-        bitcoin/database/databases/transaction_database.hpp
-        bitcoin/database/databases/transaction_unconfirmed_database.hpp
-        bitcoin/database/define.hpp
-        bitcoin/database/impl/hash_table_header.ipp
-        bitcoin/database/impl/record_hash_table.ipp
-        bitcoin/database/impl/record_multimap.ipp
-        bitcoin/database/impl/record_row.ipp
-        bitcoin/database/impl/remainder.ipp
-        bitcoin/database/impl/slab_hash_table.ipp
-        bitcoin/database/impl/slab_row.ipp
-        bitcoin/database/memory/accessor.hpp
-        bitcoin/database/memory/allocator.hpp
-        bitcoin/database/memory/memory.hpp
-        bitcoin/database/memory/memory_map.hpp
-        bitcoin/database/primitives/hash_table_header.hpp
-        bitcoin/database/primitives/record_hash_table.hpp
-        bitcoin/database/primitives/record_list.hpp
-        bitcoin/database/primitives/record_manager.hpp
-        bitcoin/database/primitives/record_multimap.hpp
-        bitcoin/database/primitives/record_multimap_iterable.hpp
-        bitcoin/database/primitives/record_multimap_iterator.hpp
-        bitcoin/database/primitives/slab_hash_table.hpp
-        bitcoin/database/primitives/slab_manager.hpp
-        bitcoin/database/result/block_result.hpp
-        bitcoin/database/result/transaction_result.hpp
-        bitcoin/database/result/transaction_unconfirmed_result.hpp
-        bitcoin/database/settings.hpp
-        bitcoin/database/store.hpp
-        bitcoin/database/version.hpp
-        bitcoin/database.hpp)
+set(_kth_headers
+        kth/database/data_base.hpp
+        kth/database/unspent_outputs.hpp
+        kth/database/unspent_transaction.hpp
+        kth/database/databases/block_database.hpp
+        kth/database/databases/history_database.hpp
+        kth/database/databases/spend_database.hpp
+        kth/database/databases/stealth_database.hpp
+        kth/database/databases/transaction_database.hpp
+        kth/database/databases/transaction_unconfirmed_database.hpp
+        kth/database/define.hpp
+        kth/database/legacy/impl/hash_table_header.ipp
+        kth/database/legacy/impl/record_hash_table.ipp
+        kth/database/legacy/impl/record_multimap.ipp
+        kth/database/legacy/impl/record_row.ipp
+        kth/database/legacy/impl/remainder.ipp
+        kth/database/legacy/impl/slab_hash_table.ipp
+        kth/database/legacy/impl/slab_row.ipp
+        kth/database/legacy/memory/accessor.hpp
+        kth/database/legacy/memory/allocator.hpp
+        kth/database/legacy/memory/memory.hpp
+        kth/database/legacy/memory/memory_map.hpp
+        kth/database/legacy/primitives/hash_table_header.hpp
+        kth/database/legacy/primitives/record_hash_table.hpp
+        kth/database/legacy/primitives/record_list.hpp
+        kth/database/legacy/primitives/record_manager.hpp
+        kth/database/legacy/primitives/record_multimap.hpp
+        kth/database/legacy/primitives/record_multimap_iterable.hpp
+        kth/database/legacy/primitives/record_multimap_iterator.hpp
+        kth/database/legacy/primitives/slab_hash_table.hpp
+        kth/database/legacy/primitives/slab_manager.hpp
+        kth/database/result/block_result.hpp
+        kth/database/result/transaction_result.hpp
+        kth/database/result/transaction_unconfirmed_result.hpp
+        kth/database/settings.hpp
+        kth/database/store.hpp
+        kth/database/version.hpp
+        kth/database.hpp)
 
-foreach (_header ${_bitprim_headers})
+foreach (_header ${_kth_headers})
     get_filename_component(_directory "${_header}" DIRECTORY)
     install(FILES "include/${_header}" DESTINATION "include/${_directory}")
 endforeach()
@@ -783,9 +772,9 @@ endforeach()
 #==============================================================================
 include(CMakePackageConfigHelpers)
 
-export(EXPORT bitprim-database
-        FILE "${CMAKE_CURRENT_BINARY_DIR}/bitprim-databaseTargets.cmake")
-export(PACKAGE bitprim-database)
+export(EXPORT kth-database
+        FILE "${CMAKE_CURRENT_BINARY_DIR}/kth-databaseTargets.cmake")
+export(PACKAGE kth-database)
 
 if (UNIX)
     set(_config_package_location "lib/cmake")
@@ -793,21 +782,21 @@ elseif (WIN32)
     set(_config_package_location "cmake")
 endif()
 
-install(EXPORT bitprim-database
-        FILE bitprim-databaseTargets.cmake
+install(EXPORT kth-database
+        FILE kth-databaseTargets.cmake
         DESTINATION ${_config_package_location})
 
-configure_file(bitprim-databaseConfig.cmake.in
-        "${CMAKE_CURRENT_BINARY_DIR}/bitprim-databaseConfig.cmake"
+configure_file(kth-databaseConfig.cmake.in
+        "${CMAKE_CURRENT_BINARY_DIR}/kth-databaseConfig.cmake"
         @ONLY)
 
 write_basic_package_version_file(
-        "${CMAKE_CURRENT_BINARY_DIR}/bitprim-databaseConfigVersion.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/kth-databaseConfigVersion.cmake"
         VERSION ${PROJECT_VERSION}
         COMPATIBILITY AnyNewerVersion)
 
 install(
         FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/bitprim-databaseConfig.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/bitprim-databaseConfigVersion.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/kth-databaseConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/kth-databaseConfigVersion.cmake"
         DESTINATION ${_config_package_location})
