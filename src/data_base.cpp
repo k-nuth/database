@@ -687,7 +687,7 @@ code data_base::push_genesis(block const& block) {
 
 // To push in order call with bucket = 0 and buckets = 1 (defaults).
 bool data_base::push_transactions(const chain::block& block, size_t height, uint32_t median_time_past, size_t bucket /*= 0*/, size_t buckets/*= 1*/) {
-    BITCOIN_ASSERT(bucket < buckets);
+    KTH_ASSERT(bucket < buckets);
     auto const& txs = block.transactions();
     auto const count = txs.size();
 
@@ -1214,7 +1214,7 @@ void data_base::do_push(block_const_ptr block, size_t height, uint32_t median_ti
 
     auto const threads = dispatch.size();
     auto const buckets = std::min(threads, block->transactions().size());
-    BITCOIN_ASSERT(buckets != 0);
+    KTH_ASSERT(buckets != 0);
 
     auto const join_handler = bc::synchronize(std::move(block_complete), buckets, NAME "_do_push");
 
@@ -1311,7 +1311,7 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest
             return;
         }
 
-        BITCOIN_ASSERT(next.is_valid());
+        KTH_ASSERT(next.is_valid());
         auto block = std::make_shared<const message::block>(std::move(next));
         out_blocks->insert(out_blocks->begin(), block);
     }

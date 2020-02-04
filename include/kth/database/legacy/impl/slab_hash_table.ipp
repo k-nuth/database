@@ -18,7 +18,7 @@ slab_hash_table<KeyType>::slab_hash_table(slab_hash_table_header& header,
     slab_manager& manager)
   : header_(header), manager_(manager)
 {
-    BITCOIN_ASSERT(slab_hash_table_header::empty == slab_row<KeyType>::empty);
+    KTH_ASSERT(slab_hash_table_header::empty == slab_row<KeyType>::empty);
 }
 
 // This is not limited to storing unique key values. If duplicate keyed values
@@ -171,7 +171,7 @@ template <typename KeyType>
 array_index slab_hash_table<KeyType>::bucket_index(const KeyType& key) const
 {
     auto const bucket = remainder(key, header_.size());
-    BITCOIN_ASSERT(bucket < header_.size());
+    KTH_ASSERT(bucket < header_.size());
     return bucket;
 }
 

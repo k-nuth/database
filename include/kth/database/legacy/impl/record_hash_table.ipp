@@ -19,7 +19,7 @@ record_hash_table<KeyType>::record_hash_table(
     record_hash_table_header& header, record_manager& manager)
   : header_(header), manager_(manager)
 {
-    BITCOIN_ASSERT(record_hash_table_header::empty ==
+    KTH_ASSERT(record_hash_table_header::empty ==
         record_row<KeyType>::empty);
 }
 
@@ -167,7 +167,7 @@ template <typename KeyType>
 array_index record_hash_table<KeyType>::bucket_index(const KeyType& key) const
 {
     auto const bucket = remainder(key, header_.size());
-    BITCOIN_ASSERT(bucket < header_.size());
+    KTH_ASSERT(bucket < header_.size());
     return bucket;
 }
 

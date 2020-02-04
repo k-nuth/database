@@ -71,7 +71,7 @@ data_chunk utxo_entry::to_data_fixed(uint32_t height, uint32_t median_time_past,
     data_sink ostream(data);
     to_data_fixed(ostream, height, median_time_past, coinbase);
     ostream.flush();
-    BITCOIN_ASSERT(data.size() == size);
+    KTH_ASSERT(data.size() == size);
     return data;
 }
 
@@ -99,7 +99,7 @@ data_chunk utxo_entry::to_data_with_fixed(chain::output const& output, data_chun
     data_sink ostream(data);
     to_data_with_fixed(ostream, output, fixed);
     ostream.flush();
-    BITCOIN_ASSERT(data.size() == size);
+    KTH_ASSERT(data.size() == size);
     return data;
 }
 
@@ -128,7 +128,7 @@ data_chunk utxo_entry::to_data() const {
     data_sink ostream(data);
     to_data(ostream);
     ostream.flush();
-    BITCOIN_ASSERT(data.size() == size);
+    KTH_ASSERT(data.size() == size);
     return data;
 }
 

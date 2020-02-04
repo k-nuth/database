@@ -164,7 +164,7 @@ void transaction_unconfirmed_database::store(const chain::transaction& tx) {
     auto const tx_size = tx.serialized_size(false, witness);
 #endif
 
-    BITCOIN_ASSERT(tx_size <= max_size_t - metadata_size);
+    KTH_ASSERT(tx_size <= max_size_t - metadata_size);
     auto const total_size = metadata_size + static_cast<size_t>(tx_size);
 
     // Create slab for the new tx instance.

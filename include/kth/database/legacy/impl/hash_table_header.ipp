@@ -27,7 +27,7 @@ hash_table_header<IndexType, ValueType>::hash_table_header(memory_map& file,
     IndexType buckets)
   : file_(file), buckets_(buckets)
 {
-    BITCOIN_ASSERT_MSG(empty == (ValueType)empty_fill,
+    KTH_ASSERT_MSG(empty == (ValueType)empty_fill,
         "Unexpected value for empty sentinel.");
 
     static_assert(std::is_unsigned<ValueType>::value,
@@ -86,7 +86,7 @@ template <typename IndexType, typename ValueType>
 ValueType hash_table_header<IndexType, ValueType>::read(IndexType index) const
 {
     // This is not runtime safe but test is avoided as an optimization.
-    BITCOIN_ASSERT(index < buckets_);
+    KTH_ASSERT(index < buckets_);
 
     // The accessor must remain in scope until the end of the block.
     auto const memory = file_.access();
@@ -104,7 +104,7 @@ void hash_table_header<IndexType, ValueType>::write(IndexType index,
     ValueType value)
 {
     // This is not runtime safe but test is avoided as an optimization.
-    BITCOIN_ASSERT(index < buckets_);
+    KTH_ASSERT(index < buckets_);
 
     // The accessor must remain in scope until the end of the block.
     auto const memory = file_.access();

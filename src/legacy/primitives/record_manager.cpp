@@ -97,7 +97,7 @@ void record_manager::set_count(const array_index value)
     ///////////////////////////////////////////////////////////////////////////
     ALLOCATE_WRITE(mutex_);
 
-    BITCOIN_ASSERT(value <= record_count_);
+    KTH_ASSERT(value <= record_count_);
 
     record_count_ = value;
     ///////////////////////////////////////////////////////////////////////////
@@ -140,7 +140,7 @@ const memory_ptr record_manager::get(array_index record) const
 // Read the count value from the first 32 bits of the file after the header.
 void record_manager::read_count()
 {
-    BITCOIN_ASSERT(header_size_ + sizeof(array_index) <= file_.size());
+    KTH_ASSERT(header_size_ + sizeof(array_index) <= file_.size());
 
     // The accessor must remain in scope until the end of the block.
     auto const memory = file_.access();
@@ -151,7 +151,7 @@ void record_manager::read_count()
 // Write the count value to the first 32 bits of the file after the header.
 void record_manager::write_count()
 {
-    BITCOIN_ASSERT(header_size_ + sizeof(array_index) <= file_.size());
+    KTH_ASSERT(header_size_ + sizeof(array_index) <= file_.size());
 
     // The accessor must remain in scope until the end of the block.
     auto memory = file_.access();

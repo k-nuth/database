@@ -170,7 +170,7 @@ block_result block_database::get(const hash_digest& hash) const
 //WARNING!! : This is public interface, but apparently it is not used in Blockchain
 void block_database::store(const block& block, size_t height)
 {
-    BITCOIN_ASSERT(height <= max_uint32);
+    KTH_ASSERT(height <= max_uint32);
     auto const height32 = static_cast<uint32_t>(height);
     auto const tx_count = block.transactions().size();
 
@@ -240,7 +240,7 @@ void block_database::zeroize(array_index first, array_index count)
 
 void block_database::write_position(file_offset position, array_index height)
 {
-    BITCOIN_ASSERT(height < max_uint32);
+    KTH_ASSERT(height < max_uint32);
     auto const new_count = height + 1;
 
     // Critical Section

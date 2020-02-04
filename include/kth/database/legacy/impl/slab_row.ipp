@@ -75,7 +75,7 @@ template <typename KeyType>
 file_offset slab_row<KeyType>::create(const KeyType& key, write_function write,
     size_t value_size)
 {
-    BITCOIN_ASSERT(position_ == empty);
+    KTH_ASSERT(position_ == empty);
 
     // Create new slab and populate its key.
     //   [ KeyType  ] <==

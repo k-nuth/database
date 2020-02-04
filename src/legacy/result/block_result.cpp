@@ -73,7 +73,7 @@ const hash_digest& block_result::hash() const
 
 chain::header block_result::header() const
 {
-    BITCOIN_ASSERT(slab_);
+    KTH_ASSERT(slab_);
     auto const memory = REMAP_ADDRESS(slab_);
     auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab_));
 
@@ -89,34 +89,34 @@ chain::header block_result::header() const
 // TODO: block height is unguarded and will be inconsistent during write.
 size_t block_result::height() const
 {
-    BITCOIN_ASSERT(slab_);
+    KTH_ASSERT(slab_);
     return height_;
 }
 
 uint32_t block_result::bits() const
 {
-    BITCOIN_ASSERT(slab_);
+    KTH_ASSERT(slab_);
     auto const memory = REMAP_ADDRESS(slab_);
     return from_little_endian_unsafe<uint32_t>(memory + bits_offset);
 }
 
 uint32_t block_result::timestamp() const
 {
-    BITCOIN_ASSERT(slab_);
+    KTH_ASSERT(slab_);
     auto const memory = REMAP_ADDRESS(slab_);
     return from_little_endian_unsafe<uint32_t>(memory + time_offset);
 }
 
 uint32_t block_result::version() const
 {
-    BITCOIN_ASSERT(slab_);
+    KTH_ASSERT(slab_);
     auto const memory = REMAP_ADDRESS(slab_);
     return from_little_endian_unsafe<uint32_t>(memory + version_offset);
 }
 
 size_t block_result::transaction_count() const
 {
-    BITCOIN_ASSERT(slab_);
+    KTH_ASSERT(slab_);
     auto const memory = REMAP_ADDRESS(slab_);
     auto deserial = make_unsafe_deserializer(memory + count_offset);
     return deserial.read_size_little_endian();
@@ -124,19 +124,19 @@ size_t block_result::transaction_count() const
 
 hash_digest block_result::transaction_hash(size_t index) const
 {
-    BITCOIN_ASSERT(slab_);
+    KTH_ASSERT(slab_);
     auto const memory = REMAP_ADDRESS(slab_);
     auto deserial = make_unsafe_deserializer(memory + count_offset);
     auto const tx_count = deserial.read_size_little_endian();
 
-    BITCOIN_ASSERT(index < tx_count);
+    KTH_ASSERT(index < tx_count);
     deserial.skip(index * hash_size);
     return deserial.read_hash();
 }
 
 hash_list block_result::transaction_hashes() const
 {
-    BITCOIN_ASSERT(slab_);
+    KTH_ASSERT(slab_);
     auto const memory = REMAP_ADDRESS(slab_);
     auto deserial = make_unsafe_deserializer(memory + count_offset);
     auto const tx_count = deserial.read_size_little_endian();
@@ -151,7 +151,7 @@ hash_list block_result::transaction_hashes() const
 
 uint64_t block_result::serialized_size() const
 {
-    BITCOIN_ASSERT(slab_);
+    KTH_ASSERT(slab_);
     auto const memory = REMAP_ADDRESS(slab_);
     auto deserial = make_unsafe_deserializer(memory + serialized_size_offset);
     return deserial.read_8_bytes_little_endian();
