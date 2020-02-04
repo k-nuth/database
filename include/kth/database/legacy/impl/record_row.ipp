@@ -73,7 +73,7 @@ template <typename KeyType>
 array_index record_row<KeyType>::create(const KeyType& key,
     write_function write)
 {
-    BITCOIN_ASSERT(index_ == empty);
+    KTH_ASSERT(index_ == empty);
 
     // Create new record and populate its key.
     //   [ KeyType  ] <==

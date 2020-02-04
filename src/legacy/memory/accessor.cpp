@@ -23,7 +23,7 @@ accessor::accessor(shared_mutex& mutex, uint8_t*& data)
     // Acquire shared lock.
     mutex_.lock_shared();
 
-    BITCOIN_ASSERT_MSG(data != nullptr, "Invalid pointer value.");
+    KTH_ASSERT_MSG(data != nullptr, "Invalid pointer value.");
 
     // Save protected pointer.
     data_ = data;
@@ -36,7 +36,7 @@ uint8_t* accessor::buffer()
 
 void accessor::increment(size_t value)
 {
-    BITCOIN_ASSERT((size_t)data_ <= bc::max_size_t - value);
+    KTH_ASSERT((size_t)data_ <= bc::max_size_t - value);
     data_ += value;
 }
 

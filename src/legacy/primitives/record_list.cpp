@@ -18,7 +18,7 @@ record_list::record_list(record_manager& manager, array_index index)
 
 array_index record_list::create(write_function write)
 {
-    BITCOIN_ASSERT(index_ == empty);
+    KTH_ASSERT(index_ == empty);
 
     // Create new record without populating its next pointer.
     //   [ next:4   ]

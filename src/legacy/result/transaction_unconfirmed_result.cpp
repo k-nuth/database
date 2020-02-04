@@ -62,7 +62,7 @@ const hash_digest& transaction_unconfirmed_result::hash() const
 // Height is unguarded and will be inconsistent during write.
 uint32_t transaction_unconfirmed_result::arrival_time() const
 {
-    BITCOIN_ASSERT(slab_);
+    KTH_ASSERT(slab_);
     return arrival_time_;
 }
 
@@ -71,11 +71,11 @@ uint32_t transaction_unconfirmed_result::arrival_time() const
 // If index is out of range returns default/invalid output (.value not_found).
 chain::output transaction_unconfirmed_result::output(uint32_t index) const
 {
-    BITCOIN_ASSERT(slab_);
+    KTH_ASSERT(slab_);
     auto const tx_start = REMAP_ADDRESS(slab_) + metadata_size;
     auto deserial = make_unsafe_deserializer(tx_start);
     auto const outputs = deserial.read_size_little_endian();
-    BITCOIN_ASSERT(deserial);
+    KTH_ASSERT(deserial);
 
     if (index >= outputs)
         return{};
@@ -85,7 +85,7 @@ chain::output transaction_unconfirmed_result::output(uint32_t index) const
     {
         deserial.skip(arrival_time_size + value_size);
         deserial.skip(deserial.read_size_little_endian());
-        BITCOIN_ASSERT(deserial);
+        KTH_ASSERT(deserial);
     }
 
     // Read and return the target output (including spender height).
@@ -116,7 +116,7 @@ chain::transaction transaction_unconfirmed_result::transaction(bool witness) con
 #else
     bool from_data_witness = true;
 #endif
-    BITCOIN_ASSERT(slab_);
+    KTH_ASSERT(slab_);
     auto const tx_start = REMAP_ADDRESS(slab_) + metadata_size;
     auto deserial = make_unsafe_deserializer(tx_start);
 

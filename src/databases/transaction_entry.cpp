@@ -80,7 +80,7 @@ data_chunk transaction_entry::factory_to_data(chain::transaction const& tx, uint
     data_sink ostream(data);
     factory_to_data(ostream, tx, height, median_time_past, position);
     ostream.flush();
-    BITCOIN_ASSERT(data.size() == size);
+    KTH_ASSERT(data.size() == size);
     return data;
 }
 
@@ -112,7 +112,7 @@ data_chunk transaction_entry::to_data() const {
     data_sink ostream(data);
     to_data(ostream);
     ostream.flush();
-    BITCOIN_ASSERT(data.size() == size);
+    KTH_ASSERT(data.size() == size);
     return data;
 }
 

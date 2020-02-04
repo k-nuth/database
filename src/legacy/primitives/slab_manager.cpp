@@ -114,7 +114,7 @@ const memory_ptr slab_manager::get(file_offset position) const
 {
     // Ensure requested position is within the file.
     // We avoid a runtime error here to optimize out the payload_size lock.
-    BITCOIN_ASSERT_MSG(position < payload_size(), "Read past end of file.");
+    KTH_ASSERT_MSG(position < payload_size(), "Read past end of file.");
 
     auto memory = file_.access();
     REMAP_INCREMENT(memory, header_size_ + position);
@@ -126,7 +126,7 @@ const memory_ptr slab_manager::get(file_offset position) const
 // Read the size value from the first 64 bits of the file after the header.
 void slab_manager::read_size()
 {
-    BITCOIN_ASSERT(header_size_ + sizeof(file_offset) <= file_.size());
+    KTH_ASSERT(header_size_ + sizeof(file_offset) <= file_.size());
 
     // The accessor must remain in scope until the end of the block.
     auto const memory = file_.access();
@@ -138,7 +138,7 @@ void slab_manager::read_size()
 // Write the size value to the first 64 bits of the file after the header.
 void slab_manager::write_size() const
 {
-    BITCOIN_ASSERT(header_size_ + sizeof(file_offset) <= file_.size());
+    KTH_ASSERT(header_size_ + sizeof(file_offset) <= file_.size());
 
     // The accessor must remain in scope until the end of the block.
     auto const memory = file_.access();

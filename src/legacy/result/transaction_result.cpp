@@ -56,19 +56,19 @@ const hash_digest& transaction_result::hash() const {
 
 // Height is unguarded and will be inconsistent during write.
 size_t transaction_result::height() const {
-    BITCOIN_ASSERT(slab_);
+    KTH_ASSERT(slab_);
     return height_;
 }
 
 // Position is unguarded and will be inconsistent during write.
 size_t transaction_result::position() const {
-    BITCOIN_ASSERT(slab_);
+    KTH_ASSERT(slab_);
     return position_;
 }
 
 // Median time past is unguarded and will be inconsistent during write.
 uint32_t transaction_result::median_time_past() const {
-    BITCOIN_ASSERT(slab_);
+    KTH_ASSERT(slab_);
     return median_time_past_;
 }
 
@@ -78,16 +78,16 @@ bool transaction_result::is_spent(size_t fork_height) const {
     if (position_ == transaction_database::unconfirmed)
         return false;
 
-    BITCOIN_ASSERT(slab_);
+    KTH_ASSERT(slab_);
     auto const tx_start = REMAP_ADDRESS(slab_) + metadata_size;
     auto deserial = make_unsafe_deserializer(tx_start);
     auto const outputs = deserial.read_size_little_endian();
-    BITCOIN_ASSERT(deserial);
+    KTH_ASSERT(deserial);
 
     // Search all outputs for an unspent indication.
     for (uint32_t output = 0; output < outputs; ++output) {
         auto const spender_height = deserial.read_4_bytes_little_endian();
-        BITCOIN_ASSERT(deserial);
+        KTH_ASSERT(deserial);
 
         // A spend from above the fork height is not an actual spend.
         if (spender_height == output::validation::not_spent ||
@@ -96,7 +96,7 @@ bool transaction_result::is_spent(size_t fork_height) const {
 
         deserial.skip(value_size);
         deserial.skip(deserial.read_size_little_endian());
-        BITCOIN_ASSERT(deserial);
+        KTH_ASSERT(deserial);
     }
 
     return true;
@@ -105,11 +105,11 @@ bool transaction_result::is_spent(size_t fork_height) const {
 // spender_heights are unguarded and will be inconsistent during write.
 // If index is out of range returns default/invalid output (.value not_found).
 chain::output transaction_result::output(uint32_t index) const {
-    BITCOIN_ASSERT(slab_);
+    KTH_ASSERT(slab_);
     auto const tx_start = REMAP_ADDRESS(slab_) + metadata_size;
     auto deserial = make_unsafe_deserializer(tx_start);
     auto const outputs = deserial.read_size_little_endian();
-    BITCOIN_ASSERT(deserial);
+    KTH_ASSERT(deserial);
 
     if (index >= outputs) {
         return {};
@@ -119,7 +119,7 @@ chain::output transaction_result::output(uint32_t index) const {
     for (uint32_t output = 0; output < index; ++output) {
         deserial.skip(height_size + value_size);
         deserial.skip(deserial.read_size_little_endian());
-        BITCOIN_ASSERT(deserial);
+        KTH_ASSERT(deserial);
     }
 
     // Read and return the target output (including spender height).
@@ -151,7 +151,7 @@ chain::transaction transaction_result::transaction(bool witness) const
 #else 
     bool from_data_witness = true;
 #endif
-    BITCOIN_ASSERT(slab_);
+    KTH_ASSERT(slab_);
     auto const tx_start = REMAP_ADDRESS(slab_) + metadata_size;
     auto deserial = make_unsafe_deserializer(tx_start);
 

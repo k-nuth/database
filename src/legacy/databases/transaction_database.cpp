@@ -251,12 +251,12 @@ void transaction_database::store(const chain::transaction& tx, size_t height, ui
 
         // No terminate here as this is only a cache and there is no fail mode.
         // Instead this falls through and creates a new transaction.
-        BITCOIN_ASSERT_MSG(false, "pooled transaction not found");
+        KTH_ASSERT_MSG(false, "pooled transaction not found");
     }
 
     // Create the transaction.
-    BITCOIN_ASSERT(height <= max_uint32);
-    BITCOIN_ASSERT(position <= position_max);
+    KTH_ASSERT(height <= max_uint32);
+    KTH_ASSERT(position <= position_max);
 
     // Unconfirmed txs: position is unconfirmed and height is validation forks.
     auto const write = [&](serializer<uint8_t*>& serial) {
@@ -278,7 +278,7 @@ void transaction_database::store(const chain::transaction& tx, size_t height, ui
     };
 
     auto const tx_size = tx.serialized_size(false, KTH_WITNESS_DEFAULT);
-    BITCOIN_ASSERT(tx_size <= max_size_t - metadata_size);
+    KTH_ASSERT(tx_size <= max_size_t - metadata_size);
     auto const total_size = metadata_size + static_cast<size_t>(tx_size);
 
     // Create slab for the new tx instance.
@@ -319,7 +319,7 @@ bool transaction_database::spend(const output_point& point, size_t spender_heigh
     auto const tx_start = REMAP_ADDRESS(slab) + metadata_size;
     auto serial = make_unsafe_serializer(tx_start);
     auto const outputs = serial.read_size_little_endian();
-    BITCOIN_ASSERT(serial);
+    KTH_ASSERT(serial);
 
     // The index is not in the transaction.
     if (point.index() >= outputs) {
@@ -330,7 +330,7 @@ bool transaction_database::spend(const output_point& point, size_t spender_heigh
     for (uint32_t output = 0; output < point.index(); ++output) {
         serial.skip(spender_height_value_size);
         serial.skip(serial.read_size_little_endian());
-        BITCOIN_ASSERT(serial);
+        KTH_ASSERT(serial);
     }
 
     // Write the spender height to the first word of the target output.
@@ -350,8 +350,8 @@ bool transaction_database::confirm(const hash_digest& hash, size_t height, uint3
         return false;
     }
 
-    BITCOIN_ASSERT(height <= max_uint32);
-    BITCOIN_ASSERT(position <= position_max);
+    KTH_ASSERT(height <= max_uint32);
+    KTH_ASSERT(position <= position_max);
 
     auto serial = make_unsafe_serializer(REMAP_ADDRESS(slab));
 

@@ -76,7 +76,7 @@ data_chunk history_entry::factory_to_data(uint64_t id, chain::point const& point
     data_sink ostream(data);
     factory_to_data(ostream, id, point, kind, height, index, value_or_checksum);
     ostream.flush();
-    BITCOIN_ASSERT(data.size() == size);
+    KTH_ASSERT(data.size() == size);
     return data;
 }
 
@@ -109,7 +109,7 @@ data_chunk history_entry::to_data() const {
     data_sink ostream(data);
     to_data(ostream);
     ostream.flush();
-    BITCOIN_ASSERT(data.size() == size);
+    KTH_ASSERT(data.size() == size);
     return data;
 }
 

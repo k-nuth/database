@@ -26,14 +26,14 @@ allocator::allocator(shared_mutex& mutex)
 // Get share-protected data pointer.
 uint8_t* allocator::buffer()
 {
-    BITCOIN_ASSERT_MSG(data_ != nullptr, "Downgrade must be called.");
+    KTH_ASSERT_MSG(data_ != nullptr, "Downgrade must be called.");
     return data_;
 }
 
 // Add an unsafe offset to share-protected pointer (convenience method).
 void allocator::increment(size_t value)
 {
-    BITCOIN_ASSERT((size_t)data_ <= bc::max_size_t - value);
+    KTH_ASSERT((size_t)data_ <= bc::max_size_t - value);
     data_ += value;
 }
 
@@ -44,7 +44,7 @@ void allocator::assign(uint8_t* data)
     // the mutex in the original (upgradeable) state or this will fail.
     mutex_.unlock_upgrade_and_lock_shared();
 
-    BITCOIN_ASSERT_MSG(data != nullptr, "Invalid pointer value.");
+    KTH_ASSERT_MSG(data != nullptr, "Invalid pointer value.");
     data_ = data;
 }
 

@@ -66,7 +66,7 @@ size_t memory_map::file_size(int file_handle)
 #endif
 
     // Convert signed to unsigned size.
-    BITCOIN_ASSERT_MSG(sbuf.st_size > 0, "File size cannot be 0 bytes.");
+    KTH_ASSERT_MSG(sbuf.st_size > 0, "File size cannot be 0 bytes.");
     return static_cast<size_t>(sbuf.st_size);
 }
 
@@ -383,7 +383,7 @@ size_t memory_map::page() const
     if (errno != 0)
         handle_error("sysconf", filename_);
 
-    BITCOIN_ASSERT(page_size <= max_size_t);
+    KTH_ASSERT(page_size <= max_size_t);
     return static_cast<size_t>(page_size == -1 ? 0 : page_size);
 #endif
 }
