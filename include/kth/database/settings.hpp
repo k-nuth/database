@@ -52,11 +52,6 @@ public:
 // #ifdef KTH_DB_UNSPENT_LEGACY
     uint32_t cache_capacity;
 // #endif // KTH_DB_UNSPENT_LEGACY
-
-#if defined(WITH_REMOTE_DATABASE)    
-    config::endpoint replier;
-#endif //defined(WITH_REMOTE_DATABASE)        
-
 };
 
 } // namespace database

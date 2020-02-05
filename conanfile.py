@@ -81,10 +81,7 @@ class KnuthDatabaseConan(KnuthConanFile):
 
         self.options["*"].cached_rpc_data = self.options.cached_rpc_data
         self.options["*"].measurements = self.options.measurements
-        # self.options["*"].currency = self.options.currency
-        # self.output.info("Compiling for currency: %s" % (self.options.currency,))
         self.output.info("Compiling with measurements: %s" % (self.options.measurements,))
-        self.output.info("Compiling for DB: %s" % (self.options.db,))
 
     def package_id(self):
         KnuthConanFile.package_id(self)
