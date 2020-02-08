@@ -1,28 +1,45 @@
-# Knuth Database <a target="_blank" href="https://gitter.im/k-nuth/Lobby">![Gitter Chat][badge.Gitter]</a>
+<!-- <a target="_blank" href="http://semver.org">![Version][badge.version]</a> -->
+<!-- <a target="_blank" href="https://cirrus-ci.com/github/k-nuth/database">![Build Status][badge.Cirrus]</a> -->
 
-*High Performance Blockchain Database*
+# Knuth Database <a target="_blank" href="https://github.com/k-nuth/database/releases">![Github Releases][badge.release]</a> <a target="_blank" href="https://travis-ci.org/k-nuth/database">![Build status][badge.Travis]</a> <a target="_blank" href="https://ci.appveyor.com/projects/k-nuth/database">![Build Status][badge.Appveyor]</a> <a target="_blank" href="https://t.me/knuth_cash">![Telegram][badge.telegram]</a> <a target="_blank" href="https://k-nuth.slack.com/">![Slack][badge.slack]</a>
 
-| **master(linux/osx)** | **dev(linux/osx)**   | **master(windows)**   | **dev(windows)** |
-|:------:|:-:|:-:|:-:|
-| [![Build Status](https://travis-ci.org/k-nuth/database.svg)](https://travis-ci.org/k-nuth/database)       | [![Build StatusB](https://travis-ci.org/k-nuth/database.svg?branch=dev)](https://travis-ci.org/k-nuth/database?branch=dev)  | [![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/k-nuth/database?svg=true)](https://ci.appveyor.com/project/k-nuth/database)  | [![Appveyor StatusB](https://ci.appveyor.com/api/projects/status/github/k-nuth/database?branch=dev&svg=true)](https://ci.appveyor.com/project/k-nuth/database?branch=dev)  |
+>  High Performance Blockchain Database
 
-Make sure you have installed [domain](https://github.com/k-nuth/domain) beforehand according to its build instructions.
+Build steps
+-----------
 
+The *Knuth* libraries can be installed on Linux, macOS, FreeBSD, Windows and others. These binaries are pre-built for the most usual operating system/compiler combinations and hosted in an online repository. If there are no pre-built binaries for your platform, a build from source will be attempted.
+
+So, for any platform, an installation can be performed in 2 simple steps:
+
+1. Install the Knuth build helper:
 ```
-$ git clone https://github.com/k-nuth/database.git
-$ cd database
-$ mkdir build
-$ cd build
-$ cmake .. -DWITH_TESTS=OFF -DWITH_TOOLS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-std=c++11"
-$ make -j2
-$ sudo make install
-$ sudo ldconfig
+pip install kthbuild --user --upgrade
 ```
 
-kth-database will now be installed in `/usr/local/`.
+2. Configure the Conan remote:
+```
+conan remote add kth https://api.bintray.com/conan/k-nuth/kth
+```
 
-**About Knuth Database**
+3. Install the appropriate library:
 
-Knuth Database is a custom database build directly on the operating system's [memory-mapped file](https://en.wikipedia.org/wiki/Memory-mapped_file) system. All primary tables and indexes are built on in-memory hash tables, resulting in constant-time lookups. The database uses [sequence locking](https://en.wikipedia.org/wiki/Seqlock) to avoid writer starvation while never blocking the reader. This is ideal for a high performance blockchain server as reads are significantly more frequent than writes and yet writes must proceed wtihout delay. The [blockchain](https://github.com/k-nuth/blockchain) library uses the database as its blockchain store.
+```
+conan install database/0.X@kth/stable 
+```
 
-[badge.Gitter]: https://img.shields.io/badge/gitter-join%20chat-blue.svg
+In you want to tune the installation for better performance, please refer to the [documentation](https://kth.github.io/docfx/content/user_guide/installation.html#advanced-installation).
+
+
+<!-- Links -->
+[badge.Travis]: https://travis-ci.org/k-nuth/database.svg?branch=master
+[badge.Appveyor]: https://ci.appveyor.com/api/projects/status/github/k-nuth/database?svg=true&branch=master
+[badge.Cirrus]: https://api.cirrus-ci.com/github/k-nuth/database.svg?branch=master
+[badge.version]: https://badge.fury.io/gh/k-nuth%2Fdatabase.svg
+[badge.release]: https://img.shields.io/github/release/k-nuth/database.svg
+
+[badge.telegram]: https://img.shields.io/badge/telegram-badge-blue.svg?logo=telegram
+[badge.slack]: https://img.shields.io/badge/slack-badge-orange.svg?logo=slack
+
+<!-- [badge.Gitter]: https://img.shields.io/badge/gitter-join%20chat-blue.svg -->
+
