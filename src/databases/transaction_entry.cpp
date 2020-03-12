@@ -59,7 +59,7 @@ bool transaction_entry::is_valid() const {
 // constexpr
 //TODO(fernando): make this constexpr 
 size_t transaction_entry::serialized_size(chain::transaction const& tx) {
-#if ! defined(KTH_USE_DOMAIN) || defined(KTH_CACHED_RPC_DATA)
+#if defined(KTH_CACHED_RPC_DATA)
     return tx.serialized_size(false, true, false) 
 #else
     return tx.serialized_size(false, true) 
@@ -90,18 +90,6 @@ void transaction_entry::factory_to_data(std::ostream& stream, chain::transaction
     factory_to_data(sink, tx, height, median_time_past, position);
 }
 
-
-#if ! defined(KTH_USE_DOMAIN)
-// static
-void transaction_entry::factory_to_data(writer& sink, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position) {
-    tx.to_data(sink, false,true,false);
-    sink.write_4_bytes_little_endian(height);
-    sink.write_4_bytes_little_endian(median_time_past);
-    write_position(sink, position);
-}
-#endif
-
-
 // Serialization.
 //-----------------------------------------------------------------------------
 
@@ -121,12 +109,6 @@ void transaction_entry::to_data(std::ostream& stream) const {
     to_data(sink);
 }
 
-#ifndef KTH_USE_DOMAIN
-void transaction_entry::to_data(writer& sink) const {
-    factory_to_data(sink, transaction_, height_, median_time_past_, position_ );
-}
-#endif
-
 // Deserialization.
 //-----------------------------------------------------------------------------
 
@@ -142,14 +124,6 @@ transaction_entry transaction_entry::factory_from_data(std::istream& stream) {
     return instance;
 }
 
-#ifndef KTH_USE_DOMAIN
-transaction_entry transaction_entry::factory_from_data(reader& source) {
-    transaction_entry instance;
-    instance.from_data(source);
-    return instance;
-}
-#endif
-
 bool transaction_entry::from_data(const data_chunk& data) {
     data_source istream(data);
     return from_data(istream);
@@ -159,23 +133,6 @@ bool transaction_entry::from_data(std::istream& stream) {
     istream_reader source(stream);
     return from_data(source);
 }
-
-#ifndef KTH_USE_DOMAIN
-bool transaction_entry::from_data(reader& source) {
-    reset();
-    
-    transaction_.from_data(source, false, true, false);
-    height_ = source.read_4_bytes_little_endian();
-    median_time_past_ = source.read_4_bytes_little_endian();
-    position_ = read_position(source);
-
-    if ( ! source) {
-        reset();
-    }
-
-    return source;
-}
-#endif
 
 bool transaction_entry::confirmed() {
     return position_ != position_max;

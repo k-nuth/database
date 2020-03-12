@@ -60,7 +60,7 @@ set(MARCH_ID "" CACHE STRING "Specify the Microarchitecture ID (x86_64|...).")
 message( STATUS "Knuth: Compiling for Microarchitecture ID ${MARCH_ID}")
 
 
-# Implement --with-mining and declare WITH_MEASUREMENTS.
+# Implement --with-measurements and declare WITH_MEASUREMENTS.
 #------------------------------------------------------------------------------
 option(WITH_MEASUREMENTS "Measurements enabled." OFF)
 if (WITH_MEASUREMENTS)
@@ -68,12 +68,12 @@ if (WITH_MEASUREMENTS)
   add_definitions(-DWITH_MEASUREMENTS)
 endif()
 
-# Implement --use-domain and declare USE_DOMAIN.
+# Implement --db_readonly_mode and declare KTH_DB_READONLY.
 #------------------------------------------------------------------------------
-option(USE_DOMAIN "Domain enabled." ON)
-if (USE_DOMAIN)
-  message(STATUS "Knuth: Using Domain enabled")
-  add_definitions(-DKTH_USE_DOMAIN)
+option(DB_READONLY_MODE "Readonly DB mode enabled." OFF)
+if (DB_READONLY_MODE)
+  message(STATUS "Knuth: Readonly DB mode enabled")
+  add_definitions(-DKTH_DB_READONLY)
 endif()
 
 # Implement --with-cached-rpc-data and declare WITH_CACHED_RPC_DATA.
@@ -459,7 +459,8 @@ target_include_directories(kth-database PUBLIC
         $<INSTALL_INTERFACE:include>)
 
 
-target_compile_definitions(kth-database PUBLIC -DKTH_PROJECT_VERSION="\\"${KTH_PROJECT_VERSION}\\"") #TODO(fernando): manage with Conan????
+# target_compile_definitions(kth-database PUBLIC -DKTH_PROJECT_VERSION="\\"${KTH_PROJECT_VERSION}\\"") #TODO(fernando): manage with Conan????
+target_compile_definitions(kth-database PUBLIC -DKTH_PROJECT_VERSION="${KTH_PROJECT_VERSION}") #TODO(fernando): manage with Conan????
 
 if (NOT ENABLE_SHARED)
     target_compile_definitions(kth-database PUBLIC -DBCD_STATIC -DBC_STATIC)

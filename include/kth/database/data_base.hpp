@@ -44,15 +44,14 @@
 #include <kth/database/settings.hpp>
 #include <kth/database/store.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 /// This class is thread safe and implements the sequential locking pattern.
 class BCD_API data_base : public store, noncopyable {
 public:
-    typedef store::handle handle;
-    typedef handle0 result_handler;
-    typedef boost::filesystem::path path;
+    using handle = store::handle;
+    using result_handler = handle0;
+    using path = boost::filesystem::path;
 
     // Construct.
     // ----------------------------------------------------------------------------
@@ -62,9 +61,10 @@ public:
     // Open and close.
     // ------------------------------------------------------------------------
 
+#if ! defined(KTH_DB_READONLY)
     /// Create and open all databases.
     bool create(chain::block const& genesis);
-
+#endif
 
 #ifdef KTH_DB_LEGACY
     /// Open all databases.
@@ -117,6 +117,7 @@ public:
     // Synchronous writers.
     // ------------------------------------------------------------------------
 
+#if ! defined(KTH_DB_READONLY)
 
 #ifdef KTH_DB_LEGACY
     /// Create flush lock if flush_writes is true, and set sequential lock.
@@ -128,11 +129,11 @@ public:
 
     /// Store a block in the database.
     /// Returns store_block_duplicate if a block already exists at height.
-    code insert(const chain::block& block, size_t height);
+    code insert(chain::block const& block, size_t height);
 
     /// Add an unconfirmed tx to the store (without indexing).
     /// Returns unspent_duplicate if existing unspent hash duplicate exists.
-    code push(const chain::transaction& tx, uint32_t forks);
+    code push(chain::transaction const& tx, uint32_t forks);
 
     /// Returns store_block_missing_parent if not linked.
     /// Returns store_block_invalid_height if height is not the current top + 1.
@@ -146,11 +147,13 @@ public:
     // ------------------------------------------------------------------------
 
     /// Invoke pop_all and then push_all under a common lock.
-    void reorganize(const config::checkpoint& fork_point, block_const_ptr_list_const_ptr incoming_blocks, block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch, result_handler handler);
+    void reorganize(config::checkpoint const& fork_point, block_const_ptr_list_const_ptr incoming_blocks, block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch, result_handler handler);
+#endif // ! defined(KTH_DB_READONLY)
 
 protected:
     void start();
 
+#if ! defined(KTH_DB_READONLY)
 #ifdef KTH_DB_LEGACY
     void synchronize();
     bool flush() const override;
@@ -163,6 +166,7 @@ protected:
     // Sets error if the database is corrupt or the hash doesn't exist.
     // Any blocks returned were successfully popped prior to any failure.
     void pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest& fork_hash, dispatcher& dispatch, result_handler handler);
+#endif // ! defined(KTH_DB_READONLY)
 
 #ifdef KTH_DB_LEGACY
     std::shared_ptr<block_database> blocks_;
@@ -194,7 +198,7 @@ private:
     using inputs = chain::input::list;
     using outputs = chain::output::list;
 
-
+#if ! defined(KTH_DB_READONLY)
     /// TODO comment
     code push_genesis(chain::block const& block);
 
@@ -223,7 +227,6 @@ private:
     void push_stealth(hash_digest const& tx_hash, size_t height, const outputs& outputs);
 #endif // KTH_DB_STEALTH
 
-
 #if defined(KTH_CURRENCY_BCH) && defined(KTH_DB_LEGACY)
     // bool pop_input_and_unconfirm(size_t height, chain::transaction const& tx);
     bool pop_output_and_unconfirm(size_t height, chain::transaction const& tx);
@@ -241,6 +244,10 @@ private:
     bool pop(chain::block& out_block);
     bool pop_inputs(const inputs& inputs, size_t height);
     bool pop_outputs(const outputs& outputs, size_t height);
+
+#endif // ! defined(KTH_DB_READONLY)
+
+
     code verify_insert(const chain::block& block, size_t height);
     code verify_push(const chain::block& block, size_t height);
 
@@ -250,18 +257,22 @@ private:
 
     // Asynchronous writers.
     // ------------------------------------------------------------------------
-
-    void push_next(const code& ec, block_const_ptr_list_const_ptr blocks, size_t index, size_t height, dispatcher& dispatch, result_handler handler);
+#if ! defined(KTH_DB_READONLY)
+    void push_next(code const& ec, block_const_ptr_list_const_ptr blocks, size_t index, size_t height, dispatcher& dispatch, result_handler handler);
     void do_push(block_const_ptr block, size_t height, uint32_t median_time_past, dispatcher& dispatch, result_handler handler);
     void do_push_transactions(block_const_ptr block, size_t height, uint32_t median_time_past, size_t bucket, size_t buckets, result_handler handler);
-    void handle_push_transactions(const code& ec, block_const_ptr block, size_t height, result_handler handler);
+    void handle_push_transactions(code const& ec, block_const_ptr block, size_t height, result_handler handler);
 
-    void handle_pop(const code& ec, block_const_ptr_list_const_ptr incoming_blocks, size_t first_height, dispatcher& dispatch, result_handler handler);
-    void handle_push(const code& ec, result_handler handler) const;
+    void handle_pop(code const& ec, block_const_ptr_list_const_ptr incoming_blocks, size_t first_height, dispatcher& dispatch, result_handler handler);
+    void handle_push(code const& ec, result_handler handler) const;
+#endif // ! defined(KTH_DB_READONLY)
+
+
+
+
 
     std::atomic<bool> closed_;
     const settings& settings_;
-
 
 #ifdef KTH_DB_LEGACY
     // Used to prevent concurrent unsafe writes.
@@ -273,7 +284,6 @@ private:
 
 };
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif

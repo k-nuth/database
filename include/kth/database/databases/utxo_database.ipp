@@ -5,8 +5,9 @@
 #ifndef KTH_DATABASE_UTXO_DATABASE_HPP_
 #define KTH_DATABASE_UTXO_DATABASE_HPP_
 
-namespace kth {
-namespace database {
+namespace kth::database {
+
+#if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_utxo(uint32_t height, chain::output_point const& point, bool insert_reorg, MDB_txn* db_txn) {
@@ -50,8 +51,8 @@ result_code internal_database_basis<Clock>::insert_utxo(chain::output_point cons
     return result_code::success;
 }
 
+#endif // ! defined(KTH_DB_READONLY)
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DATABASE_UTXO_DATABASE_HPP_

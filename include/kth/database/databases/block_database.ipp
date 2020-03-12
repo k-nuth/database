@@ -5,8 +5,7 @@
 #ifndef KTH_DATABASE_BLOCK_DATABASE_IPP_
 #define KTH_DATABASE_BLOCK_DATABASE_IPP_
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 /*
 #if defined(KTH_DB_NEW_FULL)
@@ -165,6 +164,8 @@ chain::block internal_database_basis<Clock>::get_block(uint32_t height, MDB_txn*
 
 #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
 
+#if ! defined(KTH_DB_READONLY)
+
 #if defined(KTH_DB_NEW_BLOCKS)
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_block(chain::block const& block, uint32_t height, MDB_txn* db_txn) {
@@ -270,10 +271,11 @@ result_code internal_database_basis<Clock>::remove_blocks_db(uint32_t height, MD
 
     return result_code::success;
 }
+
+#endif // ! defined(KTH_DB_READONLY)
 #endif //defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
 
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DATABASE_BLOCK_DATABASE_IPP_

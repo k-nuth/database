@@ -198,25 +198,25 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi
     BOOST_REQUIRE(mdb_txn_begin(env_, NULL, 0, &db_txn) == MDB_SUCCESS);
     
 
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, block_header_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_header_) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, block_header_by_hash_db_name, MDB_CREATE, &dbi_block_header_by_hash_) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, utxo_db_name, MDB_CREATE, &dbi_utxo_) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, reorg_pool_name, MDB_CREATE, &dbi_reorg_pool_) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, reorg_index_name, MDB_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED, &dbi_reorg_index_) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, reorg_block_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_reorg_block_) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, block_header_db_name, KTH_DB_CONDITIONAL_CREATE | MDB_INTEGERKEY, &dbi_block_header_) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, block_header_by_hash_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_block_header_by_hash_) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, utxo_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_utxo_) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, reorg_pool_name, KTH_DB_CONDITIONAL_CREATE, &dbi_reorg_pool_) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, reorg_index_name, KTH_DB_CONDITIONAL_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED, &dbi_reorg_index_) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, reorg_block_name, KTH_DB_CONDITIONAL_CREATE | MDB_INTEGERKEY, &dbi_reorg_block_) == MDB_SUCCESS);
 
     #if defined(KTH_DB_NEW_BLOCKS)
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_db_) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, block_db_name, KTH_DB_CONDITIONAL_CREATE | MDB_INTEGERKEY, &dbi_block_db_) == MDB_SUCCESS);
     #endif
 
     #if defined(KTH_DB_NEW_FULL)
 
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED  | MDB_INTEGERDUP, &dbi_block_db_)== MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, transaction_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_transaction_db_)== MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, transaction_hash_db_name, MDB_CREATE, &dbi_transaction_hash_db_)== MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, history_db_name, MDB_CREATE | MDB_DUPSORT | MDB_DUPFIXED, &dbi_history_db_)== MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, spend_db_name, MDB_CREATE, &dbi_spend_db_)== MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, transaction_unconfirmed_db_name, MDB_CREATE, &dbi_transaction_unconfirmed_db_) == MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, block_db_name, KTH_DB_CONDITIONAL_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED  | MDB_INTEGERDUP, &dbi_block_db_)== MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, transaction_db_name, KTH_DB_CONDITIONAL_CREATE | MDB_INTEGERKEY, &dbi_transaction_db_)== MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, transaction_hash_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_transaction_hash_db_)== MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, history_db_name, KTH_DB_CONDITIONAL_CREATE | MDB_DUPSORT | MDB_DUPFIXED, &dbi_history_db_)== MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, spend_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_spend_db_)== MDB_SUCCESS);
+    BOOST_REQUIRE(mdb_dbi_open(db_txn, transaction_unconfirmed_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_transaction_unconfirmed_db_) == MDB_SUCCESS);
     #endif
 
     BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);

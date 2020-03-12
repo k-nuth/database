@@ -5,9 +5,7 @@
 #ifndef KTH_DATABASE_INTERNAL_DATABASE_IPP_
 #define KTH_DATABASE_INTERNAL_DATABASE_IPP_
 
-
-namespace kth {
-namespace database {
+namespace kth::database {
 
 using utxo_pool_t = std::unordered_map<chain::point, utxo_entry>;
 
@@ -24,6 +22,8 @@ template <typename Clock>
 internal_database_basis<Clock>::~internal_database_basis() {
     close();
 }
+
+#if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
 bool internal_database_basis<Clock>::create() {
@@ -91,6 +91,9 @@ bool internal_database_basis<Clock>::create_db_mode_property() {
     return true;
 }
 
+#endif // ! defined(KTH_DB_READONLY)
+
+
 template <typename Clock>
 bool internal_database_basis<Clock>::open() {
     
@@ -120,7 +123,7 @@ bool internal_database_basis<Clock>::open_internal() {
 }
 
 template <typename Clock>
-bool internal_database_basis<Clock>::verify_db_mode_property() {
+bool internal_database_basis<Clock>::verify_db_mode_property() const {
 
     MDB_txn* db_txn;
     auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
@@ -156,8 +159,10 @@ bool internal_database_basis<Clock>::verify_db_mode_property() {
 #endif
 
     if (db_mode_ != db_mode_node_) {
-        LOG_ERROR(LOG_DATABASE) << "Error validating DB Mode, the node is compiled for another DB mode. Node DB Mode:" << static_cast<uint32_t>(db_mode_node_) 
-        << " Actual DB Mode:" << static_cast<uint32_t>(db_mode_);     
+        LOG_ERROR(LOG_DATABASE) << "Error validating DB Mode, the node is compiled for another DB mode. Node DB Mode: " 
+            << static_cast<uint32_t>(db_mode_node_) 
+            << ", Actual DB Mode: " 
+            << static_cast<uint32_t>(db_mode_);     
         return false;
     }
 
@@ -202,6 +207,8 @@ bool internal_database_basis<Clock>::close() {
 
     return true;
 }
+
+#if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::push_genesis(chain::block const& block) {
@@ -253,6 +260,8 @@ result_code internal_database_basis<Clock>::push_block(chain::block const& block
 
     return res;
 }
+
+#endif // ! defined(KTH_DB_READONLY)
 
 
 template <typename Clock>
@@ -370,6 +379,8 @@ chain::header internal_database_basis<Clock>::get_header(uint32_t height) const 
     return res;
 }
 
+#if ! defined(KTH_DB_READONLY)
+
 template <typename Clock>
 result_code internal_database_basis<Clock>::pop_block(chain::block& out_block) {
     uint32_t height;
@@ -445,8 +456,10 @@ result_code internal_database_basis<Clock>::prune() {
     return result_code::success;
 }
 
+#endif // ! defined(KTH_DB_READONLY)
 
 //TODO(fernando): move to private
+//TODO(fernando): rename it
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_reorg_into_pool(utxo_pool_t& pool, MDB_val key_point, MDB_txn* db_txn) const {
 
@@ -550,6 +563,7 @@ std::pair<result_code, utxo_pool_t> internal_database_basis<Clock>::get_utxo_poo
 }
 
 #if defined(KTH_DB_NEW_FULL)
+#if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::push_transaction_unconfirmed(chain::transaction const& tx, uint32_t height) {
@@ -572,7 +586,8 @@ result_code internal_database_basis<Clock>::push_transaction_unconfirmed(chain::
     return result_code::success;
 }
 
-#endif
+#endif // ! defined(KTH_DB_READONLY)
+#endif // defined(KTH_DB_NEW_FULL)
 
 // Private functions
 // ------------------------------------------------------------------------------------------------------
@@ -598,6 +613,7 @@ size_t internal_database_basis<Clock>::adjust_db_size(size_t size) const {
     // size_t const mod = size % page_size;
     // return size + (mod != 0) ? (page_size - mod) : 0;
 }    
+
 
 template <typename Clock>
 bool internal_database_basis<Clock>::create_and_open_environment() {
@@ -631,6 +647,11 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
 
     int mdb_flags = MDB_NORDAHEAD | MDB_NOSYNC | MDB_NOTLS;
     
+
+#if defined(KTH_DB_READONLY)
+    mdb_flags |= MDB_RDONLY;
+#endif
+
     if ( ! safe_mode_) {
         mdb_flags |= MDB_WRITEMAP | MDB_MAPASYNC;
     }
@@ -638,6 +659,7 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
     res = mdb_env_open(env_, db_dir_.string().c_str(), mdb_flags, env_open_mode_);
     return res == MDB_SUCCESS;
 }
+
 /*
 template <typename Clock>
 bool internal_database_basis<Clock>::set_fast_flags_environment(bool enabled) {
@@ -663,6 +685,7 @@ bool internal_database_basis<Clock>::set_fast_flags_environment(bool enabled) {
     return true;
 }
 */
+
 inline 
 int compare_uint64(const MDB_val *a, const MDB_val *b) {
     const uint64_t va = *(const uint64_t *)a->mv_data;
@@ -683,43 +706,43 @@ bool internal_database_basis<Clock>::open_databases() {
         return false;
     }
 
-    res = mdb_dbi_open(db_txn, block_header_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_header_);
+    res = mdb_dbi_open(db_txn, block_header_db_name, KTH_DB_CONDITIONAL_CREATE | MDB_INTEGERKEY, &dbi_block_header_);
     if (res != MDB_SUCCESS) {
         return false;
     }
 
-    res = mdb_dbi_open(db_txn, block_header_by_hash_db_name, MDB_CREATE, &dbi_block_header_by_hash_);
+    res = mdb_dbi_open(db_txn, block_header_by_hash_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_block_header_by_hash_);
     if (res != MDB_SUCCESS) {
         return false;
     }
 
-    res = mdb_dbi_open(db_txn, utxo_db_name, MDB_CREATE, &dbi_utxo_);
+    res = mdb_dbi_open(db_txn, utxo_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_utxo_);
     if (res != MDB_SUCCESS) {
         return false;
     }
 
-    res = mdb_dbi_open(db_txn, reorg_pool_name, MDB_CREATE, &dbi_reorg_pool_);
+    res = mdb_dbi_open(db_txn, reorg_pool_name, KTH_DB_CONDITIONAL_CREATE, &dbi_reorg_pool_);
     if (res != MDB_SUCCESS) {
         return false;
     }
 
-    res = mdb_dbi_open(db_txn, reorg_index_name, MDB_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED, &dbi_reorg_index_);
+    res = mdb_dbi_open(db_txn, reorg_index_name, KTH_DB_CONDITIONAL_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED, &dbi_reorg_index_);
     if (res != MDB_SUCCESS) {
         return false;
     }
 
-    res = mdb_dbi_open(db_txn, reorg_block_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_reorg_block_);
+    res = mdb_dbi_open(db_txn, reorg_block_name, KTH_DB_CONDITIONAL_CREATE | MDB_INTEGERKEY, &dbi_reorg_block_);
     if (res != MDB_SUCCESS) {
         return false;
     }
 
-    res = mdb_dbi_open(db_txn, db_properties_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_properties_);
+    res = mdb_dbi_open(db_txn, db_properties_name, KTH_DB_CONDITIONAL_CREATE | MDB_INTEGERKEY, &dbi_properties_);
     if (res != MDB_SUCCESS) {
         return false;
     }
 
-#if defined(KTH_DB_NEW_BLOCKS)  
-    res = mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_block_db_);
+#if defined(KTH_DB_NEW_BLOCKS)
+    res = mdb_dbi_open(db_txn, block_db_name, KTH_DB_CONDITIONAL_CREATE | MDB_INTEGERKEY, &dbi_block_db_);
     if (res != MDB_SUCCESS) {
         return false;
     }
@@ -727,32 +750,32 @@ bool internal_database_basis<Clock>::open_databases() {
 
 #if defined(KTH_DB_NEW_FULL)
     
-    res = mdb_dbi_open(db_txn, block_db_name, MDB_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED  | MDB_INTEGERDUP, &dbi_block_db_);
+    res = mdb_dbi_open(db_txn, block_db_name, KTH_DB_CONDITIONAL_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED  | MDB_INTEGERDUP, &dbi_block_db_);
     if (res != MDB_SUCCESS) {
         return false;
     }
     
-    res = mdb_dbi_open(db_txn, transaction_db_name, MDB_CREATE | MDB_INTEGERKEY, &dbi_transaction_db_);
+    res = mdb_dbi_open(db_txn, transaction_db_name, KTH_DB_CONDITIONAL_CREATE | MDB_INTEGERKEY, &dbi_transaction_db_);
     if (res != MDB_SUCCESS) {
         return false;
     }
 
-    res = mdb_dbi_open(db_txn, transaction_hash_db_name, MDB_CREATE, &dbi_transaction_hash_db_);
+    res = mdb_dbi_open(db_txn, transaction_hash_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_transaction_hash_db_);
     if (res != MDB_SUCCESS) {
         return false;
     }
 
-    res = mdb_dbi_open(db_txn, history_db_name, MDB_CREATE | MDB_DUPSORT | MDB_DUPFIXED, &dbi_history_db_);
+    res = mdb_dbi_open(db_txn, history_db_name, KTH_DB_CONDITIONAL_CREATE | MDB_DUPSORT | MDB_DUPFIXED, &dbi_history_db_);
     if (res != MDB_SUCCESS) {
         return false;
     }
 
-    res = mdb_dbi_open(db_txn, spend_db_name, MDB_CREATE, &dbi_spend_db_);
+    res = mdb_dbi_open(db_txn, spend_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_spend_db_);
     if (res != MDB_SUCCESS) {
         return false;
     }
 
-    res = mdb_dbi_open(db_txn, transaction_unconfirmed_db_name, MDB_CREATE, &dbi_transaction_unconfirmed_db_);
+    res = mdb_dbi_open(db_txn, transaction_unconfirmed_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_transaction_unconfirmed_db_);
     if (res != MDB_SUCCESS) {
         return false;
     }
@@ -764,6 +787,8 @@ bool internal_database_basis<Clock>::open_databases() {
     db_opened_ = mdb_txn_commit(db_txn) == MDB_SUCCESS;
     return db_opened_;
 }
+
+#if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn) {
@@ -810,7 +835,6 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
     return result_code::success;
 }
 
-
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx_id, uint32_t height, chain::output::list const& outputs, data_chunk const& fixed_data, MDB_txn* db_txn) {
     uint32_t pos = 0;
@@ -845,7 +869,6 @@ result_code internal_database_basis<Clock>::insert_outputs_error_treatment(uint3
     }
     return res;
 }
-
 
 template <typename Clock>
 template <typename I>
@@ -1140,8 +1163,8 @@ result_code internal_database_basis<Clock>::remove_block(chain::block const& blo
     return result_code::success;
 }
 
-} // namespace database
-} // namespace kth
+#endif // ! defined(KTH_DB_READONLY)
 
+} // namespace kth::database
 
 #endif // KTH_DATABASE_INTERNAL_DATABASE_IPP_

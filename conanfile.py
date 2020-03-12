@@ -32,6 +32,7 @@ class KnuthDatabaseConan(KnuthConanFile):
                "verbose": [True, False],
                "measurements": [True, False],
                "db": ['legacy', 'legacy_full', 'pruned', 'default', 'full'],
+               "db_readonly": [True, False],
                "cached_rpc_data": [True, False],
                "cxxflags": "ANY",
                "cflags": "ANY",
@@ -50,6 +51,7 @@ class KnuthDatabaseConan(KnuthConanFile):
         "verbose=False", \
         "measurements=False", \
         "db=default", \
+        "db_readonly=False", \
         "cached_rpc_data=False", \
         "cxxflags=_DUMMY_", \
         "cflags=_DUMMY_", \
@@ -81,6 +83,10 @@ class KnuthDatabaseConan(KnuthConanFile):
 
         self.options["*"].cached_rpc_data = self.options.cached_rpc_data
         self.options["*"].measurements = self.options.measurements
+        
+        self.options["*"].db_readonly = self.options.db_readonly
+        self.output.info("Compiling with read-only DB: %s" % (self.options.db_readonly,))
+
         # self.options["*"].currency = self.options.currency
         # self.output.info("Compiling for currency: %s" % (self.options.currency,))
         self.output.info("Compiling with measurements: %s" % (self.options.measurements,))
@@ -92,8 +98,7 @@ class KnuthDatabaseConan(KnuthConanFile):
     def build(self):
         cmake = self.cmake_basis()
         cmake.definitions["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
-        # cmake.definitions["USE_DOMAIN"] = option_on_off(self.options.use_domain)
-        cmake.definitions["USE_DOMAIN"] = option_on_off(True)
+        cmake.definitions["DB_READONLY_MODE"] = option_on_off(self.options.db_readonly)
         cmake.definitions["WITH_CACHED_RPC_DATA"] = option_on_off(self.options.cached_rpc_data)
 
         if self.options.cmake_export_compile_commands:

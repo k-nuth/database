@@ -5,10 +5,11 @@
 #ifndef KTH_DATABASE_HISTORY_DATABASE_IPP_
 #define KTH_DATABASE_HISTORY_DATABASE_IPP_
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 #if defined(KTH_DB_NEW_FULL)
+
+#if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_history_db(wallet::payment_address const& address, data_chunk const& entry, MDB_txn* db_txn) {
@@ -125,6 +126,9 @@ result_code internal_database_basis<Clock>::insert_output_history(hash_digest co
 
     return result_code::success;
 }
+
+#endif // ! defined(KTH_DB_READONLY)
+
 
 template <typename Clock>
 // static
@@ -259,6 +263,7 @@ std::vector<hash_digest> internal_database_basis<Clock>::get_history_txns(short_
     return result;
 }
 
+#if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_transaction_history_db(chain::transaction const& tx, size_t height, MDB_txn* db_txn) {
@@ -359,8 +364,11 @@ result_code internal_database_basis<Clock>::remove_history_db(const short_hash& 
     return result_code::success;
 }
 
+#endif // ! defined(KTH_DB_READONLY)
+
+
 template <typename Clock>
-uint64_t internal_database_basis<Clock>::get_history_count(MDB_txn* db_txn) {
+uint64_t internal_database_basis<Clock>::get_history_count(MDB_txn* db_txn) const {
   MDB_stat db_stats;
   auto ret = mdb_stat(db_txn, dbi_history_db_, &db_stats);
   if (ret != MDB_SUCCESS) {
@@ -371,7 +379,6 @@ uint64_t internal_database_basis<Clock>::get_history_count(MDB_txn* db_txn) {
 
 #endif //KTH_NEW_DB_FULL
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DATABASE_HISTORY_DATABASE_IPP_

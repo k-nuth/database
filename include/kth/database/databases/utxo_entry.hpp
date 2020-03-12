@@ -10,8 +10,7 @@
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 class BCD_API utxo_entry {
 public:
@@ -33,20 +32,15 @@ public:
     data_chunk to_data() const;
     void to_data(std::ostream& stream) const;
 
-#ifdef KTH_USE_DOMAIN
     template <Writer W, KTH_IS_WRITER(W)>
     void to_data(W& sink) const {
         output_.to_data(sink, false);
         to_data_fixed(sink, height_, median_time_past_, coinbase_);
     }
-#else
-    void to_data(writer& sink) const;
-#endif
 
     bool from_data(const data_chunk& data);
     bool from_data(std::istream& stream);
 
-#ifdef KTH_USE_DOMAIN
     template <Reader R, KTH_IS_READER(R)>
     bool from_data(R& source) {
         reset();
@@ -56,23 +50,18 @@ public:
         median_time_past_ = source.read_4_bytes_little_endian();
         coinbase_ = source.read_byte();
         
-
         if ( ! source) {
             reset();
         }
 
         return source;
     }    
-#else
-    bool from_data(reader& source);
-#endif
 
     static
     utxo_entry factory_from_data(data_chunk const& data);
     static
     utxo_entry factory_from_data(std::istream& stream);
 
-#ifdef KTH_USE_DOMAIN
     template <Reader R, KTH_IS_READER(R)>
     static
     utxo_entry factory_from_data(R& source) {
@@ -80,10 +69,6 @@ public:
         instance.from_data(source);
         return instance;
     }
-#else
-    static
-    utxo_entry factory_from_data(reader& source);
-#endif
 
     static
     data_chunk to_data_fixed(uint32_t height, uint32_t median_time_past, bool coinbase);
@@ -91,7 +76,6 @@ public:
     static
     void to_data_fixed(std::ostream& stream, uint32_t height, uint32_t median_time_past, bool coinbase);
 
-#ifdef KTH_USE_DOMAIN
     template <Writer W, KTH_IS_WRITER(W)>
     static
     void to_data_fixed(W& sink, uint32_t height, uint32_t median_time_past, bool coinbase) {
@@ -99,10 +83,6 @@ public:
         sink.write_4_bytes_little_endian(median_time_past);
         sink.write_byte(coinbase);
     }
-#else
-    static
-    void to_data_fixed(writer& sink, uint32_t height, uint32_t median_time_past, bool coinbase);
-#endif
 
     static
     data_chunk to_data_with_fixed(chain::output const& output, data_chunk const& fixed);
@@ -110,17 +90,12 @@ public:
     static
     void to_data_with_fixed(std::ostream& stream, chain::output const& output, data_chunk const& fixed);
 
-#ifdef KTH_USE_DOMAIN
     template <Writer W, KTH_IS_WRITER(W)>
     static
     void to_data_with_fixed(W& sink, chain::output const& output, data_chunk const& fixed) {
         output.to_data(sink, false);
         sink.write_bytes(fixed);
     }
-#else
-    static
-    void to_data_with_fixed(writer& sink, chain::output const& output, data_chunk const& fixed);
-#endif
 
 private:
     void reset();
@@ -134,8 +109,7 @@ private:
     bool coinbase_;
 };
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 // #endif // KTH_DB_NEW
 

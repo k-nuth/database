@@ -37,21 +37,15 @@ public:
     void to_data(std::ostream& stream) const;
 
 
-#ifdef KTH_USE_DOMAIN
     template <Writer W, KTH_IS_WRITER(W)>
     void to_data(W& sink) const {
         factory_to_data(sink, transaction_, arrival_time_, height_);
     }
 
-#else
-    void to_data(writer& sink) const;
-#endif
-
     bool from_data(const data_chunk& data);
     bool from_data(std::istream& stream);
 
 
-#ifdef KTH_USE_DOMAIN
     template <Reader R, KTH_IS_READER(R)>
     bool from_data(R& source) {
         reset();
@@ -71,9 +65,6 @@ public:
 
         return source;
     }    
-#else
-    bool from_data(reader& source);
-#endif
 
     static
     transaction_unconfirmed_entry factory_from_data(data_chunk const& data);
@@ -81,7 +72,6 @@ public:
     transaction_unconfirmed_entry factory_from_data(std::istream& stream);
 
 
-#ifdef KTH_USE_DOMAIN
     template <Reader R, KTH_IS_READER(R)>
     static
     transaction_unconfirmed_entry factory_from_data(R& source) {
@@ -89,9 +79,6 @@ public:
         instance.from_data(source);
         return instance;
     }
-#else
-    transaction_unconfirmed_entry factory_from_data(reader& source);
-#endif
 
     static
     data_chunk factory_to_data(chain::transaction const& tx, uint32_t arrival_time, uint32_t height);
@@ -99,7 +86,6 @@ public:
     void factory_to_data(std::ostream& stream, chain::transaction const& tx, uint32_t arrival_time, uint32_t height);
 
 
-#ifdef KTH_USE_DOMAIN
     template <Writer W, KTH_IS_WRITER(W)>
     static
     void factory_to_data(W& sink, chain::transaction const& tx, uint32_t arrival_time, uint32_t height) {
@@ -114,11 +100,6 @@ public:
         sink.write_4_bytes_little_endian(height);
 
     }
-#else
-    static
-    void factory_to_data(writer& sink, chain::transaction const& tx, uint32_t arrival_time, uint32_t height);
-#endif
-
 
 private:
     void reset();

@@ -30,6 +30,12 @@
 #define KTH_INTERNAL_DB_WIRE false
 #endif
 
+#if defined(KTH_DB_READONLY)
+#define KTH_DB_CONDITIONAL_CREATE 0
+#else
+#define KTH_DB_CONDITIONAL_CREATE MDB_CREATE
+#endif
+
 namespace kth {
 namespace database {
 
@@ -79,15 +85,20 @@ public:
     internal_database_basis(internal_database_basis const&) = delete;
     internal_database_basis& operator=(internal_database_basis const&) = delete;
 
+#if ! defined(KTH_DB_READONLY)
     bool create();
+#endif
+
     bool open();
     bool close();
 
+#if ! defined(KTH_DB_READONLY)
     result_code push_genesis(chain::block const& block);
 
     //TODO(fernando): optimization: consider passing a list of outputs to insert and a list of inputs to delete instead of an entire Block.
     //                  avoiding inserting and erasing internal spenders
     result_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past);
+#endif
     
     utxo_entry get_utxo(chain::output_point const& point) const;
     
@@ -96,10 +107,13 @@ public:
     std::pair<chain::header, uint32_t> get_header(hash_digest const& hash) const;
     chain::header get_header(uint32_t height) const;
     
+
+#if ! defined(KTH_DB_READONLY)
     result_code pop_block(chain::block& out_block);
     
     result_code prune();
-    
+#endif
+
     std::pair<result_code, utxo_pool_t> get_utxo_pool_from(uint32_t from, uint32_t to) const;
 
     //bool set_fast_flags_environment(bool enabled);
@@ -122,14 +136,18 @@ public:
 
     transaction_unconfirmed_entry get_transaction_unconfirmed(hash_digest const& hash) const;
 
+#if ! defined(KTH_DB_READONLY)
     result_code push_transaction_unconfirmed(chain::transaction const& tx, uint32_t height);
-#endif
+#endif // ! defined(KTH_DB_READONLY)
+#endif // defined(KTH_DB_NEW_FULL)
 
 private:
     
+#if ! defined(KTH_DB_READONLY)
     bool create_db_mode_property();
+#endif
 
-    bool verify_db_mode_property();
+    bool verify_db_mode_property() const;
 
     bool open_internal();
     
@@ -145,6 +163,7 @@ private:
 
     utxo_entry get_utxo(chain::output_point const& point, MDB_txn* db_txn) const;
 
+#if ! defined(KTH_DB_READONLY)
     result_code insert_reorg_pool(uint32_t height, MDB_val& key, MDB_txn* db_txn);
     
     result_code remove_utxo(uint32_t height, chain::output_point const& point, bool insert_reorg, MDB_txn* db_txn);
@@ -196,6 +215,7 @@ private:
     result_code remove_reorg_index(uint32_t height, MDB_txn* db_txn);
     
     result_code remove_block(chain::block const& block, uint32_t height, MDB_txn* db_txn);
+#endif
 
     chain::header get_header(uint32_t height, MDB_txn* db_txn) const;
 
@@ -203,52 +223,61 @@ private:
        
     chain::block get_block_reorg(uint32_t height) const;
 
+#if ! defined(KTH_DB_READONLY)
     result_code remove_block(chain::block const& block, uint32_t height);
     
     result_code prune_reorg_index(uint32_t remove_until, MDB_txn* db_txn);
     
     result_code prune_reorg_block(uint32_t amount_to_delete, MDB_txn* db_txn);
-    
+#endif
+
     result_code get_first_reorg_block_height(uint32_t& out_height) const;
 
     result_code insert_reorg_into_pool(utxo_pool_t& pool, MDB_val key_point, MDB_txn* db_txn) const;
 
-#if defined(KTH_DB_NEW_BLOCKS)
+#if defined(KTH_DB_NEW_BLOCKS) && ! defined(KTH_DB_READONLY)
     result_code insert_block(chain::block const& block, uint32_t height, MDB_txn* db_txn);
-#endif //defined(KTH_DB_NEW_BLOCKS)
+#endif 
 
 
+#if ! defined(KTH_DB_READONLY)
 #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
     result_code remove_blocks_db(uint32_t height, MDB_txn* db_txn);
 #endif //defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#endif
 
     chain::block get_block(uint32_t height, MDB_txn* db_txn) const;
 
 #if defined(KTH_DB_NEW_FULL)
     
+#if ! defined(KTH_DB_READONLY)
     result_code insert_block(chain::block const& block, uint32_t height, uint64_t tx_count, MDB_txn* db_txn);
 
     result_code remove_transactions(chain::block const& block, uint32_t height, MDB_txn* db_txn);
     
     result_code insert_transaction(uint64_t id, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position , MDB_txn* db_txn);
-    
     //data_chunk serialize_txs(chain::block const& block);
     
     template <typename I>
     result_code insert_transactions(I f, I l, uint32_t height, uint32_t median_time_past,uint64_t tx_count, MDB_txn* db_txn);
+#endif // ! defined(KTH_DB_READONLY)
     
     transaction_entry get_transaction(hash_digest const& hash, size_t fork_height, MDB_txn* db_txn) const;
     transaction_entry get_transaction(uint64_t id, MDB_txn* db_txn) const;
     
+
+#if ! defined(KTH_DB_READONLY)    
     result_code insert_input_history(chain::input_point const& inpoint, uint32_t height, chain::input const& input, MDB_txn* db_txn);
 
     result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, MDB_txn* db_txn);
     
     result_code insert_history_db (wallet::payment_address const& address, data_chunk const& entry, MDB_txn* db_txn); 
-    
+#endif // ! defined(KTH_DB_READONLY)
+
     static
     chain::history_compact history_entry_to_history_compact(history_entry const& entry);
     
+#if ! defined(KTH_DB_READONLY)    
     result_code remove_history_db(const short_hash& key, size_t height, MDB_txn* db_txn);
     
     result_code remove_transaction_history_db(chain::transaction const& tx, size_t height, MDB_txn* db_txn);
@@ -262,20 +291,24 @@ private:
     result_code insert_transaction_unconfirmed(chain::transaction const& tx, uint32_t height, MDB_txn* db_txn);
 
     result_code remove_transaction_unconfirmed(hash_digest const& tx_id,  MDB_txn* db_txn);
+#endif 
 
     transaction_unconfirmed_entry get_transaction_unconfirmed(hash_digest const& hash, MDB_txn* db_txn) const;
 
+
+#if ! defined(KTH_DB_READONLY)
     result_code update_transaction(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, MDB_txn* db_txn);
 
     result_code set_spend(chain::output_point const& point, uint32_t spender_height, MDB_txn* db_txn);
 
     result_code set_unspend(chain::output_point const& point, MDB_txn* db_txn);
+#endif // ! defined(KTH_DB_READONLY)
 
-    uint32_t get_clock_now();
+    uint32_t get_clock_now() const;
 
-    uint64_t get_tx_count(MDB_txn* db_txn);
+    uint64_t get_tx_count(MDB_txn* db_txn) const;
 
-    uint64_t get_history_count(MDB_txn* db_txn);
+    uint64_t get_history_count(MDB_txn* db_txn) const;
 
     
 

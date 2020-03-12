@@ -5,9 +5,7 @@
 #ifndef KTH_DATABASE_TRANSACTION_DATABASE_HPP_
 #define KTH_DATABASE_TRANSACTION_DATABASE_HPP_
 
-namespace kth {
-namespace database {
-
+namespace kth::database {
 
 #if defined(KTH_DB_NEW_FULL)
 
@@ -30,6 +28,8 @@ transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest co
     return entry;
 
 }
+
+#if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
 template <typename I>
@@ -61,7 +61,7 @@ result_code internal_database_basis<Clock>::insert_transactions(I f, I l, uint32
 
     return result_code::success;
 }
-
+#endif // ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
 transaction_entry internal_database_basis<Clock>::get_transaction(uint64_t id, MDB_txn* db_txn) const {
@@ -113,6 +113,8 @@ transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest co
     return entry;
 }
 
+#if ! defined(KTH_DB_READONLY)
+
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_transaction(uint64_t id, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, MDB_txn* db_txn) {
     
@@ -150,10 +152,8 @@ result_code internal_database_basis<Clock>::insert_transaction(uint64_t id, chai
         return result_code::other;
     }
 
-
     return result_code::success;
 }
-
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_transactions(chain::block const& block, uint32_t height, MDB_txn* db_txn) {
@@ -359,7 +359,6 @@ result_code internal_database_basis<Clock>::remove_transactions(chain::block con
     return result_code::success;
 }
 
-
 template <typename Clock>
 result_code internal_database_basis<Clock>::update_transaction(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, MDB_txn* db_txn) {
     auto key_arr = tx.hash();                                    //TODO(fernando): podría estar afuera de la DBTx
@@ -420,9 +419,10 @@ template <typename Clock>
 result_code internal_database_basis<Clock>::set_unspend(chain::output_point const& point, MDB_txn* db_txn) {
     return set_spend(point, chain::output::validation::not_spent, db_txn);
 }
+#endif // ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-uint64_t internal_database_basis<Clock>::get_tx_count(MDB_txn* db_txn) {
+uint64_t internal_database_basis<Clock>::get_tx_count(MDB_txn* db_txn) const {
   MDB_stat db_stats;
   auto ret = mdb_stat(db_txn, dbi_transaction_db_, &db_stats);
   if (ret != MDB_SUCCESS) {
@@ -433,8 +433,6 @@ uint64_t internal_database_basis<Clock>::get_tx_count(MDB_txn* db_txn) {
 
 #endif //KTH_NEW_DB_FULL
 
-
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DATABASE_TRANSACTION_DATABASE_HPP_

@@ -5,9 +5,7 @@
 #ifndef KTH_DATABASE_TRANSACTION_UNCONFIRMED_DATABASE_HPP_
 #define KTH_DATABASE_TRANSACTION_UNCONFIRMED_DATABASE_HPP_
 
-namespace kth {
-namespace database {
-
+namespace kth::database {
 
 #if defined(KTH_DB_NEW_FULL)
 
@@ -44,7 +42,6 @@ transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_un
 
     return res;
 }
-
 
 template <typename Clock>
 std::vector<transaction_unconfirmed_entry> internal_database_basis<Clock>::get_all_transaction_unconfirmed() const {
@@ -91,7 +88,7 @@ std::vector<transaction_unconfirmed_entry> internal_database_basis<Clock>::get_a
     return result;
 }
 
-
+#if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_transaction_unconfirmed(hash_digest const& tx_id,  MDB_txn* db_txn) {
@@ -111,12 +108,16 @@ result_code internal_database_basis<Clock>::remove_transaction_unconfirmed(hash_
     return result_code::success;
 }
 
+#endif // ! defined(KTH_DB_READONLY)
+
 template <typename Clock>
-uint32_t internal_database_basis<Clock>::get_clock_now() {
+inline
+uint32_t internal_database_basis<Clock>::get_clock_now() const {
     auto const now = std::chrono::high_resolution_clock::now();
     return static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
 }
 
+#if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(chain::transaction const& tx, uint32_t height, MDB_txn* db_txn) {
@@ -143,11 +144,11 @@ result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(chain
     return result_code::success;
 }
 
+#endif // ! defined(KTH_DB_READONLY)
 
 #endif //KTH_NEW_DB_FULL
 
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DATABASE_TRANSACTION_UNCONFIRMED_DATABASE_HPP_

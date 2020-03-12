@@ -19,8 +19,7 @@
 #include <kth/database/settings.hpp>
 #include <kth/database/store.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 using namespace bc::chain;
 using namespace bc::config;
@@ -76,6 +75,7 @@ data_base::~data_base() {
 // Open and close.
 // ----------------------------------------------------------------------------
 
+#if ! defined(KTH_DB_READONLY)
 // Throws if there is insufficient disk space, not idempotent.
 bool data_base::create(const block& genesis) {
 
@@ -99,15 +99,15 @@ bool data_base::create(const block& genesis) {
 #ifdef KTH_DB_LEGACY
                 && blocks_->create()
                 && transactions_->create()
-#endif // KTH_DB_LEGACY
+#endif
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) && ! defined(KTH_DB_READONLY)
                 && internal_db_->create()
-#endif // KTH_DB_NEW
+#endif
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
                 && transactions_unconfirmed_->create()
-#endif // KTH_DB_TRANSACTION_UNCONFIRMED
+#endif
                 ;
 
 #ifdef KTH_DB_WITH_INDEXES
@@ -137,6 +137,7 @@ bool data_base::create(const block& genesis) {
     closed_ = false;
     return true;
 }
+#endif // ! defined(KTH_DB_READONLY)
 
 // Must be called before performing queries, not idempotent.
 // May be called after stop and/or after close in order to reopen.
@@ -289,7 +290,11 @@ void data_base::start() {
 }
 
 
+
 #ifdef KTH_DB_LEGACY
+
+#if ! defined(KTH_DB_READONLY)
+
 // protected
 bool data_base::flush() const {
     // Avoid a race between flush and close whereby flush is skipped because
@@ -332,6 +337,9 @@ bool data_base::flush() const {
     return flushed;
 }
 
+#endif // ! defined(KTH_DB_READONLY)
+
+
 // protected
 void data_base::synchronize() {
 #ifdef KTH_DB_WITH_INDEXES
@@ -364,11 +372,11 @@ void data_base::synchronize() {
 // ----------------------------------------------------------------------------
 
 #ifdef KTH_DB_LEGACY
-const block_database& data_base::blocks() const {
+block_database const& data_base::blocks() const {
     return *blocks_;
 }
 
-const transaction_database& data_base::transactions() const {
+transaction_database const& data_base::transactions() const {
     return *transactions_;
 }
 #endif // KTH_DB_LEGACY
@@ -381,28 +389,28 @@ internal_database const& data_base::internal_db() const {
 
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
-const transaction_unconfirmed_database& data_base::transactions_unconfirmed() const {
+transaction_unconfirmed_database const& data_base::transactions_unconfirmed() const {
     return *transactions_unconfirmed_;
 }
 #endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
 #ifdef KTH_DB_SPENDS
 // Invalid if indexes not initialized.
-const spend_database& data_base::spends() const {
+spend_database const& data_base::spends() const {
     return *spends_;
 }
 #endif // KTH_DB_SPENDS
 
 #ifdef KTH_DB_HISTORY
 // Invalid if indexes not initialized.
-const history_database& data_base::history() const {
+history_database const& data_base::history() const {
     return *history_;
 }
 #endif // KTH_DB_HISTORY
 
 #ifdef KTH_DB_STEALTH
 // Invalid if indexes not initialized.
-const stealth_database& data_base::stealth() const {
+stealth_database const& data_base::stealth() const {
     return *stealth_;
 }
 #endif // KTH_DB_STEALTH
@@ -445,6 +453,7 @@ hash_digest get_previous_hash(internal_database const& db, size_t height) {
 #endif // defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
 
 
+//TODO(fernando): const?
 code data_base::verify_insert(const block& block, size_t height) {
     if (block.transactions().empty()) {
         return error::empty_block;
@@ -468,6 +477,7 @@ code data_base::verify_insert(const block& block, size_t height) {
     return error::success;
 }
 
+//TODO(fernando): const?
 code data_base::verify_push(const block& block, size_t height) {
     if (block.transactions().empty()) {
         return error::empty_block;
@@ -500,16 +510,16 @@ code data_base::verify_push(const block& block, size_t height) {
 
 //Note(Knuth): We don't store spend information
 #if defined(KTH_DB_LEGACY)
+//TODO(fernando): const?
 code data_base::verify_push(const transaction& tx) {
-
     auto const result = transactions_->get(tx.hash(), max_size_t, false);
     return result && ! result.is_spent(max_size_t) ? error::unspent_duplicate : error::success;
-   
 }
 #endif // defined(KTH_DB_LEGACY)
 
 
 #ifdef KTH_DB_LEGACY
+#if ! defined(KTH_DB_READONLY)
 bool data_base::begin_insert() const {
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
@@ -525,11 +535,14 @@ bool data_base::end_insert() const {
 
     return end_write();
 }
+#endif //! defined(KTH_DB_READONLY)
 #endif // KTH_DB_LEGACY
+
+#if ! defined(KTH_DB_READONLY)
 
 // Add block to the database at the given height (gaps allowed/created).
 // This is designed for write concurrency but only with itself.
-code data_base::insert(const chain::block& block, size_t height) {
+code data_base::insert(chain::block const& block, size_t height) {
 
     auto const median_time_past = block.header().validation.median_time_past;
     
@@ -557,9 +570,12 @@ code data_base::insert(const chain::block& block, size_t height) {
 
     return error::success;
 }
+#endif //! defined(KTH_DB_READONLY)
+
+#if ! defined(KTH_DB_READONLY)
 
 // This is designed for write exclusivity and read concurrency.
-code data_base::push(const chain::transaction& tx, uint32_t forks) {
+code data_base::push(chain::transaction const& tx, uint32_t forks) {
 #ifdef KTH_DB_LEGACY
 
     // Critical Section
@@ -605,11 +621,12 @@ code data_base::push(const chain::transaction& tx, uint32_t forks) {
 #else 
     return error::success;
 #endif // KTH_DB_LEGACY
-
 }
+#endif // ! defined(KTH_DB_READONLY)
 
 
 #ifdef KTH_DB_LEGACY
+#if ! defined(KTH_DB_READONLY)
 /// TODO comment
 code data_base::push_legacy(block const& block, size_t height) {
     // Critical Section
@@ -644,8 +661,10 @@ code data_base::push_legacy(block const& block, size_t height) {
 
     return error::success;
 }
+#endif // ! defined(KTH_DB_READONLY)
 #endif // KTH_DB_LEGACY
 
+#if ! defined(KTH_DB_READONLY)
 // Add a block in order (creates no gaps, must be at top).
 // This is designed for write exclusivity and read concurrency.
 code data_base::push(block const& block, size_t height) {
@@ -684,7 +703,9 @@ code data_base::push_genesis(block const& block) {
 
     return error::success;
 }
+#endif // ! defined(KTH_DB_READONLY)
 
+#if ! defined(KTH_DB_READONLY)
 // To push in order call with bucket = 0 and buckets = 1 (defaults).
 bool data_base::push_transactions(const chain::block& block, size_t height, uint32_t median_time_past, size_t bucket /*= 0*/, size_t buckets/*= 1*/) {
     KTH_ASSERT(bucket < buckets);
@@ -725,8 +746,10 @@ bool data_base::push_transactions(const chain::block& block, size_t height, uint
 
     return true;
 }
+#endif //! defined(KTH_DB_READONLY)
 
 #ifdef KTH_DB_LEGACY
+#if ! defined(KTH_DB_READONLY)
 bool data_base::push_heights(const chain::block& block, size_t height) {
     transactions_->synchronize();
     auto const& txs = block.transactions();
@@ -741,9 +764,12 @@ bool data_base::push_heights(const chain::block& block, size_t height) {
     }
     return true;
 }
+#endif //! defined(KTH_DB_READONLY)
 #endif // KTH_DB_LEGACY
 
+
 #if defined(KTH_DB_LEGACY) && (defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY))
+#if ! defined(KTH_DB_READONLY)
 void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const input::list& inputs) {
     
     for (uint32_t index = 0; index < inputs.size(); ++index) {
@@ -797,10 +823,12 @@ void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const inp
 #endif // KTH_DB_HISTORY
     }
 }
+#endif // ! defined(KTH_DB_READONLY)
 #endif // defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY)
 
 
 #ifdef KTH_DB_HISTORY
+#if ! defined(KTH_DB_READONLY)
 void data_base::push_outputs(const hash_digest& tx_hash, size_t height, const output::list& outputs) {
     for (uint32_t index = 0; index < outputs.size(); ++index) {
         auto const outpoint = output_point {tx_hash, index};
@@ -813,9 +841,11 @@ void data_base::push_outputs(const hash_digest& tx_hash, size_t height, const ou
         }
     }
 }
+#endif // ! defined(KTH_DB_READONLY)
 #endif // KTH_DB_HISTORY    
 
 #ifdef KTH_DB_STEALTH
+#if ! defined(KTH_DB_READONLY)
 void data_base::push_stealth(hash_digest const& tx_hash, size_t height, const output::list& outputs) {
     if (outputs.empty())
         return;
@@ -850,6 +880,7 @@ void data_base::push_stealth(hash_digest const& tx_hash, size_t height, const ou
         stealth_->store(prefix, height, row);
     }
 }
+#endif // ! defined(KTH_DB_READONLY)
 #endif // KTH_DB_STEALTH
 
 
@@ -876,6 +907,7 @@ void data_base::push_stealth(hash_digest const& tx_hash, size_t height, const ou
 //     return true;
 // }
 
+#if ! defined(KTH_DB_READONLY)
 bool data_base::pop_output_and_unconfirm(size_t height, chain::transaction const& tx) {
    
     if ( ! pop_outputs(tx.outputs(), height)) {
@@ -894,7 +926,6 @@ bool data_base::pop_output_and_unconfirm(size_t height, chain::transaction const
 
     return true;
 }
-
 
 template <typename I>
 bool data_base::pop_transactions_inputs_unconfirm_non_coinbase(size_t height, I f, I l) {
@@ -937,9 +968,10 @@ bool data_base::pop_transactions_non_coinbase(size_t height, I f, I l) {
     }
     return pop_transactions_outputs_non_coinbase(height, f, l);
 }
+#endif //! defined(KTH_DB_READONLY)
 #endif // KTH_DB_LEGACY
 
-
+#if ! defined(KTH_DB_READONLY)
 // A false return implies store corruption.
 bool data_base::pop(block& out_block) {
     
@@ -1015,9 +1047,11 @@ bool data_base::pop(block& out_block) {
     out_block.validation.start_pop = start_time;
     return true;
 }
+#endif // ! defined(KTH_DB_READONLY)
 
 #else // KTH_CURRENCY_BCH
 
+#if ! defined(KTH_DB_READONLY)
 // A false return implies store corruption.
 bool data_base::pop(block& out_block) {
     
@@ -1097,10 +1131,11 @@ bool data_base::pop(block& out_block) {
     out_block.validation.start_pop = start_time;
     return true;
 }
+#endif //! defined(KTH_DB_READONLY)
 #endif // KTH_CURRENCY_BCH
 
 
-
+#if ! defined(KTH_DB_READONLY)
 // A false return implies store corruption.
 bool data_base::pop_inputs(const input::list& inputs, size_t height) {
     // Loop in reverse.
@@ -1154,9 +1189,12 @@ bool data_base::pop_outputs(const output::list& outputs, size_t height) {
 
     return true;
 }
+#endif //! defined(KTH_DB_READONLY)
 
 // Asynchronous writers.
 // ----------------------------------------------------------------------------
+
+#if ! defined(KTH_DB_READONLY)
 // Add a list of blocks in order.
 // If the dispatch threadpool is shut down when this is running the handler
 // will never be invoked, resulting in a threadpool.join indefinite hang.
@@ -1168,7 +1206,7 @@ void data_base::push_all(block_const_ptr_list_const_ptr in_blocks, size_t first_
 }
 
 // TODO: resolve inconsistency with height and median_time_past passing.
-void data_base::push_next(const code& ec, block_const_ptr_list_const_ptr blocks, size_t index, size_t height, dispatcher& dispatch, result_handler handler) {
+void data_base::push_next(code const& ec, block_const_ptr_list_const_ptr blocks, size_t index, size_t height, dispatcher& dispatch, result_handler handler) {
     if (ec || index >= blocks->size()) {
         // This ends the loop.
         handler(ec);
@@ -1229,7 +1267,7 @@ void data_base::do_push_transactions(block_const_ptr block, size_t height, uint3
     handler(result ? error::success : error::operation_failed_7);
 }
 
-void data_base::handle_push_transactions(const code& ec, block_const_ptr block, size_t height, result_handler handler) {
+void data_base::handle_push_transactions(code const& ec, block_const_ptr block, size_t height, result_handler handler) {
     if (ec) {
         handler(ec);
         return;
@@ -1329,6 +1367,7 @@ code data_base::prune_reorg() {
 #endif // KTH_DB_NEW
     return error::success;
 }
+#endif // ! defined(KTH_DB_READONLY)
 
 /*
 bool data_base::set_database_flags(bool fast) {
@@ -1339,6 +1378,8 @@ bool data_base::set_database_flags(bool fast) {
 }
 */
 
+
+#if ! defined(KTH_DB_READONLY)
 // This is designed for write exclusivity and read concurrency.
 void data_base::reorganize(const checkpoint& fork_point, block_const_ptr_list_const_ptr incoming_blocks, block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch, result_handler handler) {
     auto const next_height = safe_add(fork_point.height(), size_t(1));
@@ -1362,7 +1403,7 @@ void data_base::reorganize(const checkpoint& fork_point, block_const_ptr_list_co
     pop_above(outgoing_blocks, fork_point.hash(), dispatch, pop_handler);
 }
 
-void data_base::handle_pop(const code& ec, block_const_ptr_list_const_ptr incoming_blocks, size_t first_height, dispatcher& dispatch, result_handler handler) {
+void data_base::handle_pop(code const& ec, block_const_ptr_list_const_ptr incoming_blocks, size_t first_height, dispatcher& dispatch, result_handler handler) {
     const result_handler push_handler = std::bind(&data_base::handle_push, this, _1, handler);
 
     if (ec) {
@@ -1375,7 +1416,7 @@ void data_base::handle_pop(const code& ec, block_const_ptr_list_const_ptr incomi
 
 // We never invoke the caller's handler under the mutex, we never fail to clear
 // the mutex, and we always invoke the caller's handler exactly once.
-void data_base::handle_push(const code& ec, result_handler handler) const {
+void data_base::handle_push(code const& ec, result_handler handler) const {
 
 #ifdef KTH_DB_LEGACY
     write_mutex_.unlock();
@@ -1397,8 +1438,7 @@ void data_base::handle_push(const code& ec, result_handler handler) const {
 #else
 #error You must define KTH_DB_LEGACY or KTH_DB_NEW
 #endif
-
 }
+#endif // ! defined(KTH_DB_READONLY)
 
-} // namespace data_base
-} // namespace kth
+} // namespace kth::database

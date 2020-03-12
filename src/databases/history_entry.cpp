@@ -10,13 +10,11 @@
 #include <cstdint>
 // #include <kth/domain.hpp>
 
-namespace kth { 
-namespace database {
+namespace kth::database { 
 
 history_entry::history_entry(uint64_t id, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum)
     : id_(id), point_(point), point_kind_(kind), height_(height), index_(index), value_or_checksum_(value_or_checksum)
 {}
-
 
 uint64_t history_entry::id() const {
     return id_;
@@ -86,19 +84,6 @@ void history_entry::factory_to_data(std::ostream& stream, uint64_t id, chain::po
     factory_to_data(sink, id, point, kind, height, index, value_or_checksum);
 }
 
-
-#ifndef KTH_USE_DOMAIN
-// static
-void history_entry::factory_to_data(writer& sink, uint64_t id, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
-    sink.write_8_bytes_little_endian(id);
-    point.to_data(sink, false);
-    sink.write_byte(static_cast<uint8_t>(kind));
-    sink.write_4_bytes_little_endian(height);
-    sink.write_4_bytes_little_endian(index);
-    sink.write_8_bytes_little_endian(value_or_checksum);
-}
-#endif
-
 // Serialization.
 //-----------------------------------------------------------------------------
 
@@ -118,12 +103,6 @@ void history_entry::to_data(std::ostream& stream) const {
     to_data(sink);
 }
 
-#ifndef KTH_USE_DOMAIN
-void history_entry::to_data(writer& sink) const {
-    factory_to_data(sink, id_, point_, point_kind_, height_, index_, value_or_checksum_ );
-}
-#endif
-
 // Deserialization.
 //-----------------------------------------------------------------------------
 
@@ -139,14 +118,6 @@ history_entry history_entry::factory_from_data(std::istream& stream) {
     return instance;
 }
 
-#ifndef KTH_USE_DOMAIN
-history_entry history_entry::factory_from_data(reader& source) {
-    history_entry instance;
-    instance.from_data(source);
-    return instance;
-}
-#endif
-
 bool history_entry::from_data(const data_chunk& data) {
     data_source istream(data);
     return from_data(istream);
@@ -157,25 +128,5 @@ bool history_entry::from_data(std::istream& stream) {
     return from_data(source);
 }
 
-#ifndef KTH_USE_DOMAIN
-bool history_entry::from_data(reader& source) {
-    reset();
-    
-    id_ = source.read_8_bytes_little_endian();
-    point_.from_data(source, false);
-    point_kind_ = static_cast<chain::point_kind>(source.read_byte()),
-    height_ = source.read_4_bytes_little_endian();
-    index_ = source.read_4_bytes_little_endian();
-    value_or_checksum_ = source.read_8_bytes_little_endian();
-    
-    if ( ! source) {
-        reset();
-    }
-
-    return source;
-}
-#endif
-
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 

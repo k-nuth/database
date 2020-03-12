@@ -5,8 +5,9 @@
 #ifndef KTH_DATABASE_PROPERTY_CODE_HPP_
 #define KTH_DATABASE_PROPERTY_CODE_HPP_
 
-namespace kth {
-namespace database {
+namespace kth::database {
+
+// TODO(fernando): rename 
 
 enum class property_code {
     db_mode = 0,
@@ -18,7 +19,6 @@ enum class db_mode_code {
     db_new_full = 2
 };
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DATABASE_PROPERTY_CODE_HPP_

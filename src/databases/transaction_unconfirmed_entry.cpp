@@ -9,8 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace kth { 
-namespace database {
+namespace kth::database { 
 
 transaction_unconfirmed_entry::transaction_unconfirmed_entry(chain::transaction const& tx, uint32_t arrival_time, uint32_t height)
     : transaction_(tx), arrival_time_(arrival_time), height_(height)
@@ -45,7 +44,7 @@ bool transaction_unconfirmed_entry::is_valid() const {
 // constexpr
 //TODO(fernando): make this constexpr 
 size_t transaction_unconfirmed_entry::serialized_size(chain::transaction const& tx) {
-#if ! defined(KTH_USE_DOMAIN) || defined(KTH_CACHED_RPC_DATA)
+#if defined(KTH_CACHED_RPC_DATA)
     return tx.serialized_size(false, true, true) 
 #else
     return tx.serialized_size(false, true) 
@@ -76,17 +75,6 @@ void transaction_unconfirmed_entry::factory_to_data(std::ostream& stream, chain:
     factory_to_data(sink, tx, arrival_time, height);
 }
 
-
-#if ! defined(KTH_USE_DOMAIN)
-// static
-void transaction_unconfirmed_entry::factory_to_data(writer& sink, chain::transaction const& tx, uint32_t arrival_time, uint32_t height) {
-    tx.to_data(sink, false,true,true);
-    sink.write_4_bytes_little_endian(arrival_time);
-    sink.write_4_bytes_little_endian(height);
-}
-#endif
-
-
 // Serialization.
 //-----------------------------------------------------------------------------
 
@@ -106,12 +94,6 @@ void transaction_unconfirmed_entry::to_data(std::ostream& stream) const {
     to_data(sink);
 }
 
-#ifndef KTH_USE_DOMAIN
-void transaction_unconfirmed_entry::to_data(writer& sink) const {
-    factory_to_data(sink, transaction_, arrival_time_, height_);
-}
-#endif
-
 // Deserialization.
 //-----------------------------------------------------------------------------
 
@@ -127,14 +109,6 @@ transaction_unconfirmed_entry transaction_unconfirmed_entry::factory_from_data(s
     return instance;
 }
 
-#ifndef KTH_USE_DOMAIN
-transaction_unconfirmed_entry transaction_unconfirmed_entry::factory_from_data(reader& source) {
-    transaction_unconfirmed_entry instance;
-    instance.from_data(source);
-    return instance;
-}
-#endif
-
 bool transaction_unconfirmed_entry::from_data(const data_chunk& data) {
     data_source istream(data);
     return from_data(istream);
@@ -145,24 +119,4 @@ bool transaction_unconfirmed_entry::from_data(std::istream& stream) {
     return from_data(source);
 }
 
-#ifndef KTH_USE_DOMAIN
-bool transaction_unconfirmed_entry::from_data(reader& source) {
-    reset();
-    
-
-    transaction_.from_data(source, false, true, false);
-    arrival_time_ = source.read_4_bytes_little_endian();
-    height_ = source.read_4_bytes_little_endian();
-    
-    if ( ! source) {
-        reset();
-    }
-
-    return source;
-}
-#endif
-
-
-} // namespace database
-} // namespace kth
-
+} // namespace kth::database

@@ -5,8 +5,7 @@
 #ifndef KTH_DATABASE_SPEND_DATABASE_IPP_
 #define KTH_DATABASE_SPEND_DATABASE_IPP_
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 #if defined(KTH_DB_NEW_FULL)
 
@@ -44,6 +43,7 @@ chain::input_point internal_database_basis<Clock>::get_spend(chain::output_point
     return res;
 }
 
+#if ! defined(KTH_DB_READONLY)
 
 //pivate
 template <typename Clock>
@@ -108,10 +108,11 @@ result_code internal_database_basis<Clock>::remove_spend(chain::output_point con
     return result_code::success;
 }
 
+#endif // ! defined(KTH_DB_READONLY)
+
 
 #endif // defined(KTH_DB_NEW_FULL)
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DATABASE_SPEND_DATABASE_IPP_

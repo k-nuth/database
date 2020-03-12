@@ -5,8 +5,9 @@
 #ifndef KTH_DATABASE_REORG_DATABASE_HPP_
 #define KTH_DATABASE_REORG_DATABASE_HPP_
 
-namespace kth {
-namespace database {
+namespace kth::database {
+
+#if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_reorg_pool(uint32_t height, MDB_val& key, MDB_txn* db_txn) {
@@ -139,6 +140,9 @@ result_code internal_database_basis<Clock>::remove_reorg_index(uint32_t height, 
     return result_code::success;
 }
 
+#endif // ! defined(KTH_DB_READONLY)
+
+
 template <typename Clock>
 chain::block internal_database_basis<Clock>::get_block_reorg(uint32_t height, MDB_txn* db_txn) const {
     MDB_val key {sizeof(height), &height};
@@ -200,6 +204,8 @@ chain::block internal_database_basis<Clock>::get_block_reorg(uint32_t height) co
     return res;
 }
 
+#if ! defined(KTH_DB_READONLY)
+
 template <typename Clock>
 result_code internal_database_basis<Clock>::prune_reorg_index(uint32_t remove_until, MDB_txn* db_txn) {
     MDB_cursor* cursor;
@@ -259,6 +265,8 @@ result_code internal_database_basis<Clock>::prune_reorg_block(uint32_t amount_to
     return result_code::success;
 }
 
+#endif // ! defined(KTH_DB_READONLY)
+
 template <typename Clock>
 result_code internal_database_basis<Clock>::get_first_reorg_block_height(uint32_t& out_height) const {
     MDB_txn* db_txn;
@@ -293,7 +301,6 @@ result_code internal_database_basis<Clock>::get_first_reorg_block_height(uint32_
 }    
 
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DATABASE_REORG_DATABASE_HPP_

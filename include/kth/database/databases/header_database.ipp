@@ -5,8 +5,9 @@
 #ifndef KTH_DATABASE_HEADER_DATABASE_IPP_
 #define KTH_DATABASE_HEADER_DATABASE_IPP_
 
-namespace kth {
-namespace database {
+namespace kth::database {
+
+#if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::push_block_header(chain::block const& block, uint32_t height, MDB_txn* db_txn) {
@@ -41,6 +42,7 @@ result_code internal_database_basis<Clock>::push_block_header(chain::block const
 
     return result_code::success;
 }
+#endif // ! defined(KTH_DB_READONLY)
 
 
 template <typename Clock>
@@ -56,6 +58,8 @@ chain::header internal_database_basis<Clock>::get_header(uint32_t height, MDB_tx
     auto res = chain::header::factory_from_data(data);
     return res;
 }
+
+#if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_block_header(hash_digest const& hash, uint32_t height, MDB_txn* db_txn) {
@@ -85,8 +89,9 @@ result_code internal_database_basis<Clock>::remove_block_header(hash_digest cons
     return result_code::success;
 }
 
+#endif // ! defined(KTH_DB_READONLY)
 
-} // namespace database
-} // namespace kth
+
+} // namespace kth::database
 
 #endif // KTH_DATABASE_HEADER_DATABASE_IPP_
