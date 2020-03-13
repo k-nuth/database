@@ -701,7 +701,7 @@ template <typename Clock>
 bool internal_database_basis<Clock>::open_databases() {
     MDB_txn* db_txn;
     
-    auto res = mdb_txn_begin(env_, NULL, 0, &db_txn);
+    auto res = mdb_txn_begin(env_, NULL, KTH_DB_CONDITIONAL_READONLY, &db_txn);
     if (res != MDB_SUCCESS) {
         return false;
     }

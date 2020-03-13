@@ -36,6 +36,12 @@
 #define KTH_DB_CONDITIONAL_CREATE MDB_CREATE
 #endif
 
+#if defined(KTH_DB_READONLY)
+#define KTH_DB_CONDITIONAL_READONLY MDB_RDONLY
+#else
+#define KTH_DB_CONDITIONAL_READONLY 0
+#endif
+
 namespace kth {
 namespace database {
 
