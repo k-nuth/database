@@ -50,7 +50,7 @@ block_result::block_result(const memory_ptr slab, hash_digest&& hash,
 {
 }
 
-block_result::block_result(const memory_ptr slab, const hash_digest& hash,
+block_result::block_result(const memory_ptr slab, hash_digest const& hash,
     uint32_t height)
   : slab_(slab), height_(height), hash_(hash)
 {
@@ -66,7 +66,7 @@ void block_result::reset()
     slab_.reset();
 }
 
-const hash_digest& block_result::hash() const
+hash_digest const& block_result::hash() const
 {
     return hash_;
 }

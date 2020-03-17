@@ -105,7 +105,7 @@ bool transaction_database::flush() const {
 // Queries.
 // ----------------------------------------------------------------------------
 
-memory_ptr transaction_database::find(const hash_digest& hash, size_t fork_height, bool require_confirmed) const {
+memory_ptr transaction_database::find(hash_digest const& hash, size_t fork_height, bool require_confirmed) const {
     //*************************************************************************
     // CONSENSUS: This simplified implementation does not allow the possibility
     // of a matching tx hash above the fork height or the existence of both
@@ -138,7 +138,7 @@ memory_ptr transaction_database::find(const hash_digest& hash, size_t fork_heigh
     return (confirmed && height > fork_height) || (require_confirmed && ! confirmed) ? nullptr : slab;
 }
 
-transaction_result transaction_database::get(const hash_digest& hash, size_t fork_height, bool require_confirmed) const {
+transaction_result transaction_database::get(hash_digest const& hash, size_t fork_height, bool require_confirmed) const {
     // Limit search to confirmed transactions at or below the fork height.
     // Caller should set fork height to max_size_t for unconfirmed search.
     auto const slab = find(hash, fork_height, require_confirmed);
@@ -342,7 +342,7 @@ bool transaction_database::unspend(const output_point& point) {
     return spend(point, output::validation::not_spent);
 }
 
-bool transaction_database::confirm(const hash_digest& hash, size_t height, uint32_t median_time_past, size_t position) {
+bool transaction_database::confirm(hash_digest const& hash, size_t height, uint32_t median_time_past, size_t position) {
     auto const slab = find(hash, height, false);
 
     // The transaction does not exist at or below the height.
@@ -366,7 +366,7 @@ bool transaction_database::confirm(const hash_digest& hash, size_t height, uint3
     return true;
 }
 
-bool transaction_database::unconfirm(const hash_digest& hash) {
+bool transaction_database::unconfirm(hash_digest const& hash) {
     // The transaction was verified under an unknown chain state, so we set the
     // verification forks to unverified. This will compel re-validation of the
     // unconfirmed transaction before acceptance into mempool/template queries.

@@ -30,7 +30,7 @@ public:
     unspent_transaction(const unspent_transaction& other);
 
     /// Constructors.
-    explicit unspent_transaction(const hash_digest& hash);
+    explicit unspent_transaction(hash_digest const& hash);
     explicit unspent_transaction(const chain::output_point& point);
     explicit unspent_transaction(const chain::transaction& tx, size_t height,
         uint32_t median_time_past, bool confirmed);
@@ -40,7 +40,7 @@ public:
     uint32_t median_time_past() const;
     bool is_coinbase() const;
     bool is_confirmed() const;
-    const hash_digest& hash() const;
+    hash_digest const& hash() const;
 
     /// Access to outputs is mutable and unprotected (not thread safe).
     output_map_ptr outputs() const;

@@ -770,7 +770,7 @@ bool data_base::push_heights(const chain::block& block, size_t height) {
 
 #if defined(KTH_DB_LEGACY) && (defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY))
 #if ! defined(KTH_DB_READONLY)
-void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const input::list& inputs) {
+void data_base::push_inputs(hash_digest const& tx_hash, size_t height, const input::list& inputs) {
     
     for (uint32_t index = 0; index < inputs.size(); ++index) {
         auto const& input = inputs[index];
@@ -829,7 +829,7 @@ void data_base::push_inputs(const hash_digest& tx_hash, size_t height, const inp
 
 #ifdef KTH_DB_HISTORY
 #if ! defined(KTH_DB_READONLY)
-void data_base::push_outputs(const hash_digest& tx_hash, size_t height, const output::list& outputs) {
+void data_base::push_outputs(hash_digest const& tx_hash, size_t height, const output::list& outputs) {
     for (uint32_t index = 0; index < outputs.size(); ++index) {
         auto const outpoint = output_point {tx_hash, index};
         auto const& output = outputs[index];
@@ -1294,7 +1294,7 @@ void data_base::handle_push_transactions(code const& ec, block_const_ptr block, 
 
 // TODO: make async and concurrency as appropriate.
 // This precludes popping the genesis block.
-void data_base::pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest& fork_hash, dispatcher&, result_handler handler) {
+void data_base::pop_above(block_const_ptr_list_ptr out_blocks, hash_digest const& fork_hash, dispatcher&, result_handler handler) {
     out_blocks->clear();
 
 #ifdef KTH_DB_NEW

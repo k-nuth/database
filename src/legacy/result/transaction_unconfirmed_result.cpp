@@ -39,7 +39,7 @@ transaction_unconfirmed_result::transaction_unconfirmed_result(const memory_ptr 
 }
 
 transaction_unconfirmed_result::transaction_unconfirmed_result(const memory_ptr slab,
-    const hash_digest& hash, uint32_t arrival_time)
+    hash_digest const& hash, uint32_t arrival_time)
   : slab_(slab), arrival_time_(arrival_time), hash_(hash)
 {
 }
@@ -54,7 +54,7 @@ void transaction_unconfirmed_result::reset()
     slab_.reset();
 }
 
-const hash_digest& transaction_unconfirmed_result::hash() const
+hash_digest const& transaction_unconfirmed_result::hash() const
 {
     return hash_;
 }

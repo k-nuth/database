@@ -165,7 +165,7 @@ protected:
     // Pop the set of blocks above the given hash.
     // Sets error if the database is corrupt or the hash doesn't exist.
     // Any blocks returned were successfully popped prior to any failure.
-    void pop_above(block_const_ptr_list_ptr out_blocks, const hash_digest& fork_hash, dispatcher& dispatch, result_handler handler);
+    void pop_above(block_const_ptr_list_ptr out_blocks, hash_digest const& fork_hash, dispatcher& dispatch, result_handler handler);
 #endif // ! defined(KTH_DB_READONLY)
 
 #ifdef KTH_DB_LEGACY
@@ -216,11 +216,11 @@ private:
 #endif
 
 #if defined(KTH_DB_LEGACY) && (defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY))
-    void push_inputs(const hash_digest& tx_hash, size_t height, const inputs& inputs);
+    void push_inputs(hash_digest const& tx_hash, size_t height, const inputs& inputs);
 #endif // defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY)    
 
 #ifdef KTH_DB_HISTORY
-    void push_outputs(const hash_digest& tx_hash, size_t height, const outputs& outputs);
+    void push_outputs(hash_digest const& tx_hash, size_t height, const outputs& outputs);
 #endif // KTH_DB_HISTORY
 
 #ifdef KTH_DB_STEALTH

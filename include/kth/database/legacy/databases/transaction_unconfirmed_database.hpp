@@ -56,7 +56,7 @@ public:
     bool close();
 
     /// Fetch transaction by its hash, at or below the specified block height.
-    transaction_unconfirmed_result get(const hash_digest& hash) const;
+    transaction_unconfirmed_result get(hash_digest const& hash) const;
 
     /// Store a transaction in the database.
     void store(const chain::transaction& tx);
@@ -105,7 +105,7 @@ public:
 private:
     typedef slab_hash_table<hash_digest> slab_map;
 
-    memory_ptr find(const hash_digest& hash) const;
+    memory_ptr find(hash_digest const& hash) const;
 
     // The starting size of the hash table, used by create.
     const size_t initial_map_file_size_;

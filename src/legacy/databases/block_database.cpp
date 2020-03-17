@@ -148,7 +148,7 @@ block_result block_database::get(size_t height) const
     return block_result(slab, deserial.read_hash(), height);
 }
 
-block_result block_database::get(const hash_digest& hash) const
+block_result block_database::get(hash_digest const& hash) const
 {
     auto const slab = lookup_map_.find(hash);
 

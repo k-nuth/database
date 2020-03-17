@@ -80,7 +80,7 @@ void unspent_outputs::add(const transaction& transaction, size_t height,
 
 // This is confirmation-independent, since the conflict is extrememly rare and
 // the difference is simply an optimization. This avoids dual key indexing.
-void unspent_outputs::remove(const hash_digest& tx_hash)
+void unspent_outputs::remove(hash_digest const& tx_hash)
 {
     if (disabled())
         return;

@@ -28,7 +28,7 @@ public:
     transaction_result();
     transaction_result(const memory_ptr slab);
     transaction_result(const memory_ptr slab, hash_digest&& hash, uint32_t height, uint32_t median_time_past, position_t position);
-    transaction_result(const memory_ptr slab, const hash_digest& hash, uint32_t height, uint32_t median_time_past, position_t position);
+    transaction_result(const memory_ptr slab, hash_digest const& hash, uint32_t height, uint32_t median_time_past, position_t position);
 
     /// True if this transaction result is valid (found).
     operator bool() const;
@@ -37,7 +37,7 @@ public:
     void reset();
 
     /// The transaction hash (from cache).
-    const hash_digest& hash() const;
+    hash_digest const& hash() const;
 
     /// The height of the block which includes the transaction.
     size_t height() const;

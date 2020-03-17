@@ -22,7 +22,7 @@ public:
     transaction_unconfirmed_result(const memory_ptr slab);
     transaction_unconfirmed_result(const memory_ptr slab, hash_digest&& hash,
         uint32_t arrival_time);
-    transaction_unconfirmed_result(const memory_ptr slab, const hash_digest& hash,
+    transaction_unconfirmed_result(const memory_ptr slab, hash_digest const& hash,
         uint32_t arrival_time);
 
     /// True if this transaction result is valid (found).
@@ -32,7 +32,7 @@ public:
     void reset();
 
     /// The transaction hash (from cache).
-    const hash_digest& hash() const;
+    hash_digest const& hash() const;
 
     /// The time when the transaction arrive
     uint32_t arrival_time() const;

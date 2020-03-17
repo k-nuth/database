@@ -55,7 +55,7 @@ public:
     block_result get(size_t height) const;
 
     /// Fetch block by hash using the hashtable.
-    block_result get(const hash_digest& hash) const;
+    block_result get(hash_digest const& hash) const;
 
 
     //NOTE: This is public interface, but apparently it is not used in Blockchain

@@ -82,7 +82,7 @@ int memory_map::open_file(const path& filename)
     return handle;
 }
 
-bool memory_map::handle_error(const std::string& context,
+bool memory_map::handle_error(std::string const& context,
     const path& filename)
 {
 #ifdef _WIN32

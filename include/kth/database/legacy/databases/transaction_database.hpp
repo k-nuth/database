@@ -55,7 +55,7 @@ public:
     bool close();
 
     /// Fetch transaction by its hash, at or below the specified block height.
-    transaction_result get(const hash_digest& hash, size_t fork_height, bool require_confirmed) const;
+    transaction_result get(hash_digest const& hash, size_t fork_height, bool require_confirmed) const;
 
     /// Get the output at the specified index within the transaction.
     bool get_output(chain::output& out_output, size_t& out_height,
@@ -80,11 +80,11 @@ public:
     bool unspend(const chain::output_point& point);
 
     /// Promote an unconfirmed tx (not including its indexes).
-    bool confirm(const hash_digest& hash, size_t height,
+    bool confirm(hash_digest const& hash, size_t height,
         uint32_t median_time_past, size_t position);
 
     /// Demote the transaction (not including its indexes).
-    bool unconfirm(const hash_digest& hash);
+    bool unconfirm(hash_digest const& hash);
 
     /// Commit latest inserts.
     void synchronize();
@@ -95,7 +95,7 @@ public:
 // private:
     typedef slab_hash_table<hash_digest> slab_map;
 
-    memory_ptr find(const hash_digest& hash, size_t maximum_height,
+    memory_ptr find(hash_digest const& hash, size_t maximum_height,
         bool require_confirmed) const;
 
     // The starting size of the hash table, used by create.

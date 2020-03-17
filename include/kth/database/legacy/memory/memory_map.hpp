@@ -64,7 +64,7 @@ public:
 private:
     static size_t file_size(int file_handle);
     static int open_file(const boost::filesystem::path& filename);
-    static bool handle_error(const std::string& context,
+    static bool handle_error(std::string const& context,
         const boost::filesystem::path& filename);
 
     size_t page() const;

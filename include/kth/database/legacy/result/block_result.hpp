@@ -23,7 +23,7 @@ public:
     block_result();
     block_result(const memory_ptr slab);
     block_result(const memory_ptr slab, hash_digest&& hash, uint32_t height);
-    block_result(const memory_ptr slab, const hash_digest& hash,
+    block_result(const memory_ptr slab, hash_digest const& hash,
         uint32_t height);
 
     /// True if this block result is valid (found).
@@ -33,7 +33,7 @@ public:
     void reset();
 
     /// The block header hash (from cache).
-    const hash_digest& hash() const;
+    hash_digest const& hash() const;
 
     /// The block header.
     chain::header header() const;

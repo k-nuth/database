@@ -93,7 +93,7 @@ bool transaction_unconfirmed_database::flush() const {
 // Queries.
 // ----------------------------------------------------------------------------
 
-memory_ptr transaction_unconfirmed_database::find(const hash_digest& hash) const {
+memory_ptr transaction_unconfirmed_database::find(hash_digest const& hash) const {
     //*************************************************************************
     // CONSENSUS: This simplified implementation does not allow the possibility
     // of a matching tx hash above the fork height or the existence of both
@@ -107,7 +107,7 @@ memory_ptr transaction_unconfirmed_database::find(const hash_digest& hash) const
 
 }
 
-transaction_unconfirmed_result transaction_unconfirmed_database::get(const hash_digest& hash) const {
+transaction_unconfirmed_result transaction_unconfirmed_database::get(hash_digest const& hash) const {
     // Limit search to confirmed transactions at or below the fork height.
     // Caller should set fork height to max_size_t for unconfirmed search.
     auto const slab = find(hash);
@@ -173,8 +173,8 @@ void transaction_unconfirmed_database::store(const chain::transaction& tx) {
 
 // bool transaction_unconfirmed_database::spend(const output_point& point, size_t spender_height)
 // bool transaction_unconfirmed_database::unspend(const output_point& point)
-// bool transaction_unconfirmed_database::confirm(const hash_digest& hash, size_t height, size_t position)
-// bool transaction_unconfirmed_database::unconfirm(const hash_digest& hash)
+// bool transaction_unconfirmed_database::confirm(hash_digest const& hash, size_t height, size_t position)
+// bool transaction_unconfirmed_database::unconfirm(hash_digest const& hash)
 
 bool transaction_unconfirmed_database::unlink(hash_digest const& hash) {
     return lookup_map_.unlink(hash);

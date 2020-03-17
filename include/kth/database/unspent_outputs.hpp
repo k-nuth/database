@@ -46,7 +46,7 @@ public:
         uint32_t median_time_past, bool confirmed);
 
     /// Remove a set of outputs from the cache (has been reorganized out).
-    void remove(const hash_digest& tx_hash);
+    void remove(hash_digest const& tx_hash);
 
     /// Remove an output from the cache (has been spent).
     void remove(const chain::output_point& point);

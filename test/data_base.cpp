@@ -282,7 +282,7 @@ public:
     }
 
     void pop_above(block_const_ptr_list_ptr out_blocks,
-        const hash_digest& fork_hash, dispatcher& dispatch,
+        hash_digest const& fork_hash, dispatcher& dispatch,
         result_handler handler)
     {
         data_base::pop_above(out_blocks, fork_hash, dispatch, handler);
@@ -303,7 +303,7 @@ static code push_all_result(data_base_accessor& instance,
 }
 
 static code pop_above_result(data_base_accessor& instance,
-    block_const_ptr_list_ptr out_blocks, const hash_digest& fork_hash,
+    block_const_ptr_list_ptr out_blocks, hash_digest const& fork_hash,
     dispatcher& dispatch)
 {
     std::promise<code> promise;

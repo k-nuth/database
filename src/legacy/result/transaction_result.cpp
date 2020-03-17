@@ -38,7 +38,7 @@ transaction_result::transaction_result(const memory_ptr slab, hash_digest&& hash
     , position_(position), hash_(std::move(hash))
 {}
 
-transaction_result::transaction_result(const memory_ptr slab, const hash_digest& hash, uint32_t height, uint32_t median_time_past, position_t position)
+transaction_result::transaction_result(const memory_ptr slab, hash_digest const& hash, uint32_t height, uint32_t median_time_past, position_t position)
     : slab_(slab), height_(height), median_time_past_(median_time_past), position_(position), hash_(hash)
 {}
 
@@ -50,7 +50,7 @@ void transaction_result::reset() {
     slab_.reset();
 }
 
-const hash_digest& transaction_result::hash() const {
+hash_digest const& transaction_result::hash() const {
     return hash_;
 }
 

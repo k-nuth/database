@@ -35,7 +35,7 @@ unspent_transaction::unspent_transaction(const unspent_transaction& other)
 {
 }
 
-unspent_transaction::unspent_transaction(const hash_digest& hash)
+unspent_transaction::unspent_transaction(hash_digest const& hash)
   : height_(0),
     median_time_past_(0),
     is_coinbase_(false),
@@ -68,7 +68,7 @@ unspent_transaction::unspent_transaction(const chain::transaction& tx,
         (*outputs_)[index] = outputs[index];
 }
 
-const hash_digest& unspent_transaction::hash() const
+hash_digest const& unspent_transaction::hash() const
 {
     return hash_;
 }
