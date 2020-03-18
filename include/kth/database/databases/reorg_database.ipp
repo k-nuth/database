@@ -15,21 +15,21 @@ result_code internal_database_basis<Clock>::insert_reorg_pool(uint32_t height, M
     //TODO: use cursors
     auto res = mdb_get(db_txn, dbi_utxo_, &key, &value);
     if (res == MDB_NOTFOUND) {
-        LOG_INFO(LOG_DATABASE) << "Key not found getting UTXO [insert_reorg_pool] " << res;        
+        LOG_INFO(LOG_DATABASE, "Key not found getting UTXO [insert_reorg_pool] ", res);
         return result_code::key_not_found;
     }
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error getting UTXO [insert_reorg_pool] " << res;        
+        LOG_INFO(LOG_DATABASE, "Error getting UTXO [insert_reorg_pool] ", res);
         return result_code::other;
     }
 
     res = mdb_put(db_txn, dbi_reorg_pool_, &key, &value, MDB_NOOVERWRITE);
     if (res == MDB_KEYEXIST) {
-        LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in reorg pool [insert_reorg_pool] " << res;        
+        LOG_INFO(LOG_DATABASE, "Duplicate key inserting in reorg pool [insert_reorg_pool] ", res);
         return result_code::duplicated_key;
     }
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error inserting in reorg pool [insert_reorg_pool] " << res;        
+        LOG_INFO(LOG_DATABASE, "Error inserting in reorg pool [insert_reorg_pool] ", res);
         return result_code::other;
     }
 
@@ -38,11 +38,11 @@ result_code internal_database_basis<Clock>::insert_reorg_pool(uint32_t height, M
     res = mdb_put(db_txn, dbi_reorg_index_, &key_index, &value_index, 0);
     
     if (res == MDB_KEYEXIST) {
-        LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in reorg index [insert_reorg_pool] " << res;
+        LOG_INFO(LOG_DATABASE, "Duplicate key inserting in reorg index [insert_reorg_pool] ", res);
         return result_code::duplicated_key;
     }
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error inserting in reorg index [insert_reorg_pool] " << res;
+        LOG_INFO(LOG_DATABASE, "Error inserting in reorg index [insert_reorg_pool] ", res);
         return result_code::other;
     }
 
@@ -59,11 +59,11 @@ result_code internal_database_basis<Clock>::push_block_reorg(chain::block const&
     
     auto res = mdb_put(db_txn, dbi_reorg_block_, &key, &value, MDB_NOOVERWRITE);
     if (res == MDB_KEYEXIST) {
-        LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in reorg block [push_block_reorg] " << res;
+        LOG_INFO(LOG_DATABASE, "Duplicate key inserting in reorg block [push_block_reorg] ", res);
         return result_code::duplicated_key;
     }
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error inserting in reorg block [push_block_reorg] " << res;        
+        LOG_INFO(LOG_DATABASE, "Error inserting in reorg block [push_block_reorg] ", res);
         return result_code::other;
     }
 
@@ -78,31 +78,31 @@ result_code internal_database_basis<Clock>::insert_output_from_reorg_and_remove(
     MDB_val value;
     auto res = mdb_get(db_txn, dbi_reorg_pool_, &key, &value);
     if (res == MDB_NOTFOUND) {
-        LOG_INFO(LOG_DATABASE) << "Key not found in reorg pool [insert_output_from_reorg_and_remove] " << res;        
+        LOG_INFO(LOG_DATABASE, "Key not found in reorg pool [insert_output_from_reorg_and_remove] ", res);
         return result_code::key_not_found;
     }
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error in reorg pool [insert_output_from_reorg_and_remove] " << res;        
+        LOG_INFO(LOG_DATABASE, "Error in reorg pool [insert_output_from_reorg_and_remove] ", res);
         return result_code::other;
     }
 
     res = mdb_put(db_txn, dbi_utxo_, &key, &value, MDB_NOOVERWRITE);
     if (res == MDB_KEYEXIST) {
-        LOG_INFO(LOG_DATABASE) << "Duplicate key inserting in UTXO [insert_output_from_reorg_and_remove] " << res;        
+        LOG_INFO(LOG_DATABASE, "Duplicate key inserting in UTXO [insert_output_from_reorg_and_remove] ", res);
         return result_code::duplicated_key;
     }
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error inserting in UTXO [insert_output_from_reorg_and_remove] " << res;        
+        LOG_INFO(LOG_DATABASE, "Error inserting in UTXO [insert_output_from_reorg_and_remove] ", res);
         return result_code::other;
     }
 
     res = mdb_del(db_txn, dbi_reorg_pool_, &key, NULL);
     if (res == MDB_NOTFOUND) {
-        LOG_INFO(LOG_DATABASE) << "Key not found deleting in reorg pool [insert_output_from_reorg_and_remove] " << res;
+        LOG_INFO(LOG_DATABASE, "Key not found deleting in reorg pool [insert_output_from_reorg_and_remove] ", res);
         return result_code::key_not_found;
     }
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error deleting in reorg pool [insert_output_from_reorg_and_remove] " << res;
+        LOG_INFO(LOG_DATABASE, "Error deleting in reorg pool [insert_output_from_reorg_and_remove] ", res);
         return result_code::other;
     }
     return result_code::success;
@@ -114,11 +114,11 @@ result_code internal_database_basis<Clock>::remove_block_reorg(uint32_t height, 
     MDB_val key {sizeof(height), &height};
     auto res = mdb_del(db_txn, dbi_reorg_block_, &key, NULL);
     if (res == MDB_NOTFOUND) {
-        LOG_INFO(LOG_DATABASE) << "Key not found deleting reorg block in LMDB [remove_block_reorg] - mdb_del: " << res;
+        LOG_INFO(LOG_DATABASE, "Key not found deleting reorg block in LMDB [remove_block_reorg] - mdb_del: ", res);
         return result_code::key_not_found;
     }
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error deleting reorg block in LMDB [remove_block_reorg] - mdb_del: " << res;
+        LOG_INFO(LOG_DATABASE, "Error deleting reorg block in LMDB [remove_block_reorg] - mdb_del: ", res);
         return result_code::other;
     }
     return result_code::success;
@@ -130,11 +130,11 @@ result_code internal_database_basis<Clock>::remove_reorg_index(uint32_t height, 
     MDB_val key {sizeof(height), &height};
     auto res = mdb_del(db_txn, dbi_reorg_index_, &key, NULL);
     if (res == MDB_NOTFOUND) {
-        LOG_DEBUG(LOG_DATABASE) << "Key not found deleting reorg index in LMDB [remove_reorg_index] - height: " << height << " - mdb_del: " << res;
+        LOG_DEBUG(LOG_DATABASE, "Key not found deleting reorg index in LMDB [remove_reorg_index] - height: ", height, " - mdb_del: ", res);
         return result_code::key_not_found;
     }
     if (res != MDB_SUCCESS) {
-        LOG_DEBUG(LOG_DATABASE) << "Error deleting reorg index in LMDB [remove_reorg_index] - height: " << height << " - mdb_del: " << res;
+        LOG_DEBUG(LOG_DATABASE, "Error deleting reorg index in LMDB [remove_reorg_index] - height: ", height, " - mdb_del: ", res);
         return result_code::other;
     }
     return result_code::success;
@@ -222,11 +222,11 @@ result_code internal_database_basis<Clock>::prune_reorg_index(uint32_t remove_un
 
             auto res = mdb_del(db_txn, dbi_reorg_pool_, &value, NULL);
             if (res == MDB_NOTFOUND) {
-                LOG_INFO(LOG_DATABASE) << "Key not found deleting reorg pool in LMDB [prune_reorg_index] - mdb_del: " << res;
+                LOG_INFO(LOG_DATABASE, "Key not found deleting reorg pool in LMDB [prune_reorg_index] - mdb_del: ", res);
                 return result_code::key_not_found;
             }
             if (res != MDB_SUCCESS) {
-                LOG_INFO(LOG_DATABASE) << "Error deleting reorg pool in LMDB [prune_reorg_index] - mdb_del: " << res;
+                LOG_INFO(LOG_DATABASE, "Error deleting reorg pool in LMDB [prune_reorg_index] - mdb_del: ", res);
                 return result_code::other;
             }
 

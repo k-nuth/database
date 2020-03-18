@@ -37,7 +37,7 @@ public:
     void to_data(std::ostream& stream) const;
 
 
-    template <Writer W, KTH_IS_WRITER(W)>
+    template <typename W, KTH_IS_WRITER(W)>
     void to_data(W& sink) const {
         factory_to_data(sink, transaction_, arrival_time_, height_);
     }
@@ -46,7 +46,7 @@ public:
     bool from_data(std::istream& stream);
 
 
-    template <Reader R, KTH_IS_READER(R)>
+    template <typename R, KTH_IS_READER(R)>
     bool from_data(R& source) {
         reset();
     
@@ -72,7 +72,7 @@ public:
     transaction_unconfirmed_entry factory_from_data(std::istream& stream);
 
 
-    template <Reader R, KTH_IS_READER(R)>
+    template <typename R, KTH_IS_READER(R)>
     static
     transaction_unconfirmed_entry factory_from_data(R& source) {
         transaction_unconfirmed_entry instance;
@@ -86,7 +86,7 @@ public:
     void factory_to_data(std::ostream& stream, chain::transaction const& tx, uint32_t arrival_time, uint32_t height);
 
 
-    template <Writer W, KTH_IS_WRITER(W)>
+    template <typename W, KTH_IS_WRITER(W)>
     static
     void factory_to_data(W& sink, chain::transaction const& tx, uint32_t arrival_time, uint32_t height) {
 

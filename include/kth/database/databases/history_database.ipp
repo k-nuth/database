@@ -20,11 +20,11 @@ result_code internal_database_basis<Clock>::insert_history_db(wallet::payment_ad
 
     auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, MDB_APPENDDUP);
     if (res == MDB_KEYEXIST) {
-        LOG_INFO(LOG_DATABASE) << "Duplicate key inserting history [insert_history_db] " << res;        
+        LOG_INFO(LOG_DATABASE, "Duplicate key inserting history [insert_history_db] ", res);
         return result_code::duplicated_key;
     }
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error inserting history [insert_history_db] " << res;        
+        LOG_INFO(LOG_DATABASE, "Error inserting history [insert_history_db] ", res);
         return result_code::other;
     }
 
@@ -41,7 +41,7 @@ result_code internal_database_basis<Clock>::insert_input_history(chain::input_po
         uint64_t history_count = get_history_count(db_txn);
     
         if (history_count == max_uint64) {
-            LOG_INFO(LOG_DATABASE) << "Error getting history items count";
+            LOG_INFO(LOG_DATABASE, "Error getting history items count");
             return result_code::other;
         }
 
@@ -76,7 +76,7 @@ result_code internal_database_basis<Clock>::insert_input_history(chain::input_po
 
                 uint64_t history_count = get_history_count(db_txn);
                 if (history_count == max_uint64) {
-                    LOG_INFO(LOG_DATABASE) << "Error getting history items count";
+                    LOG_INFO(LOG_DATABASE, "Error getting history items count");
                     return result_code::other;
                 }
 
@@ -93,7 +93,7 @@ result_code internal_database_basis<Clock>::insert_input_history(chain::input_po
                 }
             }
             else {
-                LOG_INFO(LOG_DATABASE) << "Error finding UTXO for input history [insert_input_history]";        
+                LOG_INFO(LOG_DATABASE, "Error finding UTXO for input history [insert_input_history]");
             }
     }
 
@@ -105,7 +105,7 @@ result_code internal_database_basis<Clock>::insert_output_history(hash_digest co
     
     uint64_t history_count = get_history_count(db_txn);
     if (history_count == max_uint64) {
-        LOG_INFO(LOG_DATABASE) << "Error getting history items count";
+        LOG_INFO(LOG_DATABASE, "Error getting history items count");
         return result_code::other;
     }
 

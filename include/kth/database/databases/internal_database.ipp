@@ -31,11 +31,11 @@ bool internal_database_basis<Clock>::create() {
 
     if ( ! create_directories(db_dir_, ec)) {
         if (ec.value() == directory_exists) {
-            LOG_ERROR(LOG_DATABASE) << "Failed because the directory " << db_dir_ << " already exists.";
+            LOG_ERROR(LOG_DATABASE, "Failed because the directory ", db_dir_, " already exists.");
             return false;
         }
 
-        LOG_ERROR(LOG_DATABASE) << "Failed to create directory " << db_dir_ << " with error, '" << ec.message() << "'.";
+        LOG_ERROR(LOG_DATABASE, "Failed to create directory ", db_dir_, " with error, '", ec.message(), "'.");
         return false;
     }
 
@@ -78,7 +78,7 @@ bool internal_database_basis<Clock>::create_db_mode_property() {
 
     res = mdb_put(db_txn, dbi_properties_, &key, &value, MDB_NOOVERWRITE);
     if (res != MDB_SUCCESS) {
-        LOG_ERROR(LOG_DATABASE) << "Failed saving in DB Properties [create_db_mode_property] " << static_cast<int32_t>(res);  
+        LOG_ERROR(LOG_DATABASE, "Failed saving in DB Properties [create_db_mode_property] ", static_cast<int32_t>(res));
         mdb_txn_abort(db_txn);
         return false;
     }
@@ -115,7 +115,7 @@ template <typename Clock>
 bool internal_database_basis<Clock>::open_internal() {
     
     if ( ! create_and_open_environment()) {
-        LOG_ERROR(LOG_DATABASE) << "Error configuring LMDB environment.";
+        LOG_ERROR(LOG_DATABASE, "Error configuring LMDB environment.");
         return false;
     }
 
@@ -138,7 +138,7 @@ bool internal_database_basis<Clock>::verify_db_mode_property() const {
 
     res = mdb_get(db_txn, dbi_properties_, &key, &value);
     if (res != MDB_SUCCESS) {  
-        LOG_ERROR(LOG_DATABASE) << "Failed getting DB Properties [verify_db_mode_property] " << static_cast<int32_t>(res);  
+        LOG_ERROR(LOG_DATABASE, "Failed getting DB Properties [verify_db_mode_property] ", static_cast<int32_t>(res));
         mdb_txn_abort(db_txn);
         return false;
     }
@@ -159,10 +159,10 @@ bool internal_database_basis<Clock>::verify_db_mode_property() const {
 #endif
 
     if (db_mode_ != db_mode_node_) {
-        LOG_ERROR(LOG_DATABASE) << "Error validating DB Mode, the node is compiled for another DB mode. Node DB Mode: " 
-            << static_cast<uint32_t>(db_mode_node_) 
-            << ", Actual DB Mode: " 
-            << static_cast<uint32_t>(db_mode_);     
+        LOG_ERROR(LOG_DATABASE, "Error validating DB Mode, the node is compiled for another DB mode. Node DB Mode: " 
+           , static_cast<uint32_t>(db_mode_node_) 
+           , ", Actual DB Mode: " 
+           , static_cast<uint32_t>(db_mode_));
         return false;
     }
 
@@ -241,7 +241,7 @@ result_code internal_database_basis<Clock>::push_block(chain::block const& block
     MDB_txn* db_txn;
     auto res0 = mdb_txn_begin(env_, NULL, 0, &db_txn);
     if (res0 != MDB_SUCCESS) {
-        LOG_ERROR(LOG_DATABASE) << "Error begining LMDB Transaction [push_block] " << res0;
+        LOG_ERROR(LOG_DATABASE, "Error begining LMDB Transaction [push_block] ", res0);
         return result_code::other;
     }
 
@@ -254,7 +254,7 @@ result_code internal_database_basis<Clock>::push_block(chain::block const& block
 
     auto res2 = mdb_txn_commit(db_txn);
     if (res2 != MDB_SUCCESS) {
-        LOG_ERROR(LOG_DATABASE) << "Error commiting LMDB Transaction [push_block] " << res2;
+        LOG_ERROR(LOG_DATABASE, "Error commiting LMDB Transaction [push_block] ", res2);
         return result_code::other;
     }
 
@@ -285,7 +285,7 @@ utxo_entry internal_database_basis<Clock>::get_utxo(chain::output_point const& p
     MDB_txn* db_txn;
     auto res0 = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
     if (res0 != MDB_SUCCESS) {
-        LOG_ERROR(LOG_DATABASE) << "Error begining LMDB Transaction [get_utxo] " << res0;
+        LOG_ERROR(LOG_DATABASE, "Error begining LMDB Transaction [get_utxo] ", res0);
         return {};
     }
 
@@ -293,7 +293,7 @@ utxo_entry internal_database_basis<Clock>::get_utxo(chain::output_point const& p
 
     res0 = mdb_txn_commit(db_txn);
     if (res0 != MDB_SUCCESS) {
-        LOG_ERROR(LOG_DATABASE) << "Error commiting LMDB Transaction [get_utxo] " << res0;        
+        LOG_ERROR(LOG_DATABASE, "Error commiting LMDB Transaction [get_utxo] ", res0);
         return {};
     }
 
@@ -466,12 +466,12 @@ result_code internal_database_basis<Clock>::insert_reorg_into_pool(utxo_pool_t& 
     MDB_val value;
     auto res = mdb_get(db_txn, dbi_reorg_pool_, &key_point, &value);
     if (res == MDB_NOTFOUND) {
-        LOG_INFO(LOG_DATABASE) << "Key not found in reorg pool [insert_reorg_into_pool] " << res;        
+        LOG_INFO(LOG_DATABASE, "Key not found in reorg pool [insert_reorg_into_pool] ", res);
         return result_code::key_not_found;
     }
 
     if (res != MDB_SUCCESS) {
-        LOG_ERROR(LOG_DATABASE) << "Error in reorg pool [insert_reorg_into_pool] " << res;        
+        LOG_ERROR(LOG_DATABASE, "Error in reorg pool [insert_reorg_into_pool] ", res);
         return result_code::other;
     }
 
@@ -632,7 +632,7 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
 
     auto res = mdb_env_set_mapsize(env_, adjust_db_size(db_max_size_));
     if (res != MDB_SUCCESS) {
-        LOG_ERROR(LOG_DATABASE) << "Error setting max memory map size. Verify do you have enough free space. [create_and_open_environment] " << static_cast<int32_t>(res);  
+        LOG_ERROR(LOG_DATABASE, "Error setting max memory map size. Verify do you have enough free space. [create_and_open_environment] ", static_cast<int32_t>(res));
         return false;
     }
 
@@ -672,12 +672,12 @@ bool internal_database_basis<Clock>::set_fast_flags_environment(bool enabled) {
         return true;
     }
 
-    LOG_INFO(LOG_DATABASE) << "Setting LMDB Environment Flags. Fast mode: " << (enabled ? "yes" : "no" );
+    LOG_INFO(LOG_DATABASE, "Setting LMDB Environment Flags. Fast mode: ", (enabled ? "yes" : "no" ));
 
     //MDB_WRITEMAP | 
     auto res = mdb_env_set_flags(env_, MDB_MAPASYNC, enabled ? 1 : 0);
     if ( res != MDB_SUCCESS ) {
-        LOG_ERROR(LOG_DATABASE) << "Error setting LMDB Environmet flags. [set_fast_flags_environment] " << static_cast<int32_t>(res);      
+        LOG_ERROR(LOG_DATABASE, "Error setting LMDB Environmet flags. [set_fast_flags_environment] ", static_cast<int32_t>(res));
         return false;
     }
 

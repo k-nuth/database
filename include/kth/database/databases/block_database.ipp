@@ -190,12 +190,12 @@ MDB_val key {sizeof(height), &height};
 
     auto res = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_APPEND);
     if (res == MDB_KEYEXIST) {
-        LOG_INFO(LOG_DATABASE) << "Duplicate key in Block DB [insert_block] " << res;
+        LOG_INFO(LOG_DATABASE, "Duplicate key in Block DB [insert_block] ", res);
         return result_code::duplicated_key;
     }
 
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error saving in Block DB [insert_block] " << res;
+        LOG_INFO(LOG_DATABASE, "Error saving in Block DB [insert_block] ", res);
         return result_code::other;
     }
 
@@ -209,12 +209,12 @@ MDB_val key {sizeof(height), &height};
 
         auto res = mdb_put(db_txn, dbi_block_db_, &key, &value, MDB_APPENDDUP);
         if (res == MDB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE) << "Duplicate key in Block DB [insert_block] " << res;
+            LOG_INFO(LOG_DATABASE, "Duplicate key in Block DB [insert_block] ", res);
             return result_code::duplicated_key;
         }
 
         if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error saving in Block DB [insert_block] " << res;
+            LOG_INFO(LOG_DATABASE, "Error saving in Block DB [insert_block] ", res);
             return result_code::other;
         }
     }
@@ -233,11 +233,11 @@ result_code internal_database_basis<Clock>::remove_blocks_db(uint32_t height, MD
     
     auto res = mdb_del(db_txn, dbi_block_db_, &key, NULL);
     if (res == MDB_NOTFOUND) {
-        LOG_INFO(LOG_DATABASE) << "Key not found deleting blocks DB in LMDB [remove_blocks_db] - mdb_del: " << res;
+        LOG_INFO(LOG_DATABASE, "Key not found deleting blocks DB in LMDB [remove_blocks_db] - mdb_del: ", res);
         return result_code::key_not_found;
     }
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error deleting blocks DB in LMDB [remove_blocks_db] - mdb_del: " << res;
+        LOG_INFO(LOG_DATABASE, "Error deleting blocks DB in LMDB [remove_blocks_db] - mdb_del: ", res);
         return result_code::other;
     }
 

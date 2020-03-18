@@ -32,7 +32,7 @@ public:
     data_chunk to_data() const;
     void to_data(std::ostream& stream) const;
 
-    template <Writer W, KTH_IS_WRITER(W)>
+    template <typename W, KTH_IS_WRITER(W)>
     void to_data(W& sink) const {
         output_.to_data(sink, false);
         to_data_fixed(sink, height_, median_time_past_, coinbase_);
@@ -41,7 +41,7 @@ public:
     bool from_data(const data_chunk& data);
     bool from_data(std::istream& stream);
 
-    template <Reader R, KTH_IS_READER(R)>
+    template <typename R, KTH_IS_READER(R)>
     bool from_data(R& source) {
         reset();
         
@@ -62,7 +62,7 @@ public:
     static
     utxo_entry factory_from_data(std::istream& stream);
 
-    template <Reader R, KTH_IS_READER(R)>
+    template <typename R, KTH_IS_READER(R)>
     static
     utxo_entry factory_from_data(R& source) {
         utxo_entry instance;
@@ -76,7 +76,7 @@ public:
     static
     void to_data_fixed(std::ostream& stream, uint32_t height, uint32_t median_time_past, bool coinbase);
 
-    template <Writer W, KTH_IS_WRITER(W)>
+    template <typename W, KTH_IS_WRITER(W)>
     static
     void to_data_fixed(W& sink, uint32_t height, uint32_t median_time_past, bool coinbase) {
         sink.write_4_bytes_little_endian(height);
@@ -90,7 +90,7 @@ public:
     static
     void to_data_with_fixed(std::ostream& stream, chain::output const& output, data_chunk const& fixed);
 
-    template <Writer W, KTH_IS_WRITER(W)>
+    template <typename W, KTH_IS_WRITER(W)>
     static
     void to_data_with_fixed(W& sink, chain::output const& output, data_chunk const& fixed) {
         output.to_data(sink, false);

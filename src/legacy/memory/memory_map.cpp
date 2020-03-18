@@ -90,42 +90,35 @@ bool memory_map::handle_error(std::string const& context,
 #else
     auto const error = errno;
 #endif
-    LOG_FATAL(LOG_DATABASE)
-        << "The file failed to " << context << ": " << filename << " : "
-        << error;
+    LOG_FATAL(LOG_DATABASE
+       , "The file failed to ", context, ": ", filename, " : "
+       , error);
     return false;
 }
 
-void memory_map::log_mapping() const
-{
-    LOG_DEBUG(LOG_DATABASE)
-        << "Mapping: " << filename_ << " [" << file_size_ << "] ("
-        << page() << ")";
+void memory_map::log_mapping() const {
+    LOG_DEBUG(LOG_DATABASE
+       , "Mapping: ", filename_, " [", file_size_, "] ("
+       , page(), ")");
 }
 
-void memory_map::log_resizing(size_t size) const
-{
-    LOG_DEBUG(LOG_DATABASE)
-        << "Resizing: " << filename_ << " [" << size << "]";
+void memory_map::log_resizing(size_t size) const {
+    LOG_DEBUG(LOG_DATABASE, "Resizing: ", filename_, " [", size, "]");
 }
 
 void memory_map::log_flushed() const
 {
-    LOG_DEBUG(LOG_DATABASE)
-        << "Flushed: " << filename_ << " [" << logical_size_ << "]";
+    LOG_DEBUG(LOG_DATABASE, "Flushed: ", filename_, " [", logical_size_, "]");
 }
 
-void memory_map::log_unmapping() const
-{
-    LOG_DEBUG(LOG_DATABASE)
-        << "Unmapping: " << filename_ << " [" << logical_size_ << "]";
+void memory_map::log_unmapping() const {
+    LOG_DEBUG(LOG_DATABASE, "Unmapping: ", filename_, " [", logical_size_, "]");
 }
 
-void memory_map::log_unmapped() const
-{
-    LOG_DEBUG(LOG_DATABASE)
-        << "Unmapped: " << filename_ << " [" << logical_size_ << ", "
-        << file_size_ << "]";
+void memory_map::log_unmapped() const {
+    LOG_DEBUG(LOG_DATABASE
+       , "Unmapped: ", filename_, " [", logical_size_, ", "
+       , file_size_, "]");
 }
 
 memory_map::memory_map(const path& filename)

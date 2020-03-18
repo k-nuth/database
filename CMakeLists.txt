@@ -164,6 +164,13 @@ if (JUST_KTH_SOURCES)
   message(STATUS "Knuth: Just Knuth source code to be linted: enabled")
 endif()
 
+# Implement --binlog.
+#------------------------------------------------------------------------------
+option(BINLOG "Uses BinLog logging library." OFF)
+if (BINLOG)
+  add_definitions(-DKTH_USE_BINLOG)
+endif()
+
 
 #------------------------------------------------------------------------------
 set(CURRENCY "BCH" CACHE STRING "Specify the Cryptocurrency (BCH|BTC|LTC).")

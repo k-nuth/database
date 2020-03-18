@@ -289,9 +289,9 @@ void transaction_database::store(const chain::transaction& tx, size_t height, ui
 
     // We report this here because its a steady interval (block announce).
     if ( ! cache_.disabled() && position == 0) {
-        LOG_DEBUG(LOG_DATABASE)
-            << "Output cache hit rate: " << cache_.hit_rate() << ", size: "
-            << cache_.size();
+        LOG_DEBUG(LOG_DATABASE
+           , "Output cache hit rate: ", cache_.hit_rate(), ", size: "
+           , cache_.size());
     }
 #endif // KTH_DB_UNSPENT_LEGACY
 }

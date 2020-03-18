@@ -128,12 +128,12 @@ result_code internal_database_basis<Clock>::insert_transaction(uint64_t id, chai
 
     auto res = mdb_put(db_txn, dbi_transaction_db_, &key, &value, MDB_APPEND);
     if (res == MDB_KEYEXIST) {
-        LOG_INFO(LOG_DATABASE) << "Duplicate key in Transaction DB [insert_transaction] " << res;
+        LOG_INFO(LOG_DATABASE, "Duplicate key in Transaction DB [insert_transaction] ", res);
         return result_code::duplicated_key;
     }        
 
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error saving in Transaction DB [insert_transaction] " << res;
+        LOG_INFO(LOG_DATABASE, "Error saving in Transaction DB [insert_transaction] ", res);
         return result_code::other;
     }
 
@@ -143,12 +143,12 @@ result_code internal_database_basis<Clock>::insert_transaction(uint64_t id, chai
     
     res = mdb_put(db_txn, dbi_transaction_hash_db_, &key_tx, &key, MDB_NOOVERWRITE);
     if (res == MDB_KEYEXIST) {
-        LOG_INFO(LOG_DATABASE) << "Duplicate key in Transaction DB [insert_transaction] " << res;
+        LOG_INFO(LOG_DATABASE, "Duplicate key in Transaction DB [insert_transaction] ", res);
         return result_code::duplicated_key;
     }        
 
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error saving in Transaction DB [insert_transaction] " << res;
+        LOG_INFO(LOG_DATABASE, "Error saving in Transaction DB [insert_transaction] ", res);
         return result_code::other;
     }
 
@@ -189,21 +189,21 @@ result_code internal_database_basis<Clock>::remove_transactions(chain::block con
 
         res = mdb_del(db_txn, dbi_transaction_db_, &key_tx, NULL);
         if (res == MDB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE) << "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE, "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: ", res);
             return result_code::key_not_found;
         }
         if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE, "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: ", res);
             return result_code::other;
         }
 
         res = mdb_del(db_txn, dbi_transaction_hash_db_, &key, NULL);
         if (res == MDB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE) << "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE, "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: ", res);
             return result_code::key_not_found;
         }
         if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE, "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: ", res);
             return result_code::other;
         }
 
@@ -242,22 +242,22 @@ result_code internal_database_basis<Clock>::remove_transactions(chain::block con
         MDB_val key_tx {sizeof(tx_id), &tx_id};
         auto res = mdb_del(db_txn, dbi_transaction_db_, &key_tx, NULL);
         if (res == MDB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE) << "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE, "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: ", res);
             return result_code::key_not_found;
         }
         if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE, "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: ", res);
             return result_code::other;
         }
 
         MDB_val key_hash {tx.hash().size(), tx.hash().data()};
         res = mdb_del(db_txn, dbi_transaction_hash_db_, &key_hash, NULL);
         if (res == MDB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE) << "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE, "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: ", res);
             return result_code::key_not_found;
         }
         if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE, "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: ", res);
             return result_code::other;
         }
     
@@ -282,22 +282,22 @@ result_code internal_database_basis<Clock>::remove_transactions(chain::block con
             MDB_val key_tx {sizeof(tx_id), &tx_id};
             auto res = mdb_del(db_txn, dbi_transaction_db_, &key_tx, NULL);
             if (res == MDB_NOTFOUND) {
-                LOG_INFO(LOG_DATABASE) << "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+                LOG_INFO(LOG_DATABASE, "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: ", res);
                 return result_code::key_not_found;
             }
             if (res != MDB_SUCCESS) {
-                LOG_INFO(LOG_DATABASE) << "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+                LOG_INFO(LOG_DATABASE, "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: ", res);
                 return result_code::other;
             }
 
             MDB_val key_hash {tx.hash().size(), tx.hash().data()};
             res = mdb_del(db_txn, dbi_transaction_hash_db_, &key_hash, NULL);
             if (res == MDB_NOTFOUND) {
-                LOG_INFO(LOG_DATABASE) << "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+                LOG_INFO(LOG_DATABASE, "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: ", res);
                 return result_code::key_not_found;
             }
             if (res != MDB_SUCCESS) {
-                LOG_INFO(LOG_DATABASE) << "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+                LOG_INFO(LOG_DATABASE, "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: ", res);
                 return result_code::other;
             }    
         }
@@ -343,11 +343,11 @@ result_code internal_database_basis<Clock>::remove_transactions(chain::block con
         
         auto res = mdb_del(db_txn, dbi_transaction_db_, &key_tx, NULL);
         if (res == MDB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE) << "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE, "Key not found deleting transaction DB in LMDB [remove_transactions] - mdb_del: ", res);
             return result_code::key_not_found;
         }
         if (res != MDB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE) << "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: " << res;
+            LOG_INFO(LOG_DATABASE, "Error deleting transaction DB in LMDB [remove_transactions] - mdb_del: ", res);
             return result_code::other;
         }
     
@@ -369,12 +369,12 @@ result_code internal_database_basis<Clock>::update_transaction(chain::transactio
 
     auto res = mdb_put(db_txn, dbi_transaction_db_, &key, &value, 0);
     if (res == MDB_KEYEXIST) {
-        LOG_INFO(LOG_DATABASE) << "Duplicate key in Transaction DB [insert_transaction] " << res;
+        LOG_INFO(LOG_DATABASE, "Duplicate key in Transaction DB [insert_transaction] ", res);
         return result_code::duplicated_key;
     }        
 
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error saving in Transaction DB [insert_transaction] " << res;
+        LOG_INFO(LOG_DATABASE, "Error saving in Transaction DB [insert_transaction] ", res);
         return result_code::other;
     }
 

@@ -50,17 +50,17 @@ data_base::data_base(const settings& settings)
    
 #ifdef KTH_DB_LEGACY
         LOG_DEBUG(LOG_DATABASE)
-        << "Buckets: "
-        << "block [" << settings.block_table_buckets << "], "
-        << "transaction [" << settings.transaction_table_buckets << "], "
+       , "Buckets: "
+       , "block [", settings.block_table_buckets, "], "
+       , "transaction [", settings.transaction_table_buckets, "], "
 #endif // KTH_DB_LEGACY
 
 #ifdef KTH_DB_SPENDS
-        << "spend [" << settings.spend_table_buckets << "], "
+       , "spend [", settings.spend_table_buckets, "], "
 #endif // KTH_DB_SPENDS
 
 #ifdef KTH_DB_HISTORY
-        << "history [" << settings.history_table_buckets << "]"
+       , "history [", settings.history_table_buckets, "]"
 #endif // KTH_DB_HISTORY
 
 #ifdef KTH_DB_LEGACY
@@ -332,7 +332,7 @@ bool data_base::flush() const {
     // Just for the log.
     code ec(flushed ? error::success : error::operation_failed_0);
 
-    LOG_DEBUG(LOG_DATABASE) << "Write flushed to disk: " << ec.message();
+    LOG_DEBUG(LOG_DATABASE, "Write flushed to disk: ", ec.message());
 
     return flushed;
 }
@@ -1228,7 +1228,7 @@ void data_base::push_next(code const& ec, block_const_ptr_list_const_ptr blocks,
 void data_base::do_push(block_const_ptr block, size_t height, uint32_t median_time_past, dispatcher& dispatch, result_handler handler) {
 
 #ifdef KTH_DB_NEW
-    // LOG_DEBUG(LOG_DATABASE) << "Write flushed to disk: " << ec.message();
+    // LOG_DEBUG(LOG_DATABASE, "Write flushed to disk: ", ec.message());
     auto res = internal_db_->push_block(*block, height, median_time_past);
     if ( ! succeed(res)) {
         handler(error::operation_failed_7); //TODO(fernando): create a new operation_failed
@@ -1361,7 +1361,7 @@ code data_base::prune_reorg() {
 #ifdef KTH_DB_NEW
     auto res = internal_db_->prune();
     if ( ! succeed_prune(res)) {
-        LOG_ERROR(LOG_DATABASE) << "Error pruning the reorganization pool, code: " << static_cast<std::underlying_type<result_code>::type>(res);
+        LOG_ERROR(LOG_DATABASE, "Error pruning the reorganization pool, code: ", static_cast<std::underlying_type<result_code>::type>(res));
         return error::unknown;
     }
 #endif // KTH_DB_NEW

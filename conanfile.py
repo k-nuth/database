@@ -38,25 +38,29 @@ class KnuthDatabaseConan(KnuthConanFile):
                "cflags": "ANY",
                "glibcxx_supports_cxx11_abi": "ANY",
                "cmake_export_compile_commands": [True, False],
+               "binlog": [True, False],
     }
 
-    default_options = "shared=False", \
-        "fPIC=True", \
-        "tests=False", \
-        "tools=False", \
-        "currency=BCH", \
-        "microarchitecture=_DUMMY_",  \
-        "fix_march=False", \
-        "march_id=_DUMMY_",  \
-        "verbose=False", \
-        "measurements=False", \
-        "db=default", \
-        "db_readonly=False", \
-        "cached_rpc_data=False", \
-        "cxxflags=_DUMMY_", \
-        "cflags=_DUMMY_", \
-        "glibcxx_supports_cxx11_abi=_DUMMY_", \
-        "cmake_export_compile_commands=False"
+    default_options = {
+        "shared": False,
+        "fPIC": True,
+        "tests": False,
+        "tools": False,
+        "currency": "BCH",
+        "microarchitecture": "_DUMMY_", 
+        "fix_march": False,
+        "march_id": "_DUMMY_", 
+        "verbose": False,
+        "measurements": False,
+        "db": "default",
+        "db_readonly": False,
+        "cached_rpc_data": False,
+        "cxxflags": "_DUMMY_",
+        "cflags": "_DUMMY_",
+        "glibcxx_supports_cxx11_abi": "_DUMMY_",
+        "cmake_export_compile_commands": False,
+        "binlog": False,
+    }
 
     generators = "cmake"
     exports = "conan_*", "ci_utils/*"
@@ -100,6 +104,7 @@ class KnuthDatabaseConan(KnuthConanFile):
         cmake.definitions["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
         cmake.definitions["DB_READONLY_MODE"] = option_on_off(self.options.db_readonly)
         cmake.definitions["WITH_CACHED_RPC_DATA"] = option_on_off(self.options.cached_rpc_data)
+        cmake.definitions["BINLOG"] = option_on_off(self.options.binlog)
 
         if self.options.cmake_export_compile_commands:
             cmake.definitions["CMAKE_EXPORT_COMPILE_COMMANDS"] = option_on_off(self.options.cmake_export_compile_commands)

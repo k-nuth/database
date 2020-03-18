@@ -97,11 +97,11 @@ result_code internal_database_basis<Clock>::remove_transaction_unconfirmed(hash_
 
     auto res = mdb_del(db_txn, dbi_transaction_unconfirmed_db_, &key, NULL);
     if (res == MDB_NOTFOUND) {
-        //LOG_DEBUG(LOG_DATABASE) << "Key not found deleting transaction unconfirmed DB in LMDB [remove_transaction_unconfirmed] - mdb_del: " << res;
+        //LOG_DEBUG(LOG_DATABASE, "Key not found deleting transaction unconfirmed DB in LMDB [remove_transaction_unconfirmed] - mdb_del: ", res);
         return result_code::key_not_found;
     }
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error deleting transaction unconfirmed DB in LMDB [remove_transaction_unconfirmed] - mdb_del: " << res;
+        LOG_INFO(LOG_DATABASE, "Error deleting transaction unconfirmed DB in LMDB [remove_transaction_unconfirmed] - mdb_del: ", res);
         return result_code::other;
     }
 
@@ -132,12 +132,12 @@ result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(chain
 
     auto res = mdb_put(db_txn, dbi_transaction_unconfirmed_db_, &key, &value, MDB_NOOVERWRITE);
     if (res == MDB_KEYEXIST) {
-        LOG_INFO(LOG_DATABASE) << "Duplicate key in Transaction Unconfirmed DB [insert_transaction_unconfirmed] " << res;
+        LOG_INFO(LOG_DATABASE, "Duplicate key in Transaction Unconfirmed DB [insert_transaction_unconfirmed] ", res);
         return result_code::duplicated_key;
     }        
 
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error saving in Transaction Unconfirmed DB [insert_transaction_unconfirmed] " << res;
+        LOG_INFO(LOG_DATABASE, "Error saving in Transaction Unconfirmed DB [insert_transaction_unconfirmed] ", res);
         return result_code::other;
     }
 

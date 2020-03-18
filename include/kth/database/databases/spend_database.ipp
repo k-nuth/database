@@ -20,7 +20,7 @@ chain::input_point internal_database_basis<Clock>::get_spend(chain::output_point
     MDB_txn* db_txn;
     auto res0 = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
     if (res0 != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error begining LMDB Transaction [get_spend] " << res0;
+        LOG_INFO(LOG_DATABASE, "Error begining LMDB Transaction [get_spend] ", res0);
         return chain::input_point{};
     }
 
@@ -35,7 +35,7 @@ chain::input_point internal_database_basis<Clock>::get_spend(chain::output_point
 
     res0 = mdb_txn_commit(db_txn);
     if (res0 != MDB_SUCCESS) {
-        LOG_DEBUG(LOG_DATABASE) << "Error commiting LMDB Transaction [get_spend] " << res0;        
+        LOG_DEBUG(LOG_DATABASE, "Error commiting LMDB Transaction [get_spend] ", res0);
         return chain::input_point{};
     }
 
@@ -57,11 +57,11 @@ result_code internal_database_basis<Clock>::insert_spend(chain::output_point con
 
     auto res = mdb_put(db_txn, dbi_spend_db_, &key, &value, MDB_NOOVERWRITE);
     if (res == MDB_KEYEXIST) {
-        LOG_INFO(LOG_DATABASE) << "Duplicate key inserting spend [insert_spend] " << res;        
+        LOG_INFO(LOG_DATABASE, "Duplicate key inserting spend [insert_spend] ", res);
         return result_code::duplicated_key;
     }
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error inserting spend [insert_spend] " << res;        
+        LOG_INFO(LOG_DATABASE, "Error inserting spend [insert_spend] ", res);
         return result_code::other;
     }
 
@@ -98,11 +98,11 @@ result_code internal_database_basis<Clock>::remove_spend(chain::output_point con
     auto res = mdb_del(db_txn, dbi_spend_db_, &key, NULL);
     
     if (res == MDB_NOTFOUND) {
-        LOG_INFO(LOG_DATABASE) << "Key not found deleting spend [remove_spend] " << res;
+        LOG_INFO(LOG_DATABASE, "Key not found deleting spend [remove_spend] ", res);
         return result_code::key_not_found;
     }
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error deleting spend [remove_spend] " << res;
+        LOG_INFO(LOG_DATABASE, "Error deleting spend [remove_spend] ", res);
         return result_code::other;
     }
     return result_code::success;

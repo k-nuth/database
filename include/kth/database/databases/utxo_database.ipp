@@ -21,11 +21,11 @@ result_code internal_database_basis<Clock>::remove_utxo(uint32_t height, chain::
 
     auto res = mdb_del(db_txn, dbi_utxo_, &key, NULL);
     if (res == MDB_NOTFOUND) {
-        LOG_INFO(LOG_DATABASE) << "Key not found deleting UTXO [remove_utxo] " << res;
+        LOG_INFO(LOG_DATABASE, "Key not found deleting UTXO [remove_utxo] ", res);
         return result_code::key_not_found;
     }
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error deleting UTXO [remove_utxo] " << res;
+        LOG_INFO(LOG_DATABASE, "Error deleting UTXO [remove_utxo] ", res);
         return result_code::other;
     }
     return result_code::success;
@@ -41,11 +41,11 @@ result_code internal_database_basis<Clock>::insert_utxo(chain::output_point cons
     auto res = mdb_put(db_txn, dbi_utxo_, &key, &value, MDB_NOOVERWRITE);
 
     if (res == MDB_KEYEXIST) {
-        LOG_INFO(LOG_DATABASE) << "Duplicate Key inserting UTXO [insert_utxo] " << res;        
+        LOG_INFO(LOG_DATABASE, "Duplicate Key inserting UTXO [insert_utxo] ", res);
         return result_code::duplicated_key;
     }
     if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE) << "Error inserting UTXO [insert_utxo] " << res;        
+        LOG_INFO(LOG_DATABASE, "Error inserting UTXO [insert_utxo] ", res);
         return result_code::other;
     }
     return result_code::success;
