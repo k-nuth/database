@@ -90,76 +90,76 @@ chain::block get_fake_genesis() {
     return get_block(genesis_enc);
 }
 
-void close_everything(MDB_env* e, MDB_dbi& db0, MDB_dbi& db1, MDB_dbi& db2, MDB_dbi& db3, MDB_dbi& db4, MDB_dbi& db5
+void close_everything(KTH_DB_env* e, KTH_DB_dbi& db0, KTH_DB_dbi& db1, KTH_DB_dbi& db2, KTH_DB_dbi& db3, KTH_DB_dbi& db4, KTH_DB_dbi& db5
 #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) 
-, MDB_dbi& db6 
+, KTH_DB_dbi& db6 
 #endif
 #ifdef KTH_DB_NEW_FULL
-, MDB_dbi& db7
-, MDB_dbi& db8
-, MDB_dbi& db9
-, MDB_dbi& db10
-, MDB_dbi& db11
+, KTH_DB_dbi& db7
+, KTH_DB_dbi& db8
+, KTH_DB_dbi& db9
+, KTH_DB_dbi& db10
+, KTH_DB_dbi& db11
 #endif
 
 ) {
-    mdb_dbi_close(e, db0);
-    mdb_dbi_close(e, db1);
-    mdb_dbi_close(e, db2);
-    mdb_dbi_close(e, db3);
-    mdb_dbi_close(e, db4);
-    mdb_dbi_close(e, db5);
+    kth_db_dbi_close(e, db0);
+    kth_db_dbi_close(e, db1);
+    kth_db_dbi_close(e, db2);
+    kth_db_dbi_close(e, db3);
+    kth_db_dbi_close(e, db4);
+    kth_db_dbi_close(e, db5);
 
 #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-    mdb_dbi_close(e, db6);
+    kth_db_dbi_close(e, db6);
 #endif
 
 #ifdef KTH_DB_NEW_FULL
-    mdb_dbi_close(e, db7);
-    mdb_dbi_close(e, db8);
-    mdb_dbi_close(e, db9);
-    mdb_dbi_close(e, db10);
-    mdb_dbi_close(e, db11);
+    kth_db_dbi_close(e, db7);
+    kth_db_dbi_close(e, db8);
+    kth_db_dbi_close(e, db9);
+    kth_db_dbi_close(e, db10);
+    kth_db_dbi_close(e, db11);
 #endif
 
-    mdb_env_close(e);
+    kth_db_env_close(e);
 }
 
-std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi
+std::tuple<KTH_DB_env*, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_dbi
 #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-, MDB_dbi
+, KTH_DB_dbi
 #endif
 
 #ifdef KTH_DB_NEW_FULL
-, MDB_dbi
-, MDB_dbi
-, MDB_dbi
-, MDB_dbi
-, MDB_dbi
+, KTH_DB_dbi
+, KTH_DB_dbi
+, KTH_DB_dbi
+, KTH_DB_dbi
+, KTH_DB_dbi
 #endif
 > open_dbs() {
     
-    MDB_env* env_;
-    MDB_dbi dbi_utxo_;
-    MDB_dbi dbi_reorg_pool_;
-    MDB_dbi dbi_reorg_index_;
-    MDB_dbi dbi_block_header_;
-    MDB_dbi dbi_block_header_by_hash_;
-    MDB_dbi dbi_reorg_block_;
+    KTH_DB_env* env_;
+    KTH_DB_dbi dbi_utxo_;
+    KTH_DB_dbi dbi_reorg_pool_;
+    KTH_DB_dbi dbi_reorg_index_;
+    KTH_DB_dbi dbi_block_header_;
+    KTH_DB_dbi dbi_block_header_by_hash_;
+    KTH_DB_dbi dbi_reorg_block_;
     
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_block_db_;
+    KTH_DB_dbi dbi_block_db_;
     #endif
     
     #if defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_transaction_db_;
-    MDB_dbi dbi_history_db_;
-    MDB_dbi dbi_spend_db_;
-    MDB_dbi dbi_transaction_hash_db_;
-    MDB_dbi dbi_transaction_unconfirmed_db_;
+    KTH_DB_dbi dbi_transaction_db_;
+    KTH_DB_dbi dbi_history_db_;
+    KTH_DB_dbi dbi_spend_db_;
+    KTH_DB_dbi dbi_transaction_hash_db_;
+    KTH_DB_dbi dbi_transaction_unconfirmed_db_;
     #endif
 
-    MDB_txn* db_txn;
+    KTH_DB_txn* db_txn;
 
     char block_header_db_name[] = "block_header";
     char block_header_by_hash_db_name[] = "block_header_by_hash";
@@ -181,45 +181,45 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi
     char spend_db_name[] = "spend";
     #endif
 
-    BOOST_REQUIRE(mdb_env_create(&env_) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_env_set_mapsize(env_, db_size) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_env_create(&env_) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_env_set_mapsize(env_, db_size) == KTH_DB_SUCCESS);
     
     #ifdef KTH_DB_NEW_BLOCKS
-    BOOST_REQUIRE(mdb_env_set_maxdbs(env_, 7) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_env_set_maxdbs(env_, 7) == KTH_DB_SUCCESS);
     #elif KTH_DB_NEW_FULL
-    BOOST_REQUIRE(mdb_env_set_maxdbs(env_, 12) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_env_set_maxdbs(env_, 12) == KTH_DB_SUCCESS);
     #else
-    BOOST_REQUIRE(mdb_env_set_maxdbs(env_, 6) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_env_set_maxdbs(env_, 6) == KTH_DB_SUCCESS);
     #endif
     
-    auto qqq = mdb_env_open(env_, DIRECTORY "/internal_db", MDB_NORDAHEAD | MDB_NOSYNC | MDB_NOTLS, 0664);
+    auto qqq = kth_db_env_open(env_, DIRECTORY "/internal_db", KTH_DB_NORDAHEAD | KTH_DB_NOSYNC | KTH_DB_NOTLS, 0664);
     
-    BOOST_REQUIRE(qqq == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, 0, &db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(qqq == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, 0, &db_txn) == KTH_DB_SUCCESS);
     
 
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, block_header_db_name, KTH_DB_CONDITIONAL_CREATE | MDB_INTEGERKEY, &dbi_block_header_) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, block_header_by_hash_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_block_header_by_hash_) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, utxo_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_utxo_) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, reorg_pool_name, KTH_DB_CONDITIONAL_CREATE, &dbi_reorg_pool_) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, reorg_index_name, KTH_DB_CONDITIONAL_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED, &dbi_reorg_index_) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, reorg_block_name, KTH_DB_CONDITIONAL_CREATE | MDB_INTEGERKEY, &dbi_reorg_block_) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_dbi_open(db_txn, block_header_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_block_header_) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_dbi_open(db_txn, block_header_by_hash_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_block_header_by_hash_) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_dbi_open(db_txn, utxo_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_utxo_) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_dbi_open(db_txn, reorg_pool_name, KTH_DB_CONDITIONAL_CREATE, &dbi_reorg_pool_) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_dbi_open(db_txn, reorg_index_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_INTEGERKEY | KTH_DB_DUPFIXED, &dbi_reorg_index_) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_dbi_open(db_txn, reorg_block_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_reorg_block_) == KTH_DB_SUCCESS);
 
     #if defined(KTH_DB_NEW_BLOCKS)
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, block_db_name, KTH_DB_CONDITIONAL_CREATE | MDB_INTEGERKEY, &dbi_block_db_) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_dbi_open(db_txn, block_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_block_db_) == KTH_DB_SUCCESS);
     #endif
 
     #if defined(KTH_DB_NEW_FULL)
 
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, block_db_name, KTH_DB_CONDITIONAL_CREATE | MDB_DUPSORT | MDB_INTEGERKEY | MDB_DUPFIXED  | MDB_INTEGERDUP, &dbi_block_db_)== MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, transaction_db_name, KTH_DB_CONDITIONAL_CREATE | MDB_INTEGERKEY, &dbi_transaction_db_)== MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, transaction_hash_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_transaction_hash_db_)== MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, history_db_name, KTH_DB_CONDITIONAL_CREATE | MDB_DUPSORT | MDB_DUPFIXED, &dbi_history_db_)== MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, spend_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_spend_db_)== MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_dbi_open(db_txn, transaction_unconfirmed_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_transaction_unconfirmed_db_) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_dbi_open(db_txn, block_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_INTEGERKEY | KTH_DB_DUPFIXED  | MDB_INTEGERDUP, &dbi_block_db_)== KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_dbi_open(db_txn, transaction_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_transaction_db_)== KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_dbi_open(db_txn, transaction_hash_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_transaction_hash_db_)== KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_dbi_open(db_txn, history_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_DUPFIXED, &dbi_history_db_)== KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_dbi_open(db_txn, spend_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_spend_db_)== KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_dbi_open(db_txn, transaction_unconfirmed_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_transaction_unconfirmed_db_) == KTH_DB_SUCCESS);
     #endif
 
-    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 
     #ifdef KTH_DB_NEW_BLOCKS
         return {env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_, dbi_block_db_};
@@ -232,112 +232,112 @@ std::tuple<MDB_env*, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi, MDB_dbi
 
 
 
-void print_db_entries_count(MDB_env* env_, MDB_dbi& dbi ) {
-    MDB_txn *txn;    
-    mdb_txn_begin(env_, NULL, MDB_RDONLY, &txn);
+void print_db_entries_count(KTH_DB_env* env_, KTH_DB_dbi& dbi ) {
+    KTH_DB_txn *txn;    
+    kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &txn);
   
     MDB_stat db_stats;
     auto ret = mdb_stat(txn, dbi, &db_stats);
-    if (ret != MDB_SUCCESS) {
+    if (ret != KTH_DB_SUCCESS) {
         std::cout << "Error getting entries " << static_cast<int32_t>(ret) << std::endl;
-        mdb_txn_commit(txn);
+        kth_db_txn_commit(txn);
         return;
     }
 
     std::cout << "Entries: " << db_stats.ms_entries << std::endl;
-    mdb_txn_commit(txn);
+    kth_db_txn_commit(txn);
 }
 
 //check_reorg_output(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0, "00f2052a01000000434104283338ffd784c198147f99aed2cc16709c90b1522e3b3637b312a6f9130e0eda7081e373a96d36be319710cd5c134aaffba81ff08650d7de8af332fe4d8cde20ac");
-void check_reorg_output(MDB_env* env_, MDB_dbi& dbi_reorg_pool_, std::string txid_enc, uint32_t pos, std::string output_enc) {
-    MDB_txn* db_txn;
+void check_reorg_output(KTH_DB_env* env_, KTH_DB_dbi& dbi_reorg_pool_, std::string txid_enc, uint32_t pos, std::string output_enc) {
+    KTH_DB_txn* db_txn;
 
     hash_digest txid;
     BOOST_REQUIRE(decode_hash(txid, txid_enc));
     output_point point{txid, pos};
     auto keyarr = point.to_data(false);
-    MDB_val key {keyarr.size(), keyarr.data()};
-    MDB_val value;
+    auto key = kth_db_make_value(keyarr.size(), keyarr.data());
+    KTH_DB_val value;
 
-    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_reorg_pool_, &key, &value) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_get(db_txn, dbi_reorg_pool_, &key, &value) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 
-    data_chunk data {static_cast<uint8_t*>(value.mv_data), static_cast<uint8_t*>(value.mv_data) + value.mv_size};
+    data_chunk data {static_cast<uint8_t*>(kth_db_get_data(value)), static_cast<uint8_t*>(kth_db_get_data(value)) + kth_db_get_size(value)};
     auto output = chain::output::factory_from_data(data, false);
 
     BOOST_REQUIRE(encode_base16(output.to_data(true)) == output_enc);
 }
 
-void check_reorg_output_just_existence(MDB_env* env_, MDB_dbi& dbi_reorg_pool_, std::string txid_enc, uint32_t pos) {
-    MDB_txn* db_txn;
+void check_reorg_output_just_existence(KTH_DB_env* env_, KTH_DB_dbi& dbi_reorg_pool_, std::string txid_enc, uint32_t pos) {
+    KTH_DB_txn* db_txn;
 
     hash_digest txid;
     BOOST_REQUIRE(decode_hash(txid, txid_enc));
     output_point point{txid, pos};
     auto keyarr = point.to_data(false);
-    MDB_val key {keyarr.size(), keyarr.data()};
-    MDB_val value;
+    auto key = kth_db_make_value(keyarr.size(), keyarr.data());
+    KTH_DB_val value;
 
-    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_reorg_pool_, &key, &value) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_get(db_txn, dbi_reorg_pool_, &key, &value) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 }
 
-void check_reorg_output_doesnt_exists(MDB_env* env_, MDB_dbi& dbi_reorg_pool_, std::string txid_enc, uint32_t pos) {
-    MDB_txn* db_txn;
+void check_reorg_output_doesnt_exists(KTH_DB_env* env_, KTH_DB_dbi& dbi_reorg_pool_, std::string txid_enc, uint32_t pos) {
+    KTH_DB_txn* db_txn;
 
     hash_digest txid;
     BOOST_REQUIRE(decode_hash(txid, txid_enc));
     output_point point{txid, pos};
     auto keyarr = point.to_data(false);
-    MDB_val key {keyarr.size(), keyarr.data()};
-    MDB_val value;
+    auto key = kth_db_make_value(keyarr.size(), keyarr.data());
+    KTH_DB_val value;
 
-    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_reorg_pool_, &key, &value) == MDB_NOTFOUND);
-    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_get(db_txn, dbi_reorg_pool_, &key, &value) == KTH_DB_NOTFOUND);
+    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 }
 
 
 #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-void check_blocks_db_just_existence(MDB_env* env_, MDB_dbi& dbi_blocks_db_, uint32_t height) {
-    MDB_txn* db_txn;
+void check_blocks_db_just_existence(KTH_DB_env* env_, KTH_DB_dbi& dbi_blocks_db_, uint32_t height) {
+    KTH_DB_txn* db_txn;
 
-    MDB_val key {sizeof(height), &height};
-    MDB_val value;
+    auto key = kth_db_make_value(sizeof(height), &height);
+    KTH_DB_val value;
 
-    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_blocks_db_, &key, &value) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_get(db_txn, dbi_blocks_db_, &key, &value) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 }
 
-void check_blocks_db_doesnt_exists(MDB_env* env_, MDB_dbi& dbi_blocks_db_, uint32_t height) {
-    MDB_txn* db_txn;
+void check_blocks_db_doesnt_exists(KTH_DB_env* env_, KTH_DB_dbi& dbi_blocks_db_, uint32_t height) {
+    KTH_DB_txn* db_txn;
 
-    MDB_val key {sizeof(height), &height};
-    MDB_val value;
+    auto key = kth_db_make_value(sizeof(height), &height);
+    KTH_DB_val value;
 
-    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_blocks_db_, &key, &value) == MDB_NOTFOUND);
-    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_get(db_txn, dbi_blocks_db_, &key, &value) == KTH_DB_NOTFOUND);
+    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 }
 
 #endif
 
 #if defined(KTH_DB_NEW_BLOCKS)
 
-void check_blocks_db(MDB_env* env_, MDB_dbi& dbi_blocks_db_, uint32_t height) {
-    MDB_txn* db_txn;
+void check_blocks_db(KTH_DB_env* env_, KTH_DB_dbi& dbi_blocks_db_, uint32_t height) {
+    KTH_DB_txn* db_txn;
 
-    MDB_val key {sizeof(height), &height};
-    MDB_val value;
+    auto key = kth_db_make_value(sizeof(height), &height);
+    KTH_DB_val value;
 
-    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_blocks_db_, &key, &value) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_get(db_txn, dbi_blocks_db_, &key, &value) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 
-    data_chunk data {static_cast<uint8_t*>(value.mv_data), static_cast<uint8_t*>(value.mv_data) + value.mv_size};
+    data_chunk data {static_cast<uint8_t*>(kth_db_get_data(value)), static_cast<uint8_t*>(kth_db_get_data(value)) + kth_db_get_size(value)};
     auto block = chain::block::factory_from_data(data, false);
 
     BOOST_REQUIRE(block.is_valid());
@@ -347,120 +347,120 @@ void check_blocks_db(MDB_env* env_, MDB_dbi& dbi_blocks_db_, uint32_t height) {
 
 #if defined(KTH_DB_NEW_FULL)
 
-void check_blocks_db(MDB_env* env_, MDB_dbi& dbi_blocks_db_, MDB_dbi& dbi_block_header_, MDB_dbi& dbi_transaction_db_, uint32_t height) {
+void check_blocks_db(KTH_DB_env* env_, KTH_DB_dbi& dbi_blocks_db_, KTH_DB_dbi& dbi_block_header_, KTH_DB_dbi& dbi_transaction_db_, uint32_t height) {
     
-    MDB_txn* db_txn;
-    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
+    KTH_DB_txn* db_txn;
+    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
 
 
-    MDB_cursor* cursor;
-    BOOST_REQUIRE(mdb_cursor_open(db_txn, dbi_blocks_db_, &cursor) == MDB_SUCCESS);
+    KTH_DB_cursor* cursor;
+    BOOST_REQUIRE(kth_db_cursor_open(db_txn, dbi_blocks_db_, &cursor) == KTH_DB_SUCCESS);
 
     
-    MDB_val key {sizeof(height), &height};
+    auto key = kth_db_make_value(sizeof(height), &height);
     chain::transaction::list tx_list;
 
-    MDB_val value;
+    KTH_DB_val value;
     int rc;
-    BOOST_REQUIRE(mdb_cursor_get(cursor, &key, &value, MDB_SET) == MDB_SUCCESS); 
+    BOOST_REQUIRE(kth_db_cursor_get(cursor, &key, &value, MDB_SET) == KTH_DB_SUCCESS); 
        
-    auto tx_id = *static_cast<uint32_t*>(value.mv_data);
+    auto tx_id = *static_cast<uint32_t*>(kth_db_get_data(value));
     
-    MDB_val key_tx {sizeof(tx_id), &tx_id};
-    MDB_val value_tx;
+    auto key_tx = kth_db_make_value(sizeof(tx_id), &tx_id);
+    KTH_DB_val value_tx;
 
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_transaction_db_, &key_tx, &value_tx) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_get(db_txn, dbi_transaction_db_, &key_tx, &value_tx) == KTH_DB_SUCCESS);
         
-    data_chunk data_tx {static_cast<uint8_t*>(value_tx.mv_data), static_cast<uint8_t*>(value_tx.mv_data) + value_tx.mv_size};
+    data_chunk data_tx {static_cast<uint8_t*>(kth_db_get_data(value_tx)), static_cast<uint8_t*>(kth_db_get_data(value_tx)) + kth_db_get_size(value_tx)};
     auto entry = transaction_entry::factory_from_data(data_tx);
     tx_list.push_back(std::move(entry.transaction()));
 
-    while ((rc = mdb_cursor_get(cursor, &key, &value, MDB_NEXT_DUP)) == 0) {
-        auto tx_id = *static_cast<uint32_t*>(value.mv_data);;
-        MDB_val key_tx {sizeof(tx_id), &tx_id};
-        MDB_val value_tx;
+    while ((rc = kth_db_cursor_get(cursor, &key, &value, MDB_NEXT_DUP)) == 0) {
+        auto tx_id = *static_cast<uint32_t*>(kth_db_get_data(value));;
+        auto key_tx = kth_db_make_value(sizeof(tx_id), &tx_id);
+        KTH_DB_val value_tx;
 
-        BOOST_REQUIRE(mdb_get(db_txn, dbi_transaction_db_, &key_tx, &value_tx) == MDB_SUCCESS);
+        BOOST_REQUIRE(kth_db_get(db_txn, dbi_transaction_db_, &key_tx, &value_tx) == KTH_DB_SUCCESS);
             
-        data_chunk data_tx {static_cast<uint8_t*>(value_tx.mv_data), static_cast<uint8_t*>(value_tx.mv_data) + value_tx.mv_size};
+        data_chunk data_tx {static_cast<uint8_t*>(kth_db_get_data(value_tx)), static_cast<uint8_t*>(kth_db_get_data(value_tx)) + kth_db_get_size(value_tx)};
         auto entry = transaction_entry::factory_from_data(data_tx);
         tx_list.push_back(std::move(entry.transaction()));    
     }
       
     
-    mdb_cursor_close(cursor);
+    kth_db_cursor_close(cursor);
     
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_block_header_, &key, &value) == MDB_SUCCESS);      
+    BOOST_REQUIRE(kth_db_get(db_txn, dbi_block_header_, &key, &value) == KTH_DB_SUCCESS);      
 
-    data_chunk data_header {static_cast<uint8_t*>(value.mv_data), static_cast<uint8_t*>(value.mv_data) + value.mv_size};
+    data_chunk data_header {static_cast<uint8_t*>(kth_db_get_data(value)), static_cast<uint8_t*>(kth_db_get_data(value)) + kth_db_get_size(value)};
     auto header = chain::header::factory_from_data(data_header);
     BOOST_REQUIRE(header.is_valid());
         
     chain::block block{header, std::move(tx_list)};
     
-    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 
     BOOST_REQUIRE(block.is_valid());
 }
 
 
-void check_transactions_db_just_existence(MDB_env* env_, MDB_dbi& dbi_transaction_db_, uint64_t id) {
-    MDB_txn* db_txn;
+void check_transactions_db_just_existence(KTH_DB_env* env_, KTH_DB_dbi& dbi_transaction_db_, uint64_t id) {
+    KTH_DB_txn* db_txn;
 
-    MDB_val key {sizeof(id), &id};
-    MDB_val value;
+    auto key = kth_db_make_value(sizeof(id), &id);
+    KTH_DB_val value;
 
-    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_transaction_db_, &key, &value) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_get(db_txn, dbi_transaction_db_, &key, &value) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 }
 
-void check_transactions_db_doesnt_exists(MDB_env* env_, MDB_dbi& dbi_transaction_db_, uint64_t id) {
-    MDB_txn* db_txn;
+void check_transactions_db_doesnt_exists(KTH_DB_env* env_, KTH_DB_dbi& dbi_transaction_db_, uint64_t id) {
+    KTH_DB_txn* db_txn;
 
-    MDB_val key {sizeof(id), &id};
-    MDB_val value;
+    auto key = kth_db_make_value(sizeof(id), &id);
+    KTH_DB_val value;
 
-    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_transaction_db_, &key, &value) == MDB_NOTFOUND);
-    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_get(db_txn, dbi_transaction_db_, &key, &value) == KTH_DB_NOTFOUND);
+    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 }
 
-void check_history_db_just_existence(MDB_env* env_, MDB_dbi& dbi_history_db_, short_hash& hash) {
-    MDB_txn* db_txn;
+void check_history_db_just_existence(KTH_DB_env* env_, KTH_DB_dbi& dbi_history_db_, short_hash& hash) {
+    KTH_DB_txn* db_txn;
 
-    MDB_val key {hash.size(), hash.data()};
-    MDB_val value;
+    auto key = kth_db_make_value(hash.size(), hash.data());
+    KTH_DB_val value;
 
-    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_history_db_, &key, &value) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_get(db_txn, dbi_history_db_, &key, &value) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 }
 
-void check_history_db_doesnt_exists(MDB_env* env_, MDB_dbi& dbi_history_db_, short_hash& hash) {
-    MDB_txn* db_txn;
+void check_history_db_doesnt_exists(KTH_DB_env* env_, KTH_DB_dbi& dbi_history_db_, short_hash& hash) {
+    KTH_DB_txn* db_txn;
 
-    MDB_val key {hash.size(), hash.data()};
-    MDB_val value;
+    auto key = kth_db_make_value(hash.size(), hash.data());
+    KTH_DB_val value;
 
-    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_history_db_, &key, &value) == MDB_NOTFOUND);
-    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_get(db_txn, dbi_history_db_, &key, &value) == KTH_DB_NOTFOUND);
+    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 }
 
 #endif
 
 
 
-void check_reorg_index(MDB_env* env_, MDB_dbi& dbi_reorg_index_, std::string txid_enc, uint32_t pos, uint32_t height) {
-    MDB_txn* db_txn;
-    MDB_val value;
+void check_reorg_index(KTH_DB_env* env_, KTH_DB_dbi& dbi_reorg_index_, std::string txid_enc, uint32_t pos, uint32_t height) {
+    KTH_DB_txn* db_txn;
+    KTH_DB_val value;
 
-    MDB_val height_key {sizeof(uint32_t), &height};
-    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_reorg_index_, &height_key, &value) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
-    data_chunk data2 {static_cast<uint8_t*>(value.mv_data), static_cast<uint8_t*>(value.mv_data) + value.mv_size};
+    auto height_key = kth_db_make_value(sizeof(uint32_t), &height);
+    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_get(db_txn, dbi_reorg_index_, &height_key, &value) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
+    data_chunk data2 {static_cast<uint8_t*>(kth_db_get_data(value)), static_cast<uint8_t*>(kth_db_get_data(value)) + kth_db_get_size(value)};
     auto point_indexed = chain::point::factory_from_data(data2, false);
 
     hash_digest txid;
@@ -470,62 +470,62 @@ void check_reorg_index(MDB_env* env_, MDB_dbi& dbi_reorg_index_, std::string txi
     BOOST_REQUIRE(point == point_indexed);
 }
 
-void check_reorg_index_doesnt_exists(MDB_env* env_, MDB_dbi& dbi_reorg_index_, uint32_t height) {
-    MDB_txn* db_txn;
-    MDB_val value;
+void check_reorg_index_doesnt_exists(KTH_DB_env* env_, KTH_DB_dbi& dbi_reorg_index_, uint32_t height) {
+    KTH_DB_txn* db_txn;
+    KTH_DB_val value;
 
-    MDB_val height_key {sizeof(uint32_t), &height};
-    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_reorg_index_, &height_key, &value) == MDB_NOTFOUND);
-    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+    auto height_key = kth_db_make_value(sizeof(uint32_t), &height);
+    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_get(db_txn, dbi_reorg_index_, &height_key, &value) == KTH_DB_NOTFOUND);
+    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 }
 
 
-void check_reorg_block(MDB_env* env_, MDB_dbi& dbi_reorg_block_, uint32_t height, std::string block_enc) {
-    MDB_txn* db_txn;
+void check_reorg_block(KTH_DB_env* env_, KTH_DB_dbi& dbi_reorg_block_, uint32_t height, std::string block_enc) {
+    KTH_DB_txn* db_txn;
 
-    MDB_val key {sizeof(uint32_t), &height};
-    MDB_val value;
+    auto key = kth_db_make_value(sizeof(uint32_t), &height);
+    KTH_DB_val value;
 
-    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_reorg_block_, &key, &value) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_get(db_txn, dbi_reorg_block_, &key, &value) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 
-    data_chunk data {static_cast<uint8_t*>(value.mv_data), static_cast<uint8_t*>(value.mv_data) + value.mv_size};
+    data_chunk data {static_cast<uint8_t*>(kth_db_get_data(value)), static_cast<uint8_t*>(kth_db_get_data(value)) + kth_db_get_size(value)};
     auto block = chain::block::factory_from_data(data, false);
 
     BOOST_REQUIRE(encode_base16(block.to_data(false)) == block_enc);
 }
 
-void check_reorg_block_doesnt_exists(MDB_env* env_, MDB_dbi& dbi_reorg_block_, uint32_t height) {
-    MDB_txn* db_txn;
+void check_reorg_block_doesnt_exists(KTH_DB_env* env_, KTH_DB_dbi& dbi_reorg_block_, uint32_t height) {
+    KTH_DB_txn* db_txn;
 
-    MDB_val key {sizeof(uint32_t), &height};
-    MDB_val value;
+    auto key = kth_db_make_value(sizeof(uint32_t), &height);
+    KTH_DB_val value;
 
-    BOOST_REQUIRE(mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn) == MDB_SUCCESS);
-    BOOST_REQUIRE(mdb_get(db_txn, dbi_reorg_block_, &key, &value) == MDB_NOTFOUND);
-    BOOST_REQUIRE(mdb_txn_commit(db_txn) == MDB_SUCCESS);
+    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    BOOST_REQUIRE(kth_db_get(db_txn, dbi_reorg_block_, &key, &value) == KTH_DB_NOTFOUND);
+    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 }
 
 
-size_t db_count_items(MDB_env *env, MDB_dbi dbi) {
-    MDB_val key, data;
-	MDB_txn *txn;    
-    MDB_cursor *cursor;
+size_t db_count_items(KTH_DB_env *env, KTH_DB_dbi dbi) {
+    KTH_DB_val key, data;
+	KTH_DB_txn *txn;    
+    KTH_DB_cursor *cursor;
     int rc;
 
-    mdb_txn_begin(env, NULL, MDB_RDONLY, &txn);
-    mdb_cursor_open(txn, dbi, &cursor);
+    kth_db_txn_begin(env, NULL, KTH_DB_RDONLY, &txn);
+    kth_db_cursor_open(txn, dbi, &cursor);
 
     size_t count = 0;    
-    while ((rc = mdb_cursor_get(cursor, &key, &data, MDB_NEXT)) == 0) {
+    while ((rc = kth_db_cursor_get(cursor, &key, &data, KTH_DB_NEXT)) == 0) {
 
-        data_chunk key_bytes {static_cast<uint8_t*>(key.mv_data), static_cast<uint8_t*>(key.mv_data) + key.mv_size};
+        data_chunk key_bytes {static_cast<uint8_t*>(kth_db_get_data(key)), static_cast<uint8_t*>(kth_db_get_data(key)) + kth_db_get_size(key)};
         std::reverse(begin(key_bytes), end(key_bytes));
         std::cout << encode_base16(key_bytes) << std::endl;
 
-        data_chunk value_bytes {static_cast<uint8_t*>(data.mv_data), static_cast<uint8_t*>(data.mv_data) + data.mv_size};
+        data_chunk value_bytes {static_cast<uint8_t*>(kth_db_get_data(data)), static_cast<uint8_t*>(kth_db_get_data(data)) + kth_db_get_size(data)};
         std::reverse(begin(value_bytes), end(value_bytes));
         // std::cout << encode_base16(value_bytes) << std::endl;
 
@@ -533,29 +533,27 @@ size_t db_count_items(MDB_env *env, MDB_dbi dbi) {
     }
     // std::cout << "---------------------------------\n" << std::endl;
     
-    mdb_cursor_close(cursor);
-    mdb_txn_commit(txn);
+    kth_db_cursor_close(cursor);
+    kth_db_txn_commit(txn);
 
     return count;
 }
 
-size_t db_count_index_by_height(MDB_env *env, MDB_dbi dbi, size_t height) {
-    MDB_val data;
-	MDB_txn *txn;    
-    MDB_cursor *cursor;
-    int rc;
+size_t db_count_index_by_height(KTH_DB_env *env, KTH_DB_dbi dbi, size_t height) {
 
-    MDB_val height_key {sizeof(uint32_t), &height};
+    auto height_key = kth_db_make_value(sizeof(uint32_t), &height);
 
-    mdb_txn_begin(env, NULL, MDB_RDONLY, &txn);
-    mdb_cursor_open(txn, dbi, &cursor);
+	KTH_DB_txn *txn;    
+    kth_db_txn_begin(env, NULL, KTH_DB_RDONLY, &txn);
+    kth_db_cursor_open(txn, dbi, &cursor);
 
     size_t count = 0;    
-
-
-    if ((rc = mdb_cursor_get(cursor, &height_key, &data, MDB_SET)) == 0) {
+    KTH_DB_val data;
+    KTH_DB_cursor *cursor;
+    int rc;
+    if ((rc = kth_db_cursor_get(cursor, &height_key, &data, MDB_SET)) == 0) {
         ++count;
-        while ((rc = mdb_cursor_get(cursor, &height_key, &data, MDB_NEXT_DUP)) == 0) {
+        while ((rc = kth_db_cursor_get(cursor, &height_key, &data, MDB_NEXT_DUP)) == 0) {
             ++count;
         }
     } else {
@@ -563,29 +561,28 @@ size_t db_count_index_by_height(MDB_env *env, MDB_dbi dbi, size_t height) {
     }
     // std::cout << "---------------------------------\n" << std::endl;
     
-    mdb_cursor_close(cursor);
-    mdb_txn_abort(txn);
+    kth_db_cursor_close(cursor);
+    kth_db_txn_abort(txn);
 
     return count;
 }
 
-size_t db_count_db_by_address(MDB_env *env, MDB_dbi dbi, wallet::payment_address const& address) {
-    MDB_val data;
-	MDB_txn *txn;    
-    MDB_cursor *cursor;
-    int rc;
-
+size_t db_count_db_by_address(KTH_DB_env *env, KTH_DB_dbi dbi, wallet::payment_address const& address) {
     auto hash = address.hash();
-    MDB_val key {hash.size(), hash.data()};
+    auto key = kth_db_make_value(hash.size(), hash.data());
 
-    mdb_txn_begin(env, NULL, MDB_RDONLY, &txn);
-    mdb_cursor_open(txn, dbi, &cursor);
+	KTH_DB_txn *txn;    
+    kth_db_txn_begin(env, NULL, KTH_DB_RDONLY, &txn);
+
+    KTH_DB_cursor *cursor;
+    kth_db_cursor_open(txn, dbi, &cursor);
 
     size_t count = 0;    
-
-    if ((rc = mdb_cursor_get(cursor, &key, &data, MDB_SET)) == 0) {
+    KTH_DB_val data;
+    int rc;
+    if ((rc = kth_db_cursor_get(cursor, &key, &data, MDB_SET)) == 0) {
         ++count;
-        while ((rc = mdb_cursor_get(cursor, &key, &data, MDB_NEXT_DUP)) == 0) {
+        while ((rc = kth_db_cursor_get(cursor, &key, &data, MDB_NEXT_DUP)) == 0) {
             ++count;
         }
     } else {
@@ -593,44 +590,44 @@ size_t db_count_db_by_address(MDB_env *env, MDB_dbi dbi, wallet::payment_address
     }
     // std::cout << "---------------------------------\n" << std::endl;
     
-    mdb_cursor_close(cursor);
-    mdb_txn_abort(txn);
+    kth_db_cursor_close(cursor);
+    kth_db_txn_abort(txn);
 
     return count;
 }
 
 
-bool db_exists_height(MDB_env *env, MDB_dbi dbi, size_t height) {
-	MDB_txn *txn;    
+bool db_exists_height(KTH_DB_env *env, KTH_DB_dbi dbi, size_t height) {
+	KTH_DB_txn *txn;    
 
-    MDB_val height_key {sizeof(uint32_t), &height};
-    MDB_val value;
+    auto height_key = kth_db_make_value(sizeof(uint32_t), &height);
+    KTH_DB_val value;
 
-    auto xxx = mdb_txn_begin(env, NULL, MDB_RDONLY, &txn);
-    xxx = mdb_get(txn, dbi, &height_key, &value);
-    bool res = xxx == MDB_SUCCESS;
-    mdb_txn_abort(txn);
+    auto xxx = kth_db_txn_begin(env, NULL, KTH_DB_RDONLY, &txn);
+    xxx = kth_db_get(txn, dbi, &height_key, &value);
+    bool res = xxx == KTH_DB_SUCCESS;
+    kth_db_txn_abort(txn);
 
     return res;
 }
 
 
-void check_index_and_pool(MDB_env *env, MDB_dbi& dbi_index, MDB_dbi& dbi_pool) {
-    MDB_val key, data;
-    MDB_val value;
-	MDB_txn *txn;    
-    MDB_cursor *cursor;
+void check_index_and_pool(KTH_DB_env *env, KTH_DB_dbi& dbi_index, KTH_DB_dbi& dbi_pool) {
+    KTH_DB_val key, data;
+    KTH_DB_val value;
+	KTH_DB_txn *txn;    
+    KTH_DB_cursor *cursor;
     int rc;
 
-    mdb_txn_begin(env, NULL, MDB_RDONLY, &txn);
-    mdb_cursor_open(txn, dbi_index, &cursor);
+    kth_db_txn_begin(env, NULL, KTH_DB_RDONLY, &txn);
+    kth_db_cursor_open(txn, dbi_index, &cursor);
 
-    while ((rc = mdb_cursor_get(cursor, &key, &data, MDB_NEXT)) == 0) {
-        BOOST_REQUIRE(mdb_get(txn, dbi_pool, &data, &value) == MDB_SUCCESS);
+    while ((rc = kth_db_cursor_get(cursor, &key, &data, KTH_DB_NEXT)) == 0) {
+        BOOST_REQUIRE(kth_db_get(txn, dbi_pool, &data, &value) == KTH_DB_SUCCESS);
     }
     
-    mdb_cursor_close(cursor);
-    mdb_txn_abort(txn);
+    kth_db_cursor_close(cursor);
+    kth_db_txn_abort(txn);
 }
 
 template <size_t Secs>
@@ -956,27 +953,27 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg) {
         BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);      
     }   //close() implicit
 
-    MDB_env* env_;
-    MDB_dbi dbi_utxo_;
-    MDB_dbi dbi_reorg_pool_;
-    MDB_dbi dbi_reorg_index_;
-    MDB_dbi dbi_block_header_;
-    MDB_dbi dbi_block_header_by_hash_;
-    MDB_dbi dbi_reorg_block_;
+    KTH_DB_env* env_;
+    KTH_DB_dbi dbi_utxo_;
+    KTH_DB_dbi dbi_reorg_pool_;
+    KTH_DB_dbi dbi_reorg_index_;
+    KTH_DB_dbi dbi_block_header_;
+    KTH_DB_dbi dbi_block_header_by_hash_;
+    KTH_DB_dbi dbi_reorg_block_;
 
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_block_db_;
+    KTH_DB_dbi dbi_block_db_;
     #endif
 
     #if defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_transaction_db_;
-    MDB_dbi dbi_transaction_hash_db_;
-    MDB_dbi dbi_transaction_unconfirmed_db_;
-    MDB_dbi dbi_history_db_;
-    MDB_dbi dbi_spend_db_;
+    KTH_DB_dbi dbi_transaction_db_;
+    KTH_DB_dbi dbi_transaction_hash_db_;
+    KTH_DB_dbi dbi_transaction_unconfirmed_db_;
+    KTH_DB_dbi dbi_history_db_;
+    KTH_DB_dbi dbi_spend_db_;
     #endif
 
-    //MDB_txn* db_txn;
+    //KTH_DB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
     , dbi_block_db_
@@ -1052,27 +1049,27 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_0) {
         BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);      
     }   //close() implicit
 
-    MDB_env* env_;
-    MDB_dbi dbi_utxo_;
-    MDB_dbi dbi_reorg_pool_;
-    MDB_dbi dbi_reorg_index_;
-    MDB_dbi dbi_block_header_;
-    MDB_dbi dbi_block_header_by_hash_;
-    MDB_dbi dbi_reorg_block_;
+    KTH_DB_env* env_;
+    KTH_DB_dbi dbi_utxo_;
+    KTH_DB_dbi dbi_reorg_pool_;
+    KTH_DB_dbi dbi_reorg_index_;
+    KTH_DB_dbi dbi_block_header_;
+    KTH_DB_dbi dbi_block_header_by_hash_;
+    KTH_DB_dbi dbi_reorg_block_;
     
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_block_db_;
+    KTH_DB_dbi dbi_block_db_;
     #endif
 
     #if defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_transaction_db_;
-    MDB_dbi dbi_transaction_hash_db_;
-    MDB_dbi dbi_transaction_unconfirmed_db_;
-    MDB_dbi dbi_history_db_;
-    MDB_dbi dbi_spend_db_;
+    KTH_DB_dbi dbi_transaction_db_;
+    KTH_DB_dbi dbi_transaction_hash_db_;
+    KTH_DB_dbi dbi_transaction_unconfirmed_db_;
+    KTH_DB_dbi dbi_history_db_;
+    KTH_DB_dbi dbi_spend_db_;
     #endif
 
-    //MDB_txn* db_txn;
+    //KTH_DB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
     , dbi_block_db_
@@ -1136,27 +1133,27 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_1) {
         BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);      
     }   //close() implicit
 
-    MDB_env* env_;
-    MDB_dbi dbi_utxo_;
-    MDB_dbi dbi_reorg_pool_;
-    MDB_dbi dbi_reorg_index_;
-    MDB_dbi dbi_block_header_;
-    MDB_dbi dbi_block_header_by_hash_;
-    MDB_dbi dbi_reorg_block_;
+    KTH_DB_env* env_;
+    KTH_DB_dbi dbi_utxo_;
+    KTH_DB_dbi dbi_reorg_pool_;
+    KTH_DB_dbi dbi_reorg_index_;
+    KTH_DB_dbi dbi_block_header_;
+    KTH_DB_dbi dbi_block_header_by_hash_;
+    KTH_DB_dbi dbi_reorg_block_;
 
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_block_db_;
+    KTH_DB_dbi dbi_block_db_;
     #endif
 
     #if defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_transaction_db_;
-    MDB_dbi dbi_transaction_hash_db_;
-    MDB_dbi dbi_transaction_unconfirmed_db_;
-    MDB_dbi dbi_history_db_;
-    MDB_dbi dbi_spend_db_;
+    KTH_DB_dbi dbi_transaction_db_;
+    KTH_DB_dbi dbi_transaction_hash_db_;
+    KTH_DB_dbi dbi_transaction_unconfirmed_db_;
+    KTH_DB_dbi dbi_history_db_;
+    KTH_DB_dbi dbi_spend_db_;
     #endif
 
-    //MDB_txn* db_txn;
+    //KTH_DB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
     , dbi_block_db_
@@ -1221,26 +1218,26 @@ BOOST_AUTO_TEST_CASE(internal_database__old_blocks_2) {
         BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);      
     }   //close() implicit
 
-    MDB_env* env_;
-    MDB_dbi dbi_utxo_;
-    MDB_dbi dbi_reorg_pool_;
-    MDB_dbi dbi_reorg_index_;
-    MDB_dbi dbi_block_header_;
-    MDB_dbi dbi_block_header_by_hash_;
-    MDB_dbi dbi_reorg_block_;
+    KTH_DB_env* env_;
+    KTH_DB_dbi dbi_utxo_;
+    KTH_DB_dbi dbi_reorg_pool_;
+    KTH_DB_dbi dbi_reorg_index_;
+    KTH_DB_dbi dbi_block_header_;
+    KTH_DB_dbi dbi_block_header_by_hash_;
+    KTH_DB_dbi dbi_reorg_block_;
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_block_db_;
+    KTH_DB_dbi dbi_block_db_;
     #endif
 
     #if defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_transaction_db_;
-    MDB_dbi dbi_transaction_hash_db_;
-    MDB_dbi dbi_transaction_unconfirmed_db_;
-    MDB_dbi dbi_history_db_;
-    MDB_dbi dbi_spend_db_;
+    KTH_DB_dbi dbi_transaction_db_;
+    KTH_DB_dbi dbi_transaction_hash_db_;
+    KTH_DB_dbi dbi_transaction_unconfirmed_db_;
+    KTH_DB_dbi dbi_history_db_;
+    KTH_DB_dbi dbi_spend_db_;
     #endif
 
-    //MDB_txn* db_txn;
+    //KTH_DB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
     , dbi_block_db_
@@ -1318,28 +1315,28 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index) {
     }   //close() implicit
 
 
-    MDB_env* env_; 
-    //MDB_txn* db_txn;
-    MDB_dbi dbi_utxo_;
-    MDB_dbi dbi_reorg_pool_;
-    MDB_dbi dbi_reorg_index_;
-    MDB_dbi dbi_block_header_;
-    MDB_dbi dbi_block_header_by_hash_;
-    MDB_dbi dbi_reorg_block_;
+    KTH_DB_env* env_; 
+    //KTH_DB_txn* db_txn;
+    KTH_DB_dbi dbi_utxo_;
+    KTH_DB_dbi dbi_reorg_pool_;
+    KTH_DB_dbi dbi_reorg_index_;
+    KTH_DB_dbi dbi_block_header_;
+    KTH_DB_dbi dbi_block_header_by_hash_;
+    KTH_DB_dbi dbi_reorg_block_;
 
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_block_db_;
+    KTH_DB_dbi dbi_block_db_;
     #endif
 
     #if defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_transaction_db_;
-    MDB_dbi dbi_transaction_hash_db_;
-    MDB_dbi dbi_transaction_unconfirmed_db_;
-    MDB_dbi dbi_history_db_;
-    MDB_dbi dbi_spend_db_;
+    KTH_DB_dbi dbi_transaction_db_;
+    KTH_DB_dbi dbi_transaction_hash_db_;
+    KTH_DB_dbi dbi_transaction_unconfirmed_db_;
+    KTH_DB_dbi dbi_history_db_;
+    KTH_DB_dbi dbi_spend_db_;
     #endif
 
-    //MDB_txn* db_txn;
+    //KTH_DB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
     , dbi_block_db_
@@ -1467,28 +1464,28 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_index2) {
     }   //close() implicit
 
 
-    MDB_env* env_; 
-    //MDB_txn* db_txn;
-    MDB_dbi dbi_utxo_;
-    MDB_dbi dbi_reorg_pool_;
-    MDB_dbi dbi_reorg_index_;
-    MDB_dbi dbi_block_header_;
-    MDB_dbi dbi_block_header_by_hash_;
-    MDB_dbi dbi_reorg_block_;
+    KTH_DB_env* env_; 
+    //KTH_DB_txn* db_txn;
+    KTH_DB_dbi dbi_utxo_;
+    KTH_DB_dbi dbi_reorg_pool_;
+    KTH_DB_dbi dbi_reorg_index_;
+    KTH_DB_dbi dbi_block_header_;
+    KTH_DB_dbi dbi_block_header_by_hash_;
+    KTH_DB_dbi dbi_reorg_block_;
     
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_block_db_;
+    KTH_DB_dbi dbi_block_db_;
     #endif
 
     #if defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_transaction_db_;
-    MDB_dbi dbi_transaction_hash_db_;
-    MDB_dbi dbi_transaction_unconfirmed_db_;
-    MDB_dbi dbi_history_db_;
-    MDB_dbi dbi_spend_db_;
+    KTH_DB_dbi dbi_transaction_db_;
+    KTH_DB_dbi dbi_transaction_hash_db_;
+    KTH_DB_dbi dbi_transaction_unconfirmed_db_;
+    KTH_DB_dbi dbi_history_db_;
+    KTH_DB_dbi dbi_spend_db_;
     #endif
 
-    //MDB_txn* db_txn;
+    //KTH_DB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
     , dbi_block_db_
@@ -1618,25 +1615,25 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
     BOOST_REQUIRE(decode_hash(txid2, "c06fbab289f723c6261d3030ddb6be121f7d2508d77862bb1e484f5cd7f92b25"));
     BOOST_REQUIRE(decode_hash(txid3, "5a4ebf66822b0b2d56bd9dc64ece0bc38ee7844a23ff1d7320a88c5fdb2ad3e2"));
 
-    MDB_env* env_;
-    MDB_dbi dbi_utxo_;
-    MDB_dbi dbi_reorg_pool_;
-    MDB_dbi dbi_reorg_index_;
-    MDB_dbi dbi_block_header_;
-    MDB_dbi dbi_block_header_by_hash_;
-    MDB_dbi dbi_reorg_block_;
+    KTH_DB_env* env_;
+    KTH_DB_dbi dbi_utxo_;
+    KTH_DB_dbi dbi_reorg_pool_;
+    KTH_DB_dbi dbi_reorg_index_;
+    KTH_DB_dbi dbi_block_header_;
+    KTH_DB_dbi dbi_block_header_by_hash_;
+    KTH_DB_dbi dbi_reorg_block_;
     
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_block_db_;
+    KTH_DB_dbi dbi_block_db_;
     #endif
 
 
     #if defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_transaction_db_;
-    MDB_dbi dbi_transaction_hash_db_;
-    MDB_dbi dbi_transaction_unconfirmed_db_;
-    MDB_dbi dbi_history_db_;
-    MDB_dbi dbi_spend_db_;
+    KTH_DB_dbi dbi_transaction_db_;
+    KTH_DB_dbi dbi_transaction_hash_db_;
+    KTH_DB_dbi dbi_transaction_unconfirmed_db_;
+    KTH_DB_dbi dbi_history_db_;
+    KTH_DB_dbi dbi_spend_db_;
     #endif
 
 
@@ -1673,7 +1670,7 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_0) {
 
     }   //close() implicit
 
-    //MDB_txn* db_txn;
+    //KTH_DB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
     , dbi_block_db_
@@ -2153,25 +2150,25 @@ BOOST_AUTO_TEST_CASE(internal_database__reorg_1) {
     BOOST_REQUIRE(decode_hash(txid3, "5a4ebf66822b0b2d56bd9dc64ece0bc38ee7844a23ff1d7320a88c5fdb2ad3e2"));
 
 
-    MDB_env* env_;
-    MDB_dbi dbi_utxo_;
-    MDB_dbi dbi_reorg_pool_;
-    MDB_dbi dbi_reorg_index_;
-    MDB_dbi dbi_block_header_;
-    MDB_dbi dbi_block_header_by_hash_;
-    MDB_dbi dbi_reorg_block_;
-    //MDB_txn* db_txn;
+    KTH_DB_env* env_;
+    KTH_DB_dbi dbi_utxo_;
+    KTH_DB_dbi dbi_reorg_pool_;
+    KTH_DB_dbi dbi_reorg_index_;
+    KTH_DB_dbi dbi_block_header_;
+    KTH_DB_dbi dbi_block_header_by_hash_;
+    KTH_DB_dbi dbi_reorg_block_;
+    //KTH_DB_txn* db_txn;
     
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_block_db_;
+    KTH_DB_dbi dbi_block_db_;
     #endif
 
     #if defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_transaction_db_;
-    MDB_dbi dbi_transaction_hash_db_;
-    MDB_dbi dbi_transaction_unconfirmed_db_;
-    MDB_dbi dbi_history_db_;
-    MDB_dbi dbi_spend_db_;
+    KTH_DB_dbi dbi_transaction_db_;
+    KTH_DB_dbi dbi_transaction_hash_db_;
+    KTH_DB_dbi dbi_transaction_unconfirmed_db_;
+    KTH_DB_dbi dbi_history_db_;
+    KTH_DB_dbi dbi_spend_db_;
     #endif
 
     // Insert the First Block
@@ -2429,27 +2426,27 @@ BOOST_AUTO_TEST_CASE(internal_database__prune) {
 
     using my_clock = dummy_clock<1284613427>;
 
-    MDB_env* env_;
-    MDB_dbi dbi_utxo_;
-    MDB_dbi dbi_reorg_pool_;
-    MDB_dbi dbi_reorg_index_;
-    MDB_dbi dbi_reorg_block_;
-    MDB_dbi dbi_block_header_;
-    MDB_dbi dbi_block_header_by_hash_;
+    KTH_DB_env* env_;
+    KTH_DB_dbi dbi_utxo_;
+    KTH_DB_dbi dbi_reorg_pool_;
+    KTH_DB_dbi dbi_reorg_index_;
+    KTH_DB_dbi dbi_reorg_block_;
+    KTH_DB_dbi dbi_block_header_;
+    KTH_DB_dbi dbi_block_header_by_hash_;
     
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_block_db_;
+    KTH_DB_dbi dbi_block_db_;
     #endif
 
     #if defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_transaction_db_;
-    MDB_dbi dbi_transaction_hash_db_;
-    MDB_dbi dbi_transaction_unconfirmed_db_;
-    MDB_dbi dbi_history_db_;
-    MDB_dbi dbi_spend_db_;
+    KTH_DB_dbi dbi_transaction_db_;
+    KTH_DB_dbi dbi_transaction_hash_db_;
+    KTH_DB_dbi dbi_transaction_unconfirmed_db_;
+    KTH_DB_dbi dbi_history_db_;
+    KTH_DB_dbi dbi_spend_db_;
     #endif
 
-    //MDB_txn* db_txn;
+    //KTH_DB_txn* db_txn;
     
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
@@ -3293,27 +3290,27 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_2) {
 
     using my_clock = dummy_clock<1284613427>;
 
-    MDB_env* env_;
-    MDB_dbi dbi_utxo_;
-    MDB_dbi dbi_reorg_pool_;
-    MDB_dbi dbi_reorg_index_;
-    MDB_dbi dbi_reorg_block_;
-    MDB_dbi dbi_block_header_;
-    MDB_dbi dbi_block_header_by_hash_;
+    KTH_DB_env* env_;
+    KTH_DB_dbi dbi_utxo_;
+    KTH_DB_dbi dbi_reorg_pool_;
+    KTH_DB_dbi dbi_reorg_index_;
+    KTH_DB_dbi dbi_reorg_block_;
+    KTH_DB_dbi dbi_block_header_;
+    KTH_DB_dbi dbi_block_header_by_hash_;
     
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_block_db_;
+    KTH_DB_dbi dbi_block_db_;
     #endif
 
     #if defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_transaction_db_;
-    MDB_dbi dbi_transaction_hash_db_;
-    MDB_dbi dbi_transaction_unconfirmed_db_;
-    MDB_dbi dbi_history_db_;
-    MDB_dbi dbi_spend_db_;
+    KTH_DB_dbi dbi_transaction_db_;
+    KTH_DB_dbi dbi_transaction_hash_db_;
+    KTH_DB_dbi dbi_transaction_unconfirmed_db_;
+    KTH_DB_dbi dbi_history_db_;
+    KTH_DB_dbi dbi_spend_db_;
     #endif
 
-    //MDB_txn* db_txn;
+    //KTH_DB_txn* db_txn;
     
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
@@ -4035,27 +4032,27 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
 
     using my_clock = dummy_clock<1284613427>;
 
-    MDB_env* env_;
-    MDB_dbi dbi_utxo_;
-    MDB_dbi dbi_reorg_pool_;
-    MDB_dbi dbi_reorg_index_;
-    MDB_dbi dbi_reorg_block_;
-    MDB_dbi dbi_block_header_;
-    MDB_dbi dbi_block_header_by_hash_;
+    KTH_DB_env* env_;
+    KTH_DB_dbi dbi_utxo_;
+    KTH_DB_dbi dbi_reorg_pool_;
+    KTH_DB_dbi dbi_reorg_index_;
+    KTH_DB_dbi dbi_reorg_block_;
+    KTH_DB_dbi dbi_block_header_;
+    KTH_DB_dbi dbi_block_header_by_hash_;
     
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_block_db_;
+    KTH_DB_dbi dbi_block_db_;
     #endif
 
     #if defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_transaction_db_;
-    MDB_dbi dbi_transaction_hash_db_;
-    MDB_dbi dbi_transaction_unconfirmed_db_;
-    MDB_dbi dbi_history_db_;
-    MDB_dbi dbi_spend_db_;
+    KTH_DB_dbi dbi_transaction_db_;
+    KTH_DB_dbi dbi_transaction_hash_db_;
+    KTH_DB_dbi dbi_transaction_unconfirmed_db_;
+    KTH_DB_dbi dbi_history_db_;
+    KTH_DB_dbi dbi_spend_db_;
     #endif
 
-    //MDB_txn* db_txn;
+    //KTH_DB_txn* db_txn;
     
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
@@ -4453,27 +4450,27 @@ BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool_3) {
     }
 
 
-    MDB_env* env_;
-    MDB_dbi dbi_utxo_;
-    MDB_dbi dbi_reorg_pool_;
-    MDB_dbi dbi_reorg_index_;
-    MDB_dbi dbi_reorg_block_;
-    MDB_dbi dbi_block_header_;
-    MDB_dbi dbi_block_header_by_hash_;
+    KTH_DB_env* env_;
+    KTH_DB_dbi dbi_utxo_;
+    KTH_DB_dbi dbi_reorg_pool_;
+    KTH_DB_dbi dbi_reorg_index_;
+    KTH_DB_dbi dbi_reorg_block_;
+    KTH_DB_dbi dbi_block_header_;
+    KTH_DB_dbi dbi_block_header_by_hash_;
 
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_block_db_;
+    KTH_DB_dbi dbi_block_db_;
     #endif
 
     #if defined(KTH_DB_NEW_FULL)
-    MDB_dbi dbi_transaction_db_;
-    MDB_dbi dbi_transaction_hash_db_;
-    MDB_dbi dbi_transaction_unconfirmed_db_;
-    MDB_dbi dbi_history_db_;
-    MDB_dbi dbi_spend_db_;
+    KTH_DB_dbi dbi_transaction_db_;
+    KTH_DB_dbi dbi_transaction_hash_db_;
+    KTH_DB_dbi dbi_transaction_unconfirmed_db_;
+    KTH_DB_dbi dbi_history_db_;
+    KTH_DB_dbi dbi_spend_db_;
     #endif
 
-    //MDB_txn* db_txn;
+    //KTH_DB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
     , dbi_block_db_

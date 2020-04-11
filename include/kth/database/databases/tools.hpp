@@ -39,9 +39,9 @@ std::chrono::seconds blocks_to_seconds(uint32_t blocks) {
 }
 
 inline
-data_chunk db_value_to_data_chunk(MDB_val const& value) {
-    return data_chunk{static_cast<uint8_t*>(value.mv_data), 
-                      static_cast<uint8_t*>(value.mv_data) + value.mv_size};
+data_chunk db_value_to_data_chunk(KTH_DB_val const& value) {
+    return data_chunk{static_cast<uint8_t*>(kth_db_get_data(value)), 
+                      static_cast<uint8_t*>(kth_db_get_data(value)) + kth_db_get_size(value)};
 }
 
 } // namespace database

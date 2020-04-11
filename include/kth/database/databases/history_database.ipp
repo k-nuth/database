@@ -12,18 +12,18 @@ namespace kth::database {
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_history_db(wallet::payment_address const& address, data_chunk const& entry, MDB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_history_db(wallet::payment_address const& address, data_chunk const& entry, KTH_DB_txn* db_txn) {
 
-    auto key_arr = address.hash();                                    
-    MDB_val key {key_arr.size(), key_arr.data()};   
-    MDB_val value {entry.size(), const_cast<data_chunk&>(entry).data()};
+    auto key_arr = address.hash();     //TODO(fernando): should I take a reference?                               
+    auto key = kth_db_make_value(key_arr.size(), key_arr.data());
+    auto value = kth_db_make_value(entry.size(), const_cast<data_chunk&>(entry).data());
 
-    auto res = mdb_put(db_txn, dbi_history_db_, &key, &value, MDB_APPENDDUP);
-    if (res == MDB_KEYEXIST) {
+    auto res = kth_db_put(db_txn, dbi_history_db_, &key, &value, MDB_APPENDDUP);
+    if (res == KTH_DB_KEYEXIST) {
         LOG_INFO(LOG_DATABASE, "Duplicate key inserting history [insert_history_db] ", res);
         return result_code::duplicated_key;
     }
-    if (res != MDB_SUCCESS) {
+    if (res != KTH_DB_SUCCESS) {
         LOG_INFO(LOG_DATABASE, "Error inserting history [insert_history_db] ", res);
         return result_code::other;
     }
@@ -32,7 +32,7 @@ result_code internal_database_basis<Clock>::insert_history_db(wallet::payment_ad
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_input_history(chain::input_point const& inpoint, uint32_t height, chain::input const& input, MDB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_input_history(chain::input_point const& inpoint, uint32_t height, chain::input const& input, KTH_DB_txn* db_txn) {
     
     auto const& prevout = input.previous_output();
 
@@ -101,7 +101,7 @@ result_code internal_database_basis<Clock>::insert_input_history(chain::input_po
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, MDB_txn* db_txn ) {
+result_code internal_database_basis<Clock>::insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, KTH_DB_txn* db_txn ) {
     
     uint64_t history_count = get_history_count(db_txn);
     if (history_count == max_uint64) {
@@ -145,22 +145,22 @@ chain::history_compact::list internal_database_basis<Clock>::get_history(short_h
         return result;
     }
 
-    MDB_txn* db_txn;
-    auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
-    if (res != MDB_SUCCESS) {
+    KTH_DB_txn* db_txn;
+    auto res = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
+    if (res != KTH_DB_SUCCESS) {
         return result;
     }
 
-    MDB_cursor* cursor;
-    if (mdb_cursor_open(db_txn, dbi_history_db_, &cursor) != MDB_SUCCESS) {
-        mdb_txn_commit(db_txn);
+    KTH_DB_cursor* cursor;
+    if (kth_db_cursor_open(db_txn, dbi_history_db_, &cursor) != KTH_DB_SUCCESS) {
+        kth_db_txn_commit(db_txn);
         return result;
     }
 
-    MDB_val key_hash{key.size(), const_cast<short_hash&>(key).data()};
-    MDB_val value;
+    auto key_hash = kth_db_make_value(key.size(), const_cast<short_hash&>(key).data());
+    KTH_DB_val value;
     int rc;
-    if ((rc = mdb_cursor_get(cursor, &key_hash, &value, MDB_SET)) == 0) {
+    if ((rc = kth_db_cursor_get(cursor, &key_hash, &value, MDB_SET)) == 0) {
        
         auto data = db_value_to_data_chunk(value);
         auto entry = history_entry::factory_from_data(data);
@@ -169,7 +169,7 @@ chain::history_compact::list internal_database_basis<Clock>::get_history(short_h
             result.push_back(history_entry_to_history_compact(entry));
         }
 
-        while ((rc = mdb_cursor_get(cursor, &key_hash, &value, MDB_NEXT_DUP)) == 0) {
+        while ((rc = kth_db_cursor_get(cursor, &key_hash, &value, MDB_NEXT_DUP)) == 0) {
         
             if (limit > 0 && result.size() >= limit) {
                 break;
@@ -185,9 +185,9 @@ chain::history_compact::list internal_database_basis<Clock>::get_history(short_h
         }
     } 
     
-    mdb_cursor_close(cursor);
+    kth_db_cursor_close(cursor);
 
-    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+    if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
         return result;
     }
 
@@ -204,22 +204,22 @@ std::vector<hash_digest> internal_database_basis<Clock>::get_history_txns(short_
     if (limit == 0)
         return result;
 
-    MDB_txn* db_txn;
-    auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
-    if (res != MDB_SUCCESS) {
+    KTH_DB_txn* db_txn;
+    auto res = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
+    if (res != KTH_DB_SUCCESS) {
         return result;
     }
 
-    MDB_cursor* cursor;
-    if (mdb_cursor_open(db_txn, dbi_history_db_, &cursor) != MDB_SUCCESS) {
-        mdb_txn_commit(db_txn);
+    KTH_DB_cursor* cursor;
+    if (kth_db_cursor_open(db_txn, dbi_history_db_, &cursor) != KTH_DB_SUCCESS) {
+        kth_db_txn_commit(db_txn);
         return result;
     }
 
-    MDB_val key_hash{key.size(), const_cast<short_hash&>(key).data()};
-    MDB_val value;
+    auto key_hash = kth_db_make_value(key.size(), const_cast<short_hash&>(key).data());;
+    KTH_DB_val value;
     int rc;
-    if ((rc = mdb_cursor_get(cursor, &key_hash, &value, MDB_SET)) == 0) {
+    if ((rc = kth_db_cursor_get(cursor, &key_hash, &value, MDB_SET)) == 0) {
        
         auto data = db_value_to_data_chunk(value);
         auto entry = history_entry::factory_from_data(data);
@@ -233,7 +233,7 @@ std::vector<hash_digest> internal_database_basis<Clock>::get_history_txns(short_
             }
         }
 
-        while ((rc = mdb_cursor_get(cursor, &key_hash, &value, MDB_NEXT_DUP)) == 0) {
+        while ((rc = kth_db_cursor_get(cursor, &key_hash, &value, MDB_NEXT_DUP)) == 0) {
         
             if (limit > 0 && result.size() >= limit) {
                 break;
@@ -254,9 +254,9 @@ std::vector<hash_digest> internal_database_basis<Clock>::get_history_txns(short_
         }
     } 
     
-    mdb_cursor_close(cursor);
+    kth_db_cursor_close(cursor);
 
-    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+    if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
         return result;
     }
 
@@ -266,7 +266,7 @@ std::vector<hash_digest> internal_database_basis<Clock>::get_history_txns(short_
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_transaction_history_db(chain::transaction const& tx, size_t height, MDB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_transaction_history_db(chain::transaction const& tx, size_t height, KTH_DB_txn* db_txn) {
 
     for (auto const& output: tx.outputs()) {
         for (auto const& address : output.addresses()) {
@@ -321,45 +321,45 @@ result_code internal_database_basis<Clock>::remove_transaction_history_db(chain:
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_history_db(const short_hash& key, size_t height, MDB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_history_db(const short_hash& key, size_t height, KTH_DB_txn* db_txn) {
 
-    MDB_cursor* cursor;
+    KTH_DB_cursor* cursor;
 
-    if (mdb_cursor_open(db_txn, dbi_history_db_, &cursor) != MDB_SUCCESS) {
+    if (kth_db_cursor_open(db_txn, dbi_history_db_, &cursor) != KTH_DB_SUCCESS) {
         return result_code::other;
     }
 
-    MDB_val key_hash{key.size(), const_cast<short_hash&>(key).data()};
-    MDB_val value;
+    auto key_hash = kth_db_make_value(key.size(), const_cast<short_hash&>(key).data());;
+    KTH_DB_val value;
     int rc;
-    if ((rc = mdb_cursor_get(cursor, &key_hash, &value, MDB_SET)) == 0) {
+    if ((rc = kth_db_cursor_get(cursor, &key_hash, &value, MDB_SET)) == 0) {
        
         auto data = db_value_to_data_chunk(value);
         auto entry = history_entry::factory_from_data(data);
         
         if (entry.height() == height) {
             
-            if (mdb_cursor_del(cursor, 0) != MDB_SUCCESS) {
-                mdb_cursor_close(cursor);
+            if (kth_db_cursor_del(cursor, 0) != KTH_DB_SUCCESS) {
+                kth_db_cursor_close(cursor);
                 return result_code::other;
             }
         }
 
-        while ((rc = mdb_cursor_get(cursor, &key_hash, &value, MDB_NEXT_DUP)) == 0) {
+        while ((rc = kth_db_cursor_get(cursor, &key_hash, &value, MDB_NEXT_DUP)) == 0) {
         
             auto data = db_value_to_data_chunk(value);
             auto entry = history_entry::factory_from_data(data);
 
             if (entry.height() == height) {
-                if (mdb_cursor_del(cursor, 0) != MDB_SUCCESS) {
-                    mdb_cursor_close(cursor);
+                if (kth_db_cursor_del(cursor, 0) != KTH_DB_SUCCESS) {
+                    kth_db_cursor_close(cursor);
                     return result_code::other;
                 }
             }
         }
     } 
     
-    mdb_cursor_close(cursor);
+    kth_db_cursor_close(cursor);
 
     return result_code::success;
 }
@@ -368,10 +368,10 @@ result_code internal_database_basis<Clock>::remove_history_db(const short_hash& 
 
 
 template <typename Clock>
-uint64_t internal_database_basis<Clock>::get_history_count(MDB_txn* db_txn) const {
+uint64_t internal_database_basis<Clock>::get_history_count(KTH_DB_txn* db_txn) const {
   MDB_stat db_stats;
   auto ret = mdb_stat(db_txn, dbi_history_db_, &db_stats);
-  if (ret != MDB_SUCCESS) {
+  if (ret != KTH_DB_SUCCESS) {
       return max_uint64;
   }
   return db_stats.ms_entries;

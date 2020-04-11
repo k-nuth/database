@@ -13,15 +13,15 @@ namespace kth::database {
 template <typename Clock>
 transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_unconfirmed(hash_digest const& hash) const {
     
-    MDB_txn* db_txn;
-    auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
-    if (res != MDB_SUCCESS) {
+    KTH_DB_txn* db_txn;
+    auto res = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
+    if (res != KTH_DB_SUCCESS) {
         return {};
     }
 
     auto const& ret = get_transaction_unconfirmed(hash, db_txn);
 
-    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+    if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
         return {};
     }
 
@@ -29,11 +29,11 @@ transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_un
 }
 
 template <typename Clock>
-transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_unconfirmed(hash_digest const& hash, MDB_txn* db_txn) const {
-    MDB_val key {hash.size(), const_cast<hash_digest&>(hash).data()};
-    MDB_val value;
+transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_unconfirmed(hash_digest const& hash, KTH_DB_txn* db_txn) const {
+    auto key = kth_db_make_value(hash.size(), const_cast<hash_digest&>(hash).data());
+    KTH_DB_val value;
 
-    if (mdb_get(db_txn, dbi_transaction_unconfirmed_db_, &key, &value) != MDB_SUCCESS) {
+    if (kth_db_get(db_txn, dbi_transaction_unconfirmed_db_, &key, &value) != KTH_DB_SUCCESS) {
         return {};
     }
 
@@ -48,40 +48,40 @@ std::vector<transaction_unconfirmed_entry> internal_database_basis<Clock>::get_a
 
     std::vector<transaction_unconfirmed_entry> result;
 
-    MDB_txn* db_txn;
-    auto res = mdb_txn_begin(env_, NULL, MDB_RDONLY, &db_txn);
-    if (res != MDB_SUCCESS) {
+    KTH_DB_txn* db_txn;
+    auto res = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
+    if (res != KTH_DB_SUCCESS) {
         return result;
     }
 
-    MDB_cursor* cursor;
+    KTH_DB_cursor* cursor;
 
-    if (mdb_cursor_open(db_txn, dbi_transaction_unconfirmed_db_, &cursor) != MDB_SUCCESS) {
-        mdb_txn_commit(db_txn);
+    if (kth_db_cursor_open(db_txn, dbi_transaction_unconfirmed_db_, &cursor) != KTH_DB_SUCCESS) {
+        kth_db_txn_commit(db_txn);
         return result;
     }
 
-    MDB_val key;
-    MDB_val value;
+    KTH_DB_val key;
+    KTH_DB_val value;
     
     
     int rc;
-    if ((rc = mdb_cursor_get(cursor, &key, &value, MDB_NEXT)) == 0) {
+    if ((rc = kth_db_cursor_get(cursor, &key, &value, KTH_DB_NEXT)) == 0) {
        
         auto data = db_value_to_data_chunk(value);
         auto res = transaction_unconfirmed_entry::factory_from_data(data);
         result.push_back(res);
 
-        while ((rc = mdb_cursor_get(cursor, &key, &value, MDB_NEXT)) == 0) {
+        while ((rc = kth_db_cursor_get(cursor, &key, &value, KTH_DB_NEXT)) == 0) {
             auto data = db_value_to_data_chunk(value);
             auto res = transaction_unconfirmed_entry::factory_from_data(data);
             result.push_back(res);
         }
     } 
     
-    mdb_cursor_close(cursor);
+    kth_db_cursor_close(cursor);
 
-    if (mdb_txn_commit(db_txn) != MDB_SUCCESS) {
+    if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
         return result;
     }
 
@@ -91,17 +91,17 @@ std::vector<transaction_unconfirmed_entry> internal_database_basis<Clock>::get_a
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_transaction_unconfirmed(hash_digest const& tx_id,  MDB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_transaction_unconfirmed(hash_digest const& tx_id,  KTH_DB_txn* db_txn) {
 
-    MDB_val key {tx_id.size(), const_cast<hash_digest&>(tx_id).data()};
+    auto key = kth_db_make_value(tx_id.size(), const_cast<hash_digest&>(tx_id).data());
 
-    auto res = mdb_del(db_txn, dbi_transaction_unconfirmed_db_, &key, NULL);
-    if (res == MDB_NOTFOUND) {
-        //LOG_DEBUG(LOG_DATABASE, "Key not found deleting transaction unconfirmed DB in LMDB [remove_transaction_unconfirmed] - mdb_del: ", res);
+    auto res = kth_db_del(db_txn, dbi_transaction_unconfirmed_db_, &key, NULL);
+    if (res == KTH_DB_NOTFOUND) {
+        //LOG_DEBUG(LOG_DATABASE, "Key not found deleting transaction unconfirmed DB in LMDB [remove_transaction_unconfirmed] - kth_db_del: ", res);
         return result_code::key_not_found;
     }
-    if (res != MDB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE, "Error deleting transaction unconfirmed DB in LMDB [remove_transaction_unconfirmed] - mdb_del: ", res);
+    if (res != KTH_DB_SUCCESS) {
+        LOG_INFO(LOG_DATABASE, "Error deleting transaction unconfirmed DB in LMDB [remove_transaction_unconfirmed] - kth_db_del: ", res);
         return result_code::other;
     }
 
@@ -120,23 +120,23 @@ uint32_t internal_database_basis<Clock>::get_clock_now() const {
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(chain::transaction const& tx, uint32_t height, MDB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(chain::transaction const& tx, uint32_t height, KTH_DB_txn* db_txn) {
     
     uint32_t arrival_time = get_clock_now();
     
     auto key_arr = tx.hash();                                    //TODO(fernando): podría estar afuera de la DBTx
-    MDB_val key {key_arr.size(), key_arr.data()};
+    auto key = kth_db_make_value(key_arr.size(), key_arr.data());
 
     auto value_arr = transaction_unconfirmed_entry::factory_to_data(tx, arrival_time, height);
-    MDB_val value {value_arr.size(), value_arr.data()}; 
+    auto value = kth_db_make_value(value_arr.size(), value_arr.data()); 
 
-    auto res = mdb_put(db_txn, dbi_transaction_unconfirmed_db_, &key, &value, MDB_NOOVERWRITE);
-    if (res == MDB_KEYEXIST) {
+    auto res = kth_db_put(db_txn, dbi_transaction_unconfirmed_db_, &key, &value, KTH_DB_NOOVERWRITE);
+    if (res == KTH_DB_KEYEXIST) {
         LOG_INFO(LOG_DATABASE, "Duplicate key in Transaction Unconfirmed DB [insert_transaction_unconfirmed] ", res);
         return result_code::duplicated_key;
     }        
 
-    if (res != MDB_SUCCESS) {
+    if (res != KTH_DB_SUCCESS) {
         LOG_INFO(LOG_DATABASE, "Error saving in Transaction Unconfirmed DB [insert_transaction_unconfirmed] ", res);
         return result_code::other;
     }

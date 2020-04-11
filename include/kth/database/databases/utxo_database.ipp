@@ -10,21 +10,21 @@ namespace kth::database {
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_utxo(uint32_t height, chain::output_point const& point, bool insert_reorg, MDB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_utxo(uint32_t height, chain::output_point const& point, bool insert_reorg, KTH_DB_txn* db_txn) {
     auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);      //TODO(fernando): podría estar afuera de la DBTx
-    MDB_val key {keyarr.size(), keyarr.data()};                 //TODO(fernando): podría estar afuera de la DBTx
+    auto key = kth_db_make_value(keyarr.size(), keyarr.data());                 //TODO(fernando): podría estar afuera de la DBTx
 
     if (insert_reorg) {
         auto res0 = insert_reorg_pool(height, key, db_txn);
         if (res0 != result_code::success) return res0;
     }
 
-    auto res = mdb_del(db_txn, dbi_utxo_, &key, NULL);
-    if (res == MDB_NOTFOUND) {
+    auto res = kth_db_del(db_txn, dbi_utxo_, &key, NULL);
+    if (res == KTH_DB_NOTFOUND) {
         LOG_INFO(LOG_DATABASE, "Key not found deleting UTXO [remove_utxo] ", res);
         return result_code::key_not_found;
     }
-    if (res != MDB_SUCCESS) {
+    if (res != KTH_DB_SUCCESS) {
         LOG_INFO(LOG_DATABASE, "Error deleting UTXO [remove_utxo] ", res);
         return result_code::other;
     }
@@ -32,19 +32,19 @@ result_code internal_database_basis<Clock>::remove_utxo(uint32_t height, chain::
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_utxo(chain::output_point const& point, chain::output const& output, data_chunk const& fixed_data, MDB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_utxo(chain::output_point const& point, chain::output const& output, data_chunk const& fixed_data, KTH_DB_txn* db_txn) {
     auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);                  //TODO(fernando): podría estar afuera de la DBTx
     auto valuearr = utxo_entry::to_data_with_fixed(output, fixed_data);     //TODO(fernando): podría estar afuera de la DBTx
 
-    MDB_val key   {keyarr.size(), keyarr.data()};                           //TODO(fernando): podría estar afuera de la DBTx
-    MDB_val value {valuearr.size(), valuearr.data()};                       //TODO(fernando): podría estar afuera de la DBTx
-    auto res = mdb_put(db_txn, dbi_utxo_, &key, &value, MDB_NOOVERWRITE);
+    auto key = kth_db_make_value(keyarr.size(), keyarr.data());                           //TODO(fernando): podría estar afuera de la DBTx
+    auto value = kth_db_make_value(valuearr.size(), valuearr.data());                       //TODO(fernando): podría estar afuera de la DBTx
+    auto res = kth_db_put(db_txn, dbi_utxo_, &key, &value, KTH_DB_NOOVERWRITE);
 
-    if (res == MDB_KEYEXIST) {
+    if (res == KTH_DB_KEYEXIST) {
         LOG_INFO(LOG_DATABASE, "Duplicate Key inserting UTXO [insert_utxo] ", res);
         return result_code::duplicated_key;
     }
-    if (res != MDB_SUCCESS) {
+    if (res != KTH_DB_SUCCESS) {
         LOG_INFO(LOG_DATABASE, "Error inserting UTXO [insert_utxo] ", res);
         return result_code::other;
     }

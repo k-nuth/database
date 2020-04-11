@@ -9,7 +9,13 @@
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 
-#include <lmdb.h>
+// #if defined(KTH_USE_LIBMDBX)
+// #include <mdbx.h>
+// #else
+// #include <lmdb.h>
+// #endif
+
+#include <kth/database/databases/generic_db.hpp>
 
 #include <kth/domain.hpp>
 #include <kth/domain/chain/input_point.hpp>
@@ -33,11 +39,11 @@
 #if defined(KTH_DB_READONLY)
 #define KTH_DB_CONDITIONAL_CREATE 0
 #else
-#define KTH_DB_CONDITIONAL_CREATE MDB_CREATE
+#define KTH_DB_CONDITIONAL_CREATE KTH_DB_CREATE
 #endif
 
 #if defined(KTH_DB_READONLY)
-#define KTH_DB_CONDITIONAL_READONLY MDB_RDONLY
+#define KTH_DB_CONDITIONAL_READONLY KTH_DB_RDONLY
 #else
 #define KTH_DB_CONDITIONAL_READONLY 0
 #endif
@@ -167,154 +173,155 @@ private:
 
     bool open_databases();
 
-    utxo_entry get_utxo(chain::output_point const& point, MDB_txn* db_txn) const;
+    utxo_entry get_utxo(chain::output_point const& point, KTH_DB_txn* db_txn) const;
 
 #if ! defined(KTH_DB_READONLY)
-    result_code insert_reorg_pool(uint32_t height, MDB_val& key, MDB_txn* db_txn);
+    result_code insert_reorg_pool(uint32_t height, KTH_DB_val& key, KTH_DB_txn* db_txn);
     
-    result_code remove_utxo(uint32_t height, chain::output_point const& point, bool insert_reorg, MDB_txn* db_txn);
+    result_code remove_utxo(uint32_t height, chain::output_point const& point, bool insert_reorg, KTH_DB_txn* db_txn);
     
-    result_code insert_utxo(chain::output_point const& point, chain::output const& output, data_chunk const& fixed_data, MDB_txn* db_txn);
+    result_code insert_utxo(chain::output_point const& point, chain::output const& output, data_chunk const& fixed_data, KTH_DB_txn* db_txn);
 
-    result_code remove_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, MDB_txn* db_txn);
+    result_code remove_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, KTH_DB_txn* db_txn);
 
-    result_code insert_outputs(hash_digest const& tx_id, uint32_t height, chain::output::list const& outputs, data_chunk const& fixed_data, MDB_txn* db_txn);
+    result_code insert_outputs(hash_digest const& tx_id, uint32_t height, chain::output::list const& outputs, data_chunk const& fixed_data, KTH_DB_txn* db_txn);
 
-    result_code insert_outputs_error_treatment(uint32_t height, data_chunk const& fixed_data, hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn);
-
-    template <typename I>
-    result_code push_transactions_outputs_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, MDB_txn* db_txn);
+    result_code insert_outputs_error_treatment(uint32_t height, data_chunk const& fixed_data, hash_digest const& txid, chain::output::list const& outputs, KTH_DB_txn* db_txn);
 
     template <typename I>
-    result_code remove_transactions_inputs_non_coinbase(uint32_t height, I f, I l, bool insert_reorg, MDB_txn* db_txn);
+    result_code push_transactions_outputs_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, KTH_DB_txn* db_txn);
 
     template <typename I>
-    result_code push_transactions_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, bool insert_reorg, MDB_txn* db_txn);
+    result_code remove_transactions_inputs_non_coinbase(uint32_t height, I f, I l, bool insert_reorg, KTH_DB_txn* db_txn);
 
-    result_code push_block_header(chain::block const& block, uint32_t height, MDB_txn* db_txn);
+    template <typename I>
+    result_code push_transactions_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, bool insert_reorg, KTH_DB_txn* db_txn);
+
+    result_code push_block_header(chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
     
-    result_code push_block_reorg(chain::block const& block, uint32_t height, MDB_txn* db_txn);
+    result_code push_block_reorg(chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
 
-    result_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg, MDB_txn* db_txn);
+    result_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg, KTH_DB_txn* db_txn);
 
-    result_code push_genesis(chain::block const& block, MDB_txn* db_txn);
+    result_code push_genesis(chain::block const& block, KTH_DB_txn* db_txn);
 
-    result_code remove_outputs(hash_digest const& txid, chain::output::list const& outputs, MDB_txn* db_txn);
+    result_code remove_outputs(hash_digest const& txid, chain::output::list const& outputs, KTH_DB_txn* db_txn);
 
-    result_code insert_output_from_reorg_and_remove(chain::output_point const& point, MDB_txn* db_txn);
+    result_code insert_output_from_reorg_and_remove(chain::output_point const& point, KTH_DB_txn* db_txn);
 
-    result_code insert_inputs(chain::input::list const& inputs, MDB_txn* db_txn);
-
-    template <typename I>
-    result_code insert_transactions_inputs_non_coinbase(I f, I l, MDB_txn* db_txn);
+    result_code insert_inputs(chain::input::list const& inputs, KTH_DB_txn* db_txn);
 
     template <typename I>
-    result_code remove_transactions_outputs_non_coinbase(I f, I l, MDB_txn* db_txn);
+    result_code insert_transactions_inputs_non_coinbase(I f, I l, KTH_DB_txn* db_txn);
 
     template <typename I>
-    result_code remove_transactions_non_coinbase(I f, I l, MDB_txn* db_txn);
+    result_code remove_transactions_outputs_non_coinbase(I f, I l, KTH_DB_txn* db_txn);
 
-    result_code remove_block_header(hash_digest const& hash, uint32_t height, MDB_txn* db_txn);
+    template <typename I>
+    result_code remove_transactions_non_coinbase(I f, I l, KTH_DB_txn* db_txn);
 
-    result_code remove_block_reorg(uint32_t height, MDB_txn* db_txn);
+    result_code remove_block_header(hash_digest const& hash, uint32_t height, KTH_DB_txn* db_txn);
+
+    result_code remove_block_reorg(uint32_t height, KTH_DB_txn* db_txn);
     
-    result_code remove_reorg_index(uint32_t height, MDB_txn* db_txn);
+    result_code remove_reorg_index(uint32_t height, KTH_DB_txn* db_txn);
     
-    result_code remove_block(chain::block const& block, uint32_t height, MDB_txn* db_txn);
+    result_code remove_block(chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
 #endif
 
-    chain::header get_header(uint32_t height, MDB_txn* db_txn) const;
+    chain::header get_header(uint32_t height, KTH_DB_txn* db_txn) const;
 
-    chain::block get_block_reorg(uint32_t height, MDB_txn* db_txn) const;
+    chain::block get_block_reorg(uint32_t height, KTH_DB_txn* db_txn) const;
        
     chain::block get_block_reorg(uint32_t height) const;
 
 #if ! defined(KTH_DB_READONLY)
     result_code remove_block(chain::block const& block, uint32_t height);
     
-    result_code prune_reorg_index(uint32_t remove_until, MDB_txn* db_txn);
+    result_code prune_reorg_index(uint32_t remove_until, KTH_DB_txn* db_txn);
     
-    result_code prune_reorg_block(uint32_t amount_to_delete, MDB_txn* db_txn);
+    result_code prune_reorg_block(uint32_t amount_to_delete, KTH_DB_txn* db_txn);
 #endif
 
     result_code get_first_reorg_block_height(uint32_t& out_height) const;
 
-    result_code insert_reorg_into_pool(utxo_pool_t& pool, MDB_val key_point, MDB_txn* db_txn) const;
+    //TODO(fernando): is taking KTH_DB_val by value, is that Ok?
+    result_code insert_reorg_into_pool(utxo_pool_t& pool, KTH_DB_val key_point, KTH_DB_txn* db_txn) const;
 
 #if defined(KTH_DB_NEW_BLOCKS) && ! defined(KTH_DB_READONLY)
-    result_code insert_block(chain::block const& block, uint32_t height, MDB_txn* db_txn);
+    result_code insert_block(chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
 #endif 
 
 
 #if ! defined(KTH_DB_READONLY)
 #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-    result_code remove_blocks_db(uint32_t height, MDB_txn* db_txn);
+    result_code remove_blocks_db(uint32_t height, KTH_DB_txn* db_txn);
 #endif //defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
 #endif
 
-    chain::block get_block(uint32_t height, MDB_txn* db_txn) const;
+    chain::block get_block(uint32_t height, KTH_DB_txn* db_txn) const;
 
 #if defined(KTH_DB_NEW_FULL)
     
 #if ! defined(KTH_DB_READONLY)
-    result_code insert_block(chain::block const& block, uint32_t height, uint64_t tx_count, MDB_txn* db_txn);
+    result_code insert_block(chain::block const& block, uint32_t height, uint64_t tx_count, KTH_DB_txn* db_txn);
 
-    result_code remove_transactions(chain::block const& block, uint32_t height, MDB_txn* db_txn);
+    result_code remove_transactions(chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
     
-    result_code insert_transaction(uint64_t id, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position , MDB_txn* db_txn);
+    result_code insert_transaction(uint64_t id, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position , KTH_DB_txn* db_txn);
     //data_chunk serialize_txs(chain::block const& block);
     
     template <typename I>
-    result_code insert_transactions(I f, I l, uint32_t height, uint32_t median_time_past,uint64_t tx_count, MDB_txn* db_txn);
+    result_code insert_transactions(I f, I l, uint32_t height, uint32_t median_time_past,uint64_t tx_count, KTH_DB_txn* db_txn);
 #endif // ! defined(KTH_DB_READONLY)
     
-    transaction_entry get_transaction(hash_digest const& hash, size_t fork_height, MDB_txn* db_txn) const;
-    transaction_entry get_transaction(uint64_t id, MDB_txn* db_txn) const;
+    transaction_entry get_transaction(hash_digest const& hash, size_t fork_height, KTH_DB_txn* db_txn) const;
+    transaction_entry get_transaction(uint64_t id, KTH_DB_txn* db_txn) const;
     
 
 #if ! defined(KTH_DB_READONLY)    
-    result_code insert_input_history(chain::input_point const& inpoint, uint32_t height, chain::input const& input, MDB_txn* db_txn);
+    result_code insert_input_history(chain::input_point const& inpoint, uint32_t height, chain::input const& input, KTH_DB_txn* db_txn);
 
-    result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, MDB_txn* db_txn);
+    result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, KTH_DB_txn* db_txn);
     
-    result_code insert_history_db (wallet::payment_address const& address, data_chunk const& entry, MDB_txn* db_txn); 
+    result_code insert_history_db (wallet::payment_address const& address, data_chunk const& entry, KTH_DB_txn* db_txn); 
 #endif // ! defined(KTH_DB_READONLY)
 
     static
     chain::history_compact history_entry_to_history_compact(history_entry const& entry);
     
 #if ! defined(KTH_DB_READONLY)    
-    result_code remove_history_db(const short_hash& key, size_t height, MDB_txn* db_txn);
+    result_code remove_history_db(const short_hash& key, size_t height, KTH_DB_txn* db_txn);
     
-    result_code remove_transaction_history_db(chain::transaction const& tx, size_t height, MDB_txn* db_txn);
+    result_code remove_transaction_history_db(chain::transaction const& tx, size_t height, KTH_DB_txn* db_txn);
     
-    result_code insert_spend(chain::output_point const& out_point, chain::input_point const& in_point, MDB_txn* db_txn);
+    result_code insert_spend(chain::output_point const& out_point, chain::input_point const& in_point, KTH_DB_txn* db_txn);
     
-    result_code remove_spend(chain::output_point const& out_point, MDB_txn* db_txn);
+    result_code remove_spend(chain::output_point const& out_point, KTH_DB_txn* db_txn);
     
-    result_code remove_transaction_spend_db(chain::transaction const& tx, MDB_txn* db_txn);
+    result_code remove_transaction_spend_db(chain::transaction const& tx, KTH_DB_txn* db_txn);
 
-    result_code insert_transaction_unconfirmed(chain::transaction const& tx, uint32_t height, MDB_txn* db_txn);
+    result_code insert_transaction_unconfirmed(chain::transaction const& tx, uint32_t height, KTH_DB_txn* db_txn);
 
-    result_code remove_transaction_unconfirmed(hash_digest const& tx_id,  MDB_txn* db_txn);
+    result_code remove_transaction_unconfirmed(hash_digest const& tx_id,  KTH_DB_txn* db_txn);
 #endif 
 
-    transaction_unconfirmed_entry get_transaction_unconfirmed(hash_digest const& hash, MDB_txn* db_txn) const;
+    transaction_unconfirmed_entry get_transaction_unconfirmed(hash_digest const& hash, KTH_DB_txn* db_txn) const;
 
 
 #if ! defined(KTH_DB_READONLY)
-    result_code update_transaction(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, MDB_txn* db_txn);
+    result_code update_transaction(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, KTH_DB_txn* db_txn);
 
-    result_code set_spend(chain::output_point const& point, uint32_t spender_height, MDB_txn* db_txn);
+    result_code set_spend(chain::output_point const& point, uint32_t spender_height, KTH_DB_txn* db_txn);
 
-    result_code set_unspend(chain::output_point const& point, MDB_txn* db_txn);
+    result_code set_unspend(chain::output_point const& point, KTH_DB_txn* db_txn);
 #endif // ! defined(KTH_DB_READONLY)
 
     uint32_t get_clock_now() const;
 
-    uint64_t get_tx_count(MDB_txn* db_txn) const;
+    uint64_t get_tx_count(KTH_DB_txn* db_txn) const;
 
-    uint64_t get_history_count(MDB_txn* db_txn) const;
+    uint64_t get_history_count(KTH_DB_txn* db_txn) const;
 
     
 
@@ -330,26 +337,26 @@ private:
     bool safe_mode_;
     //bool fast_mode = false;
 
-    MDB_env* env_;
-    MDB_dbi dbi_block_header_;
-    MDB_dbi dbi_block_header_by_hash_;
-    MDB_dbi dbi_utxo_;
-    MDB_dbi dbi_reorg_pool_;
-    MDB_dbi dbi_reorg_index_;
-    MDB_dbi dbi_reorg_block_;
-    MDB_dbi dbi_properties_;
+    KTH_DB_env* env_;
+    KTH_DB_dbi dbi_block_header_;
+    KTH_DB_dbi dbi_block_header_by_hash_;
+    KTH_DB_dbi dbi_utxo_;
+    KTH_DB_dbi dbi_reorg_pool_;
+    KTH_DB_dbi dbi_reorg_index_;
+    KTH_DB_dbi dbi_reorg_block_;
+    KTH_DB_dbi dbi_properties_;
 
 #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
     //Blocks DB
-    MDB_dbi dbi_block_db_;
+    KTH_DB_dbi dbi_block_db_;
 #endif 
 
 #ifdef KTH_DB_NEW_FULL
-    MDB_dbi dbi_transaction_db_;
-    MDB_dbi dbi_transaction_hash_db_;
-    MDB_dbi dbi_history_db_;
-    MDB_dbi dbi_spend_db_;
-    MDB_dbi dbi_transaction_unconfirmed_db_;
+    KTH_DB_dbi dbi_transaction_db_;
+    KTH_DB_dbi dbi_transaction_hash_db_;
+    KTH_DB_dbi dbi_history_db_;
+    KTH_DB_dbi dbi_spend_db_;
+    KTH_DB_dbi dbi_transaction_unconfirmed_db_;
 #endif
 };
 

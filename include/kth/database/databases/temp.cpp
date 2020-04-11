@@ -1,7 +1,7 @@
 
 
 
-void lmdb_resized(MDB_env *env)
+void lmdb_resized(KTH_DB_env *env)
 {
   mdb_txn_safe::prevent_new_txns();
   MGINFO("LMDB map resize detected.");
@@ -9,7 +9,7 @@ void lmdb_resized(MDB_env *env)
   mdb_env_info(env, &mei);
   uint64_t old = mei.me_mapsize;
   mdb_txn_safe::wait_no_active_txns();
-  int result = mdb_env_set_mapsize(env, 0);
+  int result = kth_db_env_set_mapsize(env, 0);
   if (result)
     throw0(DB_ERROR(lmdb_error("Failed to set new mapsize: ", result).c_str()));
   mdb_env_info(env, &mei);
@@ -17,12 +17,12 @@ void lmdb_resized(MDB_env *env)
   MGINFO("LMDB Mapsize increased." << "  Old: " << old / (1024 * 1024) << "MiB" << ", New: " << new_mapsize / (1024 * 1024) << "MiB");
   mdb_txn_safe::allow_new_txns();
 }
-inline int lmdb_txn_begin(MDB_env *env, MDB_txn *parent, unsigned int flags, MDB_txn **txn)
+inline int lmdb_txn_begin(KTH_DB_env *env, KTH_DB_txn *parent, unsigned int flags, KTH_DB_txn **txn)
 {
-  int res = mdb_txn_begin(env, parent, flags, txn);
+  int res = kth_db_txn_begin(env, parent, flags, txn);
   if (res == MDB_MAP_RESIZED) {
     lmdb_resized(env);
-    res = mdb_txn_begin(env, parent, flags, txn);
+    res = kth_db_txn_begin(env, parent, flags, txn);
   }
   return res;
 }
@@ -73,7 +73,7 @@ void BlockchainLMDB::do_resize(uint64_t increase_size)
     }
   }
   mdb_txn_safe::wait_no_active_txns();
-  int result = mdb_env_set_mapsize(m_env, new_mapsize);
+  int result = kth_db_env_set_mapsize(m_env, new_mapsize);
   if (result)
     throw0(DB_ERROR(lmdb_error("Failed to set new mapsize: ", result).c_str()));
   MGINFO("LMDB Mapsize increased." << "  Old: " << mei.me_mapsize / (1024 * 1024) << "MiB" << ", New: " << new_mapsize / (1024 * 1024) << "MiB");
@@ -191,7 +191,7 @@ uint64_t BlockchainLMDB::get_estimated_batch_size(uint64_t batch_num_blocks, uin
   }
   else
   {
-    MDB_txn *rtxn;
+    KTH_DB_txn *rtxn;
     mdb_txn_cursors *rcurs;
     block_rtxn_start(&rtxn, &rcurs);
     for (uint64_t block_num = block_start; block_num <= block_stop; ++block_num)
@@ -224,7 +224,7 @@ estim:
 void BlockchainLMDB::open(std::string const& filename, int const db_flags)
 {
   int result;
-  int mdb_flags = MDB_NORDAHEAD;
+  int mdb_flags = KTH_DB_NORDAHEAD;
 
   LOG_PRINT_L3("BlockchainLMDB::" << __func__);
 
@@ -263,15 +263,15 @@ void BlockchainLMDB::open(std::string const& filename, int const db_flags)
   m_folder = filename;
 
 #ifdef __OpenBSD__
-  if ((mdb_flags & MDB_WRITEMAP) == 0) {
+  if ((mdb_flags & KTH_DB_WRITEMAP) == 0) {
     MCLOG_RED(el::Level::Info, "global", "Running on OpenBSD: forcing WRITEMAP");
-    mdb_flags |= MDB_WRITEMAP;
+    mdb_flags |= KTH_DB_WRITEMAP;
   }
 #endif
   // set up lmdb environment
-  if ((result = mdb_env_create(&m_env)))
+  if ((result = kth_db_env_create(&m_env)))
     throw0(DB_ERROR(lmdb_error("Failed to create lmdb environment: ", result).c_str()));
-  if ((result = mdb_env_set_maxdbs(m_env, 20)))
+  if ((result = kth_db_env_set_maxdbs(m_env, 20)))
     throw0(DB_ERROR(lmdb_error("Failed to set max number of dbs: ", result).c_str()));
 
   int threads = tools::get_max_concurrency();
@@ -282,15 +282,15 @@ void BlockchainLMDB::open(std::string const& filename, int const db_flags)
   size_t mapsize = DEFAULT_MAPSIZE;
 
   if (db_flags & DBF_FAST)
-    mdb_flags |= MDB_NOSYNC;
+    mdb_flags |= KTH_DB_NOSYNC;
   if (db_flags & DBF_FASTEST)
-    mdb_flags |= MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC;
+    mdb_flags |= KTH_DB_NOSYNC | KTH_DB_WRITEMAP | KTH_DB_MAPASYNC;
   if (db_flags & DBF_RDONLY)
-    mdb_flags = MDB_RDONLY;
+    mdb_flags = KTH_DB_RDONLY;
   if (db_flags & DBF_SALVAGE)
     mdb_flags |= MDB_PREVSNAPSHOT;
 
-  if (auto result = mdb_env_open(m_env, filename.c_str(), mdb_flags, 0644))
+  if (auto result = kth_db_env_open(m_env, filename.c_str(), mdb_flags, 0644))
     throw0(DB_ERROR(lmdb_error("Failed to open lmdb environment: ", result).c_str()));
 
   MDB_envinfo mei;
@@ -299,7 +299,7 @@ void BlockchainLMDB::open(std::string const& filename, int const db_flags)
 
   if (cur_mapsize < mapsize)
   {
-    if (auto result = mdb_env_set_mapsize(m_env, mapsize))
+    if (auto result = kth_db_env_set_mapsize(m_env, mapsize))
       throw0(DB_ERROR(lmdb_error("Failed to set max memory map size: ", result).c_str()));
     mdb_env_info(m_env, &mei);
     cur_mapsize = (double)mei.me_mapsize;
@@ -313,45 +313,45 @@ void BlockchainLMDB::open(std::string const& filename, int const db_flags)
   }
 
   int txn_flags = 0;
-  if (mdb_flags & MDB_RDONLY)
-    txn_flags |= MDB_RDONLY;
+  if (mdb_flags & KTH_DB_RDONLY)
+    txn_flags |= KTH_DB_RDONLY;
 
-  // get a read/write MDB_txn, depending on mdb_flags
+  // get a read/write KTH_DB_txn, depending on mdb_flags
   mdb_txn_safe txn;
-  if (auto mdb_res = mdb_txn_begin(m_env, NULL, txn_flags, txn))
+  if (auto mdb_res = kth_db_txn_begin(m_env, NULL, txn_flags, txn))
     throw0(DB_ERROR(lmdb_error("Failed to create a transaction for the db: ", mdb_res).c_str()));
 
   // open necessary databases, and set properties as needed
   // uses macros to avoid having to change things too many places
-  lmdb_db_open(txn, LMDB_BLOCKS, MDB_INTEGERKEY | MDB_CREATE, m_blocks, "Failed to open db handle for m_blocks");
+  lmdb_db_open(txn, LMDB_BLOCKS, KTH_DB_INTEGERKEY | KTH_DB_CREATE, m_blocks, "Failed to open db handle for m_blocks");
 
-  lmdb_db_open(txn, LMDB_BLOCK_INFO, MDB_INTEGERKEY | MDB_CREATE | MDB_DUPSORT | MDB_DUPFIXED, m_block_info, "Failed to open db handle for m_block_info");
-  lmdb_db_open(txn, LMDB_BLOCK_HEIGHTS, MDB_INTEGERKEY | MDB_CREATE | MDB_DUPSORT | MDB_DUPFIXED, m_block_heights, "Failed to open db handle for m_block_heights");
+  lmdb_db_open(txn, LMDB_BLOCK_INFO, KTH_DB_INTEGERKEY | KTH_DB_CREATE | KTH_DB_DUPSORT | KTH_DB_DUPFIXED, m_block_info, "Failed to open db handle for m_block_info");
+  lmdb_db_open(txn, LMDB_BLOCK_HEIGHTS, KTH_DB_INTEGERKEY | KTH_DB_CREATE | KTH_DB_DUPSORT | KTH_DB_DUPFIXED, m_block_heights, "Failed to open db handle for m_block_heights");
 
-  lmdb_db_open(txn, LMDB_TXS, MDB_INTEGERKEY | MDB_CREATE, m_txs, "Failed to open db handle for m_txs");
-  lmdb_db_open(txn, LMDB_TXS_PRUNED, MDB_INTEGERKEY | MDB_CREATE, m_txs_pruned, "Failed to open db handle for m_txs_pruned");
-  lmdb_db_open(txn, LMDB_TXS_PRUNABLE, MDB_INTEGERKEY | MDB_CREATE, m_txs_prunable, "Failed to open db handle for m_txs_prunable");
-  lmdb_db_open(txn, LMDB_TXS_PRUNABLE_HASH, MDB_INTEGERKEY | MDB_CREATE, m_txs_prunable_hash, "Failed to open db handle for m_txs_prunable_hash");
-  lmdb_db_open(txn, LMDB_TX_INDICES, MDB_INTEGERKEY | MDB_CREATE | MDB_DUPSORT | MDB_DUPFIXED, m_tx_indices, "Failed to open db handle for m_tx_indices");
-  lmdb_db_open(txn, LMDB_TX_OUTPUTS, MDB_INTEGERKEY | MDB_CREATE, m_tx_outputs, "Failed to open db handle for m_tx_outputs");
+  lmdb_db_open(txn, LMDB_TXS, KTH_DB_INTEGERKEY | KTH_DB_CREATE, m_txs, "Failed to open db handle for m_txs");
+  lmdb_db_open(txn, LMDB_TXS_PRUNED, KTH_DB_INTEGERKEY | KTH_DB_CREATE, m_txs_pruned, "Failed to open db handle for m_txs_pruned");
+  lmdb_db_open(txn, LMDB_TXS_PRUNABLE, KTH_DB_INTEGERKEY | KTH_DB_CREATE, m_txs_prunable, "Failed to open db handle for m_txs_prunable");
+  lmdb_db_open(txn, LMDB_TXS_PRUNABLE_HASH, KTH_DB_INTEGERKEY | KTH_DB_CREATE, m_txs_prunable_hash, "Failed to open db handle for m_txs_prunable_hash");
+  lmdb_db_open(txn, LMDB_TX_INDICES, KTH_DB_INTEGERKEY | KTH_DB_CREATE | KTH_DB_DUPSORT | KTH_DB_DUPFIXED, m_tx_indices, "Failed to open db handle for m_tx_indices");
+  lmdb_db_open(txn, LMDB_TX_OUTPUTS, KTH_DB_INTEGERKEY | KTH_DB_CREATE, m_tx_outputs, "Failed to open db handle for m_tx_outputs");
 
-  lmdb_db_open(txn, LMDB_OUTPUT_TXS, MDB_INTEGERKEY | MDB_CREATE | MDB_DUPSORT | MDB_DUPFIXED, m_output_txs, "Failed to open db handle for m_output_txs");
-  lmdb_db_open(txn, LMDB_OUTPUT_AMOUNTS, MDB_INTEGERKEY | MDB_DUPSORT | MDB_DUPFIXED | MDB_CREATE, m_output_amounts, "Failed to open db handle for m_output_amounts");
+  lmdb_db_open(txn, LMDB_OUTPUT_TXS, KTH_DB_INTEGERKEY | KTH_DB_CREATE | KTH_DB_DUPSORT | KTH_DB_DUPFIXED, m_output_txs, "Failed to open db handle for m_output_txs");
+  lmdb_db_open(txn, LMDB_OUTPUT_AMOUNTS, KTH_DB_INTEGERKEY | KTH_DB_DUPSORT | KTH_DB_DUPFIXED | KTH_DB_CREATE, m_output_amounts, "Failed to open db handle for m_output_amounts");
 
-  lmdb_db_open(txn, LMDB_SPENT_KEYS, MDB_INTEGERKEY | MDB_CREATE | MDB_DUPSORT | MDB_DUPFIXED, m_spent_keys, "Failed to open db handle for m_spent_keys");
+  lmdb_db_open(txn, LMDB_SPENT_KEYS, KTH_DB_INTEGERKEY | KTH_DB_CREATE | KTH_DB_DUPSORT | KTH_DB_DUPFIXED, m_spent_keys, "Failed to open db handle for m_spent_keys");
 
-  lmdb_db_open(txn, LMDB_TXPOOL_META, MDB_CREATE, m_txpool_meta, "Failed to open db handle for m_txpool_meta");
-  lmdb_db_open(txn, LMDB_TXPOOL_BLOB, MDB_CREATE, m_txpool_blob, "Failed to open db handle for m_txpool_blob");
+  lmdb_db_open(txn, LMDB_TXPOOL_META, KTH_DB_CREATE, m_txpool_meta, "Failed to open db handle for m_txpool_meta");
+  lmdb_db_open(txn, LMDB_TXPOOL_BLOB, KTH_DB_CREATE, m_txpool_blob, "Failed to open db handle for m_txpool_blob");
 
   // this subdb is dropped on sight, so it may not be present when we open the DB.
-  // Since we use MDB_CREATE, we'll get an exception if we open read-only and it does not exist.
+  // Since we use KTH_DB_CREATE, we'll get an exception if we open read-only and it does not exist.
   // So we don't open for read-only, and also not drop below. It is not used elsewhere.
-  if (!(mdb_flags & MDB_RDONLY))
-    lmdb_db_open(txn, LMDB_HF_STARTING_HEIGHTS, MDB_CREATE, m_hf_starting_heights, "Failed to open db handle for m_hf_starting_heights");
+  if (!(mdb_flags & KTH_DB_RDONLY))
+    lmdb_db_open(txn, LMDB_HF_STARTING_HEIGHTS, KTH_DB_CREATE, m_hf_starting_heights, "Failed to open db handle for m_hf_starting_heights");
 
-  lmdb_db_open(txn, LMDB_HF_VERSIONS, MDB_INTEGERKEY | MDB_CREATE, m_hf_versions, "Failed to open db handle for m_hf_versions");
+  lmdb_db_open(txn, LMDB_HF_VERSIONS, KTH_DB_INTEGERKEY | KTH_DB_CREATE, m_hf_versions, "Failed to open db handle for m_hf_versions");
 
-  lmdb_db_open(txn, LMDB_PROPERTIES, MDB_CREATE, m_properties, "Failed to open db handle for m_properties");
+  lmdb_db_open(txn, LMDB_PROPERTIES, KTH_DB_CREATE, m_properties, "Failed to open db handle for m_properties");
 
   mdb_set_dupsort(txn, m_spent_keys, compare_hash32);
   mdb_set_dupsort(txn, m_block_heights, compare_hash32);
@@ -364,10 +364,10 @@ void BlockchainLMDB::open(std::string const& filename, int const db_flags)
   mdb_set_compare(txn, m_txpool_blob, compare_hash32);
   mdb_set_compare(txn, m_properties, compare_string);
 
-  if (!(mdb_flags & MDB_RDONLY))
+  if (!(mdb_flags & KTH_DB_RDONLY))
   {
     result = mdb_drop(txn, m_hf_starting_heights, 1);
-    if (result && result != MDB_NOTFOUND)
+    if (result && result != KTH_DB_NOTFOUND)
       throw0(DB_ERROR(lmdb_error("Failed to drop m_hf_starting_heights: ", result).c_str()));
   }
 
@@ -381,11 +381,12 @@ void BlockchainLMDB::open(std::string const& filename, int const db_flags)
   bool compatible = true;
 
   MDB_val_copy<const char*> k("version");
-  MDB_val v;
-  auto get_result = mdb_get(txn, m_properties, &k, &v);
-  if(get_result == MDB_SUCCESS)
-  {
-    const uint32_t db_version = *(const uint32_t*)v.mv_data;
+  KTH_DB_val v;
+  auto get_result = kth_db_get(txn, m_properties, &k, &v);
+  if(get_result == KTH_DB_SUCCESS) {
+
+    //TODO: check this cast
+    const uint32_t db_version = *(const uint32_t*) kth_db_get_data(v);
     if (db_version > VERSION)
     {
       MWARNING("Existing lmdb database was made by a later version (" << db_version << "). We don't know how it will change yet.");
@@ -416,25 +417,25 @@ void BlockchainLMDB::open(std::string const& filename, int const db_flags)
   if (!compatible)
   {
     txn.abort();
-    mdb_env_close(m_env);
+    kth_db_env_close(m_env);
     m_open = false;
     MFATAL("Existing lmdb database is incompatible with this version.");
     MFATAL("Please delete the existing database and resync.");
     return;
   }
 
-  if (!(mdb_flags & MDB_RDONLY))
+  if (!(mdb_flags & KTH_DB_RDONLY))
   {
     // only write version on an empty DB
     if (m_height == 0)
     {
       MDB_val_copy<const char*> k("version");
       MDB_val_copy<uint32_t> v(VERSION);
-      auto put_result = mdb_put(txn, m_properties, &k, &v, 0);
-      if (put_result != MDB_SUCCESS)
+      auto put_result = kth_db_put(txn, m_properties, &k, &v, 0);
+      if (put_result != KTH_DB_SUCCESS)
       {
         txn.abort();
-        mdb_env_close(m_env);
+        kth_db_env_close(m_env);
         m_open = false;
         MERROR("Failed to write version to database.");
         return;
@@ -461,14 +462,14 @@ void BlockchainLMDB::close()
   m_tinfo.reset();
 
   // FIXME: not yet thread safe!!!  Use with care.
-  mdb_env_close(m_env);
+  kth_db_env_close(m_env);
   m_open = false;
 }
 
 void BlockchainLMDB::safesyncmode(const bool onoff)
 {
   MINFO("switching safe mode " << (onoff ? "on" : "off"));
-  mdb_env_set_flags(m_env, MDB_NOSYNC|MDB_MAPASYNC, !onoff);
+  mdb_env_set_flags(m_env, KTH_DB_NOSYNC|KTH_DB_MAPASYNC, !onoff);
 }
 
 void BlockchainLMDB::reset()
@@ -511,7 +512,7 @@ void BlockchainLMDB::reset()
   // init with current version
   MDB_val_copy<const char*> k("version");
   MDB_val_copy<uint32_t> v(VERSION);
-  if (auto result = mdb_put(txn, m_properties, &k, &v, 0))
+  if (auto result = kth_db_put(txn, m_properties, &k, &v, 0))
     throw0(DB_ERROR(lmdb_error("Failed to write version to database: ", result).c_str()));
 
   txn.commit();
@@ -527,7 +528,7 @@ bool BlockchainLMDB::is_read_only() const
   auto result = mdb_env_get_flags(m_env, &flags);
   if (result)
     throw0(DB_ERROR(lmdb_error("Error getting database environment info: ", result).c_str()));
-  if (flags & MDB_RDONLY)
+  if (flags & KTH_DB_RDONLY)
     return true;
   return false;
 }
@@ -548,6 +549,6 @@ Some Optimization
 If you frequently begin and abort read-only transactions, as an optimization, it is possible to only reset and renew a transaction.
 mdb_txn_reset() releases any old copies of data kept around for a read-only transaction. To reuse this reset transaction, call mdb_txn_renew() on it. 
 Any cursors in this transaction must also be renewed using mdb_cursor_renew().
-Note that mdb_txn_reset() is similar to mdb_txn_abort() and will close any databases you opened within the transaction.
-To permanently free a transaction, reset or not, use mdb_txn_abort().
+Note that mdb_txn_reset() is similar to kth_db_txn_abort() and will close any databases you opened within the transaction.
+To permanently free a transaction, reset or not, use kth_db_txn_abort().
 */

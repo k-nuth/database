@@ -7,18 +7,24 @@
 
 #include <utility>
 
-#include <lmdb.h>
+// #if defined(KTH_USE_LIBMDBX)
+// #include <mdbx.h>
+// #else
+// #include <lmdb.h>
+// #endif
+
+#include <kth/database/databases/generic_db.hpp>
 
 namespace kth::database {
 
-std::pair<int, MDB_txn*> transaction_begin(MDB_env* env, MDB_txn* parent, unsigned int flags) {
-    MDB_txn* db_txn;
-    auto res = mdb_txn_begin(env, NULL, 0, &db_txn);
+std::pair<int, KTH_DB_txn*> transaction_begin(KTH_DB_env* env, KTH_DB_txn* parent, unsigned int flags) {
+    KTH_DB_txn* db_txn;
+    auto res = kth_db_txn_begin(env, NULL, 0, &db_txn);
     return {res, db_txn};
 }
 
-std::pair<int, MDB_txn*> transaction_readonly_begin(MDB_env* env, MDB_txn* parent, unsigned int flags) {
-    return transaction_begin(env, parent, flags | MDB_RDONLY);
+std::pair<int, KTH_DB_txn*> transaction_readonly_begin(KTH_DB_env* env, KTH_DB_txn* parent, unsigned int flags) {
+    return transaction_begin(env, parent, flags | KTH_DB_RDONLY);
 }
 
 
