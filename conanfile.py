@@ -105,6 +105,9 @@ class KnuthDatabaseConan(KnuthConanFile):
         self.output.info("Compiling with measurements: %s" % (self.options.measurements,))
         self.output.info("Compiling for DB: %s" % (self.options.db,))
 
+        self.options["*"].binlog = self.options.binlog
+        self.output.info("Compiling with binlog: %s" % (self.options.binlog,))
+
     def package_id(self):
         KnuthConanFile.package_id(self)
 
