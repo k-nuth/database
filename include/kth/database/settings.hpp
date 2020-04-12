@@ -9,12 +9,10 @@
 #include <boost/filesystem.hpp>
 #include <kth/database/define.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 /// Common database configuration settings, properties not thread safe.
-class BCD_API settings
-{
+class BCD_API settings {
 public:
     settings();
     settings(config::settings context);
@@ -59,7 +57,6 @@ public:
 
 };
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif
