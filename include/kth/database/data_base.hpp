@@ -209,10 +209,10 @@ private:
     // Synchronous writers.
     // ------------------------------------------------------------------------
 
-    bool push_transactions(const chain::block& block, size_t height, uint32_t median_time_past, size_t bucket = 0, size_t buckets = 1);
+    bool push_transactions(chain::block const& block, size_t height, uint32_t median_time_past, size_t bucket = 0, size_t buckets = 1);
 
 #ifdef KTH_DB_LEGACY    
-    bool push_heights(const chain::block& block, size_t height);
+    bool push_heights(chain::block const& block, size_t height);
 #endif
 
 #if defined(KTH_DB_LEGACY) && (defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY))
@@ -248,8 +248,8 @@ private:
 #endif // ! defined(KTH_DB_READONLY)
 
 
-    code verify_insert(const chain::block& block, size_t height);
-    code verify_push(const chain::block& block, size_t height);
+    code verify_insert(chain::block const& block, size_t height);
+    code verify_push(chain::block const& block, size_t height);
 
 #if defined(KTH_DB_LEGACY)
     code verify_push(const chain::transaction& tx);
