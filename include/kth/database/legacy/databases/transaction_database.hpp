@@ -8,8 +8,11 @@
 #ifdef KTH_DB_LEGACY
 
 #include <cstddef>
+#include <filesystem>
 #include <memory>
-#include <boost/filesystem.hpp>
+
+// #include <boost/filesystem.hpp>
+
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 #include <kth/database/legacy/memory/memory_map.hpp>

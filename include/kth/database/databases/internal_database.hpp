@@ -5,7 +5,9 @@
 #ifndef KTH_DATABASE_INTERNAL_DATABASE_HPP_
 #define KTH_DATABASE_INTERNAL_DATABASE_HPP_
 
-#include <boost/filesystem.hpp>
+#include <filesystem>
+
+// #include <boost/filesystem.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 

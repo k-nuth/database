@@ -27,7 +27,7 @@ internal_database_basis<Clock>::~internal_database_basis() {
 
 template <typename Clock>
 bool internal_database_basis<Clock>::create() {
-    boost::system::error_code ec;
+    std::error_code ec;
 
     if ( ! create_directories(db_dir_, ec)) {
         if (ec.value() == directory_exists) {

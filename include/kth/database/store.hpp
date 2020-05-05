@@ -5,8 +5,11 @@
 #ifndef KTH_DATABASE_STORE_HPP
 #define KTH_DATABASE_STORE_HPP
 
+#include <filesystem>
 #include <memory>
-#include <boost/filesystem.hpp>
+
+// #include <boost/filesystem.hpp>
+
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 

@@ -6,11 +6,13 @@
 #define KTH_DATABASE_CURRENCY_CONFIG_HPP_
 
 #include <cstdint>
-#include <boost/filesystem.hpp>
+#include <filesystem>
+
+// #include <boost/filesystem.hpp>
+
 #include <kth/database/define.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 #ifdef KTH_CURRENCY_BCH
 #define KTH_WITNESS_DEFAULT false
@@ -26,8 +28,6 @@ static constexpr auto position_size = sizeof(uint16_t);
 const size_t position_max = max_uint16;
 #endif // KTH_CURRENCY_BCH
 
-
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DATABASE_CURRENCY_CONFIG_HPP_

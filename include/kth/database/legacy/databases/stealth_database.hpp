@@ -8,8 +8,11 @@
 #ifdef KTH_DB_STEALTH
 
 #include <cstdint>
+#include <filesystem>
 #include <memory>
-#include <boost/filesystem.hpp>
+
+// #include <boost/filesystem.hpp>
+
 #include <kth/database/define.hpp>
 #include <kth/database/legacy/memory/memory.hpp>
 #include <kth/database/legacy/memory/memory_map.hpp>
