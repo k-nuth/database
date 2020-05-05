@@ -38,7 +38,7 @@ class KnuthDatabaseConan(KnuthConanFile):
                "cflags": "ANY",
                "glibcxx_supports_cxx11_abi": "ANY",
                "cmake_export_compile_commands": [True, False],
-               "binlog": [True, False],
+               "log": ["boost", "spdlog", "binlog"],
                "use_libmdbx": [True, False],
     }
 
@@ -60,7 +60,7 @@ class KnuthDatabaseConan(KnuthConanFile):
         "cflags": "_DUMMY_",
         "glibcxx_supports_cxx11_abi": "_DUMMY_",
         "cmake_export_compile_commands": False,
-        "binlog": False,
+        "log": "boost",
         "use_libmdbx": False,
     }
 
@@ -85,7 +85,7 @@ class KnuthDatabaseConan(KnuthConanFile):
         else:
             self.output.info("Using legacy DB")
 
-        self.requires("boost/1.72.0@kth/stable")
+        self.requires("boost/1.73.0@kth/stable")
         self.requires("domain/0.X@%s/%s" % (self.user, self.channel))
 
     def config_options(self):
@@ -105,8 +105,8 @@ class KnuthDatabaseConan(KnuthConanFile):
         self.output.info("Compiling with measurements: %s" % (self.options.measurements,))
         self.output.info("Compiling for DB: %s" % (self.options.db,))
 
-        self.options["*"].binlog = self.options.binlog
-        self.output.info("Compiling with binlog: %s" % (self.options.binlog,))
+        self.options["*"].log = self.options.log
+        self.output.info("Compiling with log: %s" % (self.options.log,))
 
     def package_id(self):
         KnuthConanFile.package_id(self)
@@ -116,7 +116,7 @@ class KnuthDatabaseConan(KnuthConanFile):
         cmake.definitions["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
         cmake.definitions["DB_READONLY_MODE"] = option_on_off(self.options.db_readonly)
         cmake.definitions["WITH_CACHED_RPC_DATA"] = option_on_off(self.options.cached_rpc_data)
-        cmake.definitions["BINLOG"] = option_on_off(self.options.binlog)
+        cmake.definitions["LOG_LIBRARY"] = self.options.log
         cmake.definitions["USE_LIBMDBX"] = option_on_off(self.options.use_libmdbx)
 
         if self.options.cmake_export_compile_commands:
