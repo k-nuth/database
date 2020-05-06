@@ -7,8 +7,11 @@
 
 #ifdef KTH_DB_HISTORY
 
+#include <filesystem>
 #include <memory>
-#include <boost/filesystem.hpp>
+
+// #include <boost/filesystem.hpp>
+
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 #include <kth/database/legacy/memory/memory_map.hpp>
@@ -35,7 +38,7 @@ struct BCD_API history_statinfo
 class BCD_API history_database
 {
 public:
-    typedef boost::filesystem::path path;
+    typedef std::filesystem::path path;
     typedef std::shared_ptr<shared_mutex> mutex_ptr;
 
     /// Construct the database.

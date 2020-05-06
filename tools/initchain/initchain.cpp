@@ -2,12 +2,12 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <filesystem>
 #include <iostream>
 
-// #include <boost/format.hpp>
-#include <boost/filesystem.hpp>
+// #include <boost/filesystem.hpp>
 
-#define FMT_HEADER_ONLY
+#define FMT_HEADER_ONLY 1
 #include <fmt/core.h>
 
 #include <kth/database.hpp>
@@ -21,7 +21,7 @@
 using namespace bc;
 using namespace bc::chain;
 using namespace bc::database;
-using namespace boost::filesystem;
+using namespace std::filesystem;
 using namespace boost::system;
 // using boost::format;
 

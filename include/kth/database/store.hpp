@@ -5,8 +5,11 @@
 #ifndef KTH_DATABASE_STORE_HPP
 #define KTH_DATABASE_STORE_HPP
 
+#include <filesystem>
 #include <memory>
-#include <boost/filesystem.hpp>
+
+// #include <boost/filesystem.hpp>
+
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 
@@ -19,7 +22,7 @@ namespace database {
 
 class BCD_API store {
 public:
-    using path = boost::filesystem::path;
+    using path = std::filesystem::path;
     using handle = sequential_lock::handle;
 
     static 

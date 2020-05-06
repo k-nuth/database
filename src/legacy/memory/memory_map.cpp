@@ -17,12 +17,15 @@
 #include <cstddef>
 #include <cstdint>
 #include <fcntl.h>
+#include <filesystem>
 #include <memory>
 #include <stdexcept>
 #include <string>
+
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <boost/filesystem.hpp>
+
+// #include <boost/filesystem.hpp>
 #include <kth/domain.hpp>
 #include <kth/database/legacy/memory/accessor.hpp>
 #include <kth/database/legacy/memory/allocator.hpp>

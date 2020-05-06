@@ -27,15 +27,15 @@ internal_database_basis<Clock>::~internal_database_basis() {
 
 template <typename Clock>
 bool internal_database_basis<Clock>::create() {
-    boost::system::error_code ec;
+    std::error_code ec;
 
-    if ( ! create_directories(db_dir_, ec)) {
+    if ( ! std::filesystem::create_directories(db_dir_, ec)) {
         if (ec.value() == directory_exists) {
-            LOG_ERROR(LOG_DATABASE, "Failed because the directory ", db_dir_, " already exists.");
+            LOG_ERROR(LOG_DATABASE, "Failed because the directory ", db_dir_.string(), " already exists.");
             return false;
         }
 
-        LOG_ERROR(LOG_DATABASE, "Failed to create directory ", db_dir_, " with error, '", ec.message(), "'.");
+        LOG_ERROR(LOG_DATABASE, "Failed to create directory ", db_dir_.string(), " with error, '", ec.message(), "'.");
         return false;
     }
 

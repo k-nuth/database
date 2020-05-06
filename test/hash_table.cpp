@@ -2,14 +2,17 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <filesystem>
 #include <random>
+
 #include <boost/functional/hash_fwd.hpp>
 #include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
+// #include <boost/filesystem.hpp>
+
 #include <kth/database.hpp>
 
 using namespace boost::system;
-using namespace boost::filesystem;
+using namespace std::filesystem;
 using namespace bc;
 using namespace bc::database;
 

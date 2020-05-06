@@ -8,8 +8,11 @@
 #ifdef KTH_DB_SPENDS
 
 #include <cstddef>
+#include <filesystem>
 #include <memory>
-#include <boost/filesystem.hpp>
+
+// #include <boost/filesystem.hpp>
+
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 #include <kth/database/legacy/primitives/record_hash_table.hpp>
@@ -33,7 +36,7 @@ struct BCD_API spend_statinfo
 class BCD_API spend_database
 {
 public:
-    typedef boost::filesystem::path path;
+    typedef std::filesystem::path path;
     typedef std::shared_ptr<shared_mutex> mutex_ptr;
 
     /// Construct the database.

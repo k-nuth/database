@@ -8,8 +8,11 @@
 #ifdef KTH_DB_LEGACY
 
 #include <cstddef>
+#include <filesystem>
 #include <memory>
-#include <boost/filesystem.hpp>
+
+// #include <boost/filesystem.hpp>
+
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 #include <kth/database/legacy/memory/memory_map.hpp>
@@ -27,7 +30,7 @@ class BCD_API block_database
 {
 public:
     typedef std::vector<size_t> heights;
-    typedef boost::filesystem::path path;
+    typedef std::filesystem::path path;
     typedef std::shared_ptr<shared_mutex> mutex_ptr;
 
     static const file_offset empty;

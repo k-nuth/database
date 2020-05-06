@@ -7,13 +7,15 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstddef>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <type_traits>
 #include <utility>
 
-#include <boost/filesystem.hpp>
+// #include <boost/filesystem.hpp>
 #include <boost/range/adaptor/reversed.hpp>
+
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 #include <kth/database/settings.hpp>
@@ -25,7 +27,7 @@ using namespace bc::chain;
 using namespace bc::config;
 using namespace bc::wallet;
 using namespace boost::adaptors;
-using namespace boost::filesystem;
+using namespace std::filesystem;
 using namespace std::placeholders;
 
 #define NAME "data_base"

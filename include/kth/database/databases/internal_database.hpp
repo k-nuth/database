@@ -5,7 +5,9 @@
 #ifndef KTH_DATABASE_INTERNAL_DATABASE_HPP_
 #define KTH_DATABASE_INTERNAL_DATABASE_HPP_
 
-#include <boost/filesystem.hpp>
+#include <filesystem>
+
+// #include <boost/filesystem.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 
@@ -65,7 +67,7 @@ constexpr int directory_exists = 0;
 template <typename Clock = std::chrono::system_clock>
 class BCD_API internal_database_basis {
 public:
-    using path = boost::filesystem::path;
+    using path = std::filesystem::path;
     using utxo_pool_t = std::unordered_map<chain::point, utxo_entry>;
 
     constexpr static char block_header_db_name[] = "block_header";
