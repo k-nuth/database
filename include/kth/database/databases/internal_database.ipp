@@ -29,7 +29,7 @@ template <typename Clock>
 bool internal_database_basis<Clock>::create() {
     std::error_code ec;
 
-    if ( ! create_directories(db_dir_, ec)) {
+    if ( ! std::filesystem::create_directories(db_dir_, ec)) {
         if (ec.value() == directory_exists) {
             LOG_ERROR(LOG_DATABASE, "Failed because the directory ", db_dir_.string(), " already exists.");
             return false;

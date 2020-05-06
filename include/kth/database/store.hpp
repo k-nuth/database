@@ -22,7 +22,7 @@ namespace database {
 
 class BCD_API store {
 public:
-    using path = boost::filesystem::path;
+    using path = std::filesystem::path;
     using handle = sequential_lock::handle;
 
     static 

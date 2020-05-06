@@ -38,7 +38,7 @@ struct BCD_API history_statinfo
 class BCD_API history_database
 {
 public:
-    typedef boost::filesystem::path path;
+    typedef std::filesystem::path path;
     typedef std::shared_ptr<shared_mutex> mutex_ptr;
 
     /// Construct the database.

@@ -30,7 +30,7 @@ class BCD_API block_database
 {
 public:
     typedef std::vector<size_t> heights;
-    typedef boost::filesystem::path path;
+    typedef std::filesystem::path path;
     typedef std::shared_ptr<shared_mutex> mutex_ptr;
 
     static const file_offset empty;

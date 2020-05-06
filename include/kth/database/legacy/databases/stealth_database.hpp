@@ -25,7 +25,7 @@ class BCD_API stealth_database
 {
 public:
     typedef chain::stealth_compact::list list;
-    typedef boost::filesystem::path path;
+    typedef std::filesystem::path path;
     typedef std::shared_ptr<shared_mutex> mutex_ptr;
 
     /// Construct the database.

@@ -29,7 +29,7 @@ namespace database {
 class BCD_API memory_map
 {
 public:
-    typedef boost::filesystem::path path;
+    typedef std::filesystem::path path;
     typedef std::shared_ptr<shared_mutex> mutex_ptr;
 
     static const size_t default_expansion;
@@ -66,9 +66,9 @@ public:
 
 private:
     static size_t file_size(int file_handle);
-    static int open_file(const boost::filesystem::path& filename);
+    static int open_file(const std::filesystem::path& filename);
     static bool handle_error(std::string const& context,
-        const boost::filesystem::path& filename);
+        const std::filesystem::path& filename);
 
     size_t page() const;
     bool unmap();
@@ -90,7 +90,7 @@ private:
     // File system.
     int const file_handle_;
     const size_t expansion_;
-    const boost::filesystem::path filename_;
+    const std::filesystem::path filename_;
 
     // Protected by internal mutex.
     uint8_t* data_;

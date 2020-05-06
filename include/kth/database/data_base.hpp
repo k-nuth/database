@@ -54,7 +54,7 @@ class BCD_API data_base : public store, noncopyable {
 public:
     using handle = store::handle;
     using result_handler = handle0;
-    using path = boost::filesystem::path;
+    using path = std::filesystem::path;
 
     // Construct.
     // ----------------------------------------------------------------------------
