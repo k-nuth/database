@@ -11,7 +11,7 @@
 namespace kth {
 namespace database {
 
-using namespace boost::filesystem;
+using namespace std::filesystem;
 
 settings::settings()
     : directory("blockchain")

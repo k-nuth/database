@@ -17,7 +17,7 @@ using namespace bc::chain;
 using namespace bc::database;
 using namespace bc::wallet;
 using namespace boost::system;
-using namespace boost::filesystem;
+using namespace std::filesystem;
 
 #ifdef KTH_DB_LEGACY
 void test_block_exists(const data_base& interface, size_t height, const block& block0, bool indexed) {

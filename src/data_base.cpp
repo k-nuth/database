@@ -27,7 +27,7 @@ using namespace bc::chain;
 using namespace bc::config;
 using namespace bc::wallet;
 using namespace boost::adaptors;
-using namespace boost::filesystem;
+using namespace std::filesystem;
 using namespace std::placeholders;
 
 #define NAME "data_base"

@@ -85,7 +85,6 @@ class KnuthDatabaseConan(KnuthConanFile):
         else:
             self.output.info("Using legacy DB")
 
-        self.requires("boost/1.73.0@kth/stable")
         self.requires("domain/0.X@%s/%s" % (self.user, self.channel))
 
     def config_options(self):

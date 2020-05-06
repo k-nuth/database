@@ -12,7 +12,7 @@
 #include <kth/database.hpp>
 
 using namespace boost::system;
-using namespace boost::filesystem;
+using namespace std::filesystem;
 using namespace bc;
 using namespace bc::database;
 
