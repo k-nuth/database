@@ -23,27 +23,27 @@ if __name__ == "__main__":
             march_ids = get_base_march_ids()
 
             opts_bch = copy.deepcopy(options)
-            opts_btc = copy.deepcopy(options)
+            # opts_btc = copy.deepcopy(options)
             # opts_ltc = copy.deepcopy(options)
 
             opts_bch["%s:currency" % name] = "BCH"
-            opts_btc["%s:currency" % name] = "BTC"
+            # opts_btc["%s:currency" % name] = "BTC"
             # opts_ltc["%s:currency" % name] = "LTC"
 
             # opts_bch_domain = copy.deepcopy(opts_bch)
             # opts_bch_domain["%s:use_domain" % name] = "True"
             
-            opts_bch_full = copy.deepcopy(opts_bch)
-            opts_bch_full["%s:db" % name] = "full"
+            # opts_bch_full = copy.deepcopy(opts_bch)
+            # opts_bch_full["%s:db" % name] = "full"
 
             # opts_btc_full = copy.deepcopy(opts_btc)
             # opts_btc_full["%s:db" % name] = "full"
 
             # handle_microarchs("%s:march_id" % name, march_ids, filtered_builds, settings, opts_btc_full, env_vars, build_requires)
-            handle_microarchs("%s:march_id" % name, march_ids, filtered_builds, settings, opts_bch_full, env_vars, build_requires)
+            # handle_microarchs("%s:march_id" % name, march_ids, filtered_builds, settings, opts_bch_full, env_vars, build_requires)
             # handle_microarchs("%s:march_id" % name, march_ids, filtered_builds, settings, opts_bch_domain, env_vars, build_requires)
             handle_microarchs("%s:march_id" % name, march_ids, filtered_builds, settings, opts_bch, env_vars, build_requires)
-            handle_microarchs("%s:march_id" % name, march_ids, filtered_builds, settings, opts_btc, env_vars, build_requires)
+            # handle_microarchs("%s:march_id" % name, march_ids, filtered_builds, settings, opts_btc, env_vars, build_requires)
             # handle_microarchs("%s:march_id" % name, march_ids, filtered_builds, settings, opts_ltc, env_vars, build_requires)
             filter_marchs_tests(name, filtered_builds, ["%s:tests" % name])
 
