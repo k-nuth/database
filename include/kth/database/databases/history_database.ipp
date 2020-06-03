@@ -111,12 +111,12 @@ result_code internal_database_basis<Clock>::insert_output_history(hash_digest co
 
     uint64_t id = history_count;
     
-    auto const outpoint = chain::output_point {tx_hash, index};
+    auto const outpoint = domain::chain::output_point {tx_hash, index};
     auto const value = output.value();
 
     // Standard outputs contain unambiguous address data.
     for (auto const& address : output.addresses()) {
-        auto valuearr = history_entry::factory_to_data(id, outpoint, chain::point_kind::output, height, index, value);
+        auto valuearr = history_entry::factory_to_data(id, outpoint, domain::chain::point_kind::output, height, index, value);
         auto res = insert_history_db(address, valuearr, db_txn); 
         if (res != result_code::success) {
             return res;
