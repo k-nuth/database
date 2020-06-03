@@ -491,7 +491,7 @@ target_include_directories(kth-database PUBLIC
 target_compile_definitions(kth-database PUBLIC -DKTH_PROJECT_VERSION="${KTH_PROJECT_VERSION}") #TODO(fernando): manage with Conan????
 
 if (NOT ENABLE_SHARED)
-    target_compile_definitions(kth-database PUBLIC -DBCD_STATIC -DBC_STATIC)
+    target_compile_definitions(kth-database PUBLIC -DKD_STATIC -DBC_STATIC)
 endif()
 
 # if (NOT NO_CONAN_AT_ALL)
