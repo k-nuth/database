@@ -253,7 +253,7 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
 
     //TODO: save reorg blocks after the last checkpoint
     auto res = push_block(block, height, median_time_past, ! is_old_block(block), db_txn);
-    if (! succeed(res)) {
+    if ( !  succeed(res)) {
         kth_db_txn_abort(db_txn);
         return res;
     }
