@@ -11,7 +11,7 @@ namespace kth::database {
 #if defined(KTH_DB_NEW_FULL)
     
 template <typename Clock>
-data_chunk internal_database_basis<Clock>::serialize_txs(chain::block const& block) {
+data_chunk internal_database_basis<Clock>::serialize_txs(domain::chain::block const& block) {
     data_chunk ret;
     auto const& txs = block.transactions();
     ret.reserve(txs.size() * kth::hash_size);
