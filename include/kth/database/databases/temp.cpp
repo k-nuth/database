@@ -423,7 +423,7 @@ void BlockchainLMDB::open(std::string const& filename, int const db_flags)
     return;
   }
 
-  if (!(mdb_flags & KTH_DB_RDONLY))
+  if ( ! (mdb_flags & KTH_DB_RDONLY))
   {
     // only write version on an empty DB
     if (m_height == 0)
