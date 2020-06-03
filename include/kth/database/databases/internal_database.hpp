@@ -164,7 +164,7 @@ private:
 
     bool open_internal();
     
-    bool is_old_block(chain::block const& block) const;
+    bool is_old_block(domain::chain::block const& block) const;
 
     size_t get_db_page_size() const;
 
