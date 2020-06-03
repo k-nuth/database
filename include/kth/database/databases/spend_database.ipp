@@ -69,7 +69,7 @@ result_code internal_database_basis<Clock>::insert_spend(domain::chain::output_p
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_transaction_spend_db(chain::transaction const& tx, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_transaction_spend_db(domain::chain::transaction const& tx, KTH_DB_txn* db_txn) {
 
     for (auto const& input: tx.inputs()) {
 
