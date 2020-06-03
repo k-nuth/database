@@ -5,12 +5,14 @@
 #ifndef KTH_DATABASE_HEADER_DATABASE_IPP_
 #define KTH_DATABASE_HEADER_DATABASE_IPP_
 
+#include <kth/infrastructure.hpp>
+
 namespace kth::database {
 
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::push_block_header(chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::push_block_header(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
     
     auto valuearr = block.header().to_data(true);               //TODO(fernando): podría estar afuera de la DBTx
     auto key = kth_db_make_value(sizeof(height), &height);
