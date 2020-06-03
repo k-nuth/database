@@ -99,7 +99,7 @@ domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height, 
         return {};
     }
 
-    chain::transaction::list tx_list;
+    domain::chain::transaction::list tx_list;
 
     KTH_DB_cursor* cursor;
     if (kth_db_cursor_open(db_txn, dbi_block_db_, &cursor) != KTH_DB_SUCCESS) {
