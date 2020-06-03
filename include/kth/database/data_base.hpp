@@ -200,24 +200,24 @@ protected:
 
 
 private:
-    using inputs = chain::input::list;
-    using outputs = chain::output::list;
+    using inputs = domain::chain::input::list;
+    using outputs = domain::chain::output::list;
 
 #if ! defined(KTH_DB_READONLY)
     /// TODO comment
-    code push_genesis(chain::block const& block);
+    code push_genesis(domain::chain::block const& block);
 
 #ifdef KTH_DB_LEGACY
-    code push_legacy(chain::block const& block, size_t height);
+    code push_legacy(domain::chain::block const& block, size_t height);
 #endif
 
     // Synchronous writers.
     // ------------------------------------------------------------------------
 
-    bool push_transactions(chain::block const& block, size_t height, uint32_t median_time_past, size_t bucket = 0, size_t buckets = 1);
+    bool push_transactions(domain::chain::block const& block, size_t height, uint32_t median_time_past, size_t bucket = 0, size_t buckets = 1);
 
 #ifdef KTH_DB_LEGACY    
-    bool push_heights(chain::block const& block, size_t height);
+    bool push_heights(domain::chain::block const& block, size_t height);
 #endif
 
 #if defined(KTH_DB_LEGACY) && (defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY))
