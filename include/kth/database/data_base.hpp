@@ -47,10 +47,12 @@
 #include <kth/database/settings.hpp>
 #include <kth/database/store.hpp>
 
+#include <kth/infrastructure/utility/noncopyable.hpp>
+
 namespace kth::database {
 
 /// This class is thread safe and implements the sequential locking pattern.
-class BCD_API data_base : public store, noncopyable {
+class KD_API data_base : public store, noncopyable {
 public:
     using handle = store::handle;
     using result_handler = handle0;
