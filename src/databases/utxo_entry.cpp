@@ -96,7 +96,7 @@ data_chunk utxo_entry::to_data_with_fixed(domain::chain::output const& output, d
 }
 
 // static
-void utxo_entry::to_data_with_fixed(std::ostream& stream, chain::output const& output, data_chunk const& fixed) {
+void utxo_entry::to_data_with_fixed(std::ostream& stream, domain::chain::output const& output, data_chunk const& fixed) {
     ostream_writer sink(stream);
     to_data_with_fixed(sink, output, fixed);
 }
