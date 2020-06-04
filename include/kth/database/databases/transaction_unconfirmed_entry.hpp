@@ -10,19 +10,18 @@
 #include <kth/database/currency_config.hpp>
 #include <kth/database/define.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 
-class BCD_API transaction_unconfirmed_entry {
+class KD_API transaction_unconfirmed_entry {
 public:
 
     transaction_unconfirmed_entry() = default;
 
-    transaction_unconfirmed_entry(chain::transaction const& tx, uint32_t arrival_time, uint32_t height);
+    transaction_unconfirmed_entry(domain::chain::transaction const& tx, uint32_t arrival_time, uint32_t height);
 
     // Getters
-    chain::transaction const& transaction() const;
+    domain::chain::transaction const& transaction() const;
     uint32_t arrival_time() const;
     uint32_t height() const;
 
