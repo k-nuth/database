@@ -51,7 +51,7 @@ result_code internal_database_basis<Clock>::insert_reorg_pool(uint32_t height, K
 
 //TODO : remove this database in db_new_with_blocks and db_new_full
 template <typename Clock>
-result_code internal_database_basis<Clock>::push_block_reorg(chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::push_block_reorg(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
 
     auto valuearr = block.to_data(false);               //TODO(fernando): podría estar afuera de la DBTx
     auto key = kth_db_make_value(sizeof(height), &height);              //TODO(fernando): podría estar afuera de la DBTx
