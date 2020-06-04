@@ -105,16 +105,14 @@ void record_row<KeyType>::link(array_index next) {
 }
 
 template <typename KeyType>
-bool record_row<KeyType>::compare(const KeyType& key) const
-{
+bool record_row<KeyType>::compare(const KeyType& key) const {
     // Key data is at the start.
     auto const memory = raw_data(key_start);
     return std::equal(key.begin(), key.end(), REMAP_ADDRESS(memory));
 }
 
 template <typename KeyType>
-memory_ptr record_row<KeyType>::data() const
-{
+memory_ptr record_row<KeyType>::data() const {
     // Get value pointer.
     //   [ KeyType  ]
     //   [ next:4   ]
