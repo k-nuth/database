@@ -9,8 +9,7 @@
 
 #include <kth/domain.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 //Note: same logic as is_stale()
 
