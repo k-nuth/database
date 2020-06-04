@@ -144,7 +144,6 @@ spend_statinfo spend_database::statinfo() const
     };
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DB_SPENDS
