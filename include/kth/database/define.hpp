@@ -10,20 +10,20 @@
 #include <kth/domain.hpp>
 
 // Now we use the generic helper definitions to
-// define BCD_API and BCD_INTERNAL.
-// BCD_API is used for the public API symbols. It either DLL imports or
+// define KD_API and KD_INTERNAL.
+// KD_API is used for the public API symbols. It either DLL imports or
 // DLL exports (or does nothing for static build)
-// BCD_INTERNAL is used for non-api symbols.
+// KD_INTERNAL is used for non-api symbols.
 
-#if defined BCD_STATIC
-    #define BCD_API
-    #define BCD_INTERNAL
-#elif defined BCD_DLL
-    #define BCD_API      BC_HELPER_DLL_EXPORT
-    #define BCD_INTERNAL BC_HELPER_DLL_LOCAL
+#if defined KD_STATIC
+    #define KD_API
+    #define KD_INTERNAL
+#elif defined KD_DLL
+    #define KD_API      BC_HELPER_DLL_EXPORT
+    #define KD_INTERNAL BC_HELPER_DLL_LOCAL
 #else
-    #define BCD_API      BC_HELPER_DLL_IMPORT
-    #define BCD_INTERNAL BC_HELPER_DLL_LOCAL
+    #define KD_API      BC_HELPER_DLL_IMPORT
+    #define KD_INTERNAL BC_HELPER_DLL_LOCAL
 #endif
 
 // Log name.
