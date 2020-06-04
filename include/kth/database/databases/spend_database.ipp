@@ -11,7 +11,7 @@ namespace kth::database {
 
 //public
 template <typename Clock>
-chain::input_point internal_database_basis<Clock>::get_spend(chain::output_point const& point) const {
+domain::chain::input_point internal_database_basis<Clock>::get_spend(domain::chain::output_point const& point) const {
 
     auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);
     auto key = kth_db_make_value(keyarr.size(), keyarr.data());
