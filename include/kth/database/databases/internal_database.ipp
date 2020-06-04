@@ -5,9 +5,11 @@
 #ifndef KTH_DATABASE_INTERNAL_DATABASE_IPP_
 #define KTH_DATABASE_INTERNAL_DATABASE_IPP_
 
+#include <kth/infrastructure.hpp>
+
 namespace kth::database {
 
-using utxo_pool_t = std::unordered_map<chain::point, utxo_entry>;
+using utxo_pool_t = std::unordered_map<domain::chain::point, utxo_entry>;
 
 template <typename Clock>
 internal_database_basis<Clock>::internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size, bool safe_mode)
