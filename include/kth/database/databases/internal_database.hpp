@@ -50,8 +50,7 @@
 #define KTH_DB_CONDITIONAL_READONLY 0
 #endif
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 #if defined(KTH_DB_NEW_BLOCKS)
 constexpr size_t max_dbs_ = 8;
