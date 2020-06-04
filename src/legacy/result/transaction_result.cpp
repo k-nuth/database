@@ -156,7 +156,7 @@ domain::chain::transaction transaction_result::transaction(bool witness) const
 
     // READ THE TX
     //TODO WITNESS
-    chain::transaction tx;
+    domain::chain::transaction tx;
     tx.from_data(deserial, false, from_data_witness
     #ifdef KTH_CACHED_RPC_DATA
         , false
