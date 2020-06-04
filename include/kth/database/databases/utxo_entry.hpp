@@ -12,15 +12,15 @@
 
 namespace kth::database {
 
-class BCD_API utxo_entry {
+class KD_API utxo_entry {
 public:
 
     utxo_entry() = default;
 
-    utxo_entry(chain::output output, uint32_t height, uint32_t median_time_past, bool coinbase);
+    utxo_entry(domain::chain::output output, uint32_t height, uint32_t median_time_past, bool coinbase);
 
     // Getters
-    chain::output const& output() const;
+    domain::chain::output const& output() const;
     uint32_t height() const;
     uint32_t median_time_past() const;
     bool coinbase() const;
