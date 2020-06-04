@@ -233,12 +233,12 @@ void BlockchainLMDB::open(std::string const& filename, int const db_flags)
   std::filesystem::path direc(filename);
   if (std::filesystem::exists(direc))
   {
-    if (!std::filesystem::is_directory(direc))
+    if ( ! std::filesystem::is_directory(direc))
       throw0(DB_OPEN_FAILURE("LMDB needs a directory path, but a file was passed"));
   }
   else
   {
-    if (!std::filesystem::create_directories(direc))
+    if ( ! std::filesystem::create_directories(direc))
       throw0(DB_OPEN_FAILURE(std::string("Failed to create directory ").append(filename).c_str()));
   }
 
