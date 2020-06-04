@@ -67,7 +67,7 @@ size_t history_entry::serialized_size(domain::chain::point const& point) {
 //-----------------------------------------------------------------------------
 
 // static
-data_chunk history_entry::factory_to_data(uint64_t id, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
+data_chunk history_entry::factory_to_data(uint64_t id, domain::chain::point const& point, domain::chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
     data_chunk data;
     auto const size = serialized_size(point);
     data.reserve(size);
