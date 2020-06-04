@@ -752,7 +752,7 @@ bool data_base::push_transactions(domain::chain::block const& block, size_t heig
 
 #ifdef KTH_DB_LEGACY
 #if ! defined(KTH_DB_READONLY)
-bool data_base::push_heights(chain::block const& block, size_t height) {
+bool data_base::push_heights(domain::chain::block const& block, size_t height) {
     transactions_->synchronize();
     auto const& txs = block.transactions();
 
