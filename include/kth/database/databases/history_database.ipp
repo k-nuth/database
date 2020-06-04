@@ -32,7 +32,7 @@ result_code internal_database_basis<Clock>::insert_history_db(wallet::payment_ad
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_input_history(chain::input_point const& inpoint, uint32_t height, chain::input const& input, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_input_history(domain::chain::input_point const& inpoint, uint32_t height, domain::chain::input const& input, KTH_DB_txn* db_txn) {
     
     auto const& prevout = input.previous_output();
 
