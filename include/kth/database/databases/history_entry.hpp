@@ -12,27 +12,27 @@
 
 namespace kth::database {
 
-class BCD_API history_entry {
+class KD_API history_entry {
 public:
 
     history_entry() = default;
 
-    history_entry(uint64_t id, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
+    history_entry(uint64_t id, domain::chain::point const& point, domain::chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
 
     // Getters
     uint64_t id () const;
-    chain::point const& point() const;
-    chain::point_kind point_kind() const;
+    domain::chain::point const& point() const;
+    domain::chain::point_kind point_kind() const;
     uint64_t value_or_checksum() const;
     uint32_t height() const;
     uint32_t index() const;
 
     bool is_valid() const;
 
-    //TODO(fernando): make chain::point::serialized_size() static and constexpr to make this constexpr too
+    //TODO(fernando): make domain::chain::point::serialized_size() static and constexpr to make this constexpr too
     // constexpr 
     static
-    size_t serialized_size(chain::point const& point);
+    size_t serialized_size(domain::chain::point const& point);
 
     data_chunk to_data() const;
     void to_data(std::ostream& stream) const;
