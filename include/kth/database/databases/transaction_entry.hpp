@@ -104,14 +104,13 @@ public:
 private:
     void reset();
 
-    chain::transaction transaction_;
+    domain::chain::transaction transaction_;
     uint32_t height_;
     uint32_t median_time_past_;
     uint32_t position_;
 };
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 
 #endif // KTH_DATABASE_TRANSACTION_ENTRY_HPP_
