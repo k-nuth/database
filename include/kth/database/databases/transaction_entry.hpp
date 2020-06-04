@@ -10,8 +10,7 @@
 #include <kth/database/currency_config.hpp>
 #include <kth/database/define.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 
 template <typename W, KTH_IS_WRITER(W)>
