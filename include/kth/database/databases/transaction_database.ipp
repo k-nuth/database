@@ -360,7 +360,7 @@ result_code internal_database_basis<Clock>::remove_transactions(domain::chain::b
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::update_transaction(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::update_transaction(domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, KTH_DB_txn* db_txn) {
     auto key_arr = tx.hash();                                    //TODO(fernando): podría estar afuera de la DBTx
     auto key  = kth_db_make_value(key_arr.size(), key_arr.data());
 
