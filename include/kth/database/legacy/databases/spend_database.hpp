@@ -86,8 +86,7 @@ private:
     record_map lookup_map_;
 };
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DB_SPENDS
 
