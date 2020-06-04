@@ -85,7 +85,7 @@ data_chunk transaction_entry::factory_to_data(domain::chain::transaction const& 
 }
 
 // static
-void transaction_entry::factory_to_data(std::ostream& stream, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position) {
+void transaction_entry::factory_to_data(std::ostream& stream, domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position) {
     ostream_writer sink(stream);
     factory_to_data(sink, tx, height, median_time_past, position);
 }
