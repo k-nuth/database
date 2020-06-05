@@ -10,8 +10,7 @@
 #include "../impl/remainder.ipp"
 #include "../impl/slab_row.ipp"
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 template <typename KeyType>
 slab_hash_table<KeyType>::slab_hash_table(slab_hash_table_header& header,
