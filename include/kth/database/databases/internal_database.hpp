@@ -174,20 +174,20 @@ private:
 
     bool open_databases();
 
-    utxo_entry get_utxo(chain::output_point const& point, KTH_DB_txn* db_txn) const;
+    utxo_entry get_utxo(domain::chain::output_point const& point, KTH_DB_txn* db_txn) const;
 
 #if ! defined(KTH_DB_READONLY)
     result_code insert_reorg_pool(uint32_t height, KTH_DB_val& key, KTH_DB_txn* db_txn);
     
-    result_code remove_utxo(uint32_t height, chain::output_point const& point, bool insert_reorg, KTH_DB_txn* db_txn);
+    result_code remove_utxo(uint32_t height, domain::chain::output_point const& point, bool insert_reorg, KTH_DB_txn* db_txn);
     
-    result_code insert_utxo(chain::output_point const& point, chain::output const& output, data_chunk const& fixed_data, KTH_DB_txn* db_txn);
+    result_code insert_utxo(domain::chain::output_point const& point, domain::chain::output const& output, data_chunk const& fixed_data, KTH_DB_txn* db_txn);
 
-    result_code remove_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, KTH_DB_txn* db_txn);
+    result_code remove_inputs(hash_digest const& tx_id, uint32_t height, domain::chain::input::list const& inputs, bool insert_reorg, KTH_DB_txn* db_txn);
 
-    result_code insert_outputs(hash_digest const& tx_id, uint32_t height, chain::output::list const& outputs, data_chunk const& fixed_data, KTH_DB_txn* db_txn);
+    result_code insert_outputs(hash_digest const& tx_id, uint32_t height, domain::chain::output::list const& outputs, data_chunk const& fixed_data, KTH_DB_txn* db_txn);
 
-    result_code insert_outputs_error_treatment(uint32_t height, data_chunk const& fixed_data, hash_digest const& txid, chain::output::list const& outputs, KTH_DB_txn* db_txn);
+    result_code insert_outputs_error_treatment(uint32_t height, data_chunk const& fixed_data, hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn);
 
     template <typename I>
     result_code push_transactions_outputs_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, KTH_DB_txn* db_txn);
