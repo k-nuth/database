@@ -25,15 +25,14 @@
 // #endif // KTH_DB_UNSPENT_LEGACY
 
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 /// This enables lookups of transactions by hash.
 /// An alternative and faster method is lookup from a unique index
 /// that is assigned upon storage.
 /// This is so we can quickly reconstruct blocks given a list of tx indexes
 /// belonging to that block. These are stored with the block.
-class BCD_API transaction_unconfirmed_database
+class KD_API transaction_unconfirmed_database
 {
 public:
     typedef std::filesystem::path path;
