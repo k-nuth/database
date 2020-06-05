@@ -233,8 +233,8 @@ private:
 #endif // KTH_DB_STEALTH
 
 #if defined(KTH_CURRENCY_BCH) && defined(KTH_DB_LEGACY)
-    // bool pop_input_and_unconfirm(size_t height, chain::transaction const& tx);
-    bool pop_output_and_unconfirm(size_t height, chain::transaction const& tx);
+    // bool pop_input_and_unconfirm(size_t height, domain::chain::transaction const& tx);
+    bool pop_output_and_unconfirm(size_t height, domain::chain::transaction const& tx);
 
     template <typename I>
     bool pop_transactions_inputs_unconfirm_non_coinbase(size_t height, I f, I l);
