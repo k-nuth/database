@@ -18,10 +18,9 @@
 #include <kth/database/legacy/primitives/record_hash_table.hpp>
 #include <kth/database/legacy/memory/memory_map.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
-struct BCD_API spend_statinfo
+struct KD_API spend_statinfo
 {
     /// Number of buckets used in the hashtable.
     /// load factor = rows / buckets
