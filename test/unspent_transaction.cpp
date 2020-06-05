@@ -93,8 +93,7 @@ BOOST_AUTO_TEST_CASE(unspent_transaction__move_assign__coinbase_tx_hash_height__
     BOOST_REQUIRE_EQUAL(moved.is_coinbase(), true);
 }
 
-BOOST_AUTO_TEST_CASE(unspent_transaction__copy_assign__coinbase_tx_hash_height__expected)
-{
+BOOST_AUTO_TEST_CASE(unspent_transaction__copy_assign__coinbase_tx_hash_height__expected) {
     static const transaction tx{ 0, 0, { { { null_hash, point::null_index }, {}, 0 } }, {} };
     static auto const expected_height = 42u;
     const unspent_transaction instance(tx, expected_height, 0, false);
