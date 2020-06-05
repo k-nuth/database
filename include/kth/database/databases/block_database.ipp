@@ -132,7 +132,7 @@ domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height, 
     auto f = static_cast<uint8_t*>(kth_db_get_data(value)); 
     //precondition: mv_size es multiplo de 32
     
-    chain::transaction::list tx_list;
+    domain::chain::transaction::list tx_list;
     tx_list.reserve(n / kth::hash_size);
     
     while (n != 0) {
