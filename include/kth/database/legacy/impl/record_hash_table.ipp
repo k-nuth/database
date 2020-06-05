@@ -11,8 +11,7 @@
 #include "../impl/record_row.ipp"
 #include "../impl/remainder.ipp"
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 template <typename KeyType>
 record_hash_table<KeyType>::record_hash_table(
