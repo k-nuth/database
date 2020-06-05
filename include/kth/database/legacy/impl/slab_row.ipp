@@ -10,8 +10,7 @@
 #include <kth/domain.hpp>
 #include <kth/database/legacy/memory/memory.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 /**
  * Item for slab_hash_table. A chained list with the key included.
