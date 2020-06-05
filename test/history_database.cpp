@@ -86,72 +86,72 @@ TEST_CASE("history database  test", "[None]")
 
     auto fetch_s1 = [=](const history_compact::list& history)
     {
-        BOOST_REQUIRE(history.size() == 5);
+        REQUIRE(history.size() == 5);
 
         auto entry4 = history[4];
-        BOOST_REQUIRE(entry4.point.is_valid());
-        BOOST_REQUIRE(history[4].kind == point_kind::output);
-        BOOST_REQUIRE(history[4].point.hash() == out11.hash());
-        BOOST_REQUIRE(history[4].point.index() == out11.index());
-        BOOST_REQUIRE(history[4].height == out_h11);
-        BOOST_REQUIRE(history[4].value == value11);
+        REQUIRE(entry4.point.is_valid());
+        REQUIRE(history[4].kind == point_kind::output);
+        REQUIRE(history[4].point.hash() == out11.hash());
+        REQUIRE(history[4].point.index() == out11.index());
+        REQUIRE(history[4].height == out_h11);
+        REQUIRE(history[4].value == value11);
 
-        BOOST_REQUIRE(history[3].kind == point_kind::output);
-        BOOST_REQUIRE(history[3].point.hash() == out12.hash());
-        BOOST_REQUIRE(history[3].point.index() == out12.index());
-        BOOST_REQUIRE(history[3].height == out_h12);
-        BOOST_REQUIRE(history[3].value == value12);
+        REQUIRE(history[3].kind == point_kind::output);
+        REQUIRE(history[3].point.hash() == out12.hash());
+        REQUIRE(history[3].point.index() == out12.index());
+        REQUIRE(history[3].height == out_h12);
+        REQUIRE(history[3].value == value12);
 
-        BOOST_REQUIRE(history[2].kind == point_kind::output);
-        BOOST_REQUIRE(history[2].point.hash() == out13.hash());
-        BOOST_REQUIRE(history[2].point.index() == out13.index());
-        BOOST_REQUIRE(history[2].height == out_h13);
-        BOOST_REQUIRE(history[2].value == value13);
+        REQUIRE(history[2].kind == point_kind::output);
+        REQUIRE(history[2].point.hash() == out13.hash());
+        REQUIRE(history[2].point.index() == out13.index());
+        REQUIRE(history[2].height == out_h13);
+        REQUIRE(history[2].value == value13);
 
-        BOOST_REQUIRE(history[1].kind == point_kind::spend);
-        BOOST_REQUIRE(history[1].point.hash() == spend11.hash());
-        BOOST_REQUIRE(history[1].point.index() == spend11.index());
-        BOOST_REQUIRE(history[1].height == spend_h11);
-        BOOST_REQUIRE(history[1].previous_checksum == out11.checksum());
+        REQUIRE(history[1].kind == point_kind::spend);
+        REQUIRE(history[1].point.hash() == spend11.hash());
+        REQUIRE(history[1].point.index() == spend11.index());
+        REQUIRE(history[1].height == spend_h11);
+        REQUIRE(history[1].previous_checksum == out11.checksum());
 
-        BOOST_REQUIRE(history[0].kind == point_kind::spend);
-        BOOST_REQUIRE(history[0].point.hash() == spend13.hash());
-        BOOST_REQUIRE(history[0].point.index() == spend13.index());
-        BOOST_REQUIRE(history[0].height == spend_h13);
-        BOOST_REQUIRE(history[0].previous_checksum == out13.checksum());
+        REQUIRE(history[0].kind == point_kind::spend);
+        REQUIRE(history[0].point.hash() == spend13.hash());
+        REQUIRE(history[0].point.index() == spend13.index());
+        REQUIRE(history[0].height == spend_h13);
+        REQUIRE(history[0].previous_checksum == out13.checksum());
     };
     auto res_s1 = db.get(key1, 0, 0);
     fetch_s1(res_s1);
     auto no_spend = [=](const history_compact::list& history)
     {
-        BOOST_REQUIRE(history.size() == 2);
-        BOOST_REQUIRE(history[0].kind == point_kind::output);
-        BOOST_REQUIRE(history[1].kind == point_kind::output);
+        REQUIRE(history.size() == 2);
+        REQUIRE(history[0].kind == point_kind::output);
+        REQUIRE(history[1].kind == point_kind::output);
     };
     auto res_ns = db.get(key2, 0, 0);
     no_spend(res_ns);
     db.add_input(key2, spend22, spend_h22, out22);
     auto has_spend = [=](const history_compact::list& history)
     {
-        BOOST_REQUIRE(history.size() == 3);
+        REQUIRE(history.size() == 3);
 
-        BOOST_REQUIRE(history[0].kind == point_kind::spend);
-        BOOST_REQUIRE(history[0].point.hash() == spend22.hash());
-        BOOST_REQUIRE(history[0].point.index() == spend22.index());
-        BOOST_REQUIRE(history[0].height == spend_h22);
-        BOOST_REQUIRE(history[0].previous_checksum == out22.checksum());
+        REQUIRE(history[0].kind == point_kind::spend);
+        REQUIRE(history[0].point.hash() == spend22.hash());
+        REQUIRE(history[0].point.index() == spend22.index());
+        REQUIRE(history[0].height == spend_h22);
+        REQUIRE(history[0].previous_checksum == out22.checksum());
 
-        BOOST_REQUIRE(history[1].kind == point_kind::output);
-        BOOST_REQUIRE(history[1].point.hash() == out22.hash());
-        BOOST_REQUIRE(history[1].point.index() == out22.index());
-        BOOST_REQUIRE(history[1].height == out_h22);
-        BOOST_REQUIRE(history[1].value == value22);
+        REQUIRE(history[1].kind == point_kind::output);
+        REQUIRE(history[1].point.hash() == out22.hash());
+        REQUIRE(history[1].point.index() == out22.index());
+        REQUIRE(history[1].height == out_h22);
+        REQUIRE(history[1].value == value22);
 
-        BOOST_REQUIRE(history[2].kind == point_kind::output);
-        BOOST_REQUIRE(history[2].point.hash() == out21.hash());
-        BOOST_REQUIRE(history[2].point.index() == out21.index());
-        BOOST_REQUIRE(history[2].height == out_h21);
-        BOOST_REQUIRE(history[2].value == value21);
+        REQUIRE(history[2].kind == point_kind::output);
+        REQUIRE(history[2].point.hash() == out21.hash());
+        REQUIRE(history[2].point.index() == out21.index());
+        REQUIRE(history[2].height == out_h21);
+        REQUIRE(history[2].value == value21);
     };
     auto res_has_sp = db.get(key2, 0, 0);
     has_spend(res_has_sp);
