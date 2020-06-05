@@ -10,8 +10,7 @@
 #include <kth/domain.hpp>
 #include <kth/database/legacy/memory/memory.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 static constexpr uint64_t empty_fill = 0xffffffffffffffff;
 static constexpr uint8_t empty_byte = (uint8_t)empty_fill;
