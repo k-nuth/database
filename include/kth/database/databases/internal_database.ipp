@@ -271,7 +271,7 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
 
 
 template <typename Clock>
-utxo_entry internal_database_basis<Clock>::get_utxo(chain::output_point const& point, KTH_DB_txn* db_txn) const {
+utxo_entry internal_database_basis<Clock>::get_utxo(domain::chain::output_point const& point, KTH_DB_txn* db_txn) const {
 
     auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);
     auto key = kth_db_make_value(keyarr.size(), keyarr.data());
