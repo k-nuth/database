@@ -143,63 +143,63 @@ TEST_CASE("block database  test", "[None]") {
     // Fetch blocks.
     {
         auto result4a = db.get(4);
-        BOOST_REQUIRE(result4a);
-        BOOST_REQUIRE(result4a.header().hash() == h4a);
+        REQUIRE(result4a);
+        REQUIRE(result4a.header().hash() == h4a);
         auto res5a = db.get(5);
-        BOOST_REQUIRE(res5a);
-        BOOST_REQUIRE(res5a.header().hash() == h5a);
+        REQUIRE(res5a);
+        REQUIRE(res5a.header().hash() == h5a);
     }
 
     // Unlink old chain.
-    BOOST_REQUIRE(db.top(height));
-    BOOST_REQUIRE_EQUAL(height, 5u);
+    REQUIRE(db.top(height));
+    REQUIRE(height == 5u);
     db.unlink(4);
-    BOOST_REQUIRE(db.top(height));
-    BOOST_REQUIRE_EQUAL(height, 3u);
+    REQUIRE(db.top(height));
+    REQUIRE(height == 3u);
 
     // Block 3 exists.
     {
         auto result3 = db.get(3);
-        BOOST_REQUIRE(result3);
+        REQUIRE(result3);
     }
 
     // No blocks exist now.
     {
         auto result4_none = db.get(4);
-        BOOST_REQUIRE(!result4_none);
+        REQUIRE( ! result4_none);
         auto res5_none = db.get(5);
-        BOOST_REQUIRE(!res5_none);
+        REQUIRE( ! res5_none);
     }
 
     // Add new blocks.
     db.store(block4b, 4);
     db.store(block5b, 5);
-    BOOST_REQUIRE(db.top(height));
-    BOOST_REQUIRE_EQUAL(height, 5u);
+    REQUIRE(db.top(height));
+    REQUIRE(height == 5u);
 
     // Fetch blocks.
     {
         auto result4b = db.get(4);
-        BOOST_REQUIRE(result4b);
-        BOOST_REQUIRE(result4b.header().hash() == h4b);
+        REQUIRE(result4b);
+        REQUIRE(result4b.header().hash() == h4b);
         auto res5b = db.get(5);
-        BOOST_REQUIRE(res5b);
-        BOOST_REQUIRE(res5b.header().hash() == h5b);
-        BOOST_REQUIRE(res5b.transaction_hash(0) == block5b.transactions()[0].hash());
-        BOOST_REQUIRE(res5b.transaction_hash(1) == block5b.transactions()[1].hash());
-        BOOST_REQUIRE(res5b.transaction_hash(2) == block5b.transactions()[2].hash());
-        BOOST_REQUIRE(res5b.transaction_hash(3) == block5b.transactions()[3].hash());
-        BOOST_REQUIRE(res5b.transaction_hash(4) == block5b.transactions()[4].hash());
+        REQUIRE(res5b);
+        REQUIRE(res5b.header().hash() == h5b);
+        REQUIRE(res5b.transaction_hash(0) == block5b.transactions()[0].hash());
+        REQUIRE(res5b.transaction_hash(1) == block5b.transactions()[1].hash());
+        REQUIRE(res5b.transaction_hash(2) == block5b.transactions()[2].hash());
+        REQUIRE(res5b.transaction_hash(3) == block5b.transactions()[3].hash());
+        REQUIRE(res5b.transaction_hash(4) == block5b.transactions()[4].hash());
     }
 
     // Test also fetch by hash.
     {
         auto res_h5b = db.get(h5b);
-        BOOST_REQUIRE(res_h5b);
-        BOOST_REQUIRE(res_h5b.header().hash() == h5b);
+        REQUIRE(res_h5b);
+        REQUIRE(res_h5b.header().hash() == h5b);
         db.synchronize();
     }
 }
 #endif // KTH_DB_LEGACY
 
-BOOST_AUTO_TEST_SUITE_END()
+// End Boost Suite
