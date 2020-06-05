@@ -90,7 +90,7 @@ result_code internal_database_basis<Clock>::remove_transaction_spend_db(domain::
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_spend(chain::output_point const& out_point, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_spend(domain::chain::output_point const& out_point, KTH_DB_txn* db_txn) {
 
     auto keyarr = out_point.to_data(KTH_INTERNAL_DB_WIRE);      //TODO(fernando): podría estar afuera de la DBTx
     auto key = kth_db_make_value(keyarr.size(), keyarr.data());                     //TODO(fernando): podría estar afuera de la DBTx
