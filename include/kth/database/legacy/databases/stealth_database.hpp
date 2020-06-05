@@ -18,13 +18,12 @@
 #include <kth/database/legacy/memory/memory_map.hpp>
 #include <kth/database/legacy/primitives/record_manager.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
-class BCD_API stealth_database
+class KD_API stealth_database
 {
 public:
-    typedef chain::stealth_compact::list list;
+    typedef domain::chain::stealth_compact::list list;
     typedef std::filesystem::path path;
     typedef std::shared_ptr<shared_mutex> mutex_ptr;
 
