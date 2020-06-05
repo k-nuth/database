@@ -102,58 +102,54 @@ public:
 
 BOOST_FIXTURE_TEST_SUITE(hash_table_tests, hash_table_directory_setup_fixture)
 
-BOOST_AUTO_TEST_CASE(slab_hash_table__write_read__test)
-{
+TEST_CASE("slab hash table  write read  test", "[None]") {
     // Create the data file to be read below.
     create_database_file();
 
     memory_map file(DIRECTORY "/slab_hash_table__write_read");
-    BOOST_REQUIRE(file.open());
-    BOOST_REQUIRE(REMAP_ADDRESS(file.access()) != nullptr);
+    REQUIRE(file.open());
+    REQUIRE(REMAP_ADDRESS(file.access()) != nullptr);
 
     slab_hash_table_header header(file, buckets);
-    BOOST_REQUIRE(header.start());
-    BOOST_REQUIRE(header.size() == buckets);
+    REQUIRE(header.start());
+    REQUIRE(header.size() == buckets);
 
     auto const slab_start = slab_hash_table_header_size(buckets);
 
     slab_manager alloc(file, slab_start);
-    BOOST_REQUIRE(alloc.start());
+    REQUIRE(alloc.start());
 
     slab_hash_table<hash_digest> ht(header, alloc);
 
     std::default_random_engine engine;
-    for (size_t i = 0; i < total_txs; ++i)
-    {
+    for (size_t i = 0; i < total_txs; ++i) {
         auto const value = generate_random_bytes(engine, tx_size);
         auto const key = bitcoin_hash(value);
         auto const memory = ht.find(key);
         auto const slab = REMAP_ADDRESS(memory);
 
-        BOOST_REQUIRE(slab);
-        BOOST_REQUIRE(std::equal(value.begin(), value.end(), slab));
+        REQUIRE(slab);
+        REQUIRE(std::equal(value.begin(), value.end(), slab));
     }
 }
 
-BOOST_AUTO_TEST_CASE(slab_hash_table__test)
-{
+TEST_CASE("slab hash table  test", "[None]") {
     store::create(DIRECTORY "/slab_hash_table");
     memory_map file(DIRECTORY "/slab_hash_table");
-    BOOST_REQUIRE(file.open());
-    BOOST_REQUIRE(REMAP_ADDRESS(file.access()) != nullptr);
+    REQUIRE(file.open());
+    REQUIRE(REMAP_ADDRESS(file.access()) != nullptr);
     file.resize(4 + 8 * 100 + 8);
 
     slab_hash_table_header header(file, 100);
-    BOOST_REQUIRE(header.create());
-    BOOST_REQUIRE(header.start());
+    REQUIRE(header.create());
+    REQUIRE(header.start());
 
     slab_manager alloc(file, 4 + 8 * 100);
-    BOOST_REQUIRE(alloc.create());
-    BOOST_REQUIRE(alloc.start());
+    REQUIRE(alloc.create());
+    REQUIRE(alloc.start());
 
     slab_hash_table<tiny_hash> ht(header, alloc);
-    auto const write = [](serializer<uint8_t*>& serial)
-    {
+    auto const write = [](serializer<uint8_t*>& serial) {
         serial.write_byte(110);
         serial.write_byte(110);
         serial.write_byte(4);
