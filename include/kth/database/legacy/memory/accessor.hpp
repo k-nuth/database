@@ -11,14 +11,13 @@
 #include <kth/database/define.hpp>
 #include <kth/database/legacy/memory/memory.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 #ifdef REMAP_SAFETY
 
 /// This class provides shared remap safe access to file-mapped memory.
 /// The memory size is unprotected and unmanaged.
-class BCD_API accessor
+class KD_API accessor
   : public memory
 {
 public:
