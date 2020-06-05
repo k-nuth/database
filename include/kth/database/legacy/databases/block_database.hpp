@@ -21,12 +21,11 @@
 #include <kth/database/legacy/result/block_result.hpp>
 
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 /// Stores block_headers each with a list of transaction indexes.
 /// Lookup possible by hash or height.
-class BCD_API block_database
+class KD_API block_database
 {
 public:
     typedef std::vector<size_t> heights;
