@@ -17,10 +17,9 @@
 #include <kth/database/legacy/memory/memory_map.hpp>
 #include <kth/database/legacy/primitives/record_multimap.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
-struct BCD_API history_statinfo
+struct KD_API history_statinfo
 {
     /// Number of buckets used in the hashtable.
     /// load factor = addrs / buckets
