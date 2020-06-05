@@ -109,14 +109,13 @@ BOOST_AUTO_TEST_CASE(unspent_outputs__remove2__remove_one_output__expected_outpu
 
     cache.remove({ tx1.hash(), 0 });
     BOOST_REQUIRE_EQUAL(cache.size(), 1u);
-    BOOST_REQUIRE(!cache.get(out_value, out_height, out_median_time_past, out_coinbase, { tx1.hash(), 0 }, max_size_t, false));
-    BOOST_REQUIRE(!cache.get(out_value, out_height, out_median_time_past, out_coinbase, { tx1.hash(), 1 }, max_size_t, false));
+    BOOST_REQUIRE( ! cache.get(out_value, out_height, out_median_time_past, out_coinbase, { tx1.hash(), 0 }, max_size_t, false));
+    BOOST_REQUIRE( ! cache.get(out_value, out_height, out_median_time_past, out_coinbase, { tx1.hash(), 1 }, max_size_t, false));
     BOOST_REQUIRE(cache.get(out_value, out_height, out_median_time_past, out_coinbase, { tx2.hash(), 0 }, max_size_t, false));
     BOOST_REQUIRE(cache.get(out_value, out_height, out_median_time_past, out_coinbase, { tx2.hash(), 1 }, max_size_t, false));
 }
 
-BOOST_AUTO_TEST_CASE(unspent_outputs__get__two_capacity_1__size_1_expected)
-{
+BOOST_AUTO_TEST_CASE(unspent_outputs__get__two_capacity_1__size_1_expected) {
     static const size_t expected_height = 40;
     static const transaction tx1{ 0, 0, {}, { {}, {} } };
     unspent_outputs cache(1);
