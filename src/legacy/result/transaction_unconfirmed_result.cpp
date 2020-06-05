@@ -121,7 +121,7 @@ domain::chain::transaction transaction_unconfirmed_result::transaction(bool witn
 
     // READ THE TX
     //TODO WITNESS
-    chain::transaction tx;
+    domain::chain::transaction tx;
 #if defined(KTH_CACHED_RPC_DATA)    
     tx.from_data(deserial, false, from_data_witness, true);
 #else
