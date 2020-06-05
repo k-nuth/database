@@ -9,8 +9,7 @@
 #include <functional>
 #include <kth/domain.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 /// Return a hash of the key reduced to the domain of the divisor.
 template <typename KeyType, typename Divisor>
