@@ -8,8 +8,7 @@
 #include <kth/database/legacy/memory/memory.hpp>
 #include <kth/database/legacy/primitives/record_list.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 template <typename KeyType>
 record_multimap<KeyType>::record_multimap(record_hash_table_type& map,
