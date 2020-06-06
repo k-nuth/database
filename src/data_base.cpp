@@ -810,7 +810,7 @@ void data_base::push_inputs(hash_digest const& tx_hash, size_t height, const inp
             } else {
                 //During an IBD with checkpoints some previous output info is missing.
                 //We can recover it by accessing the database
-                chain::output prev_output;
+                domain::chain::output prev_output;
                 size_t output_height;
                 uint32_t output_median_time_past;
                 bool output_is_coinbase;
