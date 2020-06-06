@@ -123,15 +123,13 @@ memory_ptr record_row<KeyType>::data() const {
 }
 
 template <typename KeyType>
-file_offset record_row<KeyType>::offset() const
-{
+file_offset record_row<KeyType>::offset() const {
     // Value data is at the end.
     return index_ + prefix_size;
 }
 
 template <typename KeyType>
-array_index record_row<KeyType>::next_index() const
-{
+array_index record_row<KeyType>::next_index() const {
     auto const memory = raw_data(key_size);
     auto const next_address = REMAP_ADDRESS(memory);
 
