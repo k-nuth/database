@@ -282,8 +282,7 @@ code pop_above_result(data_base_accessor& instance, block_const_ptr_list_ptr out
 }
 
 #ifdef KTH_DB_LEGACY
-BOOST_AUTO_TEST_CASE(data_base__pushpop__test)
-{
+TEST_CASE("data base  pushpop  test", "[None]") {
     std::cout << "begin data_base push/pop test" << std::endl;
 
     create_directory(DIRECTORY);
