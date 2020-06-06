@@ -230,7 +230,7 @@ bool memory_map::close()
 {
     std::string error_name;
 
-    ////if (!closed_)
+    ////if ( ! closed_)
     ////    log_unmapping();
 
     // Critical Section (internal/unconditional)
