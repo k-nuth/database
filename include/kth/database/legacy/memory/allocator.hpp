@@ -7,20 +7,20 @@
 
 #include <cstddef>
 #include <cstdint>
+
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 #include <kth/database/legacy/memory/memory.hpp>
 
-namespace kth {
-namespace database {
+#include <kth/infrastructure/utility/noncopyable.hpp>
+
+namespace kth::database {
 
 #ifdef REMAP_SAFETY
 
 /// This class provides remap safe access to file-mapped memory.
 /// The memory size is unprotected and unmanaged.
-class BCD_API allocator
-  : public memory, noncopyable
-{
+class KD_API allocator : public memory, noncopyable {
 public:
     allocator(shared_mutex& mutex);
     ~allocator();
