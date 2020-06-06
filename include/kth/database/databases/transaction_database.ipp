@@ -382,7 +382,7 @@ result_code internal_database_basis<Clock>::update_transaction(domain::chain::tr
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::set_spend(chain::output_point const& point, uint32_t spender_height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::set_spend(domain::chain::output_point const& point, uint32_t spender_height, KTH_DB_txn* db_txn) {
 
     // Limit search to confirmed transactions at or below the spender height,
     // since a spender cannot spend above its own height.
