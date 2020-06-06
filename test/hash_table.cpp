@@ -158,41 +158,41 @@ TEST_CASE("slab hash table  test", "[None]") {
     ht.store(tiny_hash{ { 0xde, 0xad, 0xbe, 0xef } }, write, 8);
     auto const memory1 = ht.find(tiny_hash{ { 0xde, 0xad, 0xbe, 0xef } });
     auto const slab1 = REMAP_ADDRESS(memory1);
-    BOOST_REQUIRE(slab1);
-    BOOST_REQUIRE(slab1[0] == 110);
-    BOOST_REQUIRE(slab1[1] == 110);
-    BOOST_REQUIRE(slab1[2] == 4);
-    BOOST_REQUIRE(slab1[3] == 99);
+    REQUIRE(slab1);
+    REQUIRE(slab1[0] == 110);
+    REQUIRE(slab1[1] == 110);
+    REQUIRE(slab1[2] == 4);
+    REQUIRE(slab1[3] == 99);
 
     auto const memory2 = ht.find(tiny_hash{ { 0xde, 0xad, 0xbe, 0xee } });
     auto const slab2 = REMAP_ADDRESS(memory1);
-    BOOST_REQUIRE(slab2);
+    REQUIRE(slab2);
 }
 
-////BOOST_AUTO_TEST_CASE(record_hash_table__32bit__test)
+////TEST_CASE("record hash table  32bit  test", "[None]")
 ////{
 ////    constexpr size_t record_buckets = 2;
 ////    constexpr size_t header_size = record_hash_table_header_size(record_buckets);
 ////
 ////    store::create(DIRECTORY "/record_hash_table__32bit");
 ////    memory_map file(DIRECTORY "/record_hash_table__32bit");
-////    BOOST_REQUIRE(file.open());
+////    REQUIRE(file.open());
 ////
 ////    // Cannot hold an address reference because of following resize operation.
-////    BOOST_REQUIRE(REMAP_ADDRESS(file.access()) != nullptr);
+////    REQUIRE(REMAP_ADDRESS(file.access()) != nullptr);
 ////    file.resize(header_size + minimum_records_size);
 ////
 ////    record_hash_table_header header(file, record_buckets);
-////    BOOST_REQUIRE(header.create());
-////    BOOST_REQUIRE(header.start());
+////    REQUIRE(header.create());
+////    REQUIRE(header.start());
 ////
 ////    typedef byte_array<4> tiny_hash;
 ////    constexpr size_t record_size = hash_table_record_size<tiny_hash>(4);
 ////    const file_offset records_start = header_size;
 ////
 ////    record_manager alloc(file, records_start, record_size);
-////    BOOST_REQUIRE(alloc.create());
-////    BOOST_REQUIRE(alloc.start());
+////    REQUIRE(alloc.create());
+////    REQUIRE(alloc.start());
 ////
 ////    record_hash_table<tiny_hash> ht(header, alloc);
 ////    tiny_hash key{ { 0xde, 0xad, 0xbe, 0xef } };
