@@ -13,8 +13,7 @@
 #include <kth/database/legacy/primitives/record_hash_table.hpp>
 #include <kth/database/legacy/primitives/record_manager.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 inline size_t multimap_record_size(size_t value_size)
 {
