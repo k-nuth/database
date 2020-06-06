@@ -9,12 +9,11 @@
 #include <kth/database/legacy/primitives/record_manager.hpp>
 #include <kth/database/legacy/primitives/record_multimap_iterator.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 /// Result of a multimap database query. This is a container wrapper allowing
 /// the values to be iterated.
-class BCD_API record_multimap_iterable
+class KD_API record_multimap_iterable
 {
 public:
     record_multimap_iterable(const record_manager& manager, array_index begin);
