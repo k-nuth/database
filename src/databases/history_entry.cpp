@@ -79,7 +79,7 @@ data_chunk history_entry::factory_to_data(uint64_t id, domain::chain::point cons
 }
 
 // static
-void history_entry::factory_to_data(std::ostream& stream, uint64_t id, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
+void history_entry::factory_to_data(std::ostream& stream, uint64_t id, domain::chain::point const& point, domain::chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
     ostream_writer sink(stream);
     factory_to_data(sink, id, point, kind, height, index, value_or_checksum);
 }
