@@ -8,8 +8,7 @@
 #include <kth/domain.hpp>
 #include <kth/database/legacy/memory/memory_map.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 /**
  * Implements contigious memory array with a fixed size elements.
