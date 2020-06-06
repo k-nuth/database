@@ -21,12 +21,11 @@
 #include <kth/database/define.hpp>
 #include <kth/database/legacy/memory/memory.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 /// This class is thread safe, allowing concurent read and write.
 /// A change to the size of the memory map waits on and locks read and write.
-class BCD_API memory_map
+class KD_API memory_map
 {
 public:
     typedef std::filesystem::path path;
