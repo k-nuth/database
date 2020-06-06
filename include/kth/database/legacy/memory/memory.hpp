@@ -12,13 +12,12 @@
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 #ifdef REMAP_SAFETY
 
 /// This interface defines remap safe unrestricted access to a memory map.
-class BCD_API memory
+class KD_API memory
 {
 public:
     typedef std::shared_ptr<memory> ptr;
