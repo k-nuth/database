@@ -13,8 +13,7 @@
 #include <kth/database/legacy/memory/memory.hpp>
 #include <kth/database/legacy/memory/memory_map.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 static constexpr auto minimum_records_size = sizeof(array_index);
 constexpr size_t record_hash_table_header_size(size_t buckets)
