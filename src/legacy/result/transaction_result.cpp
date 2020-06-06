@@ -171,7 +171,7 @@ domain::chain::transaction transaction_result::transaction(bool witness) const
 #endif
 
     //TODO(legacy): add hash param to deserialization to eliminate this construction.
-    return chain::transaction(std::move(tx), hash_digest(hash_));
+    return domain::chain::transaction(std::move(tx), hash_digest(hash_));
 }
 
 }} // namespace kth::database
