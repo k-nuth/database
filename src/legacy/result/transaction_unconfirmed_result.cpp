@@ -135,9 +135,8 @@ domain::chain::transaction transaction_unconfirmed_result::transaction(bool witn
 #endif
 
     //TODO(legacy): add hash param to deserialization to eliminate this construction.
-    return chain::transaction(std::move(tx), hash_digest(hash_));
+    return domain::chain::transaction(std::move(tx), hash_digest(hash_));
 }
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DB_TRANSACTION_UNCONFIRMED
