@@ -12,8 +12,7 @@
 #include <kth/database/legacy/primitives/hash_table_header.hpp>
 #include <kth/database/legacy/primitives/slab_manager.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 typedef hash_table_header<array_index, file_offset> slab_hash_table_header;
 
