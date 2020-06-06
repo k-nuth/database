@@ -13,8 +13,7 @@
 #include <kth/database/legacy/primitives/hash_table_header.hpp>
 #include <kth/database/legacy/primitives/record_manager.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 template <typename KeyType>
 constexpr size_t hash_table_record_size(size_t value_size)
