@@ -121,31 +121,6 @@ void utxo_entry::to_data(std::ostream& stream) const {
     to_data(sink);
 }
 
-// Deserialization.
-//-----------------------------------------------------------------------------
-
-utxo_entry utxo_entry::factory_from_data(data_chunk const& data) {
-    utxo_entry instance;
-    instance.from_data(data);
-    return instance;
-}
-
-utxo_entry utxo_entry::factory_from_data(std::istream& stream) {
-    utxo_entry instance;
-    instance.from_data(stream);
-    return instance;
-}
-
-bool utxo_entry::from_data(const data_chunk& data) {
-    data_source istream(data);
-    return from_data(istream);
-}
-
-bool utxo_entry::from_data(std::istream& stream) {
-    istream_reader source(stream);
-    return from_data(source);
-}
-
 } // namespace kth::database
 
 // #endif // KTH_DB_NEW
