@@ -12,13 +12,12 @@
 #include <kth/database/legacy/memory/memory.hpp>
 #include <kth/database/legacy/primitives/record_manager.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
-class BCD_API record_list
+class KD_API record_list
 {
 public:
-    static constexpr array_index empty = bc::max_uint32;
+    static constexpr array_index empty = kth::max_uint32;
     static constexpr size_t index_size = sizeof(array_index);
 
     typedef serializer<uint8_t*>::functor write_function;
