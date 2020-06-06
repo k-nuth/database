@@ -104,13 +104,10 @@ bool history_database::flush() const {
 // Queries.
 // ----------------------------------------------------------------------------
 
-void history_database::add_output(const short_hash& key,
-    const output_point& outpoint, size_t output_height, uint64_t value)
-{
+void history_database::add_output(const short_hash& key, const output_point& outpoint, size_t output_height, uint64_t value) {
     auto const output_height32 = safe_unsigned<uint32_t>(output_height);
 
-    auto const write = [&](serializer<uint8_t*>& serial)
-    {
+    auto const write = [&](serializer<uint8_t*>& serial) {
         serial.write_byte(static_cast<uint8_t>(point_kind::output));
         outpoint.to_data(serial, false);
         serial.write_4_bytes_little_endian(output_height32);
