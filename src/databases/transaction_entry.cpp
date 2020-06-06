@@ -112,28 +112,6 @@ void transaction_entry::to_data(std::ostream& stream) const {
 // Deserialization.
 //-----------------------------------------------------------------------------
 
-transaction_entry transaction_entry::factory_from_data(data_chunk const& data) {
-    transaction_entry instance;
-    instance.from_data(data);
-    return instance;
-}
-
-transaction_entry transaction_entry::factory_from_data(std::istream& stream) {
-    transaction_entry instance;
-    instance.from_data(stream);
-    return instance;
-}
-
-bool transaction_entry::from_data(const data_chunk& data) {
-    data_source istream(data);
-    return from_data(istream);
-}
-
-bool transaction_entry::from_data(std::istream& stream) {
-    istream_reader source(stream);
-    return from_data(source);
-}
-
 bool transaction_entry::confirmed() {
     return position_ != position_max;
 }
