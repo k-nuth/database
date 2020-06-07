@@ -23,9 +23,9 @@
 
 namespace kth::database {
 
-using namespace bc::chain;
-using namespace bc::config;
-using namespace bc::wallet;
+using namespace kth::domain::chain;
+using namespace kth::config;
+using namespace kth::domain::wallet;
 using namespace boost::adaptors;
 using namespace std::filesystem;
 using namespace std::placeholders;
