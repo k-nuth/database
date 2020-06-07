@@ -13,11 +13,10 @@
 #include <kth/database/define.hpp>
 #include <kth/database/legacy/memory/memory.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 /// Deferred read block result.
-class BCD_API block_result
+class KD_API block_result
 {
 public:
     block_result();
