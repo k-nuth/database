@@ -163,7 +163,7 @@ TEST_CASE("history database  test", "[None]")
     db.add_output(key4, out31, out_h41, value41);
     auto has_one_row = [=](const history_compact::list& history)
     {
-        BOOST_REQUIRE(history.size() == 1);
+        REQUIRE(history.size() == 1);
     };
     auto res_1r1 = db.get(key3, 0, 0);
     has_one_row(res_1r1);
