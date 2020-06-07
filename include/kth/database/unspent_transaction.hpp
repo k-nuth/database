@@ -15,14 +15,13 @@
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 /// This class is not thread safe.
-class BCD_API unspent_transaction
+class KD_API unspent_transaction
 {
 public:
-    typedef std::unordered_map<uint32_t, chain::output> output_map;
+    typedef std::unordered_map<uint32_t, domain::chain::output> output_map;
     typedef std::shared_ptr<output_map> output_map_ptr;
 
     // Move/copy constructors.
