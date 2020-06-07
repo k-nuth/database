@@ -11,11 +11,10 @@
 #include <kth/database/define.hpp>
 #include <kth/database/legacy/memory/memory.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 /// Deferred read transaction result.
-class BCD_API transaction_unconfirmed_result
+class KD_API transaction_unconfirmed_result
 {
 public:
     transaction_unconfirmed_result();
