@@ -125,11 +125,11 @@ BOOST_AUTO_TEST_CASE(unspent_outputs__get__two_capacity_1__size_1_expected) {
     bool out_coinbase;
     size_t out_height;
     uint32_t out_median_time_past;
-    chain::output out_value1;
+    domain::chain::output out_value1;
     BOOST_REQUIRE(cache.get(out_value1, out_height, out_median_time_past, out_coinbase, { tx1.hash(), 1 }, max_size_t, false));
     BOOST_REQUIRE_EQUAL(out_coinbase, false);
     BOOST_REQUIRE_EQUAL(out_height, expected_height);
-    BOOST_REQUIRE(!out_value1.is_valid());
+    BOOST_REQUIRE( ! out_value1.is_valid());
 
     static const uint64_t expected2a = 41;
     static const uint64_t expected2b = 42;
