@@ -198,19 +198,19 @@ private:
     template <typename I>
     result_code push_transactions_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, bool insert_reorg, KTH_DB_txn* db_txn);
 
-    result_code push_block_header(chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
+    result_code push_block_header(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
     
-    result_code push_block_reorg(chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
+    result_code push_block_reorg(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
 
-    result_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg, KTH_DB_txn* db_txn);
+    result_code push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg, KTH_DB_txn* db_txn);
 
-    result_code push_genesis(chain::block const& block, KTH_DB_txn* db_txn);
+    result_code push_genesis(domain::chain::block const& block, KTH_DB_txn* db_txn);
 
-    result_code remove_outputs(hash_digest const& txid, chain::output::list const& outputs, KTH_DB_txn* db_txn);
+    result_code remove_outputs(hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn);
 
-    result_code insert_output_from_reorg_and_remove(chain::output_point const& point, KTH_DB_txn* db_txn);
+    result_code insert_output_from_reorg_and_remove(domain::chain::output_point const& point, KTH_DB_txn* db_txn);
 
-    result_code insert_inputs(chain::input::list const& inputs, KTH_DB_txn* db_txn);
+    result_code insert_inputs(domain::chain::input::list const& inputs, KTH_DB_txn* db_txn);
 
     template <typename I>
     result_code insert_transactions_inputs_non_coinbase(I f, I l, KTH_DB_txn* db_txn);
