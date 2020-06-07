@@ -10,21 +10,22 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+
 #include <boost/bimap.hpp>
 #include <boost/bimap/set_of.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
+
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 #include <kth/database/unspent_transaction.hpp>
 
-namespace kth {
-namespace database {
+#include <kth/infrastructure/utility/noncopyable.hpp>
+
+namespace kth::database {
 
 /// This class is thread safe.
 /// A circular-by-age hash table of [point, output].
-class BCD_API unspent_outputs
-  : noncopyable
-{
+class KD_API unspent_outputs : noncopyable {
 public:
     // Construct a cache with the specified transaction count limit.
     unspent_outputs(size_t capacity);
