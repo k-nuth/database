@@ -282,11 +282,11 @@ utxo_entry internal_database_basis<Clock>::get_utxo(domain::chain::output_point 
         return utxo_entry{};
     }
 
-    return utxo_entry::factory_from_data(db_value_to_data_chunk(value));
+    return domain::create<utxo_entry>(db_value_to_data_chunk(value));
 }
 
 template <typename Clock>
-utxo_entry internal_database_basis<Clock>::get_utxo(chain::output_point const& point) const {
+utxo_entry internal_database_basis<Clock>::get_utxo(domain::chain::output_point const& point) const {
 
     KTH_DB_txn* db_txn;
     auto res0 = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
