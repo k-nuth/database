@@ -142,7 +142,7 @@ domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height, 
         auto tx_entry = get_transaction(h,max_uint32, db_txn);
         
         if ( ! tx_entry.is_valid() ) {
-            return chain::block{};
+            return domain::chain::block{};
         }
 
         auto const& tx = tx_entry.transaction();
