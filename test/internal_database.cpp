@@ -253,50 +253,50 @@ void check_reorg_output(KTH_DB_env* env_, KTH_DB_dbi& dbi_reorg_pool_, std::stri
     KTH_DB_txn* db_txn;
 
     hash_digest txid;
-    BOOST_REQUIRE(decode_hash(txid, txid_enc));
+    REQUIRE(decode_hash(txid, txid_enc));
     output_point point{txid, pos};
     auto keyarr = point.to_data(false);
     auto key = kth_db_make_value(keyarr.size(), keyarr.data());
     KTH_DB_val value;
 
-    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
-    BOOST_REQUIRE(kth_db_get(db_txn, dbi_reorg_pool_, &key, &value) == KTH_DB_SUCCESS);
-    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_get(db_txn, dbi_reorg_pool_, &key, &value) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 
     data_chunk data {static_cast<uint8_t*>(kth_db_get_data(value)), static_cast<uint8_t*>(kth_db_get_data(value)) + kth_db_get_size(value)};
-    auto output = chain::output::factory_from_data(data, false);
+    auto output = domain::create<domain::chain::output>(data, false);
 
-    BOOST_REQUIRE(encode_base16(output.to_data(true)) == output_enc);
+    REQUIRE(encode_base16(output.to_data(true)) == output_enc);
 }
 
 void check_reorg_output_just_existence(KTH_DB_env* env_, KTH_DB_dbi& dbi_reorg_pool_, std::string txid_enc, uint32_t pos) {
     KTH_DB_txn* db_txn;
 
     hash_digest txid;
-    BOOST_REQUIRE(decode_hash(txid, txid_enc));
+    REQUIRE(decode_hash(txid, txid_enc));
     output_point point{txid, pos};
     auto keyarr = point.to_data(false);
     auto key = kth_db_make_value(keyarr.size(), keyarr.data());
     KTH_DB_val value;
 
-    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
-    BOOST_REQUIRE(kth_db_get(db_txn, dbi_reorg_pool_, &key, &value) == KTH_DB_SUCCESS);
-    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_get(db_txn, dbi_reorg_pool_, &key, &value) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 }
 
 void check_reorg_output_doesnt_exists(KTH_DB_env* env_, KTH_DB_dbi& dbi_reorg_pool_, std::string txid_enc, uint32_t pos) {
     KTH_DB_txn* db_txn;
 
     hash_digest txid;
-    BOOST_REQUIRE(decode_hash(txid, txid_enc));
+    REQUIRE(decode_hash(txid, txid_enc));
     output_point point{txid, pos};
     auto keyarr = point.to_data(false);
     auto key = kth_db_make_value(keyarr.size(), keyarr.data());
     KTH_DB_val value;
 
-    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
-    BOOST_REQUIRE(kth_db_get(db_txn, dbi_reorg_pool_, &key, &value) == KTH_DB_NOTFOUND);
-    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_get(db_txn, dbi_reorg_pool_, &key, &value) == KTH_DB_NOTFOUND);
+    REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 }
 
 
