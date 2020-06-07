@@ -11,8 +11,7 @@
 #include <kth/database/legacy/memory/memory.hpp>
 #include <kth/database/legacy/memory/memory_map.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 constexpr size_t minimum_slabs_size = sizeof(file_offset);
 constexpr size_t slab_hash_table_header_size(size_t buckets)
