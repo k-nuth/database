@@ -139,8 +139,7 @@ array_index record_row<KeyType>::next_index() const {
 }
 
 template <typename KeyType>
-void record_row<KeyType>::write_next_index(array_index next)
-{
+void record_row<KeyType>::write_next_index(array_index next) {
     auto const memory = raw_data(key_size);
     auto serial = make_unsafe_serializer(REMAP_ADDRESS(memory));
 
