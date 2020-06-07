@@ -246,18 +246,18 @@ private:
     bool pop_transactions_non_coinbase(size_t height, I f, I l);
 #endif 
 
-    bool pop(chain::block& out_block);
+    bool pop(domain::chain::block& out_block);
     bool pop_inputs(const inputs& inputs, size_t height);
     bool pop_outputs(const outputs& outputs, size_t height);
 
 #endif // ! defined(KTH_DB_READONLY)
 
 
-    code verify_insert(chain::block const& block, size_t height);
-    code verify_push(chain::block const& block, size_t height);
+    code verify_insert(domain::chain::block const& block, size_t height);
+    code verify_push(domain::chain::block const& block, size_t height);
 
 #if defined(KTH_DB_LEGACY)
-    code verify_push(const chain::transaction& tx);
+    code verify_push(const domain::chain::transaction& tx);
 #endif
 
     // Asynchronous writers.
