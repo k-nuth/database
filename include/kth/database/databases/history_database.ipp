@@ -163,7 +163,7 @@ domain::chain::history_compact::list internal_database_basis<Clock>::get_history
     if ((rc = kth_db_cursor_get(cursor, &key_hash, &value, MDB_SET)) == 0) {
        
         auto data = db_value_to_data_chunk(value);
-        auto entry = history_entry::factory_from_data(data);
+        auto entry = domain::create<history_entry>(data);
         
         if (from_height == 0 || entry.height() >= from_height) {
             result.push_back(history_entry_to_history_compact(entry));
