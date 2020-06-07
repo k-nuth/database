@@ -8,19 +8,18 @@
 #include <filesystem>
 #include <memory>
 
-// #include <boost/filesystem.hpp>
-
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
+
+#include <kth/infrastructure/utility/sequential_lock.hpp>
 
 #if defined(KTH_DB_LEGACY) && (defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY) || defined(KTH_DB_STEALTH))
 #define KTH_DB_WITH_INDEXES
 #endif
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
-class BCD_API store {
+class KD_API store {
 public:
     using path = std::filesystem::path;
     using handle = sequential_lock::handle;
