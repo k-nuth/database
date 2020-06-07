@@ -13,8 +13,7 @@
 #include <kth/database/define.hpp>
 #include <kth/database/legacy/memory/memory.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 #ifdef KTH_CURRENCY_BCH
 using position_t = uint32_t;
