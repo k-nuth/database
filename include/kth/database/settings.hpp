@@ -8,17 +8,15 @@
 #include <cstdint>
 #include <filesystem>
 
-// #include <boost/filesystem.hpp>
-
 #include <kth/database/define.hpp>
 
 namespace kth::database {
 
 /// Common database configuration settings, properties not thread safe.
-class BCD_API settings {
+class KD_API settings {
 public:
     settings();
-    settings(config::settings context);
+    settings(infrastructure::config::settings context);
 
     /// Properties.
     std::filesystem::path directory;
