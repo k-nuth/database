@@ -117,14 +117,10 @@ void history_database::add_output(const short_hash& key, const output_point& out
     rows_multimap_.store(key, write);
 }
 
-void history_database::add_input(const short_hash& key,
-    const output_point& inpoint, size_t input_height,
-    const input_point& previous)
-{
+void history_database::add_input(const short_hash& key, const output_point& inpoint, size_t input_height, const input_point& previous) {
     auto const input_height32 = safe_unsigned<uint32_t>(input_height);
 
-    auto const write = [&](serializer<uint8_t*>& serial)
-    {
+    auto const write = [&](serializer<uint8_t*>& serial) {
         serial.write_byte(static_cast<uint8_t>(point_kind::spend));
         inpoint.to_data(serial, false);
         serial.write_4_bytes_little_endian(input_height32);
