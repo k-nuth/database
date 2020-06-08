@@ -11,11 +11,11 @@
 
 namespace kth::database { 
 
-transaction_unconfirmed_entry::transaction_unconfirmed_entry(chain::transaction const& tx, uint32_t arrival_time, uint32_t height)
+transaction_unconfirmed_entry::transaction_unconfirmed_entry(domain::chain::transaction const& tx, uint32_t arrival_time, uint32_t height)
     : transaction_(tx), arrival_time_(arrival_time), height_(height)
 {}
 
-chain::transaction const& transaction_unconfirmed_entry::transaction() const {
+domain::chain::transaction const& transaction_unconfirmed_entry::transaction() const {
     return transaction_;
 }
 
