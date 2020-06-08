@@ -307,9 +307,9 @@ void check_blocks_db_just_existence(KTH_DB_env* env_, KTH_DB_dbi& dbi_blocks_db_
     auto key = kth_db_make_value(sizeof(height), &height);
     KTH_DB_val value;
 
-    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
-    BOOST_REQUIRE(kth_db_get(db_txn, dbi_blocks_db_, &key, &value) == KTH_DB_SUCCESS);
-    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_get(db_txn, dbi_blocks_db_, &key, &value) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 }
 
 void check_blocks_db_doesnt_exists(KTH_DB_env* env_, KTH_DB_dbi& dbi_blocks_db_, uint32_t height) {
