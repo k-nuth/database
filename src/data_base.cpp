@@ -859,17 +859,17 @@ void data_base::push_stealth(hash_digest const& tx_hash, size_t height, const ou
 
         // Try to extract the payment address from the second output.
         auto const address = payment_output.address();
-        if (!address)
+        if ( ! address)
             continue;
 
         // Try to extract an unsigned ephemeral key from the first output.
         hash_digest unsigned_ephemeral_key;
-        if (!extract_ephemeral_key(unsigned_ephemeral_key, ephemeral_script))
+        if ( ! extract_ephemeral_key(unsigned_ephemeral_key, ephemeral_script))
             continue;
 
         // Try to extract a stealth prefix from the first output.
         uint32_t prefix;
-        if (!to_stealth_prefix(prefix, ephemeral_script))
+        if ( ! to_stealth_prefix(prefix, ephemeral_script))
             continue;
 
         // The payment address versions are arbitrary and unused here.
