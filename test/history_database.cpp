@@ -171,7 +171,7 @@ TEST_CASE("history database  test", "[None]")
     has_one_row(res_1r2);
     auto has_no_rows = [=](const history_compact::list& history)
     {
-        BOOST_REQUIRE(history.empty());
+        REQUIRE(history.empty());
     };
     db.delete_last_row(key3);
     auto res_1nr1 = db.get(key3, 0, 0);
