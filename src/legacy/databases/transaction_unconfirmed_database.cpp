@@ -13,11 +13,10 @@
 #include <kth/database/legacy/memory/memory.hpp>
 #include <kth/database/legacy/result/transaction_result.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
-using namespace bc::chain;
-using namespace bc::machine;
+using namespace kth::domain::chain;
+using namespace kth::machine;
 
 static constexpr auto value_size = sizeof(uint64_t);
 static constexpr auto arrival_time_size = sizeof(uint32_t);
