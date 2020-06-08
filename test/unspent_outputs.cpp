@@ -139,12 +139,12 @@ BOOST_AUTO_TEST_CASE(unspent_outputs__get__two_capacity_1__size_1_expected) {
     cache.add(tx2, 0, 0, false);
     BOOST_REQUIRE_EQUAL(cache.size(), 1u);
 
-    chain::output out_value2a;
+    domain::chain::output out_value2a;
     BOOST_REQUIRE(cache.get(out_value2a, out_height, out_median_time_past, out_coinbase, { tx2.hash(), 1 }, max_size_t, false));
     BOOST_REQUIRE(out_value2a.is_valid());
     BOOST_REQUIRE_EQUAL(out_value2a.value(), expected2a);
 
-    chain::output out_value2b;
+    domain::chain::output out_value2b;
     BOOST_REQUIRE(cache.get(out_value2b, out_height, out_median_time_past, out_coinbase, { tx2.hash(), 2 }, max_size_t, false));
     BOOST_REQUIRE(out_value2b.is_valid());
     BOOST_REQUIRE_EQUAL(out_value2b.value(), expected2b);
