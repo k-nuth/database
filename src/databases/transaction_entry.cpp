@@ -128,13 +128,12 @@ bool transaction_entry::is_spent(size_t fork_height) const {
         auto const spender_height =  output.validation.spender_height;
 
         // A spend from above the fork height is not an actual spend.
-        if (spender_height == chain::output::validation::not_spent || spender_height > fork_height)
+        if (spender_height == domain::chain::output::validation::not_spent || spender_height > fork_height)
             return false;
     }
     return true;
 }*/
 
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
