@@ -12,10 +12,9 @@
 #include <kth/database/legacy/memory/memory.hpp>
 #include <kth/database/legacy/result/block_result.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
-using namespace bc::chain;
+using namespace kth::domain::chain;
 
 // Valid file offsets should never be zero.
 const file_offset block_database::empty = 0;
