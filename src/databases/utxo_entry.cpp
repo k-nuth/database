@@ -10,13 +10,15 @@
 #include <cstdint>
 // #include <kth/domain.hpp>
 
+#include <kth/infrastructure.hpp>
+
 namespace kth::database { 
 
-utxo_entry::utxo_entry(chain::output output, uint32_t height, uint32_t median_time_past, bool coinbase)
+utxo_entry::utxo_entry(domain::chain::output output, uint32_t height, uint32_t median_time_past, bool coinbase)
     : output_(std::move(output)), height_(height), median_time_past_(median_time_past), coinbase_(coinbase)
 {}
 
-chain::output const& utxo_entry::output() const {
+domain::chain::output const& utxo_entry::output() const {
     return output_;
 }
 
