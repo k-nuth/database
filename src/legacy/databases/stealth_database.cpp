@@ -11,10 +11,9 @@
 #include <kth/domain.hpp>
 #include <kth/database/legacy/memory/memory.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
-using namespace bc::chain;
+using namespace kth::domain::chain;
 
 static constexpr auto rows_header_size = 0u;
 
