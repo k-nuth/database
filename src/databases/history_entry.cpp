@@ -103,30 +103,5 @@ void history_entry::to_data(std::ostream& stream) const {
     to_data(sink);
 }
 
-// Deserialization.
-//-----------------------------------------------------------------------------
-
-history_entry history_entry::factory_from_data(data_chunk const& data) {
-    history_entry instance;
-    instance.from_data(data);
-    return instance;
-}
-
-history_entry history_entry::factory_from_data(std::istream& stream) {
-    history_entry instance;
-    instance.from_data(stream);
-    return instance;
-}
-
-bool history_entry::from_data(const data_chunk& data) {
-    data_source istream(data);
-    return from_data(istream);
-}
-
-bool history_entry::from_data(std::istream& stream) {
-    istream_reader source(stream);
-    return from_data(source);
-}
-
 } // namespace kth::database
 
