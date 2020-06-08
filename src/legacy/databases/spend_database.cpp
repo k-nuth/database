@@ -13,10 +13,9 @@
 #include <kth/domain.hpp>
 #include <kth/database/legacy/memory/memory.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
-using namespace bc::chain;
+using namespace kth::domain::chain;
 
 // The spend database keys off of output point and has input point value.
 static constexpr auto value_size = std::tuple_size<point>::value;
