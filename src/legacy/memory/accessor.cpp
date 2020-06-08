@@ -9,8 +9,7 @@
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 #ifdef REMAP_SAFETY
 
