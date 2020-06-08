@@ -21,11 +21,11 @@ namespace database {
 //     return deserial.KTH_POSITION_READER();
 // }
 
-transaction_entry::transaction_entry(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position)
+transaction_entry::transaction_entry(domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position)
     : transaction_(tx), height_(height), median_time_past_(median_time_past), position_(position)
 {}
 
-chain::transaction const& transaction_entry::transaction() const {
+domain::chain::transaction const& transaction_entry::transaction() const {
     return transaction_;
 }
 
