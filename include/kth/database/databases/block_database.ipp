@@ -153,7 +153,7 @@ domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height, 
         f += kth::hash_size;
     }*/
     
-    return chain::block{header, std::move(tx_list)};
+    return domain::chain::block{header, std::move(tx_list)};
 
 #else
     auto block = get_block_reorg(height, db_txn);
