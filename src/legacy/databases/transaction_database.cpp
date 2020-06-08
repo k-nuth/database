@@ -15,8 +15,8 @@
 
 namespace kth { namespace database {
 
-using namespace bc::chain;
-using namespace bc::machine;
+using namespace kth::domain::chain;
+using namespace kth::machine;
 
 static constexpr auto value_size = sizeof(uint64_t);
 static constexpr auto height_size = sizeof(uint32_t);
