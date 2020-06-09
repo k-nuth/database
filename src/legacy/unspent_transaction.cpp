@@ -11,10 +11,9 @@
 #include <utility>
 #include <kth/domain.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
-using namespace bc::chain;
+using namespace kth::domain::chain;
 
 unspent_transaction::unspent_transaction(unspent_transaction&& other)
   : height_(other.height_),
