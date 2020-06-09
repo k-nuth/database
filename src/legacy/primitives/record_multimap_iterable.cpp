@@ -9,8 +9,7 @@
 #include <kth/database/legacy/primitives/record_manager.hpp>
 #include <kth/database/legacy/primitives/record_multimap_iterator.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
     
 record_multimap_iterable::record_multimap_iterable(
     const record_manager& manager, array_index begin)
