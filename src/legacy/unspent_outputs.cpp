@@ -10,10 +10,9 @@
 #include <cstddef>
 #include <kth/domain.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
-using namespace bc::chain;
+using namespace kth::domain::chain;
 
 // Because of BIP30 it is safe to use tx hashes as identifiers here.
 unspent_outputs::unspent_outputs(size_t capacity)
