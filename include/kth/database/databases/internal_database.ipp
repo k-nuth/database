@@ -369,17 +369,17 @@ std::pair<domain::chain::header, uint32_t> internal_database_basis<Clock>::get_h
 }
 
 template <typename Clock>
-chain::header internal_database_basis<Clock>::get_header(uint32_t height) const {
+domain::chain::header internal_database_basis<Clock>::get_header(uint32_t height) const {
     KTH_DB_txn* db_txn;
     auto zzz = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
     if (zzz != KTH_DB_SUCCESS) {
-        return chain::header{};
+        return domain::chain::header{};
     }
 
     auto res = get_header(height, db_txn);
 
     if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
-        return chain::header{};
+        return domain::chain::header{};
     }
 
     return res;
