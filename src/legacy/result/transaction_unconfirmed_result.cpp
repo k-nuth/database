@@ -13,10 +13,9 @@
 #include <kth/database/legacy/databases/transaction_unconfirmed_database.hpp>
 #include <kth/database/legacy/memory/memory.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
-using namespace bc::chain;
+using namespace kth::domain::chain;
 
 static constexpr auto value_size = sizeof(uint64_t);
 static constexpr auto arrival_time_size = sizeof(uint32_t);
