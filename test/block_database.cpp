@@ -4,18 +4,16 @@
 
 #include <filesystem>
 
-#include <boost/test/unit_test.hpp>
+#include <test_helpers.hpp>
 // #include <boost/filesystem.hpp>
 #include <kth/database.hpp>
 
 using namespace boost::system;
 using namespace std::filesystem;
-using namespace bc;
-using namespace bc::chain;
-using namespace bc::database;
+using namespace kth::domain::chain;
+using namespace kth::database;
 
-transaction random_tx(size_t fudge)
-{
+transaction random_tx(size_t fudge) {
     static auto const genesis = block::genesis_mainnet();
     auto result = genesis.transactions()[0];
     result.inputs()[0].previous_output().set_index(fudge);
