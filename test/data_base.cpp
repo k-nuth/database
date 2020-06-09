@@ -392,4 +392,4 @@ TEST_CASE("data base  pushpop  test", "[None]") {
 }
 #endif // KTH_DB_LEGACY
 
-BOOST_AUTO_TEST_SUITE_END()
+// End Boost Suite
