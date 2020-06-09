@@ -910,7 +910,7 @@ void data_base::push_stealth(hash_digest const& tx_hash, size_t height, const ou
 // }
 
 #if ! defined(KTH_DB_READONLY)
-bool data_base::pop_output_and_unconfirm(size_t height, chain::transaction const& tx) {
+bool data_base::pop_output_and_unconfirm(size_t height, domain::chain::transaction const& tx) {
    
     if ( ! pop_outputs(tx.outputs(), height)) {
         return false;
