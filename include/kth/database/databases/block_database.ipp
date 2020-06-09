@@ -168,10 +168,10 @@ domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height, 
 
 #if defined(KTH_DB_NEW_BLOCKS)
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_block(chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_block(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
 #elif defined(KTH_DB_NEW_FULL)
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_block(chain::block const& block, uint32_t height, uint64_t tx_count, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_block(domain::chain::block const& block, uint32_t height, uint64_t tx_count, KTH_DB_txn* db_txn) {
 #endif
 
 /*#if defined(KTH_DB_NEW_BLOCKS)
