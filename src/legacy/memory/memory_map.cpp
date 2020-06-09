@@ -35,8 +35,7 @@
 // requires a larger file this is neither validated nor supported.
 static_assert(sizeof(void*) == sizeof(uint64_t), "Not a 64 bit system!");
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 #define FAIL -1
 #define INVALID_HANDLE -1
