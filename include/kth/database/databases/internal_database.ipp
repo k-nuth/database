@@ -340,7 +340,7 @@ result_code internal_database_basis<Clock>::get_last_height(uint32_t& out_height
 }
 
 template <typename Clock>
-std::pair<chain::header, uint32_t> internal_database_basis<Clock>::get_header(hash_digest const& hash) const {
+std::pair<domain::chain::header, uint32_t> internal_database_basis<Clock>::get_header(hash_digest const& hash) const {
     auto key  = kth_db_make_value(hash.size(), const_cast<hash_digest&>(hash).data());
 
     KTH_DB_txn* db_txn;
