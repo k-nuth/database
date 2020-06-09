@@ -25,8 +25,7 @@
 /// ...
 /// [ slab ]
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 // TODO: guard against overflows.
 
