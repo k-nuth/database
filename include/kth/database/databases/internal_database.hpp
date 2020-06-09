@@ -250,7 +250,7 @@ private:
     result_code insert_reorg_into_pool(utxo_pool_t& pool, KTH_DB_val key_point, KTH_DB_txn* db_txn) const;
 
 #if defined(KTH_DB_NEW_BLOCKS) && ! defined(KTH_DB_READONLY)
-    result_code insert_block(chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
+    result_code insert_block(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
 #endif 
 
 
