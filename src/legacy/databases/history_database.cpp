@@ -131,32 +131,26 @@ void history_database::add_input(const short_hash& key, const output_point& inpo
 }
 
 // This is the history unlink.
-bool history_database::delete_last_row(const short_hash& key)
-{
+bool history_database::delete_last_row(const short_hash& key) {
     return rows_multimap_.unlink(key);
 }
 
-history_compact::list history_database::get(const short_hash& key,
-    size_t limit, size_t from_height) const
-{
+history_compact::list history_database::get(const short_hash& key, size_t limit, size_t from_height) const {
     // Read the height value from the row.
-    auto const read_height = [](uint8_t* data)
-    {
+    auto const read_height = [](uint8_t* data) {
         return from_little_endian_unsafe<uint32_t>(data + height_position);
     };
 
     // TODO: add serialization to history_compact.
     // Read a row from the data for the history list.
-    auto const read_row = [](uint8_t* data)
-    {
+    auto const read_row = [](uint8_t* data) {
         auto deserial = make_unsafe_deserializer(data);
-        return history_compact
-        {
+        return history_compact {
             // output or spend?
             static_cast<point_kind>(deserial.read_byte()),
 
             // point
-            point::factory_from_data(deserial, false),
+            domain::create<point>(deserial, false),
 
             // height
             deserial.read_4_bytes_little_endian(),
