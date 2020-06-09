@@ -8,11 +8,10 @@
 #include <memory>
 #include <kth/domain.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
-using namespace bc::chain;
-using namespace bc::database;
+using namespace kth::domain::chain;
+using namespace kth::database;
 
 
 #ifdef KTH_DB_LEGACY
