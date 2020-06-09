@@ -8,8 +8,7 @@
 #include <kth/database/legacy/memory/memory.hpp>
 #include <kth/database/legacy/primitives/record_manager.hpp>
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
 record_list::record_list(record_manager& manager, array_index index)
   : manager_(manager), index_(index)
