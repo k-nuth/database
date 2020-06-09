@@ -890,7 +890,7 @@ void data_base::push_stealth(hash_digest const& tx_hash, size_t height, const ou
 
 #ifdef KTH_DB_LEGACY
 
-// bool data_base::pop_input_and_unconfirm(size_t height, chain::transaction const& tx) {
+// bool data_base::pop_input_and_unconfirm(size_t height, domain::chain::transaction const& tx) {
    
 //     if ( ! pop_inputs(tx.inputs(), height)) {
 //         return false;
