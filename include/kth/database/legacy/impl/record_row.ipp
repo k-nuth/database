@@ -149,14 +149,12 @@ void record_row<KeyType>::write_next_index(array_index next) {
 }
 
 template <typename KeyType>
-memory_ptr record_row<KeyType>::raw_data(file_offset offset) const
-{
+memory_ptr record_row<KeyType>::raw_data(file_offset offset) const {
     auto memory = manager_.get(index_);
     REMAP_INCREMENT(memory, offset);
     return memory;
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif
