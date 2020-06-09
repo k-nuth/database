@@ -342,7 +342,7 @@ memory_ptr memory_map::reserve(size_t size, size_t expansion)
         //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
         // All existing database pointers are invalidated by this call.
-        if (!truncate_mapped(target))
+        if ( ! truncate_mapped(target))
         {
             handle_error("resize", filename_);
             throw std::runtime_error("Resize failure, disk space may be low.");
