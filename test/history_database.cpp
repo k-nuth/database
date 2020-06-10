@@ -4,31 +4,27 @@
 
 #include <filesystem>
 
-#include <boost/test/unit_test.hpp>
+#include <test_helpers.hpp>
 // #include <boost/filesystem.hpp>
 
 #include <kth/database.hpp>
 
 using namespace boost::system;
 using namespace std::filesystem;
-using namespace bc;
-using namespace bc::chain;
-using namespace bc::database;
+using namespace kth::domain::chain;
+using namespace kth::database;
 
 #define DIRECTORY "history_database"
 
-class history_database_directory_setup_fixture
-{
+class history_database_directory_setup_fixture {
 public:
-    history_database_directory_setup_fixture()
-    {
-        error_code ec;
+    history_database_directory_setup_fixture() {
+        std::error_code ec;
         remove_all(DIRECTORY, ec);
-        BOOST_REQUIRE(create_directories(DIRECTORY, ec));
+        REQUIRE(create_directories(DIRECTORY, ec));
     }
 
-    ////~history_database_directory_setup_fixture()
-    ////{
+    ////~history_database_directory_setup_fixture() {
     ////    error_code ec;
     ////    remove_all(DIRECTORY, ec);
     ////}
