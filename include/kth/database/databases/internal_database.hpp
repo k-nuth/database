@@ -260,17 +260,17 @@ private:
 #endif //defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
 #endif
 
-    chain::block get_block(uint32_t height, KTH_DB_txn* db_txn) const;
+    domain::chain::block get_block(uint32_t height, KTH_DB_txn* db_txn) const;
 
 #if defined(KTH_DB_NEW_FULL)
     
 #if ! defined(KTH_DB_READONLY)
-    result_code insert_block(chain::block const& block, uint32_t height, uint64_t tx_count, KTH_DB_txn* db_txn);
+    result_code insert_block(domain::chain::block const& block, uint32_t height, uint64_t tx_count, KTH_DB_txn* db_txn);
 
-    result_code remove_transactions(chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
+    result_code remove_transactions(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
     
-    result_code insert_transaction(uint64_t id, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position , KTH_DB_txn* db_txn);
-    //data_chunk serialize_txs(chain::block const& block);
+    result_code insert_transaction(uint64_t id, domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position , KTH_DB_txn* db_txn);
+    //data_chunk serialize_txs(domain::chain::block const& block);
     
     template <typename I>
     result_code insert_transactions(I f, I l, uint32_t height, uint32_t median_time_past,uint64_t tx_count, KTH_DB_txn* db_txn);
