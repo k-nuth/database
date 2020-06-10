@@ -388,7 +388,7 @@ domain::chain::header internal_database_basis<Clock>::get_header(uint32_t height
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::pop_block(chain::block& out_block) {
+result_code internal_database_basis<Clock>::pop_block(domain::chain::block& out_block) {
     uint32_t height;
 
     //TODO: (Mario) use only one transaction ?
