@@ -4,30 +4,26 @@
 
 #include <filesystem>
 
-#include <boost/test/unit_test.hpp>
+#include <test_helpers.hpp>
 // #include <boost/filesystem.hpp>
 #include <kth/database.hpp>
 
 using namespace boost::system;
 using namespace std::filesystem;
-using namespace bc;
-using namespace bc::chain;
-using namespace bc::database;
+using namespace kth::domain::chain;
+using namespace kth::database;
 
 #define DIRECTORY "spend_database"
 
-class spend_database_directory_setup_fixture
-{
+class spend_database_directory_setup_fixture {
 public:
-    spend_database_directory_setup_fixture()
-    {
-        error_code ec;
+    spend_database_directory_setup_fixture() {
+        std::error_code ec;
         remove_all(DIRECTORY, ec);
-        BOOST_REQUIRE(create_directories(DIRECTORY, ec));
+        REQUIRE(create_directories(DIRECTORY, ec));
     }
 
-    ////~spend_database_directory_setup_fixture()
-    ////{
+    ////~spend_database_directory_setup_fixture() {
     ////    error_code ec;
     ////    remove_all(DIRECTORY, ec);
     ////}
