@@ -164,8 +164,7 @@ history_compact::list history_database::get(const short_hash& key, size_t limit,
     auto const start = rows_multimap_.find(key);
     auto const records = record_multimap_iterable(rows_manager_, start);
 
-    for (auto const index: records)
-    {
+    for (auto const index : records) {
         // Stop once we reach the limit (if specified).
         if (limit > 0 && result.size() >= limit)
             break;
