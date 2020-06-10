@@ -29,7 +29,7 @@ data_chunk internal_database_basis<Clock>::serialize_txs(domain::chain::block co
 
 //public
 template <typename Clock>
-std::pair<chain::block, uint32_t> internal_database_basis<Clock>::get_block(hash_digest const& hash) const {
+std::pair<domain::chain::block, uint32_t> internal_database_basis<Clock>::get_block(hash_digest const& hash) const {
     auto key = kth_db_make_value(hash.size(), const_cast<hash_digest&>(hash).data());
 
     KTH_DB_txn* db_txn;
