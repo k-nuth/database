@@ -6,70 +6,60 @@
 
 #include <kth/database.hpp>
 
-using namespace bc;
-using namespace bc::chain;
-using namespace bc::database;
+using namespace kth::domain::chain;
+using namespace kth::database;
 
 // TODO: test with confirmed/unconfirmed.
 
 BOOST_AUTO_TEST_SUITE(unspent_outputs_tests)
 
-BOOST_AUTO_TEST_CASE(unspent_outputs__construct__capacity_0__disabled)
-{
+BOOST_AUTO_TEST_CASE(unspent_outputs__construct__capacity_0__disabled) {
     const unspent_outputs cache(0);
     BOOST_REQUIRE(cache.disabled());
 }
 
-BOOST_AUTO_TEST_CASE(unspent_outputs__construct__capacity_42__not_disabled)
-{
+BOOST_AUTO_TEST_CASE(unspent_outputs__construct__capacity_42__not_disabled) {
     const unspent_outputs cache(42);
-    BOOST_REQUIRE(!cache.disabled());
+    BOOST_REQUIRE( ! cache.disabled());
 }
 
-BOOST_AUTO_TEST_CASE(unspent_outputs__construct__capacity_0__size_0)
-{
+BOOST_AUTO_TEST_CASE(unspent_outputs__construct__capacity_0__size_0) {
     const unspent_outputs cache(0);
     BOOST_REQUIRE_EQUAL(cache.size(), 0u);
 }
 
-BOOST_AUTO_TEST_CASE(unspent_outputs__construct__capacity_42__empty)
-{
+BOOST_AUTO_TEST_CASE(unspent_outputs__construct__capacity_42__empty) {
     const unspent_outputs cache(42);
     BOOST_REQUIRE(cache.empty());
 }
 
-BOOST_AUTO_TEST_CASE(unspent_outputs__hit_rate__default__1)
-{
+BOOST_AUTO_TEST_CASE(unspent_outputs__hit_rate__default__1) {
     const unspent_outputs cache(0);
     BOOST_REQUIRE_EQUAL(cache.hit_rate(), 1.0f);
 }
 
-BOOST_AUTO_TEST_CASE(unspent_outputs__add__one_capacity_42__size_1)
-{
+BOOST_AUTO_TEST_CASE(unspent_outputs__add__one_capacity_42__size_1) {
     static const transaction tx{ 0, 0, input::list{}, output::list{ output{} } };
     unspent_outputs cache(42);
     cache.add(tx, 0, 0, false);
     BOOST_REQUIRE_EQUAL(cache.size(), 1u);
 }
 
-BOOST_AUTO_TEST_CASE(unspent_outputs__add__no_outputs_capcity_42__empty)
-{
+BOOST_AUTO_TEST_CASE(unspent_outputs__add__no_outputs_capcity_42__empty) {
     static const transaction tx{ 0, 0, {}, {} };
     unspent_outputs cache(42);
     cache.add(tx, 0, 0, false);
     BOOST_REQUIRE(cache.empty());
 }
 
-BOOST_AUTO_TEST_CASE(unspent_outputs__add__one_capcity_0__empty)
-{
+BOOST_AUTO_TEST_CASE(unspent_outputs__add__one_capcity_0__empty) {
     static const transaction tx{ 0, 0, {}, { {}, {} } };
     unspent_outputs cache(0);
     cache.add(tx, 0, 0, false);
     BOOST_REQUIRE(cache.empty());
 }
 
-BOOST_AUTO_TEST_CASE(unspent_outputs__remove1__remove_only__empty)
-{
+BOOST_AUTO_TEST_CASE(unspent_outputs__remove1__remove_only__empty) {
     static const transaction tx{ 0, 0, {}, { {}, {} } };
     unspent_outputs cache(1);
     cache.add(tx, 0, 0, false);
