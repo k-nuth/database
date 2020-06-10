@@ -7,16 +7,14 @@
 #include <utility>
 #include <kth/database.hpp>
 
-using namespace bc;
-using namespace bc::chain;
-using namespace bc::database;
+using namespace kth::domain::chain;
+using namespace kth::database;
 
 // TODO: test confirmed/is_confirmed.
 
 BOOST_AUTO_TEST_SUITE(unspent_transaction_tests)
 
-BOOST_AUTO_TEST_CASE(unspent_transaction__move__coinbase_tx_hash_height__expected)
-{
+BOOST_AUTO_TEST_CASE(unspent_transaction__move__coinbase_tx_hash_height__expected) {
     static const transaction tx{ 0, 0, { { { null_hash, point::null_index }, {}, 0 } }, {} };
     static auto const expected_height = 42u;
     unspent_transaction instance(tx, expected_height, 0, false);
