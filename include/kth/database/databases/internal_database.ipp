@@ -483,11 +483,11 @@ result_code internal_database_basis<Clock>::insert_reorg_into_pool(utxo_pool_t& 
     }
 
     auto entry_data = db_value_to_data_chunk(value);
-    auto entry = utxo_entry::factory_from_data(entry_data);
+    auto entry = domain::create<utxo_entry>(entry_data);
 
     auto point_data = db_value_to_data_chunk(key_point);
-    auto point = chain::output_point::factory_from_data(point_data, KTH_INTERNAL_DB_WIRE);
-    pool.insert({point, std::move(entry)});
+    auto point = domain::create<domain::chain::output_point>(point_data, KTH_INTERNAL_DB_WIRE);
+    pool.insert({point, std::move(entry)});     //TODO(fernando): use emplace?
 
     return result_code::success;
 }
