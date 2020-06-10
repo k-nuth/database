@@ -350,29 +350,29 @@ void check_blocks_db(KTH_DB_env* env_, KTH_DB_dbi& dbi_blocks_db_, uint32_t heig
 void check_blocks_db(KTH_DB_env* env_, KTH_DB_dbi& dbi_blocks_db_, KTH_DB_dbi& dbi_block_header_, KTH_DB_dbi& dbi_transaction_db_, uint32_t height) {
     
     KTH_DB_txn* db_txn;
-    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
 
 
     KTH_DB_cursor* cursor;
-    BOOST_REQUIRE(kth_db_cursor_open(db_txn, dbi_blocks_db_, &cursor) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_cursor_open(db_txn, dbi_blocks_db_, &cursor) == KTH_DB_SUCCESS);
 
     
     auto key = kth_db_make_value(sizeof(height), &height);
-    chain::transaction::list tx_list;
+    domain::chain::transaction::list tx_list;
 
     KTH_DB_val value;
     int rc;
-    BOOST_REQUIRE(kth_db_cursor_get(cursor, &key, &value, MDB_SET) == KTH_DB_SUCCESS); 
+    REQUIRE(kth_db_cursor_get(cursor, &key, &value, MDB_SET) == KTH_DB_SUCCESS);
        
     auto tx_id = *static_cast<uint32_t*>(kth_db_get_data(value));
     
     auto key_tx = kth_db_make_value(sizeof(tx_id), &tx_id);
     KTH_DB_val value_tx;
 
-    BOOST_REQUIRE(kth_db_get(db_txn, dbi_transaction_db_, &key_tx, &value_tx) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_get(db_txn, dbi_transaction_db_, &key_tx, &value_tx) == KTH_DB_SUCCESS);
         
     data_chunk data_tx {static_cast<uint8_t*>(kth_db_get_data(value_tx)), static_cast<uint8_t*>(kth_db_get_data(value_tx)) + kth_db_get_size(value_tx)};
-    auto entry = transaction_entry::factory_from_data(data_tx);
+    auto entry = domain::create<transaction_entry>(data_tx);
     tx_list.push_back(std::move(entry.transaction()));
 
     while ((rc = kth_db_cursor_get(cursor, &key, &value, MDB_NEXT_DUP)) == 0) {
