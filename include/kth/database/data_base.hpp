@@ -68,7 +68,7 @@ public:
 
 #if ! defined(KTH_DB_READONLY)
     /// Create and open all databases.
-    bool create(chain::block const& genesis);
+    bool create(domain::chain::block const& genesis);
 #endif
 
 #ifdef KTH_DB_LEGACY
