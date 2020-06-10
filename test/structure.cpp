@@ -4,29 +4,25 @@
 
 #include <filesystem>
 
-#include <boost/test/unit_test.hpp>
+#include <test_helpers.hpp>
 // #include <boost/filesystem.hpp>
 #include <kth/database.hpp>
 
 using namespace boost::system;
 using namespace std::filesystem;
-using namespace bc;
-using namespace bc::database;
+using namespace kth::database;
 
 #define DIRECTORY "structure"
 
-class structure_directory_setup_fixture
-{
+class structure_directory_setup_fixture {
 public:
-    structure_directory_setup_fixture()
-    {
-        error_code ec;
+    structure_directory_setup_fixture() {
+        std::error_code ec;
         remove_all(DIRECTORY, ec);
-        BOOST_REQUIRE(create_directories(DIRECTORY, ec));
+        REQUIRE(create_directories(DIRECTORY, ec));
     }
 
-    ////~structure_directory_setup_fixture()
-    ////{
+    ////~structure_directory_setup_fixture() {
     ////    error_code ec;
     ////    remove_all(DIRECTORY, ec);
     ////}
