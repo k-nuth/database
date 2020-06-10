@@ -6,15 +6,14 @@
 #include <random>
 
 #include <boost/functional/hash_fwd.hpp>
-#include <boost/test/unit_test.hpp>
+#include <test_helpers.hpp>
 // #include <boost/filesystem.hpp>
 
 #include <kth/database.hpp>
 
 using namespace boost::system;
 using namespace std::filesystem;
-using namespace bc;
-using namespace bc::database;
+using namespace kth::database;
 
 constexpr size_t total_txs = 200;
 constexpr size_t tx_size = 200;
