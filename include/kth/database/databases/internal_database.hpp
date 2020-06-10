@@ -281,28 +281,28 @@ private:
     
 
 #if ! defined(KTH_DB_READONLY)    
-    result_code insert_input_history(chain::input_point const& inpoint, uint32_t height, chain::input const& input, KTH_DB_txn* db_txn);
+    result_code insert_input_history(domain::chain::input_point const& inpoint, uint32_t height, domain::chain::input const& input, KTH_DB_txn* db_txn);
 
-    result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, KTH_DB_txn* db_txn);
+    result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, domain::chain::output const& output, KTH_DB_txn* db_txn);
     
     result_code insert_history_db (wallet::payment_address const& address, data_chunk const& entry, KTH_DB_txn* db_txn); 
 #endif // ! defined(KTH_DB_READONLY)
 
     static
-    chain::history_compact history_entry_to_history_compact(history_entry const& entry);
+    domain::chain::history_compact history_entry_to_history_compact(history_entry const& entry);
     
 #if ! defined(KTH_DB_READONLY)    
     result_code remove_history_db(const short_hash& key, size_t height, KTH_DB_txn* db_txn);
     
-    result_code remove_transaction_history_db(chain::transaction const& tx, size_t height, KTH_DB_txn* db_txn);
+    result_code remove_transaction_history_db(domain::chain::transaction const& tx, size_t height, KTH_DB_txn* db_txn);
     
-    result_code insert_spend(chain::output_point const& out_point, chain::input_point const& in_point, KTH_DB_txn* db_txn);
+    result_code insert_spend(domain::chain::output_point const& out_point, domain::chain::input_point const& in_point, KTH_DB_txn* db_txn);
     
-    result_code remove_spend(chain::output_point const& out_point, KTH_DB_txn* db_txn);
+    result_code remove_spend(domain::chain::output_point const& out_point, KTH_DB_txn* db_txn);
     
-    result_code remove_transaction_spend_db(chain::transaction const& tx, KTH_DB_txn* db_txn);
+    result_code remove_transaction_spend_db(domain::chain::transaction const& tx, KTH_DB_txn* db_txn);
 
-    result_code insert_transaction_unconfirmed(chain::transaction const& tx, uint32_t height, KTH_DB_txn* db_txn);
+    result_code insert_transaction_unconfirmed(domain::chain::transaction const& tx, uint32_t height, KTH_DB_txn* db_txn);
 
     result_code remove_transaction_unconfirmed(hash_digest const& tx_id,  KTH_DB_txn* db_txn);
 #endif 
