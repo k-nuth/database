@@ -506,7 +506,7 @@ if (NOT USE_CONAN)
 endif()
 
 if (NOT NO_CONAN_AT_ALL)
-    target_link_libraries(kth-database PUBLIC ${CONAN_LIBS})
+  target_link_libraries(kth-database PUBLIC ${CONAN_LIBS})
 endif()
 
 
