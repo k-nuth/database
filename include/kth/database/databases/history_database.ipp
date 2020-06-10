@@ -266,7 +266,7 @@ std::vector<hash_digest> internal_database_basis<Clock>::get_history_txns(short_
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_transaction_history_db(chain::transaction const& tx, size_t height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_transaction_history_db(domain::chain::transaction const& tx, size_t height, KTH_DB_txn* db_txn) {
 
     for (auto const& output: tx.outputs()) {
         for (auto const& address : output.addresses()) {
