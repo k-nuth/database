@@ -182,13 +182,10 @@ history_compact::list history_database::get(const short_hash& key, size_t limit,
     return result;
 }
 
-std::vector<hash_digest> history_database::get_txns(const short_hash& key, size_t limit,
-                                              size_t from_height) const
-{
+std::vector<hash_digest> history_database::get_txns(const short_hash& key, size_t limit, size_t from_height) const {
 
     // Read the height value from the row.
-    auto const read_hash = [](uint8_t* data)
-    {
+    auto const read_hash = [](uint8_t* data) {
         auto deserial = make_unsafe_deserializer(data+flag_size);
         return deserial.read_hash();
     };
