@@ -240,7 +240,7 @@ std::vector<hash_digest> internal_database_basis<Clock>::get_history_txns(short_
             }
 
             auto data = db_value_to_data_chunk(value);
-            auto entry = history_entry::factory_from_data(data);
+            auto entry = domain::create<history_entry>(data);
 
             if (from_height == 0 || entry.height() >= from_height) {
                 // Avoid inserting the same tx
