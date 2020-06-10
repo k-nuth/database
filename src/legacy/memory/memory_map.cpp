@@ -427,11 +427,11 @@ bool memory_map::truncate_mapped(size_t size)
     conditional_lock lock(remap_mutex_);
 
 #ifndef MREMAP_MAYMOVE
-    if (!unmap())
+    if ( ! unmap())
         return false;
 #endif
 
-    if (!truncate(size))
+    if ( ! truncate(size))
         return false;
 
 #ifndef MREMAP_MAYMOVE
