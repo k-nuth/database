@@ -5,16 +5,16 @@
 #include <filesystem>
 #include <tuple>
 
-#include <boost/test/unit_test.hpp>
-// #include <boost/filesystem.hpp>
+#include <test_helpers.hpp>
 
 #include <kth/database.hpp>
 
 using namespace boost::system;
 using namespace std::filesystem;
-using namespace bc;
-using namespace bc::chain;
-using namespace bc::database;
+
+using namespace kth;
+using namespace kth::domain::chain;
+using namespace kth::database;
 
 #define DIRECTORY "internal_database"
 
