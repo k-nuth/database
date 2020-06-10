@@ -455,5 +455,4 @@ bool memory_map::validate(size_t size)
     return true;
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
