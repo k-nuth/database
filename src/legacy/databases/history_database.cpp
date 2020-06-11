@@ -195,11 +195,11 @@ std::vector<hash_digest> history_database::get_txns(const short_hash& key, size_
     auto const start = rows_multimap_.find(key);
     auto const records = record_multimap_iterable(rows_manager_, start);
 
-    for (auto const index: records)
-    {
+    for (auto const index: records) {
         // Stop once we reach the limit (if specified).
-        if (limit > 0 && temp.size() >= limit)
+        if (limit > 0 && temp.size() >= limit) {
             break;
+        }
         // This obtains a remap safe address pointer against the rows file.
         auto const record = rows_multimap_.get(index);
         auto const address = REMAP_ADDRESS(record);
