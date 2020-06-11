@@ -217,7 +217,7 @@ bool internal_database_basis<Clock>::close() {
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::push_genesis(chain::block const& block) {
+result_code internal_database_basis<Clock>::push_genesis(domain::chain::block const& block) {
     
     KTH_DB_txn* db_txn;
     auto res0 = kth_db_txn_begin(env_, NULL, 0, &db_txn);
