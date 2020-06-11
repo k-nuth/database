@@ -27,7 +27,7 @@ bool is_old_block_(uint32_t header_ts, std::chrono::seconds limit) {
 
 template <typename Clock>
 inline
-bool is_old_block_(chain::block const& block, std::chrono::seconds limit) {
+bool is_old_block_(domain::chain::block const& block, std::chrono::seconds limit) {
     return is_old_block_<Clock>(block.header().timestamp(), limit);
 }
 
