@@ -1125,7 +1125,7 @@ bool data_base::pop(block& out_block) {
     synchronize();
    
     // Return the block (with header/block metadata and pop start time). 
-    out_block = chain::block(block.header(), std::move(transactions));
+    out_block = domain::chain::block(block.header(), std::move(transactions));
 
 #endif // KTH_DB_LEGACY
 
