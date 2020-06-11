@@ -48,16 +48,16 @@ result_code internal_database_basis<Clock>::push_block_header(domain::chain::blo
 
 
 template <typename Clock>
-chain::header internal_database_basis<Clock>::get_header(uint32_t height, KTH_DB_txn* db_txn) const {
+domain::chain::header internal_database_basis<Clock>::get_header(uint32_t height, KTH_DB_txn* db_txn) const {
     auto key = kth_db_make_value(sizeof(height), &height);
     KTH_DB_val value;
 
     if (kth_db_get(db_txn, dbi_block_header_, &key, &value) != KTH_DB_SUCCESS) {
-        return chain::header{};
+        return domain::chain::header{};
     }
 
     auto data = db_value_to_data_chunk(value);
-    auto res = chain::header::factory_from_data(data);
+    auto res = domain::create<domain::chain::header>(data);
     return res;
 }
 
