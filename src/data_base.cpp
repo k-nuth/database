@@ -1256,7 +1256,7 @@ void data_base::do_push(block_const_ptr block, size_t height, uint32_t median_ti
     auto const buckets = std::min(threads, block->transactions().size());
     KTH_ASSERT(buckets != 0);
 
-    auto const join_handler = bc::synchronize(std::move(block_complete), buckets, NAME "_do_push");
+    auto const join_handler = kth::synchronize(std::move(block_complete), buckets, NAME "_do_push");
 
     for (size_t bucket = 0; bucket < buckets; ++bucket) {
         dispatch.concurrent(&data_base::do_push_transactions, this, block, height, median_time_past, bucket, buckets, join_handler);
