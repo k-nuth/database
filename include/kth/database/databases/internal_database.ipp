@@ -573,7 +573,7 @@ std::pair<result_code, utxo_pool_t> internal_database_basis<Clock>::get_utxo_poo
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::push_transaction_unconfirmed(chain::transaction const& tx, uint32_t height) {
+result_code internal_database_basis<Clock>::push_transaction_unconfirmed(domain::chain::transaction const& tx, uint32_t height) {
 
     KTH_DB_txn* db_txn;
     if (kth_db_txn_begin(env_, NULL, 0, &db_txn) != KTH_DB_SUCCESS) {
