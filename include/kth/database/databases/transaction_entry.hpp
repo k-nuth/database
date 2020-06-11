@@ -23,15 +23,15 @@ uint32_t read_position(Deserializer& deserial) {
     return deserial.KTH_POSITION_READER();
 }
 
-class BCD_API transaction_entry {
+class KD_API transaction_entry {
 public:
 
     transaction_entry() = default;
 
-    transaction_entry(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position);
+    transaction_entry(domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position);
 
     // Getters
-    chain::transaction const& transaction() const;
+    domain::chain::transaction const& transaction() const;
     uint32_t height() const;
     uint32_t median_time_past() const;
     uint32_t position() const;
