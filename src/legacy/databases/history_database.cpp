@@ -213,17 +213,14 @@ std::vector<hash_digest> history_database::get_txns(const short_hash& key, size_
     return result;
 }
 
-history_statinfo history_database::statinfo() const
-{
-    return
-    {
+history_statinfo history_database::statinfo() const {
+    return {
         lookup_header_.size(),
         lookup_manager_.count(),
         rows_manager_.count()
     };
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DB_HISTORY
