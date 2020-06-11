@@ -1102,7 +1102,7 @@ bool data_base::pop(block& out_block) {
             return false;
         }
 
-        if (!tx.is_coinbase()) {
+        if ( ! tx.is_coinbase()) {
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
             transactions_unconfirmed_->store(tx);
 #endif // KTH_DB_TRANSACTION_UNCONFIRMED
