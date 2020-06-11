@@ -348,7 +348,7 @@ result_code internal_database_basis<Clock>::remove_history_db(const short_hash& 
         while ((rc = kth_db_cursor_get(cursor, &key_hash, &value, MDB_NEXT_DUP)) == 0) {
         
             auto data = db_value_to_data_chunk(value);
-            auto entry = history_entry::factory_from_data(data);
+            auto entry = domain::create<history_entry>(data);
 
             if (entry.height() == height) {
                 if (kth_db_cursor_del(cursor, 0) != KTH_DB_SUCCESS) {
