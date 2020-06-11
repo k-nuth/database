@@ -30,7 +30,7 @@ public:
     //TODO(fernando): make this constexpr 
     // constexpr 
     static
-    size_t serialized_size(chain::transaction const& tx);
+    size_t serialized_size(domain::chain::transaction const& tx);
 
     data_chunk to_data() const;
     void to_data(std::ostream& stream) const;
