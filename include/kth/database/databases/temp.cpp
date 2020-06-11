@@ -345,7 +345,7 @@ void BlockchainLMDB::open(std::string const& filename, int const db_flags)
   // this subdb is dropped on sight, so it may not be present when we open the DB.
   // Since we use KTH_DB_CREATE, we'll get an exception if we open read-only and it does not exist.
   // So we don't open for read-only, and also not drop below. It is not used elsewhere.
-  if (!(mdb_flags & KTH_DB_RDONLY))
+  if ( ! (mdb_flags & KTH_DB_RDONLY))
     lmdb_db_open(txn, LMDB_HF_STARTING_HEIGHTS, KTH_DB_CREATE, m_hf_starting_heights, "Failed to open db handle for m_hf_starting_heights");
 
   lmdb_db_open(txn, LMDB_HF_VERSIONS, KTH_DB_INTEGERKEY | KTH_DB_CREATE, m_hf_versions, "Failed to open db handle for m_hf_versions");
