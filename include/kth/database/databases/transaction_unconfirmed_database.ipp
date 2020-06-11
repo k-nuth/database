@@ -69,12 +69,12 @@ std::vector<transaction_unconfirmed_entry> internal_database_basis<Clock>::get_a
     if ((rc = kth_db_cursor_get(cursor, &key, &value, KTH_DB_NEXT)) == 0) {
        
         auto data = db_value_to_data_chunk(value);
-        auto res = transaction_unconfirmed_entry::factory_from_data(data);
+        auto res = domain::create<transaction_unconfirmed_entry>(data);
         result.push_back(res);
 
         while ((rc = kth_db_cursor_get(cursor, &key, &value, KTH_DB_NEXT)) == 0) {
             auto data = db_value_to_data_chunk(value);
-            auto res = transaction_unconfirmed_entry::factory_from_data(data);
+            auto res = domain::create<transaction_unconfirmed_entry>(data);
             result.push_back(res);
         }
     } 
