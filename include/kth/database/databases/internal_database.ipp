@@ -600,7 +600,7 @@ result_code internal_database_basis<Clock>::push_transaction_unconfirmed(domain:
 // ------------------------------------------------------------------------------------------------------
 
 template <typename Clock>
-bool internal_database_basis<Clock>::is_old_block(chain::block const& block) const {
+bool internal_database_basis<Clock>::is_old_block(domain::chain::block const& block) const {
     return is_old_block_<Clock>(block, limit_);
 }
 
