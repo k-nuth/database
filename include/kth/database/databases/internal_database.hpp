@@ -409,8 +409,7 @@ constexpr char internal_database_basis<Clock>::transaction_unconfirmed_db_name[]
 
 using internal_database = internal_database_basis<std::chrono::system_clock>;
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 
 #include <kth/database/databases/block_database.ipp>
