@@ -311,11 +311,11 @@ private:
 
 
 #if ! defined(KTH_DB_READONLY)
-    result_code update_transaction(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, KTH_DB_txn* db_txn);
+    result_code update_transaction(domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, KTH_DB_txn* db_txn);
 
-    result_code set_spend(chain::output_point const& point, uint32_t spender_height, KTH_DB_txn* db_txn);
+    result_code set_spend(domain::chain::output_point const& point, uint32_t spender_height, KTH_DB_txn* db_txn);
 
-    result_code set_unspend(chain::output_point const& point, KTH_DB_txn* db_txn);
+    result_code set_unspend(domain::chain::output_point const& point, KTH_DB_txn* db_txn);
 #endif // ! defined(KTH_DB_READONLY)
 
     uint32_t get_clock_now() const;
