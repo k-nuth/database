@@ -51,7 +51,7 @@ public:
         
         id_ = source.read_8_bytes_little_endian();
         point_.from_data(source, false);
-        point_kind_ = static_cast<chain::point_kind>(source.read_byte()),
+        point_kind_ = static_cast<domain::chain::point_kind>(source.read_byte()),
         height_ = source.read_4_bytes_little_endian();
         index_ = source.read_4_bytes_little_endian();
         value_or_checksum_ = source.read_8_bytes_little_endian();
