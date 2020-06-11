@@ -21,14 +21,14 @@ domain::chain::input_point internal_database_basis<Clock>::get_spend(domain::cha
     auto res0 = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
     if (res0 != KTH_DB_SUCCESS) {
         LOG_INFO(LOG_DATABASE, "Error begining LMDB Transaction [get_spend] ", res0);
-        return chain::input_point{};
+        return domain::chain::input_point{};
     }
 
     res0 = kth_db_get(db_txn, dbi_spend_db_, &key, &value);
     if (res0 != KTH_DB_SUCCESS) {
         kth_db_txn_commit(db_txn);
         // kth_db_txn_abort(db_txn);  
-        return chain::input_point{};
+        return domain::chain::input_point{};
     }
 
     auto data = db_value_to_data_chunk(value);
