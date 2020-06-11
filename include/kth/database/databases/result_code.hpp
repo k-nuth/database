@@ -31,7 +31,6 @@ bool succeed_prune(result_code code) {
 
 
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DATABASE_RESULT_CODE_HPP_
