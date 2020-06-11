@@ -101,7 +101,7 @@ transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest co
 
     //Note(Knuth): Transaction stored in dbi_transaction_db_ are always confirmed
     //the parameter requiere_confirmed is never used.
-    /*if (! require_confirmed) {
+    /*if ( !  require_confirmed) {
         return entry;
     }
 
