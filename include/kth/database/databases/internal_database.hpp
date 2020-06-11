@@ -64,10 +64,10 @@ constexpr size_t env_open_mode_ = 0664;
 constexpr int directory_exists = 0;
 
 template <typename Clock = std::chrono::system_clock>
-class BCD_API internal_database_basis {
+class KD_API internal_database_basis {
 public:
     using path = std::filesystem::path;
-    using utxo_pool_t = std::unordered_map<chain::point, utxo_entry>;
+    using utxo_pool_t = std::unordered_map<domain::chain::point, utxo_entry>;
 
     constexpr static char block_header_db_name[] = "block_header";
     constexpr static char block_header_by_hash_db_name[] = "block_header_by_hash";
