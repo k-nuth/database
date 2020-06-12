@@ -48,7 +48,7 @@ public:
 
     /// Add a stealth row to the database.
     void store(uint32_t prefix, uint32_t height,
-        const chain::stealth_compact& row);
+        const domain::chain::stealth_compact& row);
 
     /////// Delete stealth row (not implemented).
     ////bool unlink();
