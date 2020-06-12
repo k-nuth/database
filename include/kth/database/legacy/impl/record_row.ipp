@@ -20,16 +20,15 @@ namespace kth::database {
  * next_index() method.
  */
 template <typename KeyType>
-class record_row
-{
+class record_row {
 public:
-    static constexpr array_index empty = bc::max_uint32;
+    static constexpr array_index empty = kth::max_uint32; 
     static constexpr size_t index_size = sizeof(array_index);
     static constexpr size_t key_start = 0;
     static constexpr size_t key_size = std::tuple_size<KeyType>::value;
     static constexpr file_offset prefix_size = key_size + index_size;
 
-    typedef serializer<uint8_t*>::functor write_function;
+    using write_function = serializer<uint8_t*>::functor;
 
     // Construct for a new or existing record.
     record_row(record_manager& manager, array_index index=empty);
