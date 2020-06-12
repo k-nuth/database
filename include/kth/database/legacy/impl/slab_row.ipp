@@ -23,7 +23,7 @@ template <typename KeyType>
 class slab_row
 {
 public:
-    static constexpr file_offset empty = bc::max_uint64;
+    static constexpr file_offset empty = kth::max_uint64;
     static constexpr size_t position_size = sizeof(file_offset);
     static constexpr size_t key_start = 0;
     static constexpr size_t key_size = std::tuple_size<KeyType>::value;
