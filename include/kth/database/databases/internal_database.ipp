@@ -845,11 +845,11 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx_id, uint32_t height, chain::output::list const& outputs, data_chunk const& fixed_data, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx_id, uint32_t height, domain::chain::output::list const& outputs, data_chunk const& fixed_data, KTH_DB_txn* db_txn) {
     uint32_t pos = 0;
     for (auto const& output: outputs) {
         
-        auto res = insert_utxo(chain::point{tx_id, pos}, output, fixed_data, db_txn);
+        auto res = insert_utxo(domain::chain::point{tx_id, pos}, output, fixed_data, db_txn);
         if (res != result_code::success) {
             return res;
         }
