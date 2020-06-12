@@ -1352,7 +1352,7 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, hash_digest const
         }
 
         KTH_ASSERT(next.is_valid());
-        auto block = std::make_shared<const message::block>(std::move(next));
+        auto block = std::make_shared<domain::message::block const>(std::move(next));
         out_blocks->insert(out_blocks->begin(), block);
     }
 
