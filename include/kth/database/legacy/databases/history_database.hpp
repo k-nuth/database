@@ -34,7 +34,7 @@ struct KD_API history_statinfo
 
 /// This is a multimap where the key is the Bitcoin address hash,
 /// which returns several rows giving the history for that address.
-class BCD_API history_database
+class KD_API history_database
 {
 public:
     typedef std::filesystem::path path;
