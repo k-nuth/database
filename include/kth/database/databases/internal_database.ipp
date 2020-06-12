@@ -675,7 +675,7 @@ bool internal_database_basis<Clock>::set_fast_flags_environment(bool enabled) {
         return true;
     }
 
-    if (!fast_mode && !enabled) {
+    if ( ! fast_mode && !enabled) {
         return true;
     }
 
