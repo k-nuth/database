@@ -800,11 +800,11 @@ bool internal_database_basis<Clock>::open_databases() {
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_id, uint32_t height, chain::input::list const& inputs, bool insert_reorg, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_id, uint32_t height, domain::chain::input::list const& inputs, bool insert_reorg, KTH_DB_txn* db_txn) {
     uint32_t pos = 0;
     for (auto const& input: inputs) {
         
-        chain::input_point const inpoint {tx_id, pos};
+        domain::chain::input_point const inpoint {tx_id, pos};
         auto const& prevout = input.previous_output();
         
 #if defined(KTH_DB_NEW_FULL)
