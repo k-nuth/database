@@ -130,7 +130,6 @@ file_offset hash_table_header<IndexType, ValueType>::item_position(
     return sizeof(IndexType) + index * sizeof(ValueType);
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif
