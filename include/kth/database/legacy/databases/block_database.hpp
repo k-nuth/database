@@ -62,7 +62,7 @@ public:
 
     //NOTE: This is public interface, but apparently it is not used in Blockchain
     /// Store a block in the database.
-    void store(chain::block const& block, size_t height);
+    void store(domain::chain::block const& block, size_t height);
 
     /// The list of heights representing all chain gaps.
     bool gaps(heights& out_gaps) const;
