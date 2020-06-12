@@ -185,7 +185,6 @@ void record_hash_table<KeyType>::link(const KeyType& key, array_index begin)
     header_.write(bucket_index(key), begin);
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif
