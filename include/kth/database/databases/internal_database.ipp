@@ -923,7 +923,7 @@ result_code internal_database_basis<Clock>::push_transactions_non_coinbase(uint3
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::push_block(chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg, KTH_DB_txn* db_txn) {
     //precondition: block.transactions().size() >= 1
 
     auto res = push_block_header(block, height, db_txn);
