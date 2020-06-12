@@ -1380,10 +1380,9 @@ bool data_base::set_database_flags(bool fast) {
 }
 */
 
-
 #if ! defined(KTH_DB_READONLY)
 // This is designed for write exclusivity and read concurrency.
-void data_base::reorganize(const checkpoint& fork_point, block_const_ptr_list_const_ptr incoming_blocks, block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch, result_handler handler) {
+void data_base::reorganize(infrastructure::config::checkpoint const& fork_point, block_const_ptr_list_const_ptr incoming_blocks, block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch, result_handler handler) {
     auto const next_height = safe_add(fork_point.height(), size_t(1));
     const result_handler pop_handler = std::bind(&data_base::handle_pop, this, _1, incoming_blocks, next_height, std::ref(dispatch), handler);
 
