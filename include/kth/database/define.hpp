@@ -35,13 +35,11 @@
 // Allocate safety is required for support of concurrent write operations.
 #define ALLOCATE_SAFETY
 
-namespace kth {
-namespace database {
+namespace kth::database {
 
-typedef uint32_t array_index;
-typedef uint64_t file_offset;
+using array_index = uint32_t;
+using file_offset = uint64_t;
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif
