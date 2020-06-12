@@ -32,7 +32,7 @@ struct KD_API spend_statinfo
 
 /// This enables you to lookup the spend of an output point, returning
 /// the input point. It is a simple map.
-class BCD_API spend_database
+class KD_API spend_database
 {
 public:
     typedef std::filesystem::path path;
