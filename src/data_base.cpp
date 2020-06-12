@@ -1342,7 +1342,7 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, hash_digest const
 
     // Enqueue blocks so .front() is fork + 1 and .back() is top.
     for (size_t height = top; height > fork; --height) {
-        message::block next;
+        domain::message::block next;
 
         // TODO: parallelize pop of transactions within each block.
         if ( ! pop(next)) {
