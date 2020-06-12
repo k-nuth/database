@@ -503,9 +503,9 @@ void check_reorg_block_doesnt_exists(KTH_DB_env* env_, KTH_DB_dbi& dbi_reorg_blo
     auto key = kth_db_make_value(sizeof(uint32_t), &height);
     KTH_DB_val value;
 
-    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
-    BOOST_REQUIRE(kth_db_get(db_txn, dbi_reorg_block_, &key, &value) == KTH_DB_NOTFOUND);
-    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_get(db_txn, dbi_reorg_block_, &key, &value) == KTH_DB_NOTFOUND);
+    REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 }
 
 
