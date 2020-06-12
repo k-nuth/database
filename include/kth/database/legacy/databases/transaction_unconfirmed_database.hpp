@@ -61,7 +61,7 @@ public:
     transaction_unconfirmed_result get(hash_digest const& hash) const;
 
     /// Store a transaction in the database.
-    void store(const chain::transaction& tx);
+    void store(const domain::chain::transaction& tx);
 
 
     /// Commit latest inserts.
