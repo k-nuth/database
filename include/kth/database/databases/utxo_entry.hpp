@@ -58,19 +58,6 @@ public:
     }    
 
     static
-    utxo_entry factory_from_data(data_chunk const& data);
-    static
-    utxo_entry factory_from_data(std::istream& stream);
-
-    template <typename R, KTH_IS_READER(R)>
-    static
-    utxo_entry factory_from_data(R& source) {
-        utxo_entry instance;
-        instance.from_data(source);
-        return instance;
-    }
-
-    static
     data_chunk to_data_fixed(uint32_t height, uint32_t median_time_past, bool coinbase);
 
     static
