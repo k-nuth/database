@@ -62,7 +62,7 @@ array_index record_multimap<KeyType>::find(const KeyType& key) const
 {
     auto const begin_address = map_.find(key);
 
-    if (!begin_address)
+    if ( ! begin_address)
         return record_list::empty;
 
     auto const memory = REMAP_ADDRESS(begin_address);
