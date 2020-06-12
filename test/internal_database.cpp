@@ -457,17 +457,17 @@ void check_reorg_index(KTH_DB_env* env_, KTH_DB_dbi& dbi_reorg_index_, std::stri
     KTH_DB_val value;
 
     auto height_key = kth_db_make_value(sizeof(uint32_t), &height);
-    BOOST_REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
-    BOOST_REQUIRE(kth_db_get(db_txn, dbi_reorg_index_, &height_key, &value) == KTH_DB_SUCCESS);
-    BOOST_REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_get(db_txn, dbi_reorg_index_, &height_key, &value) == KTH_DB_SUCCESS);
+    REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
     data_chunk data2 {static_cast<uint8_t*>(kth_db_get_data(value)), static_cast<uint8_t*>(kth_db_get_data(value)) + kth_db_get_size(value)};
-    auto point_indexed = chain::point::factory_from_data(data2, false);
+    auto point_indexed = domain::create<domain::chain::point>(data2, false);
 
     hash_digest txid;
-    BOOST_REQUIRE(decode_hash(txid, txid_enc));
+    REQUIRE(decode_hash(txid, txid_enc));
     output_point point{txid, pos};
 
-    BOOST_REQUIRE(point == point_indexed);
+    REQUIRE(point == point_indexed);
 }
 
 void check_reorg_index_doesnt_exists(KTH_DB_env* env_, KTH_DB_dbi& dbi_reorg_index_, uint32_t height) {
