@@ -1024,10 +1024,10 @@ result_code internal_database_basis<Clock>::push_genesis(domain::chain::block co
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_outputs(hash_digest const& txid, chain::output::list const& outputs, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_outputs(hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn) {
     uint32_t pos = outputs.size() - 1;
     for (auto const& output: outputs) {
-        chain::output_point const point {txid, pos};
+        domain::chain::output_point const point {txid, pos};
         auto res = remove_utxo(0, point, false, db_txn);
         if (res != result_code::success) {
             return res;
