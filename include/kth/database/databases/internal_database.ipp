@@ -987,7 +987,7 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::push_genesis(chain::block const& block, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::push_genesis(domain::chain::block const& block, KTH_DB_txn* db_txn) {
     auto res = push_block_header(block, 0, db_txn);
     if (res != result_code::success) {
         return res;
