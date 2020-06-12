@@ -869,7 +869,7 @@ result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_outputs_error_treatment(uint32_t height, data_chunk const& fixed_data, hash_digest const& txid, chain::output::list const& outputs, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_outputs_error_treatment(uint32_t height, data_chunk const& fixed_data, hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn) {
     auto res = insert_outputs(txid,height, outputs, fixed_data, db_txn);
     
     if (res == result_code::duplicated_key) {
