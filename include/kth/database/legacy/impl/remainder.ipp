@@ -18,7 +18,6 @@ Divisor remainder(const KeyType& key, const Divisor divisor)
     return divisor == 0 ? 0 : std::hash<KeyType>()(key) % divisor;
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif
