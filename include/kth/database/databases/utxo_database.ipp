@@ -32,7 +32,7 @@ result_code internal_database_basis<Clock>::remove_utxo(uint32_t height, domain:
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_utxo(chain::output_point const& point, chain::output const& output, data_chunk const& fixed_data, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_utxo(domain::chain::output_point const& point, domain::chain::output const& output, data_chunk const& fixed_data, KTH_DB_txn* db_txn) {
     auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);                  //TODO(fernando): podría estar afuera de la DBTx
     auto valuearr = utxo_entry::to_data_with_fixed(output, fixed_data);     //TODO(fernando): podría estar afuera de la DBTx
 
