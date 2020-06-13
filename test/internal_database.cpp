@@ -625,7 +625,7 @@ void check_index_and_pool(KTH_DB_env *env, KTH_DB_dbi& dbi_index, KTH_DB_dbi& db
     kth_db_cursor_open(txn, dbi_index, &cursor);
 
     while ((rc = kth_db_cursor_get(cursor, &key, &data, KTH_DB_NEXT)) == 0) {
-        BOOST_REQUIRE(kth_db_get(txn, dbi_pool, &data, &value) == KTH_DB_SUCCESS);
+        REQUIRE(kth_db_get(txn, dbi_pool, &data, &value) == KTH_DB_SUCCESS);
     }
     
     kth_db_cursor_close(cursor);
