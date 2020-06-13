@@ -1098,7 +1098,7 @@ result_code internal_database_basis<Clock>::remove_transactions_non_coinbase(I f
 
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_block(chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_block(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
     //precondition: block.transactions().size() >= 1
 
     auto const& txs = block.transactions();
