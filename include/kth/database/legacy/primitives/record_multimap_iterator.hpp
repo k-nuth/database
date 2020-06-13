@@ -33,7 +33,6 @@ private:
     const record_manager& manager_;
 };
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif
