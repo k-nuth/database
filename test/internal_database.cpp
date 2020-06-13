@@ -779,27 +779,27 @@ TEST_CASE("internal database  insert block genesis and get", "[None]") {
     auto const& m = block.generate_merkle_root();
     auto const& m2 = block.header().merkle();
 
-    BOOST_REQUIRE(block.is_valid_merkle_root() == true);
+    REQUIRE(block.is_valid_merkle_root() == true);
 }
 
-BOOST_AUTO_TEST_CASE(internal_database__insert_block_genesis_and_get_transaction) {
+TEST_CASE("internal database  insert block genesis and get transaction", "[None]") {
     auto const genesis = get_genesis();
 
     internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
-    BOOST_REQUIRE(db.open());
+    REQUIRE(db.open());
     auto res = db.push_genesis(genesis);
     
-    BOOST_REQUIRE(res == result_code::success);
-    BOOST_REQUIRE(succeed(res));
+    REQUIRE(res == result_code::success);
+    REQUIRE(succeed(res));
 
 #if defined(KTH_DB_NEW_FULL)
 
     hash_digest txid;
     auto txid_enc = "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b";
-    BOOST_REQUIRE(decode_hash(txid, txid_enc));
+    REQUIRE(decode_hash(txid, txid_enc));
 
     auto const tx2 = db.get_transaction(txid,max_size_t);
-    BOOST_REQUIRE(tx2.is_valid() == true);
+    REQUIRE(tx2.is_valid() == true);
 
 #endif
 
