@@ -545,11 +545,13 @@ size_t db_count_index_by_height(KTH_DB_env *env, KTH_DB_dbi dbi, size_t height) 
 
 	KTH_DB_txn *txn;    
     kth_db_txn_begin(env, NULL, KTH_DB_RDONLY, &txn);
+
+    KTH_DB_cursor *cursor;
     kth_db_cursor_open(txn, dbi, &cursor);
 
     size_t count = 0;    
     KTH_DB_val data;
-    KTH_DB_cursor *cursor;
+
     int rc;
     if ((rc = kth_db_cursor_get(cursor, &height_key, &data, MDB_SET)) == 0) {
         ++count;
