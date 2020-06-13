@@ -25,7 +25,7 @@ constexpr size_t record_hash_table_header_size(size_t buckets)
 /// data referenced by an index. The file will be resized accordingly
 /// and the total number of records updated so new chunks can be allocated.
 /// It also provides logical record mapping to the record memory address.
-class BCD_API record_manager
+class KD_API record_manager
 {
 public:
     record_manager(memory_map& file, file_offset header_size,
