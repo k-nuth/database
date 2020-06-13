@@ -870,77 +870,77 @@ TEST_CASE("internal database  insert double spend block", "[None]") {
     // std::cout << encode_hash(spender.hash()) << std::endl;
 
     internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
-    BOOST_REQUIRE(db.open());
-    BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);          
-    BOOST_REQUIRE(db.push_block(spender0, 1, 1) == result_code::success);       
-    BOOST_REQUIRE(db.push_block(spender1, 2, 1) == result_code::key_not_found); 
+    REQUIRE(db.open());
+    REQUIRE(db.push_block(orig, 0, 1) == result_code::success);
+    REQUIRE(db.push_block(spender0, 1, 1) == result_code::success);
+    REQUIRE(db.push_block(spender1, 2, 1) == result_code::key_not_found);
 }
 
-BOOST_AUTO_TEST_CASE(internal_database__spend) {
+TEST_CASE("internal database  spend", "[None]") {
     //79880
     auto const orig = get_block("01000000a594fda9d85f69e762e498650d6fdb54d838657cea7841915203170000000000a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f505da904ce6ed5b1b017fe8070101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b015cffffffff0100f2052a01000000434104283338ffd784c198147f99aed2cc16709c90b1522e3b3637b312a6f9130e0eda7081e373a96d36be319710cd5c134aaffba81ff08650d7de8af332fe4d8cde20ac00000000");
     //80000
     auto const spender = get_block("01000000ba8b9cda965dd8e536670f9ddec10e53aab14b20bacad27b9137190000000000190760b278fe7b8565fda3b968b918d5fd997f993b23674c0af3b6fde300b38f33a5914ce6ed5b1b01e32f570201000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b014effffffff0100f2052a01000000434104b68a50eaa0287eff855189f949c1c6e5f58b37c88231373d8a59809cbae83059cc6469d65c665ccfd1cfeb75c6e8e19413bba7fbff9bc762419a76d87b16086eac000000000100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000");
 
     internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
-    BOOST_REQUIRE(db.open());
-    BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);  
+    REQUIRE(db.open());
+    REQUIRE(db.push_block(orig, 0, 1) == result_code::success);
 
     hash_digest txid;
     std::string txid_enc = "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6";
-    BOOST_REQUIRE(decode_hash(txid, txid_enc));
+    REQUIRE(decode_hash(txid, txid_enc));
     auto entry = db.get_utxo(output_point{txid, 0});
-    BOOST_REQUIRE(entry.is_valid());
+    REQUIRE(entry.is_valid());
 
-    BOOST_REQUIRE(entry.height() == 0);
-    BOOST_REQUIRE(entry.median_time_past() == 1);
-    BOOST_REQUIRE(entry.coinbase());
+    REQUIRE(entry.height() == 0);
+    REQUIRE(entry.median_time_past() == 1);
+    REQUIRE(entry.coinbase());
 
 
     auto output = entry.output();
-    BOOST_REQUIRE(output.is_valid());
+    REQUIRE(output.is_valid());
 
     std::string output_enc = "00f2052a01000000434104283338ffd784c198147f99aed2cc16709c90b1522e3b3637b312a6f9130e0eda7081e373a96d36be319710cd5c134aaffba81ff08650d7de8af332fe4d8cde20ac";
-    BOOST_REQUIRE(encode_base16(output.to_data(true)) == output_enc);
+    REQUIRE(encode_base16(output.to_data(true)) == output_enc);
 
 
     // --------------------------------------------------------------------------------------------------------------------------
-    BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);   
+    REQUIRE(db.push_block(spender, 1, 1) == result_code::success);
 
     entry = db.get_utxo(output_point{txid, 0});
     output = entry.output();
-    BOOST_REQUIRE(! output.is_valid());
+    REQUIRE( !  output.is_valid());
 
     txid_enc = "c06fbab289f723c6261d3030ddb6be121f7d2508d77862bb1e484f5cd7f92b25";
-    BOOST_REQUIRE(decode_hash(txid, txid_enc));
+    REQUIRE(decode_hash(txid, txid_enc));
     entry = db.get_utxo(output_point{txid, 0});
-    BOOST_REQUIRE(entry.is_valid());
-    BOOST_REQUIRE(entry.height() == 1);
-    BOOST_REQUIRE(entry.median_time_past() == 1);
-    BOOST_REQUIRE(entry.coinbase());
+    REQUIRE(entry.is_valid());
+    REQUIRE(entry.height() == 1);
+    REQUIRE(entry.median_time_past() == 1);
+    REQUIRE(entry.coinbase());
 
     output = entry.output();
-    BOOST_REQUIRE(output.is_valid());
+    REQUIRE(output.is_valid());
     output_enc = "00f2052a01000000434104b68a50eaa0287eff855189f949c1c6e5f58b37c88231373d8a59809cbae83059cc6469d65c665ccfd1cfeb75c6e8e19413bba7fbff9bc762419a76d87b16086eac";
-    BOOST_REQUIRE(encode_base16(output.to_data(true)) == output_enc);
+    REQUIRE(encode_base16(output.to_data(true)) == output_enc);
 
     txid_enc = "5a4ebf66822b0b2d56bd9dc64ece0bc38ee7844a23ff1d7320a88c5fdb2ad3e2";
-    BOOST_REQUIRE(decode_hash(txid, txid_enc));
+    REQUIRE(decode_hash(txid, txid_enc));
     entry = db.get_utxo(output_point{txid, 0});
-    BOOST_REQUIRE(entry.is_valid());
-    BOOST_REQUIRE(entry.height() == 1);
-    BOOST_REQUIRE(entry.median_time_past() == 1);
-    BOOST_REQUIRE( ! entry.coinbase());
+    REQUIRE(entry.is_valid());
+    REQUIRE(entry.height() == 1);
+    REQUIRE(entry.median_time_past() == 1);
+    REQUIRE( ! entry.coinbase());
 
 
     output = entry.output();
-    BOOST_REQUIRE(output.is_valid());
+    REQUIRE(output.is_valid());
     output_enc = "00f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac";
-    BOOST_REQUIRE(encode_base16(output.to_data(true)) == output_enc);
+    REQUIRE(encode_base16(output.to_data(true)) == output_enc);
 }
 
 
-BOOST_AUTO_TEST_CASE(internal_database__reorg) {
+TEST_CASE("internal database  reorg", "[None]") {
     //79880 - 00000000002e872c6fbbcf39c93ef0d89e33484ebf457f6829cbf4b561f3af5a
     std::string orig_enc = "01000000a594fda9d85f69e762e498650d6fdb54d838657cea7841915203170000000000a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f505da904ce6ed5b1b017fe8070101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b015cffffffff0100f2052a01000000434104283338ffd784c198147f99aed2cc16709c90b1522e3b3637b312a6f9130e0eda7081e373a96d36be319710cd5c134aaffba81ff08650d7de8af332fe4d8cde20ac00000000";
     auto const orig = get_block(orig_enc);
