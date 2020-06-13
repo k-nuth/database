@@ -59,7 +59,6 @@ public:
     #define ALLOCATE_WRITE(mutex)
 #endif // ALLOCATE_SAFETY
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif
