@@ -64,8 +64,7 @@ private:
     mutable shared_mutex update_mutex_;
 };
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #include <kth/database/legacy/impl/record_multimap.ipp>
 
