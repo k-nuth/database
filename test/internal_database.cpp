@@ -643,135 +643,135 @@ struct dummy_clock {
 
 // ---------------------------------------------------------------------------------
 
-BOOST_FIXTURE_TEST_SUITE(internal_db_tests, internal_database_directory_setup_fixture)
+// BOOST_FIXTURE_TEST_SUITE(internal_db_tests, internal_database_directory_setup_fixture)
 
 // #ifdef KTH_DB_NEW
 
-BOOST_AUTO_TEST_CASE(internal_database__dummy_clock) {
+TEST_CASE("internal database  dummy clock", "[None]") {
     auto start = dummy_clock<200>::now();
     auto end = dummy_clock<200>::now();
     // std::cout << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "us.\n";    
-    BOOST_REQUIRE(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() == 0);
+    REQUIRE(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() == 0);
 }
 
-BOOST_AUTO_TEST_CASE(internal_database__adjust_db_size) {
+TEST_CASE("internal database  adjust db size", "[None]") {
     internal_database db(DIRECTORY "/internal_db", 10000000, 1, true);
-    BOOST_REQUIRE(db.open());
+    REQUIRE(db.open());
 }
 
-BOOST_AUTO_TEST_CASE(internal_database__open) {
+TEST_CASE("internal database  open", "[None]") {
     internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
-    BOOST_REQUIRE(db.open());
+    REQUIRE(db.open());
 }
 
 #if defined(KTH_DB_NEW_FULL)
-BOOST_AUTO_TEST_CASE(internal_database__test_get_all_transaction_unconfirmed) {
+TEST_CASE("internal database  test get all transaction unconfirmed", "[None]") {
     internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
     db.open();
     auto ret = db.get_all_transaction_unconfirmed();
 }
 #endif
 
-BOOST_AUTO_TEST_CASE(internal_database__insert_genesis) {
+TEST_CASE("internal database  insert genesis", "[None]") {
     auto const genesis = get_genesis();
 
     internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
-    BOOST_REQUIRE(db.open());
-    BOOST_REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);  
+    REQUIRE(db.open());
+    REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);
 
-    BOOST_REQUIRE(db.get_header(genesis.hash()).first.is_valid());
-    BOOST_REQUIRE(db.get_header(genesis.hash()).first.hash() == genesis.hash());
-    BOOST_REQUIRE(db.get_header(genesis.hash()).second == 0);
-    BOOST_REQUIRE(db.get_header(0).is_valid());
-    BOOST_REQUIRE(db.get_header(0).hash() == genesis.hash());
+    REQUIRE(db.get_header(genesis.hash()).first.is_valid());
+    REQUIRE(db.get_header(genesis.hash()).first.hash() == genesis.hash());
+    REQUIRE(db.get_header(genesis.hash()).second == 0);
+    REQUIRE(db.get_header(0).is_valid());
+    REQUIRE(db.get_header(0).hash() == genesis.hash());
 
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-    BOOST_REQUIRE(db.get_block(0).header().hash() == genesis.hash());
+    REQUIRE(db.get_block(0).header().hash() == genesis.hash());
     #endif 
     
     hash_digest txid;
     std::string txid_enc = "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b";
-    BOOST_REQUIRE(decode_hash(txid, txid_enc));
+    REQUIRE(decode_hash(txid, txid_enc));
 
     auto entry = db.get_utxo(output_point{txid, 0});
-    BOOST_REQUIRE(entry.is_valid());
+    REQUIRE(entry.is_valid());
 
-    BOOST_REQUIRE(entry.height() == 0);
-    BOOST_REQUIRE(entry.median_time_past() == 1);
-    BOOST_REQUIRE(entry.coinbase());
+    REQUIRE(entry.height() == 0);
+    REQUIRE(entry.median_time_past() == 1);
+    REQUIRE(entry.coinbase());
 
     auto output = entry.output();
-    BOOST_REQUIRE(output.is_valid());
+    REQUIRE(output.is_valid());
 
 #if defined(KTH_DB_NEW_FULL)
 
     auto const& tx = db.get_transaction(txid, max_uint32);
-    BOOST_REQUIRE(tx.is_valid());
+    REQUIRE(tx.is_valid());
 
 
-    auto const& address = wallet::payment_address("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa");
-    BOOST_REQUIRE(address);
+    auto const& address = domain::wallet::payment_address("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa");
+    REQUIRE(address);
 
     auto history_list = db.get_history(address.hash(),max_uint32,0);
-    BOOST_REQUIRE(history_list.size() == 1);
+    REQUIRE(history_list.size() == 1);
 
     auto history_item = history_list[0];
 
-    BOOST_REQUIRE(history_item.kind == point_kind::output);
-    BOOST_REQUIRE(history_item.point.hash() == txid);
-    BOOST_REQUIRE(history_item.point.index() == 0);
-    BOOST_REQUIRE(history_item.height == 0);
-    BOOST_REQUIRE(history_item.value == 5000000000);
+    REQUIRE(history_item.kind == point_kind::output);
+    REQUIRE(history_item.point.hash() == txid);
+    REQUIRE(history_item.point.index() == 0);
+    REQUIRE(history_item.height == 0);
+    REQUIRE(history_item.value == 5000000000);
 
 
 #endif
 
 
     std::string output_enc = "00f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac";
-    BOOST_REQUIRE(encode_base16(output.to_data(true)) == output_enc);
+    REQUIRE(encode_base16(output.to_data(true)) == output_enc);
 }
 
-BOOST_AUTO_TEST_CASE(internal_database__insert_duplicate_block) {
+TEST_CASE("internal database  insert duplicate block", "[None]") {
     auto const genesis = get_genesis();
 
     internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
-    BOOST_REQUIRE(db.open());
+    REQUIRE(db.open());
     auto res = db.push_block(genesis, 0, 1);
     
-    BOOST_REQUIRE(res == result_code::success);
-    BOOST_REQUIRE(succeed(res));
+    REQUIRE(res == result_code::success);
+    REQUIRE(succeed(res));
     
     res = db.push_block(genesis, 0, 1);     
-    BOOST_REQUIRE(res == result_code::duplicated_key);
-    BOOST_REQUIRE( ! succeed(res));
+    REQUIRE(res == result_code::duplicated_key);
+    REQUIRE( ! succeed(res));
 }
 
- BOOST_AUTO_TEST_CASE(internal_database__insert_block_genesis_duplicate) {
+TEST_CASE("internal database  insert block genesis duplicate", "[None]") {
     auto const genesis = get_genesis();
 
     internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
-    BOOST_REQUIRE(db.open());
+    REQUIRE(db.open());
     auto res = db.push_genesis(genesis);
     
-    BOOST_REQUIRE(res == result_code::success);
-    BOOST_REQUIRE(succeed(res));
+    REQUIRE(res == result_code::success);
+    REQUIRE(succeed(res));
     
     res = db.push_genesis(genesis);     
-    BOOST_REQUIRE(res == result_code::duplicated_key);
-    BOOST_REQUIRE( ! succeed(res));
+    REQUIRE(res == result_code::duplicated_key);
+    REQUIRE( ! succeed(res));
 } 
 
 #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) 
 
-BOOST_AUTO_TEST_CASE(internal_database__insert_block_genesis_and_get) {
+TEST_CASE("internal database  insert block genesis and get", "[None]") {
     auto const genesis = get_genesis();
 
     internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
-    BOOST_REQUIRE(db.open());
+    REQUIRE(db.open());
     auto res = db.push_genesis(genesis);
     
-    BOOST_REQUIRE(res == result_code::success);
-    BOOST_REQUIRE(succeed(res));
+    REQUIRE(res == result_code::success);
+    REQUIRE(succeed(res));
     
     auto const block = db.get_block(0);
 
