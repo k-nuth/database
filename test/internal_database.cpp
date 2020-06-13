@@ -569,7 +569,7 @@ size_t db_count_index_by_height(KTH_DB_env *env, KTH_DB_dbi dbi, size_t height) 
     return count;
 }
 
-size_t db_count_db_by_address(KTH_DB_env *env, KTH_DB_dbi dbi, wallet::payment_address const& address) {
+size_t db_count_db_by_address(KTH_DB_env *env, KTH_DB_dbi dbi, domain::wallet::payment_address const& address) {
     auto hash = address.hash();
     auto key = kth_db_make_value(hash.size(), hash.data());
 
