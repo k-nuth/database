@@ -1038,7 +1038,7 @@ result_code internal_database_basis<Clock>::remove_outputs(hash_digest const& tx
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_inputs(chain::input::list const& inputs, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_inputs(domain::chain::input::list const& inputs, KTH_DB_txn* db_txn) {
     for (auto const& input: inputs) {
         auto const& point = input.previous_output();
 
