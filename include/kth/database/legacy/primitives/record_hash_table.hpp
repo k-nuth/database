@@ -81,8 +81,7 @@ private:
 
 };
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #include <kth/database/legacy/impl/record_hash_table.ipp>
 
