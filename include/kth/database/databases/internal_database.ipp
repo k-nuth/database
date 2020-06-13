@@ -1152,7 +1152,7 @@ result_code internal_database_basis<Clock>::remove_block(domain::chain::block co
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_block(chain::block const& block, uint32_t height) {
+result_code internal_database_basis<Clock>::remove_block(domain::chain::block const& block, uint32_t height) {
     KTH_DB_txn* db_txn;
     auto res0 = kth_db_txn_begin(env_, NULL, 0, &db_txn);
     if (res0 != KTH_DB_SUCCESS) {
