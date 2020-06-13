@@ -1001,16 +1001,9 @@ TEST_CASE("internal database  reorg", "[None]") {
 #elif defined(KTH_DB_NEW_FULL)
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_ ,  0);
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
-
-
     auto const& address = wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
-    BOOST_REQUIRE(address);
-    
-    //std::cout << "aaaaaaaaaa" << db_count_db_by_address(env_, dbi_history_db_, address) << std::endl;
-
-    BOOST_REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address) == 2);
-
-
+    REQUIRE(address);
+    REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address) == 2);
 #endif 
 
 
