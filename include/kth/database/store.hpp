@@ -119,7 +119,7 @@ protected:
 private:
 #ifdef KTH_DB_LEGACY
     bool const flush_each_write_;
-    mutable bc::flush_lock flush_lock_;
+    mutable kth::flush_lock flush_lock_;
     mutable interprocess_lock exclusive_lock_;
     mutable sequential_lock sequential_lock_;
 #endif
