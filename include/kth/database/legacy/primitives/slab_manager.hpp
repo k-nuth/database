@@ -22,7 +22,7 @@ constexpr size_t slab_hash_table_header_size(size_t buckets)
 /// The slab manager represents a growing collection of various sized
 /// slabs of data on disk. It will resize the file accordingly and keep
 /// track of the current end pointer so new slabs can be allocated.
-class BCD_API slab_manager
+class KD_API slab_manager
 {
 public:
     slab_manager(memory_map& file, file_offset header_size);
