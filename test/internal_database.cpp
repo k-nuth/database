@@ -1368,11 +1368,11 @@ TEST_CASE("internal database  reorg index", "[None]") {
 #endif 
 
 
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
+    REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
+    REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
 
-    BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 5) == 5);
-    BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 8) == 0);
+    REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 5) == 5);
+    REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 8) == 0);
 
     check_index_and_pool(env_, dbi_reorg_index_, dbi_reorg_pool_);
 
