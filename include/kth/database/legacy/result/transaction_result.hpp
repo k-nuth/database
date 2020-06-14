@@ -22,7 +22,7 @@ using position_t = uint16_t;
 #endif
 
 /// Deferred read transaction result.
-class BCD_API transaction_result {
+class KD_API transaction_result {
 public:
     transaction_result();
     transaction_result(const memory_ptr slab);
