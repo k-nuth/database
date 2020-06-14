@@ -1191,7 +1191,7 @@ TEST_CASE("internal database  old blocks 1", "[None]") {
 }
 
 
-BOOST_AUTO_TEST_CASE(internal_database__old_blocks_2) {
+TEST_CASE("internal database  old blocks 2", "[None]") {
     //79880 - 00000000002e872c6fbbcf39c93ef0d89e33484ebf457f6829cbf4b561f3af5a
     // timestamp = 1284561413 
     //             Sep 15, 2010 11:36:53 AM
