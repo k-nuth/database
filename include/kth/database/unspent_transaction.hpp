@@ -30,8 +30,8 @@ public:
 
     /// Constructors.
     explicit unspent_transaction(hash_digest const& hash);
-    explicit unspent_transaction(const chain::output_point& point);
-    explicit unspent_transaction(const chain::transaction& tx, size_t height,
+    explicit unspent_transaction(const domain::chain::output_point& point);
+    explicit unspent_transaction(const domain::chain::transaction& tx, size_t height,
         uint32_t median_time_past, bool confirmed);
 
     /// Properties.
