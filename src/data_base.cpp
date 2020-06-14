@@ -544,7 +544,7 @@ bool data_base::end_insert() const {
 
 // Add block to the database at the given height (gaps allowed/created).
 // This is designed for write concurrency but only with itself.
-code data_base::insert(chain::block const& block, size_t height) {
+code data_base::insert(domain::chain::block const& block, size_t height) {
 
     auto const median_time_past = block.header().validation.median_time_past;
     
