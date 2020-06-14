@@ -43,23 +43,23 @@ public:
     float hit_rate() const;
 
     /// Add a set of outputs to the cache (purges older entry).
-    void add(const chain::transaction& transaction, size_t height,
+    void add(const domain::chain::transaction& transaction, size_t height,
         uint32_t median_time_past, bool confirmed);
 
     /// Remove a set of outputs from the cache (has been reorganized out).
     void remove(hash_digest const& tx_hash);
 
     /// Remove an output from the cache (has been spent).
-    void remove(const chain::output_point& point);
+    void remove(const domain::chain::output_point& point);
 
     /// Determine if the output is unspent (otherwise fall back to the store).
-    bool get(chain::output& out_output, size_t& out_height,
+    bool get(domain::chain::output& out_output, size_t& out_height,
         uint32_t& out_median_time_past, bool& out_coinbase,
-        const chain::output_point& point, size_t fork_height,
+        const domain::chain::output_point& point, size_t fork_height,
         bool require_confirmed) const;
 
-    bool get_is_confirmed(chain::output& out_output, size_t& out_height, bool& out_coinbase, bool& out_is_confirmed,
-        const chain::output_point& point, size_t fork_height,
+    bool get_is_confirmed(domain::chain::output& out_output, size_t& out_height, bool& out_coinbase, bool& out_is_confirmed,
+        const domain::chain::output_point& point, size_t fork_height,
         bool require_confirmed) const;
 
 
