@@ -35,7 +35,7 @@ public:
     hash_digest const& hash() const;
 
     /// The block header.
-    chain::header header() const;
+    domain::chain::header header() const;
 
     /// The height of this block in the chain.
     size_t height() const;
