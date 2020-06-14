@@ -53,7 +53,7 @@ public:
 // #endif // KTH_DB_UNSPENT_LEGACY
 
 #if defined(WITH_REMOTE_DATABASE)    
-    config::endpoint replier;
+    infrastructure::config::endpoint replier;
 #endif //defined(WITH_REMOTE_DATABASE)        
 
 };
