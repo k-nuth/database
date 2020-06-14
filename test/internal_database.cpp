@@ -1039,9 +1039,9 @@ TEST_CASE("internal database  old blocks 0", "[None]") {
 
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
-        BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.push_block(orig, 0, 1) == result_code::success);  
-        BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);      
+        REQUIRE(db.open());
+        REQUIRE(db.push_block(orig, 0, 1) == result_code::success);
+        REQUIRE(db.push_block(spender, 1, 1) == result_code::success);
     }   //close() implicit
 
     KTH_DB_env* env_;
