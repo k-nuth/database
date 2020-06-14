@@ -1391,7 +1391,7 @@ TEST_CASE("internal database  reorg index", "[None]") {
 }
  
 
-BOOST_AUTO_TEST_CASE(internal_database__reorg_index2) {
+TEST_CASE("internal database  reorg index2", "[None]") {
 
     // Block #4334
     // BlockHash 000000009cdad3c55df9c9bc88265329254a6c8ca810fa7f0e953c947df86dc7
