@@ -20,11 +20,11 @@ uint64_t history_entry::id() const {
     return id_;
 }
 
-chain::point const& history_entry::point() const {
+domain::chain::point const& history_entry::point() const {
     return point_;
 }
 
-chain::point_kind history_entry::point_kind() const {
+domain::chain::point_kind history_entry::point_kind() const {
     return point_kind_;
 }
 
