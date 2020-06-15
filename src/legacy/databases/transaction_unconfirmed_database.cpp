@@ -47,13 +47,13 @@ transaction_unconfirmed_database::~transaction_unconfirmed_database() {
 // Initialize files and start.
 bool transaction_unconfirmed_database::create() {
     // Resize and create require an opened file.
-    if (!lookup_file_.open())
+    if ( ! lookup_file_.open())
         return false;
 
     // This will throw if insufficient disk space.
     lookup_file_.resize(initial_map_file_size_);
 
-    if (!lookup_header_.create() ||
+    if ( ! lookup_header_.create() ||
         !lookup_manager_.create())
         return false;
 
