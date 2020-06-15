@@ -28,31 +28,22 @@ static constexpr auto checksum_size = sizeof(uint64_t);
 static constexpr auto value_size = flag_size + point_size + height_size +
     checksum_size;
 
-static constexpr auto table_record_size =
-    hash_table_multimap_record_size<short_hash>();
+static constexpr auto table_record_size = hash_table_multimap_record_size<short_hash>();
 static auto const row_record_size = multimap_record_size(value_size);
 
 // History uses a hash table index, O(1).
-history_database::history_database(const path& lookup_filename,
-    const path& rows_filename, size_t buckets, size_t expansion,
-    mutex_ptr mutex)
-  : initial_map_file_size_(record_hash_table_header_size(buckets) +
-        minimum_records_size),
-
+history_database::history_database(const path& lookup_filename, const path& rows_filename, size_t buckets, size_t expansion, mutex_ptr mutex)
+    : initial_map_file_size_(record_hash_table_header_size(buckets) + minimum_records_size),
     lookup_file_(lookup_filename, mutex, expansion),
     lookup_header_(lookup_file_, buckets),
-    lookup_manager_(lookup_file_, record_hash_table_header_size(buckets),
-        table_record_size),
+    lookup_manager_(lookup_file_, record_hash_table_header_size(buckets), table_record_size),
     lookup_map_(lookup_header_, lookup_manager_),
-
     rows_file_(rows_filename, mutex, expansion),
     rows_manager_(rows_file_, rows_header_size, row_record_size),
     rows_multimap_(lookup_map_, rows_manager_)
-{
-}
+{}
 
-history_database::~history_database()
-{
+history_database::~history_database() {
     close();
 }
 
