@@ -1424,37 +1424,37 @@ TEST_CASE("internal database  reorg index2", "[None]") {
 
     {
         internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
-        BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.push_block(b0, 0, 1) == result_code::success);       
-        BOOST_REQUIRE(db.push_block(b1, 1, 1) == result_code::success);
-        BOOST_REQUIRE(db.push_block(b2, 2, 1) == result_code::success);
-        BOOST_REQUIRE(db.push_block(b3, 3, 1) == result_code::success);
-        BOOST_REQUIRE(db.push_block(b4, 4, 1) == result_code::success);
-        BOOST_REQUIRE(db.push_block(b5, 5, 1) == result_code::success);
+        REQUIRE(db.open());
+        REQUIRE(db.push_block(b0, 0, 1) == result_code::success);
+        REQUIRE(db.push_block(b1, 1, 1) == result_code::success);
+        REQUIRE(db.push_block(b2, 2, 1) == result_code::success);
+        REQUIRE(db.push_block(b3, 3, 1) == result_code::success);
+        REQUIRE(db.push_block(b4, 4, 1) == result_code::success);
+        REQUIRE(db.push_block(b5, 5, 1) == result_code::success);
 
         auto p = db.get_utxo_pool_from(0, 5);
-        BOOST_REQUIRE(p.first == result_code::key_not_found);
-        BOOST_REQUIRE(p.second.size() == 0);
+        REQUIRE(p.first == result_code::key_not_found);
+        REQUIRE(p.second.size() == 0);
 
-        BOOST_REQUIRE(db.push_block(spender0, 6, 1) == result_code::success);
+        REQUIRE(db.push_block(spender0, 6, 1) == result_code::success);
 
         p = db.get_utxo_pool_from(0, 6);
-        BOOST_REQUIRE(p.first == result_code::success);
-        BOOST_REQUIRE(p.second.size() == 5);
+        REQUIRE(p.first == result_code::success);
+        REQUIRE(p.second.size() == 5);
 
         p = db.get_utxo_pool_from(6, 6);
-        BOOST_REQUIRE(p.first == result_code::success);
-        BOOST_REQUIRE(p.second.size() == 5);
+        REQUIRE(p.first == result_code::success);
+        REQUIRE(p.second.size() == 5);
 
-        BOOST_REQUIRE(db.push_block(spender1, 7, 1) == result_code::success);
+        REQUIRE(db.push_block(spender1, 7, 1) == result_code::success);
 
         p = db.get_utxo_pool_from(0, 7);
-        BOOST_REQUIRE(p.first == result_code::success);
-        BOOST_REQUIRE(p.second.size() == 6);
+        REQUIRE(p.first == result_code::success);
+        REQUIRE(p.second.size() == 6);
 
         p = db.get_utxo_pool_from(6, 7);
-        BOOST_REQUIRE(p.first == result_code::success);
-        BOOST_REQUIRE(p.second.size() == 6);
+        REQUIRE(p.first == result_code::success);
+        REQUIRE(p.second.size() == 6);
 
     }   //close() implicit
 
