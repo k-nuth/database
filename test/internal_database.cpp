@@ -1686,19 +1686,19 @@ TEST_CASE("internal database  reorg 0", "[None]") {
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 0);
 
 
-    auto const& address = wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
-    BOOST_REQUIRE(address);
+    auto const& address = domain::wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
+    REQUIRE(address);
     
-    BOOST_REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address) == 1);
+    REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address) == 1);
 
     print_db_entries_count(env_, dbi_transaction_db_);
     check_transactions_db_just_existence(env_,dbi_transaction_db_,0);
-    BOOST_REQUIRE(db_count_items(env_, dbi_transaction_db_) == 1);
+    REQUIRE(db_count_items(env_, dbi_transaction_db_) == 1);
 #endif 
 
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
+    REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
+    REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
+    REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
     
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
     #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
