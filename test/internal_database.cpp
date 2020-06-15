@@ -1606,9 +1606,9 @@ TEST_CASE("internal database  reorg 0", "[None]") {
     hash_digest txid;
     hash_digest txid2;
     hash_digest txid3;
-    BOOST_REQUIRE(decode_hash(txid, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6"));
-    BOOST_REQUIRE(decode_hash(txid2, "c06fbab289f723c6261d3030ddb6be121f7d2508d77862bb1e484f5cd7f92b25"));
-    BOOST_REQUIRE(decode_hash(txid3, "5a4ebf66822b0b2d56bd9dc64ece0bc38ee7844a23ff1d7320a88c5fdb2ad3e2"));
+    REQUIRE(decode_hash(txid, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6"));
+    REQUIRE(decode_hash(txid2, "c06fbab289f723c6261d3030ddb6be121f7d2508d77862bb1e484f5cd7f92b25"));
+    REQUIRE(decode_hash(txid3, "5a4ebf66822b0b2d56bd9dc64ece0bc38ee7844a23ff1d7320a88c5fdb2ad3e2"));
 
     KTH_DB_env* env_;
     KTH_DB_dbi dbi_utxo_;
