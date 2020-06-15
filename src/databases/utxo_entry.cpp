@@ -36,7 +36,7 @@ bool utxo_entry::coinbase() const {
 
 // private
 void utxo_entry::reset() {
-    output_ = chain::output{};
+    output_ = domain::chain::output{};
     height_ = max_uint32;
     median_time_past_ = max_uint32;
     coinbase_ = false;
