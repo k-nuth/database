@@ -235,7 +235,7 @@ bool transaction_database::get_output_is_confirmed(output& out_output, size_t& o
 // [ version:varint ]
 // ----------------------------------------------------------------------------
 
-void transaction_database::store(const chain::transaction& tx, size_t height, uint32_t median_time_past, size_t position) {
+void transaction_database::store(const domain::chain::transaction& tx, size_t height, uint32_t median_time_past, size_t position) {
     auto const hash = tx.hash();
 
     // If is block tx previously identified as pooled then update the tx.
