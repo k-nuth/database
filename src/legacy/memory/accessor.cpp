@@ -35,7 +35,7 @@ uint8_t* accessor::buffer()
 
 void accessor::increment(size_t value)
 {
-    KTH_ASSERT((size_t)data_ <= bc::max_size_t - value);
+    KTH_ASSERT((size_t)data_ <= kth::max_size_t - value);
     data_ += value;
 }
 
