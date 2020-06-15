@@ -49,13 +49,13 @@ stealth_database::~stealth_database()
 bool stealth_database::create()
 {
     // Resize and create require an opened file.
-    if (!rows_file_.open())
+    if ( ! rows_file_.open())
         return false;
 
     // This will throw if insufficient disk space.
     rows_file_.resize(minimum_records_size);
 
-    if (!rows_manager_.create())
+    if ( ! rows_manager_.create())
         return false;
 
     // Should not call start after create, already started.
