@@ -43,7 +43,7 @@ uint32_t transaction_entry::position() const {
 
 // private
 void transaction_entry::reset() {
-    transaction_ = chain::transaction{};
+    transaction_ = domain::chain::transaction{};
     height_ = max_uint32;
     median_time_past_ = max_uint32;
     position_ = position_max;
