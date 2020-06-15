@@ -32,7 +32,7 @@ uint8_t* allocator::buffer()
 // Add an unsafe offset to share-protected pointer (convenience method).
 void allocator::increment(size_t value)
 {
-    KTH_ASSERT((size_t)data_ <= bc::max_size_t - value);
+    KTH_ASSERT((size_t)data_ <= kth::max_size_t - value);
     data_ += value;
 }
 
