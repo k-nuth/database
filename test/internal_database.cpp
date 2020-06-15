@@ -1831,13 +1831,13 @@ TEST_CASE("internal database  reorg 0", "[None]") {
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
 
 
-    auto const& address4 = wallet::payment_address("18REpJroZy5eYCtqK1jwwgQUvVkPojy2rR");
-    BOOST_REQUIRE(address4);
-    BOOST_REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address4) == 1);
+    auto const& address4 = domain::wallet::payment_address("18REpJroZy5eYCtqK1jwwgQUvVkPojy2rR");
+    REQUIRE(address4);
+    REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address4) == 1);
 
-    auto const& address1 = wallet::payment_address("16ro3Jptwo4asSevZnsRX6vfRS24TGE6uK");
-    BOOST_REQUIRE(address1);    
-    BOOST_REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address1) == 1);
+    auto const& address1 = domain::wallet::payment_address("16ro3Jptwo4asSevZnsRX6vfRS24TGE6uK");
+    REQUIRE(address1);
+    REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address1) == 1);
     
 
 
