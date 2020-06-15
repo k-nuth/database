@@ -63,7 +63,7 @@ block_database::~block_database()
 bool block_database::create()
 {
     // Resize and create require an opened file.
-    if (!lookup_file_.open() ||
+    if ( ! lookup_file_.open() ||
         !index_file_.open())
         return false;
 
