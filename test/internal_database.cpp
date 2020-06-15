@@ -1525,12 +1525,12 @@ TEST_CASE("internal database  reorg index2", "[None]") {
 #endif 
 
 
-    // BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 6);
-    // BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 6);
+ REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 6);
+ REQUIRE(db_count_items(env_, dbi_reorg_index_) == 6);
 
-    BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 6) == 5);
-    BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 1);
-    BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 8) == 0);
+    REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 6) == 5);
+    REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 1);
+    REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 8) == 0);
 
     check_index_and_pool(env_, dbi_reorg_index_, dbi_reorg_pool_);
 
