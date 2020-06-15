@@ -1549,16 +1549,16 @@ TEST_CASE("internal database  reorg index2", "[None]") {
 }
 
 /*
-BOOST_AUTO_TEST_CASE(internal_database__test_tx_address) {
+TEST_CASE("internal database  test tx address", "[None]") {
 
 std::cout << "*************************************************************"  << std::endl;
 
 data_chunk wire_tx1;
-BOOST_REQUIRE(decode_base16(wire_tx1, "0100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000"));
+REQUIRE(decode_base16(wire_tx1, "0100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000"));
 transaction tx1;
-BOOST_REQUIRE(tx1.from_data(wire_tx1, true));
+REQUIRE(tx1.from_data(wire_tx1, true));
 
-BOOST_REQUIRE(tx1.is_valid());
+REQUIRE(tx1.is_valid());
 
 for (auto const& i : tx1.inputs()) {
     
