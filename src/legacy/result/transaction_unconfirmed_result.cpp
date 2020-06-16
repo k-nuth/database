@@ -68,7 +68,7 @@ uint32_t transaction_unconfirmed_result::arrival_time() const
 
 // spender_heights are unguarded and will be inconsistent during write.
 // If index is out of range returns default/invalid output (.value not_found).
-chain::output transaction_unconfirmed_result::output(uint32_t index) const
+domain::chain::output transaction_unconfirmed_result::output(uint32_t index) const
 {
     KTH_ASSERT(slab_);
     auto const tx_start = REMAP_ADDRESS(slab_) + metadata_size;
