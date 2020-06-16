@@ -2286,11 +2286,11 @@ TEST_CASE("internal database  reorg 1", "[None]") {
     // Remove the Spender Block
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, db_size, true);
-        BOOST_REQUIRE(db.open());
+        REQUIRE(db.open());
 
         //State C ------------------------------------------------------------
-        chain::block out_block;
-        BOOST_REQUIRE(db.pop_block(out_block) == result_code::key_not_found);
+        domain::chain::block out_block;
+        REQUIRE(db.pop_block(out_block) == result_code::key_not_found);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
