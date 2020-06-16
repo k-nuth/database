@@ -49,7 +49,7 @@ unspent_transaction::unspent_transaction(const output_point& point)
 {
 }
 
-unspent_transaction::unspent_transaction(const chain::transaction& tx,
+unspent_transaction::unspent_transaction(const domain::chain::transaction& tx,
     size_t height, uint32_t median_time_past, bool confirmed)
   : height_(height),
     median_time_past_(median_time_past),
