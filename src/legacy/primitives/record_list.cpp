@@ -73,5 +73,4 @@ memory_ptr record_list::raw_data(file_offset offset) const
     return memory;
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
