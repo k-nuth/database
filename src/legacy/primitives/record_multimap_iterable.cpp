@@ -27,5 +27,4 @@ record_multimap_iterator record_multimap_iterable::end() const
     return record_multimap_iterator(manager_, record_list::empty);
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
