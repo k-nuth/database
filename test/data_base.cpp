@@ -12,10 +12,9 @@
 
 #include <kth/database.hpp>
 
-using namespace bc;
-using namespace bc::chain;
-using namespace bc::database;
-using namespace bc::wallet;
+using namespace kth::domain::chain;
+using namespace kth::database;
+using namespace kth::domain::wallet;
 using namespace boost::system;
 using namespace std::filesystem;
 
