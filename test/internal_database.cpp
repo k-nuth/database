@@ -2213,31 +2213,31 @@ TEST_CASE("internal database  reorg 1", "[None]") {
     // Insert the Spender Block
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, db_size, true);
-        BOOST_REQUIRE(db.open());
+        REQUIRE(db.open());
 
         //State B ------------------------------------------------------------
-        BOOST_REQUIRE(db.push_block(spender, 1, 1) == result_code::success);      
+        REQUIRE(db.push_block(spender, 1, 1) == result_code::success);
 
         auto entry = db.get_utxo(output_point{txid, 0});
-        BOOST_REQUIRE( ! entry.is_valid());
+        REQUIRE( ! entry.is_valid());
 
         entry = db.get_utxo(output_point{txid2, 0});
-        BOOST_REQUIRE(entry.is_valid());
+        REQUIRE(entry.is_valid());
 
         entry = db.get_utxo(output_point{txid3, 0});
-        BOOST_REQUIRE(entry.is_valid());
+        REQUIRE(entry.is_valid());
 
-        BOOST_REQUIRE(db.get_header(orig.hash()).first.is_valid());
-        BOOST_REQUIRE(db.get_header(orig.hash()).first.hash() == orig.hash());
-        BOOST_REQUIRE(db.get_header(orig.hash()).second == 0);
-        BOOST_REQUIRE(db.get_header(0).is_valid());
-        BOOST_REQUIRE(db.get_header(0).hash() == orig.hash());
+        REQUIRE(db.get_header(orig.hash()).first.is_valid());
+        REQUIRE(db.get_header(orig.hash()).first.hash() == orig.hash());
+        REQUIRE(db.get_header(orig.hash()).second == 0);
+        REQUIRE(db.get_header(0).is_valid());
+        REQUIRE(db.get_header(0).hash() == orig.hash());
 
-        BOOST_REQUIRE(db.get_header(spender.hash()).first.is_valid());
-        BOOST_REQUIRE(db.get_header(spender.hash()).first.hash() == spender.hash());
-        BOOST_REQUIRE(db.get_header(spender.hash()).second == 1);
-        BOOST_REQUIRE(db.get_header(1).is_valid());
-        BOOST_REQUIRE(db.get_header(1).hash() == spender.hash());
+        REQUIRE(db.get_header(spender.hash()).first.is_valid());
+        REQUIRE(db.get_header(spender.hash()).first.hash() == spender.hash());
+        REQUIRE(db.get_header(spender.hash()).second == 1);
+        REQUIRE(db.get_header(1).is_valid());
+        REQUIRE(db.get_header(1).hash() == spender.hash());
 
     }   //close() implicit
 
