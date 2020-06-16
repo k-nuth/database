@@ -1938,9 +1938,9 @@ TEST_CASE("internal database  reorg 0", "[None]") {
     #endif
     ) = open_dbs();
 
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
+    REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
+    REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
+    REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
     
 
 #if defined(KTH_DB_NEW_BLOCKS)
