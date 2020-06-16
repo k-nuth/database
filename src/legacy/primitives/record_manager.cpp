@@ -169,5 +169,4 @@ file_offset record_manager::record_to_position(array_index record) const
     return sizeof(array_index) + record * record_size_;
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
