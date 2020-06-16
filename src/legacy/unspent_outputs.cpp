@@ -236,7 +236,6 @@ bool unspent_outputs::get_is_confirmed(output& out_output, size_t& out_height,
 }
 
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DB_UNSPENT_LEGACY
