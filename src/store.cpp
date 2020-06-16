@@ -62,7 +62,7 @@ bool store::use_indexes() const {
 #ifdef KTH_DB_LEGACY
 // static
 bool store::create(const path& file_path) {
-    bc::ofstream file(file_path.string());
+    kth::ofstream file(file_path.string());
 
     if (file.bad()) {
         return false;
