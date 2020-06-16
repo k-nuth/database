@@ -146,5 +146,4 @@ void slab_manager::write_size() const
     serial.write_little_endian(payload_size_);
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
