@@ -2333,7 +2333,7 @@ TEST_CASE("internal database  reorg 1", "[None]") {
 
 
 
-BOOST_AUTO_TEST_CASE(internal_database__prune) {
+TEST_CASE("internal database  prune", "[None]") {
 
     // Block 0
     auto const genesis = get_genesis();
