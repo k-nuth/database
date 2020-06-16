@@ -70,19 +70,19 @@ hash_digest const& block_result::hash() const
     return hash_;
 }
 
-chain::header block_result::header() const
+domain::chain::header block_result::header() const
 {
     KTH_ASSERT(slab_);
     auto const memory = REMAP_ADDRESS(slab_);
     auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab_));
 
     // READ THE HEADER (including median_time_past metadata).
-    chain::header header;
+    domain::chain::header header;
     header.from_data(deserial, false);
     header.validation.height = height_;
 
     // TODO: add hash param to deserialization to eliminate this move.
-    return chain::header(std::move(header), hash_digest(hash_));
+    return domain::chain::header(std::move(header), hash_digest(hash_));
 }
 
 // TODO: block height is unguarded and will be inconsistent during write.
