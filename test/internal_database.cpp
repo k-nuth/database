@@ -1845,82 +1845,81 @@ TEST_CASE("internal database  reorg 0", "[None]") {
     check_transactions_db_just_existence(env_,dbi_transaction_db_,0);
     check_transactions_db_just_existence(env_,dbi_transaction_db_,1);
     check_transactions_db_just_existence(env_,dbi_transaction_db_,2);
-    BOOST_REQUIRE(db_count_items(env_, dbi_transaction_db_) == 3);
-    
+    REQUIRE(db_count_items(env_, dbi_transaction_db_) == 3);
 #endif 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#ifdef KTH_DB_NEW_FULL
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
     // Remove the Spender Block
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
-        BOOST_REQUIRE(db.open());
+        REQUIRE(db.open());
 
         //State C ------------------------------------------------------------
-        chain::block out_block;
-        BOOST_REQUIRE(db.pop_block(out_block) == result_code::success);
-        BOOST_REQUIRE(out_block.is_valid());
-        BOOST_REQUIRE(out_block.hash() == spender.hash());
-        BOOST_REQUIRE(out_block == spender);
+        domain::chain::block out_block;
+        REQUIRE(db.pop_block(out_block) == result_code::success);
+        REQUIRE(out_block.is_valid());
+        REQUIRE(out_block.hash() == spender.hash());
+        REQUIRE(out_block == spender);
 
         auto entry = db.get_utxo(output_point{txid, 0});
-        BOOST_REQUIRE(entry.is_valid());
+        REQUIRE(entry.is_valid());
 
         entry = db.get_utxo(output_point{txid2, 0});
-        BOOST_REQUIRE( ! entry.is_valid());
+        REQUIRE( ! entry.is_valid());
         entry = db.get_utxo(output_point{txid3, 0});
-        BOOST_REQUIRE( ! entry.is_valid());
+        REQUIRE( ! entry.is_valid());
 
-        BOOST_REQUIRE(db.get_header(orig.hash()).first.is_valid());
-        BOOST_REQUIRE(db.get_header(orig.hash()).first.hash() == orig.hash());
-        BOOST_REQUIRE(db.get_header(orig.hash()).second == 0);
-        BOOST_REQUIRE(db.get_header(0).is_valid());
-        BOOST_REQUIRE(db.get_header(0).hash() == orig.hash());
+        REQUIRE(db.get_header(orig.hash()).first.is_valid());
+        REQUIRE(db.get_header(orig.hash()).first.hash() == orig.hash());
+        REQUIRE(db.get_header(orig.hash()).second == 0);
+        REQUIRE(db.get_header(0).is_valid());
+        REQUIRE(db.get_header(0).hash() == orig.hash());
 
-        BOOST_REQUIRE(! db.get_header(spender.hash()).first.is_valid());
-        BOOST_REQUIRE(! db.get_header(1).is_valid());
+        REQUIRE( !  db.get_header(spender.hash()).first.is_valid());
+        REQUIRE( !  db.get_header(1).is_valid());
 
 #if defined(KTH_DB_NEW_FULL)
 
-        /*auto const& address = wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
-        BOOST_REQUIRE(address);
+        /*auto const& address = domain::wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
+        REQUIRE(address);
 
         auto history_list = db.get_history(address.hash(),max_uint32,0);
-        BOOST_REQUIRE(history_list.size() == 1);
+        REQUIRE(history_list.size() == 1);
 
         auto history_item = history_list[0];
 
         hash_digest txid;
         std::string txid_enc = "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6";
-        BOOST_REQUIRE(decode_hash(txid, txid_enc));
+        REQUIRE(decode_hash(txid, txid_enc));
 
-        BOOST_REQUIRE(history_item.kind == point_kind::output);
-        BOOST_REQUIRE(history_item.point.hash() == txid);
-        BOOST_REQUIRE(history_item.point.index() == 0);
-        BOOST_REQUIRE(history_item.height == 0);
-        BOOST_REQUIRE(history_item.value == 5000000000);
+        REQUIRE(history_item.kind == point_kind::output);
+        REQUIRE(history_item.point.hash() == txid);
+        REQUIRE(history_item.point.index() == 0);
+        REQUIRE(history_item.height == 0);
+        REQUIRE(history_item.value == 5000000000);
 
     
-        auto const& address2 = wallet::payment_address("bitcoincash:qpqyxutst75m67y69lx495k9szm96d25n53frahv6a");
-        BOOST_REQUIRE(address2);
+        auto const& address2 = domain::wallet::payment_address("bitcoincash:qpqyxutst75m67y69lx495k9szm96d25n53frahv6a");
+        REQUIRE(address2);
 
         history_list = db.get_history(address2.hash(),max_uint32,0);
-        BOOST_REQUIRE(history_list.size() == 0);
+        REQUIRE(history_list.size() == 0);
 
         
         auto const& in_point = db.get_spend(output_point{txid, 0});
-        BOOST_REQUIRE(!in_point.is_valid());*/
+        REQUIRE( ! in_point.is_valid());*/
 #endif
 
     }   //close() implicit
