@@ -2079,9 +2079,9 @@ TEST_CASE("internal database  reorg 0", "[None]") {
     ) = open_dbs();
 
     
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 1);
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 1);
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 1);
+    REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 1);
+    REQUIRE(db_count_items(env_, dbi_reorg_index_) == 1);
+    REQUIRE(db_count_items(env_, dbi_reorg_block_) == 1);
     check_reorg_output(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0, "00f2052a01000000434104283338ffd784c198147f99aed2cc16709c90b1522e3b3637b312a6f9130e0eda7081e373a96d36be319710cd5c134aaffba81ff08650d7de8af332fe4d8cde20ac");
     check_reorg_index(env_, dbi_reorg_index_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0, 1);
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 0);
