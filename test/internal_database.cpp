@@ -2374,7 +2374,7 @@ TEST_CASE("internal database  prune", "[None]") {
     spender80000b.transactions()[0].set_version(2); //To change the coinbase tx hash
     {
         hash_digest txid;
-        BOOST_REQUIRE(decode_hash(txid, "0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098"));
+        REQUIRE(decode_hash(txid, "0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098"));
         spender80000b.transactions()[1].inputs()[0].previous_output().set_hash(txid);
     }
     // std::cout << encode_hash(spender80000b.transactions()[1].inputs()[0].previous_output().hash()) << std::endl;
