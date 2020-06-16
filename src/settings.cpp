@@ -55,11 +55,11 @@ settings::settings()
 // #endif // KTH_DB_UNSPENT_LEGACY
 {}
 
-settings::settings(config::settings context)
+settings::settings(infrastructure::config::settings context)
   : settings()
 {
     switch (context) {
-        case config::settings::mainnet: {
+        case infrastructure::config::settings::mainnet: {
 #ifdef KTH_DB_LEGACY
             block_table_buckets = 650000;
             transaction_table_buckets = 110000000;
