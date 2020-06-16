@@ -22,14 +22,12 @@ transaction random_tx(size_t fudge) {
 
 #define DIRECTORY "block_database"
 
-class block_database_directory_setup_fixture
-{
+class block_database_directory_setup_fixture {
 public:
-    block_database_directory_setup_fixture()
-    {
-        error_code ec;
+    block_database_directory_setup_fixture() {
+        std::error_code ec;
         remove_all(DIRECTORY, ec);
-        BOOST_REQUIRE(create_directories(DIRECTORY, ec));
+        REQUIRE(create_directories(DIRECTORY, ec));
     }
 
     ////~block_database_directory_setup_fixture()
