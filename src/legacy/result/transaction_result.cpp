@@ -103,7 +103,7 @@ bool transaction_result::is_spent(size_t fork_height) const {
 
 // spender_heights are unguarded and will be inconsistent during write.
 // If index is out of range returns default/invalid output (.value not_found).
-chain::output transaction_result::output(uint32_t index) const {
+domain::chain::output transaction_result::output(uint32_t index) const {
     KTH_ASSERT(slab_);
     auto const tx_start = REMAP_ADDRESS(slab_) + metadata_size;
     auto deserial = make_unsafe_deserializer(tx_start);
