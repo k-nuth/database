@@ -38,5 +38,4 @@ bool record_multimap_iterator::operator!=(record_multimap_iterator other) const
     return this->index_ != other.index_;
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
