@@ -1955,9 +1955,7 @@ TEST_CASE("internal database  reorg 0", "[None]") {
     check_transactions_db_just_existence(env_,dbi_transaction_db_,0);
     check_transactions_db_doesnt_exists(env_,dbi_transaction_db_,1);
     check_transactions_db_doesnt_exists(env_,dbi_transaction_db_,2);
-    std::cout << "aaaaaaaaaaaaaaaaaaaaaaaaaaaaa" << std::endl;
-    BOOST_REQUIRE(db_count_items(env_, dbi_transaction_db_) == 1);
-    std::cout << "aaaaaaaaaaaaaaaaaaaaaaaaaaaaa" << std::endl;
+    REQUIRE(db_count_items(env_, dbi_transaction_db_) == 1);
     #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
