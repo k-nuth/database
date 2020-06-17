@@ -2396,7 +2396,7 @@ TEST_CASE("internal database  prune", "[None]") {
     spender80000d.transactions()[0].set_version(4);
     {
         hash_digest txid;
-        BOOST_REQUIRE(decode_hash(txid, "999e1c837c76a1b7fbb7e57baf87b309960f5ffefbf2a9b95dd890602272f644"));
+        REQUIRE(decode_hash(txid, "999e1c837c76a1b7fbb7e57baf87b309960f5ffefbf2a9b95dd890602272f644"));
         spender80000d.transactions()[1].inputs()[0].previous_output().set_hash(txid);
     }
     // std::cout << encode_hash(spender80000d.transactions()[1].inputs()[0].previous_output().hash()) << std::endl;
