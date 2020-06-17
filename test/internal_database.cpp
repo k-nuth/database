@@ -22,31 +22,29 @@ constexpr uint64_t db_size = uint64_t(10485760) * 10; //100 * (uint64_t(1) << 30
 
 struct internal_database_directory_setup_fixture {
     internal_database_directory_setup_fixture() {
-        // std::cout << "internal_database_directory_setup_fixture" << std::endl;
-        error_code ec;
+        std::error_code ec;
         remove_all(DIRECTORY, ec);
-        BOOST_REQUIRE(create_directories(DIRECTORY, ec));
+        REQUIRE(create_directories(DIRECTORY, ec));
 
         internal_database db(DIRECTORY "/internal_db", 10000000, db_size,true);
-        BOOST_REQUIRE(db.create());
-        // BOOST_REQUIRE(db.close());
-        // BOOST_REQUIRE(db.open());
+        REQUIRE(db.create());
+        REQUIRE(db.close());
+        REQUIRE(db.open());
     }
 
-    ////~internal_database_directory_setup_fixture()
-    ////{
+    ////~internal_database_directory_setup_fixture() {
     ////    error_code ec;
     ////    remove_all(DIRECTORY, ec);
     ////}
 };
 
-chain::block get_block(std::string const& enc) {
+domain::chain::block get_block(std::string const& enc) {
     data_chunk data;
     decode_base16(data, enc);
-    return chain::block::factory_from_data(data);
+    return domain::create<domain::chain::block>(data);
 }
 
-chain::block get_genesis() {
+domain::chain::block get_genesis() {
     std::string genesis_enc =
         "01000000"
         "0000000000000000000000000000000000000000000000000000000000000000"
