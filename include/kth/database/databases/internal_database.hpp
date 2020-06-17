@@ -106,23 +106,23 @@ public:
     bool close();
 
 #if ! defined(KTH_DB_READONLY)
-    result_code push_genesis(chain::block const& block);
+    result_code push_genesis(domain::chain::block const& block);
 
     //TODO(fernando): optimization: consider passing a list of outputs to insert and a list of inputs to delete instead of an entire Block.
     //                  avoiding inserting and erasing internal spenders
-    result_code push_block(chain::block const& block, uint32_t height, uint32_t median_time_past);
+    result_code push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past);
 #endif
     
-    utxo_entry get_utxo(chain::output_point const& point) const;
+    utxo_entry get_utxo(domain::chain::output_point const& point) const;
     
     result_code get_last_height(uint32_t& out_height) const;
     
-    std::pair<chain::header, uint32_t> get_header(hash_digest const& hash) const;
-    chain::header get_header(uint32_t height) const;
+    std::pair<domain::chain::header, uint32_t> get_header(hash_digest const& hash) const;
+    domain::chain::header get_header(uint32_t height) const;
     
 
 #if ! defined(KTH_DB_READONLY)
-    result_code pop_block(chain::block& out_block);
+    result_code pop_block(domain::chain::block& out_block);
     
     result_code prune();
 #endif
