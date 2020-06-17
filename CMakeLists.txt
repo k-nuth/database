@@ -548,28 +548,35 @@ if (WITH_TESTS)
                 )
     endif()
 
+    target_include_directories(kth_database_test PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>)
+
     target_link_libraries(kth_database_test PUBLIC kth-database)
 
     _group_sources(kth_database_test "${CMAKE_CURRENT_LIST_DIR}/test")
 
-    # _add_tests(kth_database_test
-    #         hash_table_tests
-    #         structure_tests
-    # )
+    include(CTest)
+    include(Catch)
+    catch_discover_tests(kth_database_test)
 
-    if (DB_LEGACY)
-        _add_tests(kth_database_test
-                database_tests
-                data_base_tests
-        )
-    endif()
+    # # _add_tests(kth_database_test
+    # #         hash_table_tests
+    # #         structure_tests
+    # # )
+
+    # if (DB_LEGACY)
+    #     _add_tests(kth_database_test
+    #             database_tests
+    #             data_base_tests
+    #     )
+    # endif()
 
     
-    if (DB_NEW)
-        _add_tests(kth_database_test
-            internal_db_tests
-        )
-    endif()
+    # if (DB_NEW)
+    #     _add_tests(kth_database_test
+    #         internal_db_tests
+    #     )
+    # endif()
 
 
 endif()
