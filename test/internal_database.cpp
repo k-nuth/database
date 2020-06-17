@@ -2720,13 +2720,13 @@ TEST_CASE("internal database  prune", "[None]") {
     #endif
     ) = open_dbs();
 
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 4);
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 4);
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 4);
+    REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 4);
+    REQUIRE(db_count_items(env_, dbi_reorg_index_) == 4);
+    REQUIRE(db_count_items(env_, dbi_reorg_block_) == 4);
 
-    BOOST_REQUIRE(db_count_items(env_, dbi_utxo_) == 10);
-    BOOST_REQUIRE(db_count_items(env_, dbi_block_header_) == 10);
-    BOOST_REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 10);
+    REQUIRE(db_count_items(env_, dbi_utxo_) == 10);
+    REQUIRE(db_count_items(env_, dbi_block_header_) == 10);
+    REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 10);
     
     
      #if defined(KTH_DB_NEW_BLOCKS) 
