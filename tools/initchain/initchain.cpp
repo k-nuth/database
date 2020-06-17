@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
         remove_all(prefix);
     }
 
-    error_code code;
+    std::error_code code;
     if ( ! create_directories(prefix, code)) {
         if (code.value() == 0) {
             std::cerr << fmt::format(BS_INITCHAIN_DIR_EXISTS, prefix);
