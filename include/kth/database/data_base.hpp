@@ -134,15 +134,15 @@ public:
 
     /// Store a block in the database.
     /// Returns store_block_duplicate if a block already exists at height.
-    code insert(chain::block const& block, size_t height);
+    code insert(domain::chain::block const& block, size_t height);
 
     /// Add an unconfirmed tx to the store (without indexing).
     /// Returns unspent_duplicate if existing unspent hash duplicate exists.
-    code push(chain::transaction const& tx, uint32_t forks);
+    code push(domain::chain::transaction const& tx, uint32_t forks);
 
     /// Returns store_block_missing_parent if not linked.
     /// Returns store_block_invalid_height if height is not the current top + 1.
-    code push(chain::block const& block, size_t height);
+    code push(domain::chain::block const& block, size_t height);
 
     code prune_reorg();
 
