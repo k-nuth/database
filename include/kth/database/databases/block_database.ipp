@@ -59,24 +59,24 @@ std::pair<domain::chain::block, uint32_t> internal_database_basis<Clock>::get_bl
 
 //public
 template <typename Clock>
-chain::block internal_database_basis<Clock>::get_block(uint32_t height) const { 
+domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height) const { 
     KTH_DB_txn* db_txn;
     auto res = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
     if (res != KTH_DB_SUCCESS) {
-        return chain::block{};
+        return domain::chain::block{};
     }
 
     auto block = get_block(height, db_txn);
 
     if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
-        return chain::block{};
+        return domain::chain::block{};
     }
 
     return block;
 }
 
 template <typename Clock>
-chain::block internal_database_basis<Clock>::get_block(uint32_t height, KTH_DB_txn* db_txn) const {
+domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height, KTH_DB_txn* db_txn) const {
 
     auto key = kth_db_make_value(sizeof(height), &height);
     
