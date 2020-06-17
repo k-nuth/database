@@ -69,22 +69,19 @@ BOOST_AUTO_TEST_CASE(unspent_outputs__remove1__remove_only__empty) {
     BOOST_REQUIRE(cache.empty());
 }
 
-BOOST_AUTO_TEST_CASE(unspent_outputs__remove1__capcity_0__empty)
-{
+BOOST_AUTO_TEST_CASE(unspent_outputs__remove1__capcity_0__empty) {
     unspent_outputs cache(0);
     cache.remove({ null_hash, 42 });
     BOOST_REQUIRE(cache.empty());
 }
 
-BOOST_AUTO_TEST_CASE(unspent_outputs__remove2__capcity_0__empty)
-{
+BOOST_AUTO_TEST_CASE(unspent_outputs__remove2__capcity_0__empty) {
     unspent_outputs cache(0);
     cache.remove(null_hash);
     BOOST_REQUIRE(cache.empty());
 }
 
-BOOST_AUTO_TEST_CASE(unspent_outputs__remove2__remove_one_output__expected_outputs)
-{
+BOOST_AUTO_TEST_CASE(unspent_outputs__remove2__remove_one_output__expected_outputs) {
     static const size_t expected_height = 41;
     static const uint64_t expected_value = 42;
     static const transaction tx1{ 0, 0, {}, { { 0, {} }, { 1, {} } } };
