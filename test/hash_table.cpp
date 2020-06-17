@@ -24,64 +24,56 @@ typedef byte_array<4> tiny_hash;
 typedef byte_array<8> little_hash;
 
 // Extend std namespace with tiny_hash wrapper.
-namespace std
-{
+namespace std {
 
 template <>
-struct hash<tiny_hash>
-{
-    size_t operator()(const tiny_hash& value) const
-    {
+struct hash<tiny_hash> {
+    size_t operator()(const tiny_hash& value) const {
         return boost::hash_range(value.begin(), value.end());
     }
 };
 
 template <>
-struct hash<little_hash>
-{
-    size_t operator()(const little_hash& value) const
-    {
+struct hash<little_hash> {
+    size_t operator()(const little_hash& value) const {
         return boost::hash_range(value.begin(), value.end());
     }
 };
 
 } // namspace std
 
-data_chunk generate_random_bytes(std::default_random_engine& engine,
-    size_t size)
-{
+data_chunk generate_random_bytes(std::default_random_engine& engine, size_t size) {
     data_chunk result(size);
-    for (uint8_t& byte: result)
+    for (uint8_t& byte: result) {
         byte = engine() % std::numeric_limits<uint8_t>::max();
+    }
 
     return result;
 }
 
-void create_database_file()
-{
+void create_database_file() {
     constexpr size_t header_size = slab_hash_table_header_size(buckets);
 
     store::create(DIRECTORY "/slab_hash_table__write_read");
     memory_map file(DIRECTORY "/slab_hash_table__write_read");
-    BOOST_REQUIRE(file.open());
-    BOOST_REQUIRE(REMAP_ADDRESS(file.access()) != nullptr);
+    REQUIRE(file.open());
+    REQUIRE(REMAP_ADDRESS(file.access()) != nullptr);
     file.resize(header_size + minimum_slabs_size);
 
     slab_hash_table_header header(file, buckets);
-    BOOST_REQUIRE(header.create());
-    BOOST_REQUIRE(header.start());
+    REQUIRE(header.create());
+    REQUIRE(header.start());
 
     const file_offset slab_start = header_size;
 
     slab_manager alloc(file, slab_start);
-    BOOST_REQUIRE(alloc.create());
-    BOOST_REQUIRE(alloc.start());
+    REQUIRE(alloc.create());
+    REQUIRE(alloc.start());
 
     slab_hash_table<hash_digest> ht(header, alloc);
 
     std::default_random_engine engine;
-    for (size_t i = 0; i < total_txs; ++i)
-    {
+    for (size_t i = 0; i < total_txs; ++i) {
         data_chunk value = generate_random_bytes(engine, tx_size);
         hash_digest key = bitcoin_hash(value);
         auto write = [&value](serializer<uint8_t*>& serial)
