@@ -30,68 +30,68 @@ public:
 
 BOOST_FIXTURE_TEST_SUITE(structure_tests, structure_directory_setup_fixture)
 
-BOOST_AUTO_TEST_CASE(hash_table_header__test)
+TEST_CASE("hash table header  test", "[None]")
 {
     store::create(DIRECTORY "/hash_table_header");
     memory_map file(DIRECTORY "/hash_table_header");
-    BOOST_REQUIRE(file.open());
-    BOOST_REQUIRE(REMAP_ADDRESS(file.access()) != nullptr);
+    REQUIRE(file.open());
+    REQUIRE(REMAP_ADDRESS(file.access()) != nullptr);
     file.resize(4 + 4 * 10);
 
     hash_table_header<uint32_t, uint32_t> header(file, 10);
-    BOOST_REQUIRE(header.create());
-    BOOST_REQUIRE(header.start());
+    REQUIRE(header.create());
+    REQUIRE(header.start());
 
     header.write(9, 110);
-    BOOST_REQUIRE(header.read(9) == 110);
+    REQUIRE(header.read(9) == 110);
 }
 
-BOOST_AUTO_TEST_CASE(slab_manager__test)
+TEST_CASE("slab manager  test", "[None]")
 {
     store::create(DIRECTORY "/slab_manager");
     memory_map file(DIRECTORY "/slab_manager");
-    BOOST_REQUIRE(file.open());
-    BOOST_REQUIRE(REMAP_ADDRESS(file.access()) != nullptr);
+    REQUIRE(file.open());
+    REQUIRE(REMAP_ADDRESS(file.access()) != nullptr);
     file.resize(200);
 
     slab_manager data(file, 0);
-    BOOST_REQUIRE(data.create());
-    BOOST_REQUIRE(data.start());
+    REQUIRE(data.create());
+    REQUIRE(data.start());
 
     file_offset position = data.new_slab(100);
-    BOOST_REQUIRE(position == 8);
+    REQUIRE(position == 8);
     //slab_byte_pointer slab = data.get(position);
 
     file_offset position2 = data.new_slab(100);
-    BOOST_REQUIRE(position2 == 108);
+    REQUIRE(position2 == 108);
     //slab = data.get(position2);
 
-    BOOST_REQUIRE(file.size() >= 208);
+    REQUIRE(file.size() >= 208);
 }
 
-BOOST_AUTO_TEST_CASE(record_manager__test)
+TEST_CASE("record manager  test", "[None]")
 {
     store::create(DIRECTORY "/record_manager");
     memory_map file(DIRECTORY "/record_manager");
-    BOOST_REQUIRE(file.open());
-    BOOST_REQUIRE(REMAP_ADDRESS(file.access()) != nullptr);
+    REQUIRE(file.open());
+    REQUIRE(REMAP_ADDRESS(file.access()) != nullptr);
     file.resize(4);
 
     record_manager recs(file, 0, 10);
-    BOOST_REQUIRE(recs.create());
-    BOOST_REQUIRE(recs.start());
+    REQUIRE(recs.create());
+    REQUIRE(recs.start());
 
     array_index idx = recs.new_records(1);
-    BOOST_REQUIRE(idx == 0);
+    REQUIRE(idx == 0);
     idx = recs.new_records(1);
-    BOOST_REQUIRE(idx == 1);
-    BOOST_REQUIRE(file.size() >= 2 * 10 + 4);
+    REQUIRE(idx == 1);
+    REQUIRE(file.size() >= 2 * 10 + 4);
     recs.sync();
 }
 
-BOOST_AUTO_TEST_CASE(record_list__test)
+TEST_CASE("record list  test", "[None]")
 {
     // TODO
 }
 
-BOOST_AUTO_TEST_SUITE_END()
+// End Boost Suite
