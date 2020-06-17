@@ -84,7 +84,7 @@ result_code internal_database_basis<Clock>::insert_input_history(domain::chain::
             
                 auto const& out_output = entry.output();
                 for (auto const& address : out_output.addresses()) {
-                    auto valuearr = history_entry::factory_to_data(id, inpoint, chain::point_kind::spend, height, inpoint.index(), prevout.checksum());
+                    auto valuearr = history_entry::factory_to_data(id, inpoint, domain::chain::point_kind::spend, height, inpoint.index(), prevout.checksum());
                     auto res = insert_history_db(address, valuearr, db_txn); 
                     if (res != result_code::success) {
                         return res;
