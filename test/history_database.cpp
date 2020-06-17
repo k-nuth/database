@@ -33,7 +33,7 @@ public:
 BOOST_FIXTURE_TEST_SUITE(database_tests, history_database_directory_setup_fixture)
 
 #ifdef KTH_DB_HISTORY
-BOOST_AUTO_TEST_CASE(history_database__test)
+TEST_CASE("history database  test", "[None]")
 {
     const short_hash key1 = base16_literal("a006500b7ddfd568e2b036c65a4f4d6aaa0cbd9b");
     output_point out11{ hash_literal("4129e76f363f9742bc98dd3d40c99c9066e4d53b8e10e5097bd6f7b5059d7c53"), 110 };
