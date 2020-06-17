@@ -64,26 +64,14 @@ public:
     }    
 
     static
-    history_entry factory_from_data(data_chunk const& data);
-    static
-    history_entry factory_from_data(std::istream& stream);
-
-    template <typename R, KTH_IS_READER(R)>
-    static
-    history_entry factory_from_data(R& source) {
-        history_entry instance;
-        instance.from_data(source);
-        return instance;
-    }
+    data_chunk factory_to_data(uint64_t id, domain::chain::point const& point, domain::chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
 
     static
-    data_chunk factory_to_data(uint64_t id, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
-    static
-    void factory_to_data(std::ostream& stream,uint64_t id, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
+    void factory_to_data(std::ostream& stream,uint64_t id, domain::chain::point const& point, domain::chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum);
 
     template <typename W, KTH_IS_WRITER(W)>
     static
-    void factory_to_data(W& sink, uint64_t id, chain::point const& point, chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
+    void factory_to_data(W& sink, uint64_t id, domain::chain::point const& point, domain::chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum) {
         sink.write_8_bytes_little_endian(id);
         point.to_data(sink, false);
         sink.write_byte(static_cast<uint8_t>(kind));
