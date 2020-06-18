@@ -36,10 +36,10 @@ domain::chain::input_point internal_database_basis<Clock>::get_spend(domain::cha
     res0 = kth_db_txn_commit(db_txn);
     if (res0 != KTH_DB_SUCCESS) {
         LOG_DEBUG(LOG_DATABASE, "Error commiting LMDB Transaction [get_spend] ", res0);
-        return chain::input_point{};
+        return domain::chain::input_point{};
     }
 
-    auto res = chain::input_point::factory_from_data(data);
+    auto res = domain::create<domain::chain::input_point>(data);
     return res;
 }
 
