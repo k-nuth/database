@@ -142,9 +142,8 @@ result_code internal_database_basis<Clock>::remove_reorg_index(uint32_t height, 
 
 #endif // ! defined(KTH_DB_READONLY)
 
-
 template <typename Clock>
-chain::block internal_database_basis<Clock>::get_block_reorg(uint32_t height, KTH_DB_txn* db_txn) const {
+domain::chain::block internal_database_basis<Clock>::get_block_reorg(uint32_t height, KTH_DB_txn* db_txn) const {
     auto key = kth_db_make_value(sizeof(height), &height);
     KTH_DB_val value;
 
