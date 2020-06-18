@@ -116,7 +116,7 @@ transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest co
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_transaction(uint64_t id, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_transaction(uint64_t id, domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, KTH_DB_txn* db_txn) {
     
     auto key = kth_db_make_value(sizeof(id), &id);
     
