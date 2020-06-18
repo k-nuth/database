@@ -3265,13 +3265,13 @@ TEST_CASE("internal database  prune 2", "[None]") {
         spender80000b.transactions()[1].inputs().push_back(spender80000b.transactions()[1].inputs()[0]);
 
         hash_digest txid;
-        BOOST_REQUIRE(decode_hash(txid, "0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098"));
+        REQUIRE(decode_hash(txid, "0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098"));
         spender80000b.transactions()[1].inputs()[0].previous_output().set_hash(txid);
-        BOOST_REQUIRE(decode_hash(txid, "9b0fc92260312ce44e74ef369f5c66bbb85848f2eddd5a7a1cde251e54ccfdd5"));
+        REQUIRE(decode_hash(txid, "9b0fc92260312ce44e74ef369f5c66bbb85848f2eddd5a7a1cde251e54ccfdd5"));
         spender80000b.transactions()[1].inputs()[1].previous_output().set_hash(txid);
-        BOOST_REQUIRE(decode_hash(txid, "999e1c837c76a1b7fbb7e57baf87b309960f5ffefbf2a9b95dd890602272f644"));
+        REQUIRE(decode_hash(txid, "999e1c837c76a1b7fbb7e57baf87b309960f5ffefbf2a9b95dd890602272f644"));
         spender80000b.transactions()[1].inputs()[2].previous_output().set_hash(txid);
-        BOOST_REQUIRE(decode_hash(txid, "df2b060fa2e5e9c8ed5eaf6a45c13753ec8c63282b2688322eba40cd98ea067a"));
+        REQUIRE(decode_hash(txid, "df2b060fa2e5e9c8ed5eaf6a45c13753ec8c63282b2688322eba40cd98ea067a"));
         spender80000b.transactions()[1].inputs()[3].previous_output().set_hash(txid);
 
     }
