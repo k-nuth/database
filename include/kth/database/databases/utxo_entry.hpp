@@ -72,14 +72,14 @@ public:
     }
 
     static
-    data_chunk to_data_with_fixed(chain::output const& output, data_chunk const& fixed);
+    data_chunk to_data_with_fixed(domain::chain::output const& output, data_chunk const& fixed);
 
     static
-    void to_data_with_fixed(std::ostream& stream, chain::output const& output, data_chunk const& fixed);
+    void to_data_with_fixed(std::ostream& stream, domain::chain::output const& output, data_chunk const& fixed);
 
     template <typename W, KTH_IS_WRITER(W)>
     static
-    void to_data_with_fixed(W& sink, chain::output const& output, data_chunk const& fixed) {
+    void to_data_with_fixed(W& sink, domain::chain::output const& output, data_chunk const& fixed) {
         output.to_data(sink, false);
         sink.write_bytes(fixed);
     }
