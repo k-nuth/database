@@ -226,7 +226,7 @@ result_code internal_database_basis<Clock>::push_genesis(domain::chain::block co
     }
 
     auto res = push_genesis(block, db_txn);
-    if (! succeed(res)) {
+    if ( !  succeed(res)) {
         kth_db_txn_abort(db_txn);
         return res;
     }
