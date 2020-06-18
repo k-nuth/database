@@ -2856,9 +2856,9 @@ TEST_CASE("internal database  prune", "[None]") {
     #endif
     ) = open_dbs();
 
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
+    REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
+    REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
+    REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
     
     
     
