@@ -3304,14 +3304,14 @@ TEST_CASE("internal database  prune 2", "[None]") {
     
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
-        BOOST_REQUIRE(db.open());
+        REQUIRE(db.open());
 
-        BOOST_REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);  
-        BOOST_REQUIRE(db.push_block(b1, 1, 1)      == result_code::success);  
-        BOOST_REQUIRE(db.push_block(b2, 2, 1)      == result_code::success);  
-        BOOST_REQUIRE(db.push_block(b3, 3, 1)      == result_code::success);  
-        BOOST_REQUIRE(db.push_block(b4, 4, 1)      == result_code::success);  
-        BOOST_REQUIRE(db.push_block(b79880, 5, 1)  == result_code::success);  
+        REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);
+        REQUIRE(db.push_block(b1, 1, 1)      == result_code::success);
+        REQUIRE(db.push_block(b2, 2, 1)      == result_code::success);
+        REQUIRE(db.push_block(b3, 3, 1)      == result_code::success);
+        REQUIRE(db.push_block(b4, 4, 1)      == result_code::success);
+        REQUIRE(db.push_block(b79880, 5, 1)  == result_code::success);
 
     }   //close() implicit
 
