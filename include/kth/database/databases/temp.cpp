@@ -363,7 +363,7 @@ void BlockchainLMDB::open(std::string const& filename, int const db_flags)
   mdb_set_compare(txn, m_txpool_blob, compare_hash32);
   mdb_set_compare(txn, m_properties, compare_string);
 
-  if (!(mdb_flags & KTH_DB_RDONLY))
+  if ( ! (mdb_flags & KTH_DB_RDONLY))
   {
     result = mdb_drop(txn, m_hf_starting_heights, 1);
     if (result && result != KTH_DB_NOTFOUND)
