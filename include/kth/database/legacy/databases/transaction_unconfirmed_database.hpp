@@ -74,7 +74,7 @@ public:
     bool unlink_if_exists(hash_digest const& hash);
 
 //    template <typename UnaryFunction>
-        //requires Domain of UnaryFunction is chain::transaction
+        //requires Domain of UnaryFunction is domain::chain::transaction
 //    void for_each(UnaryFunction f) const;
     template <typename UnaryFunction>
     void for_each(UnaryFunction f) const {
