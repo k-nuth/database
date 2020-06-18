@@ -55,14 +55,14 @@ public:
     bool close();
 
     /// Get inpoint that spent the given outpoint.
-    chain::input_point get(const chain::output_point& outpoint) const;
+    domain::chain::input_point get(const domain::chain::output_point& outpoint) const;
 
     /// Store a spend in the database.
-    void store(const chain::output_point& outpoint,
-        const chain::input_point& spend);
+    void store(const domain::chain::output_point& outpoint,
+        const domain::chain::input_point& spend);
 
     /// Delete outpoint spend item from database.
-    bool unlink(const chain::output_point& outpoint);
+    bool unlink(const domain::chain::output_point& outpoint);
 
     /// Commit latest inserts.
     void synchronize();
