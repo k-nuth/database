@@ -2904,8 +2904,8 @@ TEST_CASE("internal database  prune", "[None]") {
 
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 11, db_size, true);
-        BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
+        REQUIRE(db.open());
+        REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
