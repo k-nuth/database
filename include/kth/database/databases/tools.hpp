@@ -43,7 +43,6 @@ data_chunk db_value_to_data_chunk(KTH_DB_val const& value) {
                       static_cast<uint8_t*>(kth_db_get_data(value)) + kth_db_get_size(value)};
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DATABASE_TOOLS_HPP_
