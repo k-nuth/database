@@ -120,7 +120,7 @@ uint32_t internal_database_basis<Clock>::get_clock_now() const {
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(chain::transaction const& tx, uint32_t height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(domain::chain::transaction const& tx, uint32_t height, KTH_DB_txn* db_txn) {
     
     uint32_t arrival_time = get_clock_now();
     
