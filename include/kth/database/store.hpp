@@ -131,7 +131,6 @@ protected:
     bool use_indexes() const;
 };
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif
