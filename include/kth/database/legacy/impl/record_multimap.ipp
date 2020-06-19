@@ -111,7 +111,6 @@ bool record_multimap<KeyType>::unlink(const KeyType& key)
     return true;
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif
