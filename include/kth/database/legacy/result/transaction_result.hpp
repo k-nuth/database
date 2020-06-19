@@ -51,10 +51,10 @@ public:
     bool is_spent(size_t fork_height) const;
 
     /// The output at the specified index within this transaction.
-    chain::output output(uint32_t index) const;
+    domain::chain::output output(uint32_t index) const;
 
     /// The transaction, optionally including witness.
-    chain::transaction transaction(bool witness = true) const;
+    domain::chain::transaction transaction(bool witness = true) const;
 
 private:
     memory_ptr slab_;
