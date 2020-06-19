@@ -43,8 +43,8 @@ uint64_t history_entry::value_or_checksum() const {
 // private
 void history_entry::reset() {
     id_ = max_uint64;
-    point_ = chain::point{};
-    point_kind_ = kth::chain::point_kind::output;
+    point_ = domain::chain::point{};
+    point_kind_ = kth::domain::chain::point_kind::output;
     height_ = max_uint32;
     index_ = max_uint32;
     value_or_checksum_ = max_uint64;
