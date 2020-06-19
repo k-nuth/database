@@ -64,7 +64,6 @@ private:
     mutable shared_mutex mutex_;
 };
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif
