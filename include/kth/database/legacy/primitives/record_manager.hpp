@@ -78,7 +78,6 @@ private:
     const size_t record_size_;
 };
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif
