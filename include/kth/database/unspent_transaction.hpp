@@ -63,8 +63,7 @@ private:
     mutable output_map_ptr outputs_;
 };
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 // Standard (boost) hash.
 //-----------------------------------------------------------------------------
