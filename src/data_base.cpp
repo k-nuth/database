@@ -577,7 +577,7 @@ code data_base::insert(domain::chain::block const& block, size_t height) {
 #if ! defined(KTH_DB_READONLY)
 
 // This is designed for write exclusivity and read concurrency.
-code data_base::push(chain::transaction const& tx, uint32_t forks) {
+code data_base::push(domain::chain::transaction const& tx, uint32_t forks) {
 #ifdef KTH_DB_LEGACY
 
     // Critical Section
