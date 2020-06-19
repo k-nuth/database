@@ -3535,13 +3535,13 @@ TEST_CASE("internal database  prune 2", "[None]") {
     #endif
     ) = open_dbs();
 
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 2);
-    BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 6) == 1);
-    BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 6));
-    BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 4);
-    BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
+    REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
+    REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
+    REQUIRE(db_count_items(env_, dbi_reorg_block_) == 2);
+    REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 6) == 1);
+    REQUIRE(db_exists_height(env_, dbi_reorg_block_, 6));
+    REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 4);
+    REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
 
     
