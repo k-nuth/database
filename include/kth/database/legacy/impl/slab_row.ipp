@@ -167,7 +167,6 @@ memory_ptr slab_row<KeyType>::raw_data(file_offset offset) const
     return memory;
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif
