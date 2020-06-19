@@ -231,7 +231,6 @@ void slab_hash_table<KeyType>::for_each(UnaryFunction f) const {
     }
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif
