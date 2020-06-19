@@ -81,8 +81,7 @@ private:
     mutable upgrade_mutex mutex_;
 };
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DB_UNSPENT_LEGACY
 
