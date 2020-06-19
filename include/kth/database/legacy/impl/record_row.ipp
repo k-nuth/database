@@ -68,9 +68,7 @@ record_row<KeyType>::record_row(record_manager& manager, array_index index)
 }
 
 template <typename KeyType>
-array_index record_row<KeyType>::create(const KeyType& key,
-    write_function write)
-{
+array_index record_row<KeyType>::create(const KeyType& key, write_function write) {
     KTH_ASSERT(index_ == empty);
 
     // Create new record and populate its key.
