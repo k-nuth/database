@@ -51,14 +51,14 @@ void transaction_entry::reset() {
 
 // Empty scripts are valid, validation relies on not_found only.
 bool transaction_entry::is_valid() const {
-    return transaction_.is_valid() && height_ != bc::max_uint32 && median_time_past_ != max_uint32 && position_ != position_max;
+    return transaction_.is_valid() && height_ != kth::max_uint32 && median_time_past_ != max_uint32 && position_ != position_max;
 }
 
 // Size.
 //-----------------------------------------------------------------------------
 // constexpr
 //TODO(fernando): make this constexpr 
-size_t transaction_entry::serialized_size(chain::transaction const& tx) {
+size_t transaction_entry::serialized_size(domain::chain::transaction const& tx) {
 #if defined(KTH_CACHED_RPC_DATA)
     return tx.serialized_size(false, true, false) 
 #else
