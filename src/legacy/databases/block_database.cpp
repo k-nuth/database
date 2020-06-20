@@ -71,7 +71,7 @@ bool block_database::create()
     lookup_file_.resize(initial_map_file_size_);
     index_file_.resize(minimum_records_size);
 
-    if (!lookup_header_.create() ||
+    if ( ! lookup_header_.create() ||
         !lookup_manager_.create() ||
         !index_manager_.create())
         return false;
