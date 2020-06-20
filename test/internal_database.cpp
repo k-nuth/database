@@ -4184,9 +4184,9 @@ TEST_CASE("internal database  prune 3", "[None]") {
     // ------------------------------------------------------------------------------------
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
-        BOOST_REQUIRE(db.open());
+        REQUIRE(db.open());
 
-        BOOST_REQUIRE(db.push_block(spender80000, 7, 1) == result_code::success);  
+        REQUIRE(db.push_block(spender80000, 7, 1) == result_code::success);
 
     }   //close() implicit
 
