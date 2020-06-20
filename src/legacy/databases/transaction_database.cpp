@@ -373,7 +373,6 @@ bool transaction_database::unconfirm(hash_digest const& hash) {
     return confirm(hash, rule_fork::unverified, 0, unconfirmed);
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DB_LEGACY
