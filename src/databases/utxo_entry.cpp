@@ -44,7 +44,7 @@ void utxo_entry::reset() {
 
 // Empty scripts are valid, validation relies on not_found only.
 bool utxo_entry::is_valid() const {
-    return output_.is_valid() && height_ != bc::max_uint32 && median_time_past_ != max_uint32;
+    return output_.is_valid() && height_ != kth::max_uint32 && median_time_past_ != max_uint32;
 }
 
 
