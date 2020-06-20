@@ -107,7 +107,7 @@ stealth_compact::list stealth_database::scan(const binary& filter,
         auto const field = from_little_endian_unsafe<uint32_t>(memory);
 
         // Skip if prefix doesn't match.
-        if (!filter.is_prefix_of(field))
+        if ( ! filter.is_prefix_of(field))
             continue;
 
         memory += prefix_size;
