@@ -58,7 +58,7 @@ size_t transaction_unconfirmed_entry::serialized_size(domain::chain::transaction
 //-----------------------------------------------------------------------------
 
 // static
-data_chunk transaction_unconfirmed_entry::factory_to_data(chain::transaction const& tx, uint32_t arrival_time, uint32_t height) {
+data_chunk transaction_unconfirmed_entry::factory_to_data(domain::chain::transaction const& tx, uint32_t arrival_time, uint32_t height) {
     data_chunk data;
     auto const size = serialized_size(tx);
     data.reserve(size);
