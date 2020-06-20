@@ -175,7 +175,7 @@ bool memory_map::open()
     std::string error_name;
 
     // Initialize data_.
-    if (!map(file_size_))
+    if ( ! map(file_size_))
         error_name = "map";
     else if (madvise(data_, 0, MADV_RANDOM) == FAIL)
         error_name = "madvise";
