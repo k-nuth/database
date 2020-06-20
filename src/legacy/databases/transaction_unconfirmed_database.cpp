@@ -129,7 +129,7 @@ uint32_t get_clock_now() {
     return static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
 }
 
-void transaction_unconfirmed_database::store(const chain::transaction& tx) {
+void transaction_unconfirmed_database::store(const domain::chain::transaction& tx) {
     uint32_t arrival_time = get_clock_now();
 #ifdef KTH_CURRENCY_BCH
         bool witness = false;
