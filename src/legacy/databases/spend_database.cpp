@@ -99,7 +99,7 @@ input_point spend_database::get(const output_point& outpoint) const
     input_point spend;
     auto const slab = lookup_map_.find(outpoint);
 
-    if (!slab)
+    if ( ! slab)
         return spend;
 
     // The order of properties in this serialization was changed in v3.
