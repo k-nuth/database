@@ -3962,7 +3962,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
 }
 
 
-BOOST_AUTO_TEST_CASE(internal_database__prune_3) {
+TEST_CASE("internal database  prune 3", "[None]") {
 
     // Block 0
     auto const genesis = get_genesis();
