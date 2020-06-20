@@ -50,5 +50,4 @@ accessor::~accessor()
 
 #endif // REMAP_SAFETY
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
