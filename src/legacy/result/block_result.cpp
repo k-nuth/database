@@ -156,7 +156,6 @@ uint64_t block_result::serialized_size() const
     return deserial.read_8_bytes_little_endian();
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DB_LEGACY
