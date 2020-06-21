@@ -4380,40 +4380,40 @@ TEST_CASE("internal database  prune 3", "[None]") {
 
 }
 
-BOOST_AUTO_TEST_CASE(internal_database__prune_empty_blockchain) {
+TEST_CASE("internal database  prune empty blockchain", "[None]") {
     using my_clock = dummy_clock<1284613427>;
     internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 4, db_size, true);
-    BOOST_REQUIRE(db.open());
-    BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
+    REQUIRE(db.open());
+    REQUIRE(db.prune() == result_code::no_data_to_prune);
 }
 
-BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool) {
+TEST_CASE("internal database  prune empty reorg pool", "[None]") {
     using my_clock = dummy_clock<1284613427>;
     internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1000, db_size, true);
-    BOOST_REQUIRE(db.open());
-    BOOST_REQUIRE(db.push_block(get_genesis(), 0, 1) == result_code::success);
-    BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
+    REQUIRE(db.open());
+    REQUIRE(db.push_block(get_genesis(), 0, 1) == result_code::success);
+    REQUIRE(db.prune() == result_code::no_data_to_prune);
 }
 
 
-BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool_2) {
+TEST_CASE("internal database  prune empty reorg pool 2", "[None]") {
     using my_clock = dummy_clock<1284613427>;
     internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, db_size, true);
-    BOOST_REQUIRE(db.open());
-    BOOST_REQUIRE(db.push_block(get_genesis(), 0, 1) == result_code::success);
-    BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
+    REQUIRE(db.open());
+    REQUIRE(db.push_block(get_genesis(), 0, 1) == result_code::success);
+    REQUIRE(db.prune() == result_code::no_data_to_prune);
 }
 
-BOOST_AUTO_TEST_CASE(internal_database__prune_empty_reorg_pool_3) {
+TEST_CASE("internal database  prune empty reorg pool 3", "[None]") {
     using my_clock = dummy_clock<1284613427>;
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 10000000, db_size, true);
-        BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.push_block(get_genesis(), 0, 1) == result_code::success);
+        REQUIRE(db.open());
+        REQUIRE(db.push_block(get_genesis(), 0, 1) == result_code::success);
 
         // Block 1 - 00000000839a8e6886ab5951d76f411475428afc90947ee320161bbf18eb6048
         auto const b1 = get_block("010000006fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000982051fd1e4ba744bbbe680e1fee14677ba1a3c3540bf7b1cdb606e857233e0e61bc6649ffff001d01e362990101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704ffff001d0104ffffffff0100f2052a0100000043410496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52da7589379515d4e0a604f8141781e62294721166bf621e73a82cbf2342c858eeac00000000");
-        BOOST_REQUIRE(db.push_block(b1, 1, 1) == result_code::success);
+        REQUIRE(db.push_block(b1, 1, 1) == result_code::success);
 
 
         std::string spender_enc = "01000000ba8b9cda965dd8e536670f9ddec10e53aab14b20bacad27b9137190000000000190760b278fe7b8565fda3b968b918d5fd997f993b23674c0af3b6fde300b38f"
