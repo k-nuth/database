@@ -4507,8 +4507,8 @@ TEST_CASE("internal database  prune empty reorg pool 3", "[None]") {
 
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 3, db_size,true);
-        BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == result_code::no_data_to_prune);
+        REQUIRE(db.open());
+        REQUIRE(db.prune() == result_code::no_data_to_prune);
     }
 }
 
