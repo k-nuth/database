@@ -86,18 +86,15 @@ void create_database_file() {
     alloc.sync();
 }
 
-class hash_table_directory_setup_fixture
-{
+class hash_table_directory_setup_fixture {
 public:
-    hash_table_directory_setup_fixture()
-    {
-        error_code ec;
+    hash_table_directory_setup_fixture() {
+        std::error_code ec;
         remove_all(DIRECTORY, ec);
-        BOOST_REQUIRE(create_directories(DIRECTORY, ec));
+        REQUIRE(create_directories(DIRECTORY, ec));
     }
 
-    ////~hash_table_directory_setup_fixture()
-    ////{
+    ////~hash_table_directory_setup_fixture() {
     ////    error_code ec;
     ////    remove_all(DIRECTORY, ec);
     ////}
