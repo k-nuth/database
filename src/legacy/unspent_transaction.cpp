@@ -127,7 +127,6 @@ unspent_transaction& unspent_transaction::operator=(
     return *this;
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DB_UNSPENT_LEGACY
