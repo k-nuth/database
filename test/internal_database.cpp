@@ -4431,12 +4431,12 @@ TEST_CASE("internal database  prune empty reorg pool 3", "[None]") {
         spender80000b.transactions()[0].set_version(2); //To change the coinbase tx hash
         spender80000b.transactions()[1].inputs().push_back(spender80000b.transactions()[1].inputs()[0]);
         hash_digest txid;
-        BOOST_REQUIRE(decode_hash(txid, "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
+        REQUIRE(decode_hash(txid, "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
         spender80000b.transactions()[1].inputs()[0].previous_output().set_hash(txid);
-        BOOST_REQUIRE(decode_hash(txid, "0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098"));
+        REQUIRE(decode_hash(txid, "0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098"));
         spender80000b.transactions()[1].inputs()[1].previous_output().set_hash(txid);
 
-        BOOST_REQUIRE(db.push_block(spender80000b, 2, 1) == result_code::success);
+        REQUIRE(db.push_block(spender80000b, 2, 1) == result_code::success);
     }
 
 
