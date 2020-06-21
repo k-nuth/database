@@ -40,8 +40,7 @@ public:
 BOOST_FIXTURE_TEST_SUITE(database_tests, block_database_directory_setup_fixture)
 
 #ifdef KTH_DB_LEGACY
-BOOST_AUTO_TEST_CASE(block_database__test)
-{
+TEST_CASE("block database  test", "[None]") {
     auto block0 = block::genesis_mainnet();
     block0.transactions().push_back(random_tx(0));
     block0.transactions().push_back(random_tx(1));
