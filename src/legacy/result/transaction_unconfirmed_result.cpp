@@ -88,7 +88,7 @@ domain::chain::output transaction_unconfirmed_result::output(uint32_t index) con
     }
 
     // Read and return the target output (including spender height).
-    chain::output out;
+    domain::chain::output out;
     out.from_data(deserial, false);
     return out;
 }
