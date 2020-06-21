@@ -75,7 +75,7 @@ TEST_CASE("history database  test", "[None]")
     store::create(DIRECTORY "/lookup");
     store::create(DIRECTORY "/rows");
     history_database db(DIRECTORY "/lookup", DIRECTORY "/rows", 1000, 50);
-    BOOST_REQUIRE(db.create());
+    REQUIRE(db.create());
     db.add_output(key1, out11, out_h11, value11);
     db.add_output(key1, out12, out_h12, value12);
     db.add_output(key1, out13, out_h13, value13);
