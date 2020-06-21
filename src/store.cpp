@@ -192,5 +192,4 @@ bool store::flush_unlock() const {
 }
 #endif // KTH_DB_LEGACY
 
-} // namespace data_base
-} // namespace kth
+} // namespace kth::database
