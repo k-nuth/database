@@ -4474,9 +4474,9 @@ TEST_CASE("internal database  prune empty reorg pool 3", "[None]") {
     #endif
     ) = open_dbs();
 
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 2);
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 2);
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 3);
+    REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 2);
+    REQUIRE(db_count_items(env_, dbi_reorg_index_) == 2);
+    REQUIRE(db_count_items(env_, dbi_reorg_block_) == 3);
     
     
     
