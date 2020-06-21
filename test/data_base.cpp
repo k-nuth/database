@@ -28,191 +28,172 @@ void test_block_exists(const data_base& interface, size_t height, const block& b
     auto r0 = interface.blocks().get(height);
     auto r0_byhash = interface.blocks().get(block_hash);
 
-    BOOST_REQUIRE(r0);
-    BOOST_REQUIRE(r0_byhash);
-    BOOST_REQUIRE(r0.hash() == block_hash);
-    BOOST_REQUIRE(r0_byhash.hash() == block_hash);
-    BOOST_REQUIRE_EQUAL(r0.height(), height);
-    BOOST_REQUIRE_EQUAL(r0_byhash.height(), height);
-    BOOST_REQUIRE_EQUAL(r0.transaction_count(), block0.transactions().size());
-    BOOST_REQUIRE_EQUAL(r0_byhash.transaction_count(), block0.transactions().size());
+    REQUIRE(r0);
+    REQUIRE(r0_byhash);
+    REQUIRE(r0.hash() == block_hash);
+    REQUIRE(r0_byhash.hash() == block_hash);
+    REQUIRE(r0.height() == height);
+    REQUIRE(r0_byhash.height() == height);
+    REQUIRE(r0.transaction_count() == block0.transactions().size());
+    REQUIRE(r0_byhash.transaction_count() == block0.transactions().size());
 
     // TODO: test tx hashes.
 
-    for (size_t i = 0; i < block0.transactions().size(); ++i)
-    {
+    for (size_t i = 0; i < block0.transactions().size(); ++i) {
         auto const& tx = block0.transactions()[i];
         auto const tx_hash = tx.hash();
-        ////BOOST_REQUIRE(r0.transaction_hash(i) == tx_hash);
-        ////BOOST_REQUIRE(r0_byhash.transaction_hash(i) == tx_hash);
+        REQUIRE(r0.transaction_hash(i) == tx_hash);
+        REQUIRE(r0_byhash.transaction_hash(i) == tx_hash);
 
         auto r0_tx = interface.transactions().get(tx_hash, max_size_t, false);
-        BOOST_REQUIRE(r0_tx);
-        BOOST_REQUIRE(r0_byhash);
-        BOOST_REQUIRE(r0_tx.transaction().hash() == tx_hash);
-        BOOST_REQUIRE_EQUAL(r0_tx.height(), height);
-        BOOST_REQUIRE_EQUAL(r0_tx.position(), i);
+        REQUIRE(r0_tx);
+        REQUIRE(r0_byhash);
+        REQUIRE(r0_tx.transaction().hash() == tx_hash);
+        REQUIRE(r0_tx.height() == height);
+        REQUIRE(r0_tx.position() == i);
 
-        if (!tx.is_coinbase())
-        {
-            for (uint32_t j = 0; j < tx.inputs().size(); ++j)
-            {
+        if ( ! tx.is_coinbase()) {
+            for (uint32_t j = 0; j < tx.inputs().size(); ++j) {
                 auto const& input = tx.inputs()[j];
                 input_point spend{ tx_hash, j };
-                BOOST_REQUIRE_EQUAL(spend.index(), j);
+                REQUIRE(spend.index() == j);
 
 #ifdef KTH_DB_SPENDS
                 auto r0_spend = interface.spends().get(input.previous_output());
-                BOOST_REQUIRE(r0_spend.is_valid());
-                BOOST_REQUIRE(r0_spend.hash() == spend.hash());
-                BOOST_REQUIRE_EQUAL(r0_spend.index(), spend.index());
+                REQUIRE(r0_spend.is_valid());
+                REQUIRE(r0_spend.hash() == spend.hash());
+                REQUIRE(r0_spend.index() == spend.index());
 #endif // KTH_DB_SPENDS
 
-                if (!indexed)
+                if ( ! indexed) {
                     continue;
+                }
 
                 auto const addresses = input.addresses();
                 ////auto const& prevout = input.previous_output();
                 ////auto const address = prevout.validation.cache.addresses();
 
 #ifdef KTH_DB_HISTORY
-                for (auto const& address : addresses)
-                {
+                for (auto const& address : addresses) {
                     auto history = history_store.get(address.hash(), 0, 0);
                     auto found = false;
 
-                    for (auto const& row: history)
-                    {
-                        if (row.point == spend)
-                        {
-                            BOOST_REQUIRE_EQUAL(row.height, height);
+                    for (auto const& row: history) {
+                        if (row.point == spend) {
+                            REQUIRE(row.height == height);
                             found = true;
                             break;
                         }
                     }
 
-                    BOOST_REQUIRE(found);
+                    REQUIRE(found);
                 }
 #endif // KTH_DB_HISTORY                
             }
         }
 
-        if (!indexed)
+        if ( ! indexed) {
             return;
+        }
 
-        for (size_t j = 0; j < tx.outputs().size(); ++j)
-        {
+        for (size_t j = 0; j < tx.outputs().size(); ++j) {
             auto const& output = tx.outputs()[j];
             output_point outpoint{ tx_hash, static_cast<uint32_t>(j) };
             auto const addresses = output.addresses();
 
 #ifdef KTH_DB_HISTORY
-            for (auto const& address : addresses)
-            {
+            for (auto const& address : addresses) {
                 auto history = history_store.get(address.hash(), 0, 0);
                 auto found = false;
 
-                for (auto const& row: history)
-                {
-                    ////BOOST_REQUIRE(row.is_valid());
+                for (auto const& row: history) {
+                    REQUIRE(row.is_valid());
 
-                    if (row.point == outpoint)
-                    {
-                        BOOST_REQUIRE_EQUAL(row.height, height);
-                        BOOST_REQUIRE_EQUAL(row.value, output.value());
+                    if (row.point == outpoint) {
+                        REQUIRE(row.height == height);
+                        REQUIRE(row.value == output.value());
                         found = true;
                         break;
                     }
                 }
 
-                BOOST_REQUIRE(found);
+                REQUIRE(found);
             }
 #endif // KTH_DB_HISTORY
-
         }
     }
 }
 
 
-void test_block_not_exists(const data_base& interface, const block& block0,
-    bool indexed)
-{
+void test_block_not_exists(const data_base& interface, const block& block0, bool indexed) {
 #ifdef KTH_DB_HISTORY
     auto const& history_store = interface.history();
 #endif // KTH_DB_HISTORY
 
     ////auto const r0_byhash = interface.blocks().get(block0.hash());
-    ////BOOST_REQUIRE(!r0_byhash);
-    for (size_t i = 0; i < block0.transactions().size(); ++i)
-    {
+REQUIRE( ! r0_byhash);
+    for (size_t i = 0; i < block0.transactions().size(); ++i) {
         auto const& tx = block0.transactions()[i];
         auto const tx_hash = tx.hash();
 
-        if (!tx.is_coinbase())
-        {
-            for (size_t j = 0; j < tx.inputs().size(); ++j)
-            {
+        if ( ! tx.is_coinbase()) {
+            for (size_t j = 0; j < tx.inputs().size(); ++j) {
                 auto const& input = tx.inputs()[j];
                 input_point spend{ tx_hash, static_cast<uint32_t>(j) };
 
 #ifdef KTH_DB_SPENDS                
                 auto r0_spend = interface.spends().get(input.previous_output());
-                BOOST_REQUIRE(!r0_spend.is_valid());
+                REQUIRE( ! r0_spend.is_valid());
 #endif // KTH_DB_SPENDS
 
-                if (!indexed)
+                if ( ! indexed) {
                     continue;
+                }
 
                 auto const addresses = input.addresses();
                 ////auto const& prevout = input.previous_output();
                 ////auto const address = prevout.validation.cache.addresses();
 
 #ifdef KTH_DB_HISTORY
-                for (auto const& address : addresses)
-                {
+                for (auto const& address : addresses) {
                     auto history = history_store.get(address.hash(), 0, 0);
                     auto found = false;
 
-                    for (auto const& row: history)
-                    {
-                        if (row.point == spend)
-                        {
+                    for (auto const& row: history) {
+                        if (row.point == spend) {
                             found = true;
                             break;
                         }
                     }
 
-                    BOOST_REQUIRE(!found);
+                    REQUIRE( ! found);
                 }
 #endif // KTH_DB_HISTORY                
             }
         }
 
-        if (!indexed)
+        if ( ! indexed) {
             return;
+        }
 
-        for (size_t j = 0; j < tx.outputs().size(); ++j)
-        {
+        for (size_t j = 0; j < tx.outputs().size(); ++j) {
             auto const& output = tx.outputs()[j];
             output_point outpoint{ tx_hash, static_cast<uint32_t>(j) };
             auto const addresses = output.addresses();
 
 #ifdef KTH_DB_HISTORY
-            for (auto const& address : addresses)
-            {
+            for (auto const& address : addresses) {
                 auto history = history_store.get(address.hash(), 0, 0);
                 auto found = false;
 
-                for (auto const& row: history)
-                {
-                    if (row.point == outpoint)
-                    {
+                for (auto const& row: history) {
+                    if (row.point == outpoint) {
                         found = true;
                         break;
                     }
                 }
 
-                BOOST_REQUIRE(!found);
+                REQUIRE( ! found);
             }
 #endif // KTH_DB_HISTORY            
         }
