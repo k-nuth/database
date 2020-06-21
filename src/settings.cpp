@@ -78,7 +78,7 @@ settings::settings(infrastructure::config::settings context)
 #endif // KTH_DB_HISTORY    
             break;
         }
-        case config::settings::testnet: {
+        case infrastructure::config::settings::testnet: {
             // TODO: optimize for testnet.
 #ifdef KTH_DB_LEGACY
             block_table_buckets = 650000;
