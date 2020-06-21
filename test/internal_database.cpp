@@ -4584,4 +4584,4 @@ BlockHash 0000000054d4f171b0eab3cd4e31da4ce5a1a06f27b39bf36c5902c9bb8ef5c4
 
 // #endif // KTH_DB_NEW
 
-BOOST_AUTO_TEST_SUITE_END()
+// End Boost Suite
