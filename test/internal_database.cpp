@@ -4318,8 +4318,8 @@ TEST_CASE("internal database  prune 3", "[None]") {
 
     {
         internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, db_size, true);
-        BOOST_REQUIRE(db.open());
-        BOOST_REQUIRE(db.prune() == result_code::success);
+        REQUIRE(db.open());
+        REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
