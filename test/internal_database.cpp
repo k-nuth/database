@@ -4271,13 +4271,13 @@ TEST_CASE("internal database  prune 3", "[None]") {
     #endif
     ) = open_dbs();
 
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 1);
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_index_) == 1);
-    BOOST_REQUIRE(db_count_items(env_, dbi_reorg_block_) == 1);
-    BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 6) == 0);
-    BOOST_REQUIRE(! db_exists_height(env_, dbi_reorg_block_, 6));
-    BOOST_REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 1);
-    BOOST_REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
+    REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 1);
+    REQUIRE(db_count_items(env_, dbi_reorg_index_) == 1);
+    REQUIRE(db_count_items(env_, dbi_reorg_block_) == 1);
+    REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 6) == 0);
+    REQUIRE( !  db_exists_height(env_, dbi_reorg_block_, 6));
+    REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 1);
+    REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
     
      #if defined(KTH_DB_NEW_BLOCKS) 
