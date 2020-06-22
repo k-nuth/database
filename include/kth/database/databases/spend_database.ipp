@@ -47,7 +47,7 @@ domain::chain::input_point internal_database_basis<Clock>::get_spend(domain::cha
 
 //pivate
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_spend(chain::output_point const& out_point, chain::input_point const& in_point, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_spend(domain::chain::output_point const& out_point, domain::chain::input_point const& in_point, KTH_DB_txn* db_txn) {
 
     auto keyarr = out_point.to_data(KTH_INTERNAL_DB_WIRE);
     auto key = kth_db_make_value(keyarr.size(), keyarr.data());   
