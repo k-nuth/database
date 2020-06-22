@@ -67,7 +67,7 @@ domain::chain::block get_genesis() {
     return get_block(genesis_enc);
 }
 
-chain::block get_fake_genesis() {
+domain::chain::block get_fake_genesis() {
     std::string genesis_enc =
         "02000000"                                                              // 4     version
         "0000000000000000000000000000000000000000000000000000000000000000"      //32     Previous Block Hash
