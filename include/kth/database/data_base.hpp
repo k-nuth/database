@@ -152,7 +152,7 @@ public:
     // ------------------------------------------------------------------------
 
     /// Invoke pop_all and then push_all under a common lock.
-    void reorganize(config::checkpoint const& fork_point, block_const_ptr_list_const_ptr incoming_blocks, block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch, result_handler handler);
+    void reorganize(infrastructure::config::checkpoint const& fork_point, block_const_ptr_list_const_ptr incoming_blocks, block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch, result_handler handler);
 #endif // ! defined(KTH_DB_READONLY)
 
 protected:
