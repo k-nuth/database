@@ -85,11 +85,11 @@ domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height, 
     KTH_DB_val value;
 
     if (kth_db_get(db_txn, dbi_block_db_, &key, &value) != KTH_DB_SUCCESS) {
-        return chain::block{};
+        return domain::chain::block{};
     }
 
     auto data = db_value_to_data_chunk(value);
-    auto res = chain::block::factory_from_data(data);
+    auto res = domain::create<domain::chain::block>(data);
     return res;
 
 #elif defined(KTH_DB_NEW_FULL)
