@@ -152,42 +152,12 @@ domain::chain::block internal_database_basis<Clock>::get_block_reorg(uint32_t he
     }
 
     auto data = db_value_to_data_chunk(value);
-    auto res = chain::block::factory_from_data(data);       //TODO(fernando): mover fuera de la DbTx
+    auto res = domain::create<domain::chain::block>(data);       //TODO(fernando): mover fuera de la DbTx
     return res;
 }
 
-// //public
-// template <typename Clock>
-// std::pair<chain::block, uint32_t> internal_database_basis<Clock>::get_block_reorg(hash_digest const& hash) const {
-//     auto key  = kth_db_make_value(hash.size(), const_cast<hash_digest&>(hash).data());
-
-//     KTH_DB_txn* db_txn;
-//     auto res = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
-//     if (res != KTH_DB_SUCCESS) {
-//         return {};
-//     }
-
-//     KTH_DB_val value;
-//     if (kth_db_get(db_txn, dbi_block_header_by_hash_, &key, &value) != KTH_DB_SUCCESS) {
-//         kth_db_txn_commit(db_txn);
-//         // kth_db_txn_abort(db_txn);
-//         return {};
-//     }
-
-//     // assert kth_db_get_size(value) == 4;
-//     auto height = *static_cast<uint32_t*>(kth_db_get_data(value));
-
-//     auto block = get_block_reorg(height, db_txn);
-
-//     if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
-//         return {};
-//     }
-
-//     return {block, height};
-// }
-
 template <typename Clock>
-chain::block internal_database_basis<Clock>::get_block_reorg(uint32_t height) const {
+domain::chain::block internal_database_basis<Clock>::get_block_reorg(uint32_t height) const {
     KTH_DB_txn* db_txn;
     auto zzz = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
     if (zzz != KTH_DB_SUCCESS) {
