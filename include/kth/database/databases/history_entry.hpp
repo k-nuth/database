@@ -84,8 +84,8 @@ private:
     void reset();
 
     uint64_t id_ = max_uint64;
-    chain::point point_;
-    chain::point_kind point_kind_;
+    domain::chain::point point_;
+    domain::chain::point_kind point_kind_;
     uint32_t height_ = max_uint32;
     uint32_t index_ = max_uint32;
     uint64_t value_or_checksum_ = max_uint64;
