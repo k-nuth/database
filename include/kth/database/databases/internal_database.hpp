@@ -132,25 +132,25 @@ public:
     //bool set_fast_flags_environment(bool enabled);
     
 // #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-    std::pair<chain::block, uint32_t> get_block(hash_digest const& hash) const;
+    std::pair<domain::chain::block, uint32_t> get_block(hash_digest const& hash) const;
     
-    chain::block get_block(uint32_t height) const;
+    domain::chain::block get_block(uint32_t height) const;
 // #endif //KTH_DB_NEW_BLOCKS || KTH_DB_NEW_FULL
 
 #if defined(KTH_DB_NEW_FULL)
     transaction_entry get_transaction(hash_digest const& hash, size_t fork_height) const;
     
-    chain::history_compact::list get_history(short_hash const& key, size_t limit, size_t from_height) const;
+    domain::chain::history_compact::list get_history(short_hash const& key, size_t limit, size_t from_height) const;
     std::vector<hash_digest> get_history_txns(short_hash const& key, size_t limit, size_t from_height) const;
     
-    chain::input_point get_spend(chain::output_point const& point) const;
+    domain::chain::input_point get_spend(domain::chain::output_point const& point) const;
 
     std::vector<transaction_unconfirmed_entry> get_all_transaction_unconfirmed() const;
 
     transaction_unconfirmed_entry get_transaction_unconfirmed(hash_digest const& hash) const;
 
 #if ! defined(KTH_DB_READONLY)
-    result_code push_transaction_unconfirmed(chain::transaction const& tx, uint32_t height);
+    result_code push_transaction_unconfirmed(domain::chain::transaction const& tx, uint32_t height);
 #endif // ! defined(KTH_DB_READONLY)
 #endif // defined(KTH_DB_NEW_FULL)
 
