@@ -53,37 +53,37 @@ TEST_CASE("spend database  test", "[None]") {
 
     // Test fetch.
     auto const spend1 = db.get(key1);
-    BOOST_REQUIRE(spend1.is_valid());
-    BOOST_REQUIRE(spend1.hash() == value1.hash());
-    BOOST_REQUIRE_EQUAL(spend1.index(), value1.index());
+    REQUIRE(spend1.is_valid());
+    REQUIRE(spend1.hash() == value1.hash());
+    REQUIRE(spend1.index() == value1.index());
 
     auto const spend2 = db.get(key2);
-    BOOST_REQUIRE(spend2.is_valid());
-    BOOST_REQUIRE(spend2.hash() == value2.hash());
-    BOOST_REQUIRE_EQUAL(spend2.index(), value2.index());
+    REQUIRE(spend2.is_valid());
+    REQUIRE(spend2.hash() == value2.hash());
+    REQUIRE(spend2.index() == value2.index());
 
     auto const spend3 = db.get(key3);
-    BOOST_REQUIRE(spend3.is_valid());
-    BOOST_REQUIRE(spend3.hash() == value3.hash());
-    BOOST_REQUIRE_EQUAL(spend3.index(), value3.index());
+    REQUIRE(spend3.is_valid());
+    REQUIRE(spend3.hash() == value3.hash());
+    REQUIRE(spend3.index() == value3.index());
 
     // Record shouldnt exist yet.
-    BOOST_REQUIRE(!db.get(key4).is_valid());
+    REQUIRE( ! db.get(key4).is_valid());
 
     // Delete record.
     db.unlink(key3);
-    BOOST_REQUIRE(!db.get(key3).is_valid());
+    REQUIRE( ! db.get(key3).is_valid());
 
     // Add another record.
     db.store(key4, value4);
 
     // Fetch it.
     auto const spend4 = db.get(key4);
-    BOOST_REQUIRE(spend4.is_valid());
-    BOOST_REQUIRE(spend4.hash() == value4.hash());
-    BOOST_REQUIRE_EQUAL(spend4.index(), value4.index());
+    REQUIRE(spend4.is_valid());
+    REQUIRE(spend4.hash() == value4.hash());
+    REQUIRE(spend4.index() == value4.index());
     db.synchronize();
 }
 #endif // KTH_DB_SPEND
 
-BOOST_AUTO_TEST_SUITE_END()
+// End Boost Suite
