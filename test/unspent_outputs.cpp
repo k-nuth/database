@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE(unspent_outputs__remove2__remove_one_output__expected_outpu
     bool out_coinbase;
     size_t out_height;
     uint32_t out_median_time_past;
-    chain::output out_value;
+    domain::chain::output out_value;
     BOOST_REQUIRE(cache.get(out_value, out_height, out_median_time_past, out_coinbase, { tx1.hash(), 0 }, max_size_t, false));
     BOOST_REQUIRE(cache.get(out_value, out_height, out_median_time_past, out_coinbase, { tx1.hash(), 1 }, max_size_t, false));
     BOOST_REQUIRE(cache.get(out_value, out_height, out_median_time_past, out_coinbase, { tx2.hash(), 0 }, max_size_t, false));
