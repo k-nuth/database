@@ -242,7 +242,7 @@ result_code internal_database_basis<Clock>::push_genesis(domain::chain::block co
 //                  avoiding inserting and erasing internal spenders
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::push_block(chain::block const& block, uint32_t height, uint32_t median_time_past) {
+result_code internal_database_basis<Clock>::push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past) {
 
     KTH_DB_txn* db_txn;
     auto res0 = kth_db_txn_begin(env_, NULL, 0, &db_txn);
