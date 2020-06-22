@@ -101,7 +101,7 @@ result_code internal_database_basis<Clock>::insert_input_history(domain::chain::
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, chain::output const& output, KTH_DB_txn* db_txn ) {
+result_code internal_database_basis<Clock>::insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, domain::chain::output const& output, KTH_DB_txn* db_txn ) {
     
     uint64_t history_count = get_history_count(db_txn);
     if (history_count == max_uint64) {
