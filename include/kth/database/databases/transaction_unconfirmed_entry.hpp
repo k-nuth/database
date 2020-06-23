@@ -89,13 +89,12 @@ public:
 private:
     void reset();
 
-    chain::transaction transaction_;
+    domain::chain::transaction transaction_;
     uint32_t arrival_time_;
     uint32_t height_;
 };
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 
 #endif // KTH_DATABASE_TRANSACTION_UNCONFIRMED_ENTRY_HPP_
