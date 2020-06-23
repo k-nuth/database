@@ -82,28 +82,14 @@ public:
     //bool is_spent(size_t fork_height) const;
 
     static
-    transaction_entry factory_from_data(data_chunk const& data);
-    static
-    transaction_entry factory_from_data(std::istream& stream);
-
-
-    template <typename R, KTH_IS_READER(R)>
-    static
-    transaction_entry factory_from_data(R& source) {
-        transaction_entry instance;
-        instance.from_data(source);
-        return instance;
-    }
+    data_chunk factory_to_data(domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position);
 
     static
-    data_chunk factory_to_data(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position);
-    static
-    void factory_to_data(std::ostream& stream, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position);
-
+    void factory_to_data(std::ostream& stream, domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position);
 
     template <typename W, KTH_IS_WRITER(W)>
     static
-    void factory_to_data(W& sink, chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position) {
+    void factory_to_data(W& sink, domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position) {
 #if defined(KTH_CACHED_RPC_DATA)    
         tx.to_data(sink, false, true, false);
 #else
