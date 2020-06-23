@@ -88,8 +88,7 @@ array_index record_row<KeyType>::create(const KeyType& key, write_function write
 }
 
 template <typename KeyType>
-void record_row<KeyType>::link(array_index next)
-{
+void record_row<KeyType>::link(array_index next) {
     // Populate next pointer value.
     //   [ KeyType  ]
     //   [ next:4   ] <==
