@@ -52,14 +52,14 @@ void history_entry::reset() {
 
 // Empty scripts are valid, validation relies on not_found only.
 bool history_entry::is_valid() const {
-    return id_ != max_uint64 && point_.is_valid() && height_ != bc::max_uint32 && index_ != max_uint32 && value_or_checksum_ != max_uint64;
+    return id_ != max_uint64 && point_.is_valid() && height_ != kth::max_uint32 && index_ != max_uint32 && value_or_checksum_ != max_uint64;
 }
 
 // Size.
 //-----------------------------------------------------------------------------
 // constexpr
-//TODO(fernando): make chain::point::serialized_size() static and constexpr to make this constexpr too
-size_t history_entry::serialized_size(chain::point const& point) {
+//TODO(fernando): make domain::chain::point::serialized_size() static and constexpr to make this constexpr too
+size_t history_entry::serialized_size(domain::chain::point const& point) {
     return sizeof(uint64_t) + point.serialized_size(false) + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint64_t);
 }
 
