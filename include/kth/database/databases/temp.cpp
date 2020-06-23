@@ -413,7 +413,7 @@ void BlockchainLMDB::open(std::string const& filename, int const db_flags)
       compatible = false;
   }
 
-  if (!compatible)
+  if ( ! compatible)
   {
     txn.abort();
     kth_db_env_close(m_env);
