@@ -73,11 +73,11 @@ namespace boost
 
 // Extend boost namespace with our unspent output wrapper hash function.
 template <>
-struct hash<bc::database::unspent_transaction>
+struct hash<kth::database::unspent_transaction>
 {
-    size_t operator()(const bc::database::unspent_transaction& unspent) const
+    size_t operator()(const kth::database::unspent_transaction& unspent) const
     {
-        return boost::hash<bc::hash_digest>()(unspent.hash());
+        return boost::hash<kth::hash_digest>()(unspent.hash());
     }
 };
 
