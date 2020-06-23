@@ -121,8 +121,7 @@ private:
     mutable shared_mutex metadata_mutex_;
 };
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
