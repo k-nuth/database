@@ -709,7 +709,7 @@ code data_base::push_genesis(block const& block) {
 
 #if ! defined(KTH_DB_READONLY)
 // To push in order call with bucket = 0 and buckets = 1 (defaults).
-bool data_base::push_transactions(chain::block const& block, size_t height, uint32_t median_time_past, size_t bucket /*= 0*/, size_t buckets/*= 1*/) {
+bool data_base::push_transactions(domain::chain::block const& block, size_t height, uint32_t median_time_past, size_t bucket /*= 0*/, size_t buckets/*= 1*/) {
     KTH_ASSERT(bucket < buckets);
     auto const& txs = block.transactions();
     auto const count = txs.size();
