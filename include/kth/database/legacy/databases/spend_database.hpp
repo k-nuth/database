@@ -74,7 +74,7 @@ public:
     spend_statinfo statinfo() const;
 
 private:
-    typedef record_hash_table<chain::point> record_map;
+    typedef record_hash_table<domain::chain::point> record_map;
 
     // The starting size of the hash table, used by create.
     const size_t initial_map_file_size_;
