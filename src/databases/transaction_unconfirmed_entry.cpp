@@ -70,7 +70,7 @@ data_chunk transaction_unconfirmed_entry::factory_to_data(domain::chain::transac
 }
 
 // static
-void transaction_unconfirmed_entry::factory_to_data(std::ostream& stream, chain::transaction const& tx, uint32_t arrival_time, uint32_t height) {
+void transaction_unconfirmed_entry::factory_to_data(std::ostream& stream, domain::chain::transaction const& tx, uint32_t arrival_time, uint32_t height) {
     ostream_writer sink(stream);
     factory_to_data(sink, tx, arrival_time, height);
 }
