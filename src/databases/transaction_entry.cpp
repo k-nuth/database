@@ -73,7 +73,7 @@ size_t transaction_entry::serialized_size(domain::chain::transaction const& tx) 
 //-----------------------------------------------------------------------------
 
 // static
-data_chunk transaction_entry::factory_to_data(chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position) {
+data_chunk transaction_entry::factory_to_data(domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position) {
     data_chunk data;
     auto const size = serialized_size(tx);
     data.reserve(size);
