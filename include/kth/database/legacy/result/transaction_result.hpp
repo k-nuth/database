@@ -64,8 +64,7 @@ private:
     const hash_digest hash_;
 };
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DB_LEGACY
 
