@@ -156,7 +156,7 @@ result_code internal_database_basis<Clock>::insert_transaction(uint64_t id, doma
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_transactions(chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_transactions(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
     
     auto const& txs = block.transactions();
     uint32_t pos = 0;
