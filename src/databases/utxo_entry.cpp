@@ -83,7 +83,7 @@ void utxo_entry::to_data_fixed(std::ostream& stream, uint32_t height, uint32_t m
 }
 
 // static
-data_chunk utxo_entry::to_data_with_fixed(chain::output const& output, data_chunk const& fixed) {
+data_chunk utxo_entry::to_data_with_fixed(domain::chain::output const& output, data_chunk const& fixed) {
     //TODO(fernando):  reuse fixed vector (do not create a new one)
     data_chunk data;
     auto const size = output.serialized_size(false) + fixed.size();
