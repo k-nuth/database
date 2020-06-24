@@ -100,9 +100,8 @@ settings::settings(infrastructure::config::settings context)
             break;
         }
         default:
-        case config::settings::none: {}
+        case infrastructure::config::settings::none: {}
     }
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
