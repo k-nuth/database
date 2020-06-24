@@ -293,7 +293,6 @@ bool block_database::top(size_t& out_height) const
     return true;
 }
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DB_LEGACY
