@@ -186,7 +186,7 @@ bool memory_map::open()
     ///////////////////////////////////////////////////////////////////////////
 
     // Keep logging out of the critical section.
-    if (!error_name.empty())
+    if ( ! error_name.empty())
         return handle_error(error_name, filename_);
 
     log_mapping();
