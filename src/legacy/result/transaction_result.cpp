@@ -142,7 +142,7 @@ domain::chain::output transaction_result::output(uint32_t index) const {
 // ----------------------------------------------------------------------------
 
 // spender_heights are unguarded and will be inconsistent during write.
-chain::transaction transaction_result::transaction(bool witness) const
+domain::chain::transaction transaction_result::transaction(bool witness) const
 {
 #ifdef KTH_CURRENCY_BCH
     witness = false;
