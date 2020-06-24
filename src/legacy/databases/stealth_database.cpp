@@ -159,7 +159,6 @@ void stealth_database::store(uint32_t prefix, uint32_t height,
 ////    return false;
 ////}
 
-} // namespace database
-} // namespace kth
+} // namespace kth::database
 
 #endif // KTH_DB_STEALTH
