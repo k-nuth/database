@@ -112,28 +112,28 @@ TEST_CASE("block database  test", "[None]") {
     store::create(DIRECTORY "/block_lookup");
     store::create(DIRECTORY "/block_rows");
     block_database db(DIRECTORY "/block_lookup", DIRECTORY "/block_rows", 1000, 50);
-    BOOST_REQUIRE(db.create());
+    REQUIRE(db.create());
 
     size_t height;
-    BOOST_REQUIRE(!db.top(height));
+    REQUIRE( ! db.top(height));
 
     db.store(block0, 0);
     db.store(block1, 1);
     db.store(block2, 2);
     db.store(block3, 3);
-    BOOST_REQUIRE(db.top(height));
-    BOOST_REQUIRE_EQUAL(height, 3u);
+    REQUIRE(db.top(height));
+    REQUIRE(height == 3u);
 
     // Fetch block 2 by hash.
     {
         auto res_h2 = db.get(h2);
-        BOOST_REQUIRE(res_h2);
-        BOOST_REQUIRE(res_h2.header().hash() == h2);
-        BOOST_REQUIRE(res_h2.transaction_hash(0) == block2.transactions()[0].hash());
-        BOOST_REQUIRE(res_h2.transaction_hash(1) == block2.transactions()[1].hash());
-        BOOST_REQUIRE(res_h2.transaction_hash(2) == block2.transactions()[2].hash());
-        BOOST_REQUIRE(res_h2.transaction_hash(3) == block2.transactions()[3].hash());
-        BOOST_REQUIRE(res_h2.transaction_hash(4) == block2.transactions()[4].hash());
+        REQUIRE(res_h2);
+        REQUIRE(res_h2.header().hash() == h2);
+        REQUIRE(res_h2.transaction_hash(0) == block2.transactions()[0].hash());
+        REQUIRE(res_h2.transaction_hash(1) == block2.transactions()[1].hash());
+        REQUIRE(res_h2.transaction_hash(2) == block2.transactions()[2].hash());
+        REQUIRE(res_h2.transaction_hash(3) == block2.transactions()[3].hash());
+        REQUIRE(res_h2.transaction_hash(4) == block2.transactions()[4].hash());
     }
 
     // Try a fork event.
