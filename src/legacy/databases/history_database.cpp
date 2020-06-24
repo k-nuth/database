@@ -81,8 +81,7 @@ bool history_database::open() {
         rows_manager_.start();
 }
 
-bool history_database::close()
-{
+bool history_database::close() {
     return
         lookup_file_.close() &&
         rows_file_.close();
