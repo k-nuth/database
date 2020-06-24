@@ -109,11 +109,11 @@ input_point spend_database::get(const output_point& outpoint) const
     return spend;
 }
 
-void spend_database::store(const chain::output_point& outpoint,
-    const chain::input_point& spend)
+void spend_database::store(const domain::chain::output_point& outpoint,
+    const domain::chain::input_point& spend)
 {
     //OLD before merge (Feb2017)
-    //std::cout << "void spend_database::store(const chain::output_point& outpoint, const chain::input_point& spend)\n";
+    //std::cout << "void spend_database::store(const domain::chain::output_point& outpoint, const domain::chain::input_point& spend)\n";
     // auto const write = [&spend](memory_ptr data)
     auto const write = [&](serializer<uint8_t*>& serial)
     {
