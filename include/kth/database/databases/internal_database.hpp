@@ -7,7 +7,6 @@
 
 #include <filesystem>
 
-// #include <boost/filesystem.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 
@@ -31,6 +30,8 @@
 #include <kth/database/databases/history_entry.hpp>
 #include <kth/database/databases/transaction_entry.hpp>
 #include <kth/database/databases/transaction_unconfirmed_entry.hpp>
+
+#include <kth/infrastructure.hpp>
 
 #ifdef KTH_INTERNAL_DB_4BYTES_INDEX
 #define KTH_INTERNAL_DB_WIRE true
