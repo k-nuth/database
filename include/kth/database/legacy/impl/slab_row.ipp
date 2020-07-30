@@ -80,7 +80,7 @@ file_offset slab_row<KeyType>::create(const KeyType& key, write_function write,
     //   [ KeyType  ] <==
     //   [ next:8   ]
     //   [ value... ]
-    const size_t slab_size = prefix_size + value_size;
+    size_t const slab_size = prefix_size + value_size;
     position_ = manager_.new_slab(slab_size);
 
     auto const memory = raw_data(key_start);
@@ -112,15 +112,13 @@ void slab_row<KeyType>::link(file_offset next)
 }
 
 template <typename KeyType>
-bool slab_row<KeyType>::compare(const KeyType& key) const
-{
+bool slab_row<KeyType>::compare(const KeyType& key) const {
     auto const memory = raw_data(key_start);
     return std::equal(key.begin(), key.end(), REMAP_ADDRESS(memory));
 }
 
 template <typename KeyType>
-memory_ptr slab_row<KeyType>::data() const
-{
+memory_ptr slab_row<KeyType>::data() const {
     // Get value pointer.
     //   [ KeyType  ]
     //   [ next:8   ]
@@ -131,15 +129,13 @@ memory_ptr slab_row<KeyType>::data() const
 }
 
 template <typename KeyType>
-file_offset slab_row<KeyType>::offset() const
-{
+file_offset slab_row<KeyType>::offset() const {
     // Value data is at the end.
     return position_ + prefix_size;
 }
 
 template <typename KeyType>
-file_offset slab_row<KeyType>::next_position() const
-{
+file_offset slab_row<KeyType>::next_position() const {
     auto const memory = raw_data(key_size);
     auto const next_address = REMAP_ADDRESS(memory);
 
@@ -160,8 +156,7 @@ void slab_row<KeyType>::write_next_position(file_offset next)
 }
 
 template <typename KeyType>
-memory_ptr slab_row<KeyType>::raw_data(file_offset offset) const
-{
+memory_ptr slab_row<KeyType>::raw_data(file_offset offset) const {
     auto memory = manager_.get(position_);
     REMAP_INCREMENT(memory, offset);
     return memory;

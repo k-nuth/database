@@ -82,8 +82,7 @@ bool hash_table_header<IndexType, ValueType>::start()
 }
 
 template <typename IndexType, typename ValueType>
-ValueType hash_table_header<IndexType, ValueType>::read(IndexType index) const
-{
+ValueType hash_table_header<IndexType, ValueType>::read(IndexType index) const {
     // This is not runtime safe but test is avoided as an optimization.
     KTH_ASSERT(index < buckets_);
 
@@ -118,15 +117,13 @@ void hash_table_header<IndexType, ValueType>::write(IndexType index,
 }
 
 template <typename IndexType, typename ValueType>
-IndexType hash_table_header<IndexType, ValueType>::size() const
-{
+IndexType hash_table_header<IndexType, ValueType>::size() const {
     return buckets_;
 }
 
 template <typename IndexType, typename ValueType>
 file_offset hash_table_header<IndexType, ValueType>::item_position(
-    IndexType index) const
-{
+    IndexType index) const {
     return sizeof(IndexType) + index * sizeof(ValueType);
 }
 

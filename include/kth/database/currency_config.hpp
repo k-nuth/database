@@ -14,18 +14,18 @@
 
 namespace kth::database {
 
-#ifdef KTH_CURRENCY_BCH
+#if defined(KTH_CURRENCY_BCH)
 #define KTH_WITNESS_DEFAULT false
 #define KTH_POSITION_WRITER write_4_bytes_little_endian
 #define KTH_POSITION_READER read_4_bytes_little_endian
 static constexpr auto position_size = sizeof(uint32_t);
-const size_t position_max = max_uint32;
+size_t const position_max = max_uint32;
 #else
 #define KTH_WITNESS_DEFAULT true
 #define KTH_POSITION_WRITER write_2_bytes_little_endian
 #define KTH_POSITION_READER read_2_bytes_little_endian
 static constexpr auto position_size = sizeof(uint16_t);
-const size_t position_max = max_uint16;
+size_t const position_max = max_uint16;
 #endif // KTH_CURRENCY_BCH
 
 } // namespace kth::database

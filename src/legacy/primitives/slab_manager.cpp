@@ -68,8 +68,7 @@ bool slab_manager::start()
     ///////////////////////////////////////////////////////////////////////////
 }
 
-void slab_manager::sync() const
-{
+void slab_manager::sync() const {
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
     ALLOCATE_WRITE(mutex_);
@@ -79,8 +78,7 @@ void slab_manager::sync() const
 }
 
 // protected
-file_offset slab_manager::payload_size() const
-{
+file_offset slab_manager::payload_size() const {
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
     ALLOCATE_READ(mutex_);
@@ -100,7 +98,7 @@ file_offset slab_manager::new_slab(size_t size)
     // Always write after the last slab.
     auto const next_slab_position = payload_size_;
 
-    const size_t required_size = header_size_ + payload_size_ + size;
+    size_t const required_size = header_size_ + payload_size_ + size;
     file_.reserve(required_size);
     payload_size_ += size;
 
@@ -109,8 +107,7 @@ file_offset slab_manager::new_slab(size_t size)
 }
 
 // Position is offset by header but not size storage (embedded in data files).
-const memory_ptr slab_manager::get(file_offset position) const
-{
+const memory_ptr slab_manager::get(file_offset position) const {
     // Ensure requested position is within the file.
     // We avoid a runtime error here to optimize out the payload_size lock.
     KTH_ASSERT_MSG(position < payload_size(), "Read past end of file.");
@@ -135,8 +132,7 @@ void slab_manager::read_size()
 }
 
 // Write the size value to the first 64 bits of the file after the header.
-void slab_manager::write_size() const
-{
+void slab_manager::write_size() const {
     KTH_ASSERT(header_size_ + sizeof(file_offset) <= file_.size());
 
     // The accessor must remain in scope until the end of the block.

@@ -34,8 +34,7 @@ void record_multimap<KeyType>::store(const KeyType& key,
     // Link the row to the previous first element (or terminator).
     record.link(old_begin);
 
-    if (old_begin == record_list::empty)
-    {
+    if (old_begin == record_list::empty) {
         map_.store(key, [=](serializer<uint8_t*>& serial)
         {
             //*****************************************************************
@@ -58,8 +57,7 @@ void record_multimap<KeyType>::store(const KeyType& key,
 }
 
 template <typename KeyType>
-array_index record_multimap<KeyType>::find(const KeyType& key) const
-{
+array_index record_multimap<KeyType>::find(const KeyType& key) const {
     auto const begin_address = map_.find(key);
 
     if ( ! begin_address)
@@ -76,8 +74,7 @@ array_index record_multimap<KeyType>::find(const KeyType& key) const
 
 /// Get a remap safe address pointer to the indexed data.
 template <typename KeyType>
-memory_ptr record_multimap<KeyType>::get(array_index index) const
-{
+memory_ptr record_multimap<KeyType>::get(array_index index) const {
     const record_list record(manager_, index);
     return record.data();
 }
@@ -99,8 +96,7 @@ bool record_multimap<KeyType>::unlink(const KeyType& key)
         return map_.unlink(key);
 
     // Update the hash table entry, which skips the first of multiple rows.
-    map_.update(key, [&](serializer<uint8_t*>& serial)
-    {
+    map_.update(key, [&](serializer<uint8_t*>& serial) {
         // Critical Section.
         ///////////////////////////////////////////////////////////////////////
         unique_lock lock(update_mutex_);

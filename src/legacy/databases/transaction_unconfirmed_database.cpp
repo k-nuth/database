@@ -22,10 +22,10 @@ static constexpr auto value_size = sizeof(uint64_t);
 static constexpr auto arrival_time_size = sizeof(uint32_t);
 static constexpr auto metadata_size = arrival_time_size;
 
-#ifdef KTH_CURRENCY_BCH
-const size_t transaction_unconfirmed_database::unconfirmed = max_uint32;
+#if defined(KTH_CURRENCY_BCH)
+size_t const transaction_unconfirmed_database::unconfirmed = max_uint32;
 #else 
-const size_t transaction_unconfirmed_database::unconfirmed = max_uint16;
+size_t const transaction_unconfirmed_database::unconfirmed = max_uint16;
 #endif    
 
 // Transactions uses a hash table index, O(1).
@@ -131,7 +131,7 @@ uint32_t get_clock_now() {
 
 void transaction_unconfirmed_database::store(const domain::chain::transaction& tx) {
     uint32_t arrival_time = get_clock_now();
-#ifdef KTH_CURRENCY_BCH
+#if defined(KTH_CURRENCY_BCH)
         bool witness = false;
 #else
         bool witness = true;

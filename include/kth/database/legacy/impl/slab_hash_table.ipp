@@ -58,8 +58,7 @@ file_offset slab_hash_table<KeyType>::update(const KeyType& key,
     auto current = read_bucket_value(key);
 
     // Iterate through list...
-    while (current != header_.empty)
-    {
+    while (current != header_.empty) {
         const slab_row<KeyType> item(manager_, current);
 
         // Found.
@@ -83,14 +82,12 @@ file_offset slab_hash_table<KeyType>::update(const KeyType& key,
 
 // This is limited to returning the first of multiple matching key values.
 template <typename KeyType>
-memory_ptr slab_hash_table<KeyType>::find(const KeyType& key) const
-{
+memory_ptr slab_hash_table<KeyType>::find(const KeyType& key) const {
     // Find start item...
     auto current = read_bucket_value(key);
 
     // Iterate through list...
-    while (current != header_.empty)
-    {
+    while (current != header_.empty) {
         const slab_row<KeyType> item(manager_, current);
 
         // Found, return data.
@@ -116,8 +113,7 @@ bool slab_hash_table<KeyType>::unlink(const KeyType& key)
     const slab_row<KeyType> begin_item(manager_, previous);
 
     // If start item has the key then unlink from buckets.
-    if (begin_item.compare(key))
-    {
+    if (begin_item.compare(key)) {
         //*********************************************************************
         auto const next = begin_item.next_position();
         //*********************************************************************
@@ -133,8 +129,7 @@ bool slab_hash_table<KeyType>::unlink(const KeyType& key)
     ///////////////////////////////////////////////////////////////////////////
 
     // Iterate through list...
-    while (current != header_.empty)
-    {
+    while (current != header_.empty) {
         const slab_row<KeyType> item(manager_, current);
 
         // Found, unlink current item from previous.
@@ -167,8 +162,7 @@ bool slab_hash_table<KeyType>::unlink(const KeyType& key)
 }
 
 template <typename KeyType>
-array_index slab_hash_table<KeyType>::bucket_index(const KeyType& key) const
-{
+array_index slab_hash_table<KeyType>::bucket_index(const KeyType& key) const {
     auto const bucket = remainder(key, header_.size());
     KTH_ASSERT(bucket < header_.size());
     return bucket;
@@ -176,8 +170,7 @@ array_index slab_hash_table<KeyType>::bucket_index(const KeyType& key) const
 
 template <typename KeyType>
 file_offset slab_hash_table<KeyType>::read_bucket_value(
-    const KeyType& key) const
-{
+    const KeyType& key) const {
     auto const value = header_.read(bucket_index(key));
     static_assert(sizeof(value) == sizeof(file_offset), "Invalid size");
     return value;
@@ -190,8 +183,7 @@ void slab_hash_table<KeyType>::link(const KeyType& key, file_offset begin)
 }
 
 template <typename KeyType>
-file_offset slab_hash_table<KeyType>::read_bucket_value_by_index(array_index index) const
-{
+file_offset slab_hash_table<KeyType>::read_bucket_value_by_index(array_index index) const {
     auto const value = header_.read(index);
     static_assert(sizeof(value) == sizeof(file_offset), "Invalid size");
     return value;

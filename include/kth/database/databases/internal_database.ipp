@@ -385,6 +385,48 @@ domain::chain::header internal_database_basis<Clock>::get_header(uint32_t height
     return res;
 }
 
+template <typename Clock>
+domain::chain::header::list internal_database_basis<Clock>::get_headers(uint32_t from, uint32_t to) const {
+    // precondition: from <= to
+    domain::chain::header::list list;
+
+    KTH_DB_txn* db_txn;
+    auto zzz = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
+    if (zzz != KTH_DB_SUCCESS) {
+        return list;
+    }
+
+    KTH_DB_cursor* cursor;
+    if (kth_db_cursor_open(db_txn, dbi_block_header_, &cursor) != KTH_DB_SUCCESS) {
+        kth_db_txn_commit(db_txn);
+        return list;
+    }
+
+    auto key = kth_db_make_value(sizeof(from), &from);
+
+    KTH_DB_val value;
+    int rc = kth_db_cursor_get(cursor, &key, &value, KTH_DB_SET);
+    if (rc != KTH_DB_SUCCESS) {
+        kth_db_cursor_close(cursor);
+        kth_db_txn_commit(db_txn);
+        return list;
+    }
+
+    auto data = db_value_to_data_chunk(value);
+    list.push_back(domain::create<domain::chain::header>(data));
+
+    while ((rc = kth_db_cursor_get(cursor, &key, &value, KTH_DB_NEXT)) == KTH_DB_SUCCESS) {
+        auto height = *static_cast<uint32_t*>(kth_db_get_data(key));
+        if (height > to) break;
+        auto data = db_value_to_data_chunk(value);
+        list.push_back(domain::create<domain::chain::header>(data));
+    }
+    
+    kth_db_cursor_close(cursor);
+    kth_db_txn_commit(db_txn);
+    return list;
+}
+
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>

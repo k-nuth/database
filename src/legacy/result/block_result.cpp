@@ -55,8 +55,7 @@ block_result::block_result(const memory_ptr slab, hash_digest const& hash,
 {
 }
 
-block_result::operator bool() const
-{
+block_result::operator bool() const {
     return slab_ != nullptr;
 }
 
@@ -65,13 +64,11 @@ void block_result::reset()
     slab_.reset();
 }
 
-hash_digest const& block_result::hash() const
-{
+hash_digest const& block_result::hash() const {
     return hash_;
 }
 
-domain::chain::header block_result::header() const
-{
+domain::chain::header block_result::header() const {
     KTH_ASSERT(slab_);
     auto const memory = REMAP_ADDRESS(slab_);
     auto deserial = make_unsafe_deserializer(REMAP_ADDRESS(slab_));
@@ -86,43 +83,37 @@ domain::chain::header block_result::header() const
 }
 
 // TODO: block height is unguarded and will be inconsistent during write.
-size_t block_result::height() const
-{
+size_t block_result::height() const {
     KTH_ASSERT(slab_);
     return height_;
 }
 
-uint32_t block_result::bits() const
-{
+uint32_t block_result::bits() const {
     KTH_ASSERT(slab_);
     auto const memory = REMAP_ADDRESS(slab_);
     return from_little_endian_unsafe<uint32_t>(memory + bits_offset);
 }
 
-uint32_t block_result::timestamp() const
-{
+uint32_t block_result::timestamp() const {
     KTH_ASSERT(slab_);
     auto const memory = REMAP_ADDRESS(slab_);
     return from_little_endian_unsafe<uint32_t>(memory + time_offset);
 }
 
-uint32_t block_result::version() const
-{
+uint32_t block_result::version() const {
     KTH_ASSERT(slab_);
     auto const memory = REMAP_ADDRESS(slab_);
     return from_little_endian_unsafe<uint32_t>(memory + version_offset);
 }
 
-size_t block_result::transaction_count() const
-{
+size_t block_result::transaction_count() const {
     KTH_ASSERT(slab_);
     auto const memory = REMAP_ADDRESS(slab_);
     auto deserial = make_unsafe_deserializer(memory + count_offset);
     return deserial.read_size_little_endian();
 }
 
-hash_digest block_result::transaction_hash(size_t index) const
-{
+hash_digest block_result::transaction_hash(size_t index) const {
     KTH_ASSERT(slab_);
     auto const memory = REMAP_ADDRESS(slab_);
     auto deserial = make_unsafe_deserializer(memory + count_offset);
@@ -133,8 +124,7 @@ hash_digest block_result::transaction_hash(size_t index) const
     return deserial.read_hash();
 }
 
-hash_list block_result::transaction_hashes() const
-{
+hash_list block_result::transaction_hashes() const {
     KTH_ASSERT(slab_);
     auto const memory = REMAP_ADDRESS(slab_);
     auto deserial = make_unsafe_deserializer(memory + count_offset);
@@ -148,8 +138,7 @@ hash_list block_result::transaction_hashes() const
     return hashes;
 }
 
-uint64_t block_result::serialized_size() const
-{
+uint64_t block_result::serialized_size() const {
     KTH_ASSERT(slab_);
     auto const memory = REMAP_ADDRESS(slab_);
     auto deserial = make_unsafe_deserializer(memory + serialized_size_offset);

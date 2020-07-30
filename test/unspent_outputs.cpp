@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(unspent_outputs__remove2__capcity_0__empty) {
 }
 
 BOOST_AUTO_TEST_CASE(unspent_outputs__remove2__remove_one_output__expected_outputs) {
-    static const size_t expected_height = 41;
+    static size_t const expected_height = 41;
     static const uint64_t expected_value = 42;
     static const transaction tx1{ 0, 0, {}, { { 0, {} }, { 1, {} } } };
     static const transaction tx2{ 0, 0, {}, { { 0, {} }, { expected_value, {} } } };
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(unspent_outputs__remove2__remove_one_output__expected_outpu
 }
 
 BOOST_AUTO_TEST_CASE(unspent_outputs__get__two_capacity_1__size_1_expected) {
-    static const size_t expected_height = 40;
+    static size_t const expected_height = 40;
     static const transaction tx1{ 0, 0, {}, { {}, {} } };
     unspent_outputs cache(1);
     cache.add(tx1, expected_height, 0, false);

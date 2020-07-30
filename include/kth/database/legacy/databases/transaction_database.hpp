@@ -38,7 +38,7 @@ public:
     typedef std::shared_ptr<shared_mutex> mutex_ptr;
 
     /// Sentinel for use in tx position to indicate unconfirmed.
-    static const size_t unconfirmed;
+    static size_t const unconfirmed;
 
     /// Construct the database.
     transaction_database(const path& map_filename, size_t buckets,
@@ -101,7 +101,7 @@ public:
         bool require_confirmed) const;
 
     // The starting size of the hash table, used by create.
-    const size_t initial_map_file_size_;
+    size_t const initial_map_file_size_;
 
     // Hash table used for looking up txs by hash.
     memory_map lookup_file_;

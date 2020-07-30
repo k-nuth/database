@@ -67,39 +67,32 @@ unspent_transaction::unspent_transaction(const domain::chain::transaction& tx,
         (*outputs_)[index] = outputs[index];
 }
 
-hash_digest const& unspent_transaction::hash() const
-{
+hash_digest const& unspent_transaction::hash() const {
     return hash_;
 }
 
-size_t unspent_transaction::height() const
-{
+size_t unspent_transaction::height() const {
     return height_;
 }
 
-uint32_t unspent_transaction::median_time_past() const
-{
+uint32_t unspent_transaction::median_time_past() const {
     return median_time_past_;
 }
 
-bool unspent_transaction::is_coinbase() const
-{
+bool unspent_transaction::is_coinbase() const {
     return is_coinbase_;
 }
 
-bool unspent_transaction::is_confirmed() const
-{
+bool unspent_transaction::is_confirmed() const {
     return is_confirmed_;
 }
 
-unspent_transaction::output_map_ptr unspent_transaction::outputs() const
-{
+unspent_transaction::output_map_ptr unspent_transaction::outputs() const {
     return outputs_;
 }
 
 // For the purpose of bimap identity only the tx hash matters.
-bool unspent_transaction::operator==(const unspent_transaction& other) const
-{
+bool unspent_transaction::operator==(const unspent_transaction& other) const {
     return hash_ == other.hash_;
 }
 

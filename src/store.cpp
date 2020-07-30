@@ -48,7 +48,7 @@ using namespace kth::database;
 
 // The threashold max_uint32 is used to align with fixed-width config settings,
 // and size_t is used to align with the database height domain.
-const size_t store::without_indexes = max_uint32;
+size_t const store::without_indexes = max_uint32;
 
 bool store::use_indexes() const {
 #ifdef KTH_DB_WITH_INDEXES

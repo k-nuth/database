@@ -31,7 +31,7 @@ public:
     typedef std::filesystem::path path;
     typedef std::shared_ptr<shared_mutex> mutex_ptr;
 
-    static const size_t default_expansion;
+    static size_t const default_expansion;
 
     /// Construct a database (start is currently called, may throw).
     memory_map(const path& filename);
@@ -88,7 +88,7 @@ private:
 
     // File system.
     int const file_handle_;
-    const size_t expansion_;
+    size_t const expansion_;
     const std::filesystem::path filename_;
 
     // Protected by internal mutex.

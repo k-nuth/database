@@ -248,9 +248,8 @@ BOOST_FIXTURE_TEST_SUITE(data_base_tests, data_base_setup_fixture)
 
 class data_base_accessor : public data_base {
 public:
-    data_base_accessor(const settings& settings)
-        : data_base(settings)
-    {}
+    data_base_accessor(settings const& settings)
+        : data_base(settings) {}
 
     void push_all(block_const_ptr_list_const_ptr in_blocks, size_t first_height, dispatcher& dispatch, result_handler handler) {
         data_base::push_all(in_blocks, first_height, dispatch, handler);

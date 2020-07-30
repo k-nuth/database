@@ -35,7 +35,7 @@ bool read_coinbase(Deserializer& deserial) {
     return deserial.KTH_POSITION_READER() == 0;
 }
 
-const size_t transaction_database::unconfirmed = position_max;
+size_t const transaction_database::unconfirmed = position_max;
 static constexpr auto median_time_past_size = sizeof(uint32_t);
 static constexpr auto spender_height_value_size = height_size + value_size;
 static constexpr auto metadata_size = height_size + position_size + median_time_past_size;

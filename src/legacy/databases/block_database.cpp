@@ -113,8 +113,7 @@ void block_database::synchronize()
 }
 
 // Flush the memory maps to disk.
-bool block_database::flush() const
-{
+bool block_database::flush() const {
     return
         lookup_file_.flush() &&
         index_file_.flush();
@@ -123,13 +122,11 @@ bool block_database::flush() const
 // Queries.
 // ----------------------------------------------------------------------------
 
-bool block_database::exists(size_t height) const
-{
+bool block_database::exists(size_t height) const {
     return height < index_manager_.count() && read_position(height) != empty;
 }
 
-block_result block_database::get(size_t height) const
-{
+block_result block_database::get(size_t height) const {
     if (height >= index_manager_.count())
         return{};
 
@@ -147,12 +144,10 @@ block_result block_database::get(size_t height) const
     return block_result(slab, deserial.read_hash(), height);
 }
 
-block_result block_database::get(hash_digest const& hash) const
-{
+block_result block_database::get(hash_digest const& hash) const {
     auto const slab = lookup_map_.find(hash);
 
-    if (slab)
-    {
+    if (slab) {
         ///////////////////////////////////////////////////////////////////////
         metadata_mutex_.lock_shared();
         auto const height_start = REMAP_ADDRESS(slab) + height_offset;
@@ -174,8 +169,7 @@ void block_database::store(const block& block, size_t height)
     auto const tx_count = block.transactions().size();
 
     // Write block data.
-    auto const write = [&](serializer<uint8_t*>& serial)
-    {
+    auto const write = [&](serializer<uint8_t*>& serial) {
         // WRITE THE BLOCK HEADER (including median_time_past metadata).
         block.header().to_data(serial, false);
 
@@ -204,8 +198,7 @@ void block_database::store(const block& block, size_t height)
     write_position(position, height32);
 }
 
-bool block_database::gaps(heights& out_gaps) const
-{
+bool block_database::gaps(heights& out_gaps) const {
     auto const count = index_manager_.count();
 
     for (size_t height = 0; height < count; ++height)
@@ -217,8 +210,7 @@ bool block_database::gaps(heights& out_gaps) const
 
 bool block_database::unlink(size_t from_height)
 {
-    if (index_manager_.count() > from_height)
-    {
+    if (index_manager_.count() > from_height) {
         index_manager_.set_count(from_height);
         return true;
     }
@@ -229,8 +221,7 @@ bool block_database::unlink(size_t from_height)
 // This is necessary for parallel import, as gaps are created.
 void block_database::zeroize(array_index first, array_index count)
 {
-    for (auto index = first; index < (first + count); ++index)
-    {
+    for (auto index = first; index < (first + count); ++index) {
         auto const slab = index_manager_.get(index);
         auto serial = make_unsafe_serializer(REMAP_ADDRESS(slab));
         serial.write_8_bytes_little_endian(empty);
@@ -253,8 +244,7 @@ void block_database::write_position(file_offset position, array_index height)
     mutex_.unlock_upgrade_and_lock();
 
     // Guard write to prevent overwriting preceding height write.
-    if (new_count > initial_count)
-    {
+    if (new_count > initial_count) {
         auto const create_count = new_count - initial_count;
         index_manager_.new_records(create_count);
         zeroize(initial_count, create_count - 1);
@@ -269,8 +259,7 @@ void block_database::write_position(file_offset position, array_index height)
     ///////////////////////////////////////////////////////////////////////////
 }
 
-file_offset block_database::read_position(array_index height) const
-{
+file_offset block_database::read_position(array_index height) const {
     auto const slab = index_manager_.get(height);
 
     // Critical Section
@@ -281,8 +270,7 @@ file_offset block_database::read_position(array_index height) const
 }
 
 // The index of the highest existing block, independent of gaps.
-bool block_database::top(size_t& out_height) const
-{
+bool block_database::top(size_t& out_height) const {
     auto const count = index_manager_.count();
 
     // Guard against no genesis block.

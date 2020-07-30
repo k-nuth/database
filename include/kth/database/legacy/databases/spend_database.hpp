@@ -24,10 +24,10 @@ struct KD_API spend_statinfo
 {
     /// Number of buckets used in the hashtable.
     /// load factor = rows / buckets
-    const size_t buckets;
+    size_t const buckets;
 
     /// Total number of spend rows.
-    const size_t rows;
+    size_t const rows;
 };
 
 /// This enables you to lookup the spend of an output point, returning
@@ -77,7 +77,7 @@ private:
     typedef record_hash_table<domain::chain::point> record_map;
 
     // The starting size of the hash table, used by create.
-    const size_t initial_map_file_size_;
+    size_t const initial_map_file_size_;
 
     // Hash table used for looking up inpoint spends by outpoint.
     memory_map lookup_file_;

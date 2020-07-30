@@ -56,8 +56,7 @@ void record_hash_table<KeyType>::update(const KeyType& key,
     auto current = read_bucket_value(key);
 
     // Iterate through list...
-    while (current != header_.empty)
-    {
+    while (current != header_.empty) {
         const record_row<KeyType> item(manager_, current);
 
         // Found.
@@ -79,14 +78,12 @@ void record_hash_table<KeyType>::update(const KeyType& key,
 
 // This is limited to returning the first of multiple matching key values.
 template <typename KeyType>
-memory_ptr record_hash_table<KeyType>::find(const KeyType& key) const
-{
+memory_ptr record_hash_table<KeyType>::find(const KeyType& key) const {
     // Find start item...
     auto current = read_bucket_value(key);
 
     // Iterate through list...
-    while (current != header_.empty)
-    {
+    while (current != header_.empty) {
         const record_row<KeyType> item(manager_, current);
 
         // Found, return data.
@@ -112,8 +109,7 @@ bool record_hash_table<KeyType>::unlink(const KeyType& key)
     const record_row<KeyType> begin_item(manager_, previous);
 
     // If start item has the key then unlink from buckets.
-    if (begin_item.compare(key))
-    {
+    if (begin_item.compare(key)) {
         //*********************************************************************
         auto const next = begin_item.next_index();
         //*********************************************************************
@@ -129,8 +125,7 @@ bool record_hash_table<KeyType>::unlink(const KeyType& key)
     ///////////////////////////////////////////////////////////////////////////
 
     // Iterate through list...
-    while (current != header_.empty)
-    {
+    while (current != header_.empty) {
         const record_row<KeyType> item(manager_, current);
 
         // Found, unlink current item from previous.
@@ -163,8 +158,7 @@ bool record_hash_table<KeyType>::unlink(const KeyType& key)
 }
 
 template <typename KeyType>
-array_index record_hash_table<KeyType>::bucket_index(const KeyType& key) const
-{
+array_index record_hash_table<KeyType>::bucket_index(const KeyType& key) const {
     auto const bucket = remainder(key, header_.size());
     KTH_ASSERT(bucket < header_.size());
     return bucket;
@@ -172,8 +166,7 @@ array_index record_hash_table<KeyType>::bucket_index(const KeyType& key) const
 
 template <typename KeyType>
 array_index record_hash_table<KeyType>::read_bucket_value(
-    const KeyType& key) const
-{
+    const KeyType& key) const {
     auto value = header_.read(bucket_index(key));
     static_assert(sizeof(value) == sizeof(array_index), "Invalid size");
     return value;

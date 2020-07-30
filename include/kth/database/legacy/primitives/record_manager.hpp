@@ -75,7 +75,7 @@ private:
     mutable shared_mutex mutex_;
 
     // Records are fixed size.
-    const size_t record_size_;
+    size_t const record_size_;
 };
 
 } // namespace kth::database

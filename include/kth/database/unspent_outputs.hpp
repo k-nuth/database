@@ -71,7 +71,7 @@ private:
         boost::bimaps::set_of<uint32_t>> unspent_transactions;
 
     // These are thread safe.
-    const size_t capacity_;
+    size_t const capacity_;
     mutable std::atomic<size_t> hits_;
     mutable std::atomic<size_t> queries_;
 

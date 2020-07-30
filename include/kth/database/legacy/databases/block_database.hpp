@@ -92,7 +92,7 @@ private:
     file_offset read_position(array_index height) const;
 
     // The starting size of the hash table, used by create.
-    const size_t initial_map_file_size_;
+    size_t const initial_map_file_size_;
 
     /// Hash table used for looking up blocks by hash.
     memory_map lookup_file_;

@@ -86,16 +86,14 @@ void spend_database::synchronize()
 }
 
 // Flush the memory map to disk.
-bool spend_database::flush() const
-{
+bool spend_database::flush() const {
     return lookup_file_.flush();
 }
 
 // Queries.
 // ----------------------------------------------------------------------------
 
-input_point spend_database::get(const output_point& outpoint) const
-{
+input_point spend_database::get(const output_point& outpoint) const {
     input_point spend;
     auto const slab = lookup_map_.find(outpoint);
 
@@ -115,8 +113,7 @@ void spend_database::store(const domain::chain::output_point& outpoint,
     //OLD before merge (Feb2017)
     //std::cout << "void spend_database::store(const domain::chain::output_point& outpoint, const domain::chain::input_point& spend)\n";
     // auto const write = [&spend](memory_ptr data)
-    auto const write = [&](serializer<uint8_t*>& serial)
-    {
+    auto const write = [&](serializer<uint8_t*>& serial) {
         spend.to_data(serial, false);
     };
 
@@ -135,8 +132,7 @@ bool spend_database::unlink(const output_point& outpoint)
     return lookup_map_.unlink(outpoint);
 }
 
-spend_statinfo spend_database::statinfo() const
-{
+spend_statinfo spend_database::statinfo() const {
     return
     {
         lookup_header_.size(),

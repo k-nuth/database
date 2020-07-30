@@ -35,8 +35,7 @@ void BlockchainLMDB::do_resize(uint64_t increase_size)
   try {
     std::filesystem::path path(m_folder);
     std::filesystem::space_info si = std::filesystem::space(path);
-    if(si.available < add_size)
-    {
+    if(si.available < add_size) {
       MERROR("!! WARNING: Insufficient free space to extend database !!: " <<
           (si.available >> 20L) << " MB available, " << (add_size >> 20L) << " MB needed");
       return;
@@ -62,8 +61,7 @@ void BlockchainLMDB::do_resize(uint64_t increase_size)
   mdb_txn_safe::prevent_new_txns();
   if (m_write_txn != nullptr)
   {
-    if (m_batch_active)
-    {
+    if (m_batch_active) {
       throw0(DB_ERROR("lmdb resizing not yet supported when batch transactions enabled!"));
     }
     else
@@ -79,8 +77,7 @@ void BlockchainLMDB::do_resize(uint64_t increase_size)
   mdb_txn_safe::allow_new_txns();
 }
 // threshold_size is used for batch transactions
-bool BlockchainLMDB::need_resize(uint64_t threshold_size) const
-{
+bool BlockchainLMDB::need_resize(uint64_t threshold_size) const {
   LOG_PRINT_L3("BlockchainLMDB::" << __func__);
 #if defined(ENABLE_AUTO_RESIZE)
   MDB_envinfo mei;
@@ -100,8 +97,7 @@ bool BlockchainLMDB::need_resize(uint64_t threshold_size) const
   LOG_PRINT_L1(boost::format("Percent used: %.04f  Percent threshold: %.04f") % ((double)size_used/mei.me_mapsize) % resize_percent);
   if (threshold_size > 0)
   {
-    if (mei.me_mapsize - size_used < threshold_size)
-    {
+    if (mei.me_mapsize - size_used < threshold_size) {
       LOG_PRINT_L1("Threshold met (size-based)");
       return true;
     }
@@ -147,8 +143,7 @@ void BlockchainLMDB::check_and_resize_for_batch(uint64_t batch_num_blocks, uint6
     do_resize(increase_size);
   }
 }
-uint64_t BlockchainLMDB::get_estimated_batch_size(uint64_t batch_num_blocks, uint64_t batch_bytes) const
-{
+uint64_t BlockchainLMDB::get_estimated_batch_size(uint64_t batch_num_blocks, uint64_t batch_bytes) const {
   LOG_PRINT_L3("BlockchainLMDB::" << __func__);
   uint64_t threshold_size = 0;
   // batch size estimate * batch safety factor = final size estimate
@@ -193,8 +188,7 @@ uint64_t BlockchainLMDB::get_estimated_batch_size(uint64_t batch_num_blocks, uin
     KTH_DB_txn *rtxn;
     mdb_txn_cursors *rcurs;
     block_rtxn_start(&rtxn, &rcurs);
-    for (uint64_t block_num = block_start; block_num <= block_stop; ++block_num)
-    {
+    for (uint64_t block_num = block_start; block_num <= block_stop; ++block_num) {
       // we have access to block weight, which will be greater or equal to block size,
       // so use this as a proxy. If it's too much off, we might have to check actual size,
       // which involves reading more data, so is not really wanted
@@ -386,14 +380,12 @@ void BlockchainLMDB::open(std::string const& filename, int const db_flags)
 
     //TODO: check this cast
     const uint32_t db_version = *(const uint32_t*) kth_db_get_data(v);
-    if (db_version > VERSION)
-    {
+    if (db_version > VERSION) {
       MWARNING("Existing lmdb database was made by a later version (" << db_version << "). We don't know how it will change yet.");
       compatible = false;
     }
 #if VERSION > 0
-    else if (db_version < VERSION)
-    {
+    else if (db_version < VERSION) {
       // Note that there was a schema change within version 0 as well.
       // See commit e5d2680094ee15889934fe28901e4e133cda56f2 2015/07/10
       // We don't handle the old format previous to that commit.
@@ -426,8 +418,7 @@ void BlockchainLMDB::open(std::string const& filename, int const db_flags)
   if ( ! (mdb_flags & KTH_DB_RDONLY))
   {
     // only write version on an empty DB
-    if (m_height == 0)
-    {
+    if (m_height == 0) {
       MDB_val_copy<const char*> k("version");
       MDB_val_copy<uint32_t> v(VERSION);
       auto put_result = kth_db_put(txn, m_properties, &k, &v, 0);
@@ -521,8 +512,7 @@ void BlockchainLMDB::reset()
 
 
 
-bool BlockchainLMDB::is_read_only() const
-{
+bool BlockchainLMDB::is_read_only() const {
   unsigned int flags;
   auto result = mdb_env_get_flags(m_env, &flags);
   if (result)
@@ -531,8 +521,7 @@ bool BlockchainLMDB::is_read_only() const
     return true;
   return false;
 }
-uint64_t BlockchainLMDB::get_database_size() const
-{
+uint64_t BlockchainLMDB::get_database_size() const {
   uint64_t size = 0;
   std::filesystem::path datafile(m_folder);
   datafile /= CRYPTONOTE_BLOCKCHAINDATA_FILENAME;

@@ -23,18 +23,15 @@ void record_multimap_iterator::operator++()
     index_ = record_list(manager, index_).next_index();
 }
 
-array_index record_multimap_iterator::operator*() const
-{
+array_index record_multimap_iterator::operator*() const {
     return index_;
 }
 
-bool record_multimap_iterator::operator==(record_multimap_iterator other) const
-{
+bool record_multimap_iterator::operator==(record_multimap_iterator other) const {
     return this->index_ == other.index_;
 }
 
-bool record_multimap_iterator::operator!=(record_multimap_iterator other) const
-{
+bool record_multimap_iterator::operator!=(record_multimap_iterator other) const {
     return this->index_ != other.index_;
 }
 

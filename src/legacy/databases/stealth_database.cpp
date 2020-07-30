@@ -84,8 +84,7 @@ void stealth_database::synchronize()
 }
 
 // Flush the memory map to disk.
-bool stealth_database::flush() const
-{
+bool stealth_database::flush() const {
     return rows_file_.flush();
 }
 
@@ -96,12 +95,10 @@ bool stealth_database::flush() const
 // The prefix is fixed at 32 bits, but the filter is 0-32 bits, so the records
 // cannot be indexed using a hash table. We also do not index by height.
 stealth_compact::list stealth_database::scan(const binary& filter,
-    size_t from_height) const
-{
+    size_t from_height) const {
     stealth_compact::list result;
 
-    for (array_index row = 0; row < rows_manager_.count(); ++row)
-    {
+    for (array_index row = 0; row < rows_manager_.count(); ++row) {
         auto const record = rows_manager_.get(row);
         auto memory = REMAP_ADDRESS(record);
         auto const field = from_little_endian_unsafe<uint32_t>(memory);

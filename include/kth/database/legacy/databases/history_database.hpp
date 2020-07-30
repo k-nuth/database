@@ -23,13 +23,13 @@ struct KD_API history_statinfo
 {
     /// Number of buckets used in the hashtable.
     /// load factor = addrs / buckets
-    const size_t buckets;
+    size_t const buckets;
 
     /// Total number of unique addresses in the database.
-    const size_t addrs;
+    size_t const addrs;
 
     /// Total number of rows across all addresses.
-    const size_t rows;
+    size_t const rows;
 };
 
 /// This is a multimap where the key is the Bitcoin address hash,
@@ -89,7 +89,7 @@ private:
     typedef record_multimap<short_hash> record_multiple_map;
 
     // The starting size of the hash table, used by create.
-    const size_t initial_map_file_size_;
+    size_t const initial_map_file_size_;
 
     /// Hash table used for start index lookup for linked list by address hash.
     memory_map lookup_file_;

@@ -80,8 +80,7 @@ void record_manager::sync()
     ///////////////////////////////////////////////////////////////////////////
 }
 
-array_index record_manager::count() const
-{
+array_index record_manager::count() const {
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
     ALLOCATE_READ(mutex_);
@@ -113,8 +112,8 @@ array_index record_manager::new_records(size_t count)
     // Always write after the last index.
     auto const next_record_index = record_count_;
 
-    const size_t position = record_to_position(record_count_ + count);
-    const size_t required_size = header_size_ + position;
+    size_t const position = record_to_position(record_count_ + count);
+    size_t const required_size = header_size_ + position;
     file_.reserve(required_size);
     record_count_ += count;
 
@@ -122,8 +121,7 @@ array_index record_manager::new_records(size_t count)
     ///////////////////////////////////////////////////////////////////////////
 }
 
-const memory_ptr record_manager::get(array_index record) const
-{
+const memory_ptr record_manager::get(array_index record) const {
     // If record >= count() then we should still be within the file. The
     // condition implies a block has been popped between a guard and this read.
     // The read will be invalidated and should not cause any other fault.
@@ -159,13 +157,11 @@ void record_manager::write_count()
     serial.write_little_endian(record_count_);
 }
 
-array_index record_manager::position_to_record(file_offset position) const
-{
+array_index record_manager::position_to_record(file_offset position) const {
     return (position - sizeof(array_index)) / record_size_;
 }
 
-file_offset record_manager::record_to_position(array_index record) const
-{
+file_offset record_manager::record_to_position(array_index record) const {
     return sizeof(array_index) + record * record_size_;
 }
 

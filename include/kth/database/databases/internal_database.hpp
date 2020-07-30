@@ -120,7 +120,7 @@ public:
     
     std::pair<domain::chain::header, uint32_t> get_header(hash_digest const& hash) const;
     domain::chain::header get_header(uint32_t height) const;
-    
+    domain::chain::header::list get_headers(uint32_t from, uint32_t to) const;
 
 #if ! defined(KTH_DB_READONLY)
     result_code pop_block(domain::chain::block& out_block);
@@ -234,14 +234,11 @@ private:
     domain::chain::header get_header(uint32_t height, KTH_DB_txn* db_txn) const;
 
     domain::chain::block get_block_reorg(uint32_t height, KTH_DB_txn* db_txn) const;
-       
     domain::chain::block get_block_reorg(uint32_t height) const;
 
 #if ! defined(KTH_DB_READONLY)
     result_code remove_block(domain::chain::block const& block, uint32_t height);
-    
     result_code prune_reorg_index(uint32_t remove_until, KTH_DB_txn* db_txn);
-    
     result_code prune_reorg_block(uint32_t amount_to_delete, KTH_DB_txn* db_txn);
 #endif
 

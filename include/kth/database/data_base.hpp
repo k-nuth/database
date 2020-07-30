@@ -277,7 +277,7 @@ private:
 
 
     std::atomic<bool> closed_;
-    const settings& settings_;
+    settings const& settings_;
 
 #ifdef KTH_DB_LEGACY
     // Used to prevent concurrent unsafe writes.

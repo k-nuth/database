@@ -20,13 +20,11 @@ unspent_outputs::unspent_outputs(size_t capacity)
 {
 }
 
-bool unspent_outputs::disabled() const
-{
+bool unspent_outputs::disabled() const {
     return capacity_ == 0;
 }
 
-size_t unspent_outputs::empty() const
-{
+size_t unspent_outputs::empty() const {
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
     shared_lock lock(mutex_);
@@ -35,8 +33,7 @@ size_t unspent_outputs::empty() const
     ///////////////////////////////////////////////////////////////////////////
 }
 
-size_t unspent_outputs::size() const
-{
+size_t unspent_outputs::size() const {
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
     shared_lock lock(mutex_);
@@ -45,13 +42,12 @@ size_t unspent_outputs::size() const
     ///////////////////////////////////////////////////////////////////////////
 }
 
-float unspent_outputs::hit_rate() const
-{
+float unspent_outputs::hit_rate() const {
     // These values could overflow or divide by zero, but that's okay.
     return hits_ * 1.0f / queries_;
 }
 
-void unspent_outputs::add(const transaction& transaction, size_t height,
+void unspent_outputs::add(transaction const& transaction, size_t height,
     uint32_t median_time_past, bool confirmed)
 {
     if (disabled() || transaction.outputs().empty())
@@ -93,8 +89,7 @@ void unspent_outputs::remove(hash_digest const& tx_hash)
     // Find the unspent tx entry.
     auto const tx = unspent_.left.find(key);
 
-    if (tx == unspent_.left.end())
-    {
+    if (tx == unspent_.left.end()) {
         mutex_.unlock_upgrade();
         //---------------------------------------------------------------------
         return;
@@ -122,8 +117,7 @@ void unspent_outputs::remove(const output_point& point)
     // Find the unspent tx entry that may contain the output.
     auto tx = unspent_.left.find(key);
 
-    if (tx == unspent_.left.end())
-    {
+    if (tx == unspent_.left.end()) {
         mutex_.unlock_upgrade();
         //---------------------------------------------------------------------
         return;
@@ -147,8 +141,7 @@ void unspent_outputs::remove(const output_point& point)
 bool unspent_outputs::get(output& out_output, size_t& out_height,
     uint32_t& out_median_time_past, bool& out_coinbase,
     const output_point& point, size_t fork_height,
-    bool require_confirmed) const
-{
+    bool require_confirmed) const {
     if (disabled())
         return false;
 
@@ -192,8 +185,7 @@ bool unspent_outputs::get(output& out_output, size_t& out_height,
 
 bool unspent_outputs::get_is_confirmed(output& out_output, size_t& out_height, 
     bool& out_coinbase, bool& out_is_confirmed, const output_point& point, size_t fork_height,
-    bool require_confirmed) const
-{
+    bool require_confirmed) const {
     if (disabled())
         return false;
 

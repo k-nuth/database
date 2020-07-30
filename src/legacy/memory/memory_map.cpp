@@ -41,7 +41,7 @@ namespace kth::database {
 #define INVALID_HANDLE -1
 
 // The percentage increase, e.g. 50 is 150% of the target size.
-const size_t memory_map::default_expansion = 50;
+size_t const memory_map::default_expansion = 50;
 
 size_t memory_map::file_size(int file_handle)
 {
@@ -108,8 +108,7 @@ void memory_map::log_resizing(size_t size) const {
     LOG_DEBUG(LOG_DATABASE, "Resizing: ", filename_, " [", size, "]");
 }
 
-void memory_map::log_flushed() const
-{
+void memory_map::log_flushed() const {
     LOG_DEBUG(LOG_DATABASE, "Flushed: ", filename_, " [", logical_size_, "]");
 }
 
@@ -163,8 +162,7 @@ bool memory_map::open()
     ///////////////////////////////////////////////////////////////////////////
     mutex_.lock_upgrade();
 
-    if ( ! closed_)
-    {
+    if ( ! closed_) {
         mutex_.unlock_upgrade();
         //---------------------------------------------------------------------
         return false;
@@ -193,16 +191,14 @@ bool memory_map::open()
     return true;
 }
 
-bool memory_map::flush() const
-{
+bool memory_map::flush() const {
     std::string error_name;
 
     // Critical Section (internal/unconditional)
     ///////////////////////////////////////////////////////////////////////////
     mutex_.lock_upgrade();
 
-    if (closed_)
-    {
+    if (closed_) {
         mutex_.unlock_upgrade();
         //---------------------------------------------------------------------
         return true;
@@ -237,8 +233,7 @@ bool memory_map::close()
     ///////////////////////////////////////////////////////////////////////////
     mutex_.lock_upgrade();
 
-    if (closed_)
-    {
+    if (closed_) {
         mutex_.unlock_upgrade();
         //---------------------------------------------------------------------
         return true;
@@ -273,8 +268,7 @@ bool memory_map::close()
     return true;
 }
 
-bool memory_map::closed() const
-{
+bool memory_map::closed() const {
     // Critical Section (internal/unconditional)
     ///////////////////////////////////////////////////////////////////////////
     REMAP_READ(mutex_);
@@ -286,8 +280,7 @@ bool memory_map::closed() const
 // Operations.
 // ----------------------------------------------------------------------------
 
-size_t memory_map::size() const
-{
+size_t memory_map::size() const {
     // Critical Section (internal)
     ///////////////////////////////////////////////////////////////////////////
     REMAP_READ(mutex_);
@@ -332,11 +325,10 @@ memory_ptr memory_map::reserve(size_t size, size_t expansion)
     if (closed_)
         throw std::runtime_error("Resize failure, store already closed.");
 
-    if (size > file_size_)
-    {
+    if (size > file_size_) {
         // TODO: manage overflow (requires ceiling_multiply).
         // Expansion is an integral number that represents a real number factor.
-        const size_t target = size * ((expansion + 100.0) / 100.0);
+        size_t const target = size * ((expansion + 100.0) / 100.0);
 
         mutex_.unlock_upgrade_and_lock();
         //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -364,8 +356,7 @@ memory_ptr memory_map::reserve(size_t size, size_t expansion)
 // privates
 // ----------------------------------------------------------------------------
 
-size_t memory_map::page() const
-{
+size_t memory_map::page() const {
 #ifdef _WIN32
     SYSTEM_INFO configuration;
     GetSystemInfo(&configuration);
@@ -444,8 +435,7 @@ bool memory_map::truncate_mapped(size_t size)
 
 bool memory_map::validate(size_t size)
 {
-    if (data_ == MAP_FAILED)
-    {
+    if (data_ == MAP_FAILED) {
         file_size_ = 0;
         data_ = nullptr;
         return false;

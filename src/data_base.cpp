@@ -41,7 +41,7 @@ using namespace std::placeholders;
 // Construct.
 // ----------------------------------------------------------------------------
 
-data_base::data_base(const settings& settings)
+data_base::data_base(settings const& settings)
     : closed_(true)
     , settings_(settings)
 #ifdef KTH_DB_LEGACY    
@@ -513,7 +513,7 @@ code data_base::verify_push(const block& block, size_t height) {
 //Note(Knuth): We don't store spend information
 #if defined(KTH_DB_LEGACY)
 //TODO(fernando): const?
-code data_base::verify_push(const transaction& tx) {
+code data_base::verify_push(transaction const& tx) {
     auto const result = transactions_->get(tx.hash(), max_size_t, false);
     return result && ! result.is_spent(max_size_t) ? error::unspent_duplicate : error::success;
 }
@@ -886,7 +886,7 @@ void data_base::push_stealth(hash_digest const& tx_hash, size_t height, const ou
 #endif // KTH_DB_STEALTH
 
 
-#ifdef KTH_CURRENCY_BCH
+#if defined(KTH_CURRENCY_BCH)
 
 #ifdef KTH_DB_LEGACY
 

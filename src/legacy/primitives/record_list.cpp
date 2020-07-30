@@ -47,8 +47,7 @@ void record_list::link(array_index next)
     serial.template write_little_endian<array_index>(next);
     //*************************************************************************
 }
-memory_ptr record_list::data() const
-{
+memory_ptr record_list::data() const {
     // Get value pointer.
     //   [ next:4   ]
     //   [ value... ] ==>
@@ -57,8 +56,7 @@ memory_ptr record_list::data() const
     return raw_data(index_size);
 }
 
-array_index record_list::next_index() const
-{
+array_index record_list::next_index() const {
     auto const memory = raw_data(0);
     auto const next_address = REMAP_ADDRESS(memory);
     //*************************************************************************
@@ -66,8 +64,7 @@ array_index record_list::next_index() const
     //*************************************************************************
 }
 
-memory_ptr record_list::raw_data(file_offset offset) const
-{
+memory_ptr record_list::raw_data(file_offset offset) const {
     auto memory = manager_.get(index_);
     REMAP_INCREMENT(memory, offset);
     return memory;

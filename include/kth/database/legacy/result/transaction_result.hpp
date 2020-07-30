@@ -15,7 +15,7 @@
 
 namespace kth::database {
 
-#ifdef KTH_CURRENCY_BCH
+#if defined(KTH_CURRENCY_BCH)
 using position_t = uint32_t;
 #else 
 using position_t = uint16_t;

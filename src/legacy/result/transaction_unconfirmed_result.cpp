@@ -43,8 +43,7 @@ transaction_unconfirmed_result::transaction_unconfirmed_result(const memory_ptr 
 {
 }
 
-transaction_unconfirmed_result::operator bool() const
-{
+transaction_unconfirmed_result::operator bool() const {
     return slab_ != nullptr;
 }
 
@@ -53,14 +52,12 @@ void transaction_unconfirmed_result::reset()
     slab_.reset();
 }
 
-hash_digest const& transaction_unconfirmed_result::hash() const
-{
+hash_digest const& transaction_unconfirmed_result::hash() const {
     return hash_;
 }
 
 // Height is unguarded and will be inconsistent during write.
-uint32_t transaction_unconfirmed_result::arrival_time() const
-{
+uint32_t transaction_unconfirmed_result::arrival_time() const {
     KTH_ASSERT(slab_);
     return arrival_time_;
 }
@@ -68,8 +65,7 @@ uint32_t transaction_unconfirmed_result::arrival_time() const
 
 // spender_heights are unguarded and will be inconsistent during write.
 // If index is out of range returns default/invalid output (.value not_found).
-domain::chain::output transaction_unconfirmed_result::output(uint32_t index) const
-{
+domain::chain::output transaction_unconfirmed_result::output(uint32_t index) const {
     KTH_ASSERT(slab_);
     auto const tx_start = REMAP_ADDRESS(slab_) + metadata_size;
     auto deserial = make_unsafe_deserializer(tx_start);
@@ -80,8 +76,7 @@ domain::chain::output transaction_unconfirmed_result::output(uint32_t index) con
         return{};
 
     // Skip outputs until the target output.
-    for (uint32_t output = 0; output < index; ++output)
-    {
+    for (uint32_t output = 0; output < index; ++output) {
         deserial.skip(arrival_time_size + value_size);
         deserial.skip(deserial.read_size_little_endian());
         KTH_ASSERT(deserial);
@@ -109,7 +104,7 @@ domain::chain::output transaction_unconfirmed_result::output(uint32_t index) con
 
 // spender_heights are unguarded and will be inconsistent during write.
 domain::chain::transaction transaction_unconfirmed_result::transaction(bool witness) const {
-#ifdef KTH_CURRENCY_BCH
+#if defined(KTH_CURRENCY_BCH)
     witness = false;
     bool from_data_witness = false;
 #else
@@ -128,7 +123,7 @@ domain::chain::transaction transaction_unconfirmed_result::transaction(bool witn
     tx.from_data(deserial, false, from_data_witness);
 #endif
 
-#ifndef KTH_CURRENCY_BCH
+#if ! defined(KTH_CURRENCY_BCH)
     if ( ! witness) {
         tx.strip_witness();
     }
