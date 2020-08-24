@@ -12,7 +12,7 @@ namespace kth::database {
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_history_db(wallet::payment_address const& address, data_chunk const& entry, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_history_db(domain::wallet::payment_address const& address, data_chunk const& entry, KTH_DB_txn* db_txn) {
 
     auto key_arr = address.hash();     //TODO(fernando): should I take a reference?                               
     auto key = kth_db_make_value(key_arr.size(), key_arr.data());

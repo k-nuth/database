@@ -9,8 +9,9 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace kth { 
-namespace database {
+#include <kth/infrastructure.hpp>
+
+namespace kth::database { 
 
 // void write_position(writer& serial, uint32_t position) {
 //     serial.KTH_POSITION_WRITER(position);
@@ -66,8 +67,6 @@ size_t transaction_entry::serialized_size(domain::chain::transaction const& tx) 
 #endif
          + sizeof(uint32_t) + sizeof(uint32_t) + position_size;
 }
-
-
 
 // Serialization.
 //-----------------------------------------------------------------------------

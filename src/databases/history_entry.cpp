@@ -8,7 +8,8 @@
 
 #include <cstddef>
 #include <cstdint>
-// #include <kth/domain.hpp>
+
+#include <kth/infrastructure.hpp>
 
 namespace kth::database { 
 

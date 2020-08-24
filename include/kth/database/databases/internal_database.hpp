@@ -283,7 +283,7 @@ private:
 
     result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, domain::chain::output const& output, KTH_DB_txn* db_txn);
     
-    result_code insert_history_db (wallet::payment_address const& address, data_chunk const& entry, KTH_DB_txn* db_txn); 
+    result_code insert_history_db(domain::wallet::payment_address const& address, data_chunk const& entry, KTH_DB_txn* db_txn); 
 #endif // ! defined(KTH_DB_READONLY)
 
     static
