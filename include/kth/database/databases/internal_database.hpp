@@ -53,10 +53,10 @@
 
 namespace kth::database {
 
-#if defined(KTH_DB_NEW_BLOCKS)
-constexpr size_t max_dbs_ = 8;
-#elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
 constexpr size_t max_dbs_ = 13;
+#elif defined(KTH_DB_NEW_BLOCKS)
+constexpr size_t max_dbs_ = 8;
 #else
 constexpr size_t max_dbs_ = 7;
 #endif

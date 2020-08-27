@@ -41,7 +41,7 @@ result_code internal_database_basis<Clock>::insert_utxo(domain::chain::output_po
     auto res = kth_db_put(db_txn, dbi_utxo_, &key, &value, KTH_DB_NOOVERWRITE);
 
     if (res == KTH_DB_KEYEXIST) {
-        LOG_INFO(LOG_DATABASE, "Duplicate Key inserting UTXO [insert_utxo] ", res);
+        LOG_DEBUG(LOG_DATABASE, "Duplicate Key inserting UTXO [insert_utxo] ", res);
         return result_code::duplicated_key;
     }
     if (res != KTH_DB_SUCCESS) {
