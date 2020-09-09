@@ -55,11 +55,11 @@ settings::settings()
 // #endif // KTH_DB_UNSPENT_LEGACY
 {}
 
-settings::settings(infrastructure::config::settings context)
+settings::settings(domain::config::network context)
   : settings()
 {
     switch (context) {
-        case infrastructure::config::settings::mainnet: {
+        case domain::config::network::mainnet: {
 #ifdef KTH_DB_LEGACY
             block_table_buckets = 650000;
             transaction_table_buckets = 110000000;
@@ -78,7 +78,7 @@ settings::settings(infrastructure::config::settings context)
 #endif // KTH_DB_HISTORY    
             break;
         }
-        case infrastructure::config::settings::testnet: {
+        case domain::config::network::testnet: {
             // TODO: optimize for testnet.
 #ifdef KTH_DB_LEGACY
             block_table_buckets = 650000;
@@ -99,8 +99,35 @@ settings::settings(infrastructure::config::settings context)
 
             break;
         }
-        default:
-        case infrastructure::config::settings::none: {}
+        case domain::config::network::testnet4: {
+#if defined(KTH_DB_NEW_BLOCKS)
+            db_max_size = 10 * (uint64_t(1) << 30);  //10 GiB
+#elif defined(KTH_DB_NEW_FULL)
+            db_max_size = 20 * (uint64_t(1) << 30);  //20 GiB
+#elif defined(KTH_DB_NEW)
+            db_max_size = 5 * (uint64_t(1) << 30);  //5 GiB
+#endif // KTH_DB_NEW_BLOCKS
+
+            // TODO: optimize for testnet4.
+#ifdef KTH_DB_LEGACY
+            block_table_buckets = 650000;
+            transaction_table_buckets = 110000000;
+#endif // KTH_DB_LEGACY
+
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
+            transaction_unconfirmed_table_buckets = 10000;
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED    
+
+#ifdef KTH_DB_SPENDS
+            spend_table_buckets = 250000000;
+#endif // KTH_DB_SPENDS
+
+#ifdef KTH_DB_HISTORY
+            history_table_buckets = 107000000;
+#endif // KTH_DB_HISTORY    
+
+            break;
+        }
     }
 }
 

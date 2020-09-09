@@ -16,7 +16,7 @@ namespace kth::database {
 class KD_API settings {
 public:
     settings();
-    settings(infrastructure::config::settings context);
+    settings(domain::config::network context);
 
     /// Properties.
     std::filesystem::path directory;
