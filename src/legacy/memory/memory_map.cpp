@@ -25,7 +25,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-// #include <boost/filesystem.hpp>
 #include <kth/domain.hpp>
 #include <kth/database/legacy/memory/accessor.hpp>
 #include <kth/database/legacy/memory/allocator.hpp>

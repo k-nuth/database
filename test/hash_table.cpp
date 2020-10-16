@@ -7,7 +7,6 @@
 
 #include <boost/functional/hash_fwd.hpp>
 #include <test_helpers.hpp>
-// #include <boost/filesystem.hpp>
 
 #include <kth/database.hpp>
 

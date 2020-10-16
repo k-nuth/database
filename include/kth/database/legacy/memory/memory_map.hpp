@@ -15,8 +15,6 @@
 #include <memory>
 #include <string>
 
-// #include <boost/filesystem.hpp>
-
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 #include <kth/database/legacy/memory/memory.hpp>

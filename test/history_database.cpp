@@ -5,7 +5,6 @@
 #include <filesystem>
 
 #include <test_helpers.hpp>
-// #include <boost/filesystem.hpp>
 
 #include <kth/database.hpp>
 

@@ -8,8 +8,6 @@
 #include <future>
 #include <memory>
 
-// #include <boost/filesystem.hpp>
-
 #include <kth/database.hpp>
 
 using namespace kth::domain::chain;

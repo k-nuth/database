@@ -6,8 +6,6 @@
 
 #include <filesystem>
 
-// #include <boost/filesystem.hpp>
-
 namespace kth::database {
 
 using namespace std::filesystem;
