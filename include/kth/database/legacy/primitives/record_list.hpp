@@ -14,13 +14,15 @@
 
 namespace kth::database {
 
-class KD_API record_list
-{
+class KD_API record_list {
 public:
-    static constexpr array_index empty = kth::max_uint32;
-    static constexpr size_t index_size = sizeof(array_index);
+    static 
+    constexpr array_index empty = kth::max_uint32;
+    
+    static 
+    constexpr size_t index_size = sizeof(array_index);
 
-    typedef serializer<uint8_t*>::functor write_function;
+    using write_function = serializer<uint8_t*>::functor;
 
     /// Construct for a new or existing record.
     record_list(record_manager& manager, array_index index=empty);

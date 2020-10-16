@@ -21,7 +21,7 @@ namespace kth::database {
 
 class KD_API store {
 public:
-    using path = std::filesystem::path;
+    using path = kth::path;
     using handle = sequential_lock::handle;
 
     static 

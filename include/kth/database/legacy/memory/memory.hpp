@@ -17,10 +17,9 @@ namespace kth::database {
 #ifdef REMAP_SAFETY
 
 /// This interface defines remap safe unrestricted access to a memory map.
-class KD_API memory
-{
+class KD_API memory {
 public:
-    typedef std::shared_ptr<memory> ptr;
+    using ptr = std::shared_ptr<memory>;
 
     /// Get the address indicated by the pointer.
     virtual uint8_t* buffer() = 0;
@@ -32,7 +31,7 @@ public:
 #endif // REMAP_SAFETY
 
 #ifdef REMAP_SAFETY
-    typedef memory::ptr memory_ptr;
+    using memory_ptr = memory::ptr;
     #define REMAP_ADDRESS(ptr) ptr->buffer()
     #define REMAP_ASSIGN(ptr, data) ptr->assign(data)
     #define REMAP_INCREMENT(ptr, offset) ptr->increment(offset)
@@ -41,7 +40,7 @@ public:
     #define REMAP_READ(mutex) shared_lock lock(mutex)
     #define REMAP_WRITE(mutex) unique_lock lock(mutex)
 #else
-    typedef uint8_t* memory_ptr;
+    using memory_ptr = uint8_t*;
     #define REMAP_ADDRESS(ptr) ptr
     #define REMAP_ASSIGN(ptr, data)
     #define REMAP_INCREMENT(ptr, offset) ptr += (offset)

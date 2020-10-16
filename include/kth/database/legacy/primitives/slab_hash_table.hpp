@@ -14,7 +14,7 @@
 
 namespace kth::database {
 
-typedef hash_table_header<array_index, file_offset> slab_hash_table_header;
+using slab_hash_table_header = hash_table_header<array_index, file_offset>;
 
 /**
  * A hashtable mapping hashes to variable sized values (slabs).
@@ -37,17 +37,15 @@ typedef hash_table_header<array_index, file_offset> slab_hash_table_header;
  * call allocator.sync() after a series of store() calls.
  */
 template <typename KeyType>
-class slab_hash_table
-{
+class slab_hash_table {
 public:
-    typedef serializer<uint8_t*>::functor write_function;
+    using write_function = serializer<uint8_t*>::functor;
 
     slab_hash_table(slab_hash_table_header& header, slab_manager& manager);
 
     /// Execute a write. value_size is the required size of the buffer.
     /// Returns the file offset of the new value.
-    file_offset store(const KeyType& key, write_function write,
-        size_t value_size);
+    file_offset store(const KeyType& key, write_function write, size_t value_size);
 
     /// Execute a writer against a key's buffer if the key is found.
     /// Returns the file offset of the found value (or zero).

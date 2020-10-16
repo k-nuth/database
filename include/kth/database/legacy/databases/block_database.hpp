@@ -28,9 +28,9 @@ namespace kth::database {
 class KD_API block_database
 {
 public:
-    typedef std::vector<size_t> heights;
-    typedef std::filesystem::path path;
-    typedef std::shared_ptr<shared_mutex> mutex_ptr;
+    using heights = std::vector<size_t>;
+    using path = kth::path;
+    using mutex_ptr = std::shared_ptr<shared_mutex>;
 
     static const file_offset empty;
 
@@ -80,7 +80,7 @@ public:
     bool top(size_t& out_height) const;
 
 private:
-    typedef slab_hash_table<hash_digest> slab_map;
+    using slab_map = slab_hash_table<hash_digest>;
 
     /// Zeroize the specfied index positions.
     void zeroize(array_index first, array_index count);

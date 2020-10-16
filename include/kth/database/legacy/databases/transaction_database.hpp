@@ -31,11 +31,10 @@ namespace kth::database {
 /// that is assigned upon storage.
 /// This is so we can quickly reconstruct blocks given a list of tx indexes
 /// belonging to that block. These are stored with the block.
-class KD_API transaction_database
-{
+class KD_API transaction_database {
 public:
-    typedef std::filesystem::path path;
-    typedef std::shared_ptr<shared_mutex> mutex_ptr;
+    using path = kth::path;
+    using mutex_ptr  = std::shared_ptr<shared_mutex>;
 
     /// Sentinel for use in tx position to indicate unconfirmed.
     static size_t const unconfirmed;
@@ -95,10 +94,9 @@ public:
     bool flush() const;
 
 // private:
-    typedef slab_hash_table<hash_digest> slab_map;
+    using slab_map = slab_hash_table<hash_digest>;
 
-    memory_ptr find(hash_digest const& hash, size_t maximum_height,
-        bool require_confirmed) const;
+    memory_ptr find(hash_digest const& hash, size_t maximum_height, bool require_confirmed) const;
 
     // The starting size of the hash table, used by create.
     size_t const initial_map_file_size_;

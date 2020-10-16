@@ -56,7 +56,7 @@ class KD_API data_base : public store, noncopyable {
 public:
     using handle = store::handle;
     using result_handler = handle0;
-    using path = std::filesystem::path;
+    using path = kth::path;
 
     // Construct.
     // ----------------------------------------------------------------------------

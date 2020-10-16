@@ -15,14 +15,14 @@
 
 namespace kth::database {
 
-inline size_t multimap_record_size(size_t value_size)
-{
+inline 
+size_t multimap_record_size(size_t value_size) {
     return sizeof(array_index) + value_size;
 }
 
 template <typename KeyType>
-constexpr size_t hash_table_multimap_record_size()
-{
+constexpr 
+size_t hash_table_multimap_record_size() {
     // The hash table maps a key only to the first record index.
     return hash_table_record_size<KeyType>(sizeof(array_index));
 }
@@ -37,11 +37,10 @@ constexpr size_t hash_table_multimap_record_size()
  * given a start index.
  */
 template <typename KeyType>
-class record_multimap
-{
+class record_multimap {
 public:
-    typedef serializer<uint8_t*>::functor write_function;
-    typedef record_hash_table<KeyType> record_hash_table_type;
+    using write_function = serializer<uint8_t*>::functor;
+    using record_hash_table_type = record_hash_table<KeyType>;
 
     record_multimap(record_hash_table_type& map, record_manager& manager);
 

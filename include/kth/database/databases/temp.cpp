@@ -33,7 +33,7 @@ void BlockchainLMDB::do_resize(uint64_t increase_size)
   const uint64_t add_size = 1LL << 30;
   // check disk capacity
   try {
-    std::filesystem::path path(m_folder);
+    kth::path path(m_folder);
     std::filesystem::space_info si = std::filesystem::space(path);
     if(si.available < add_size) {
       MERROR("!! WARNING: Insufficient free space to extend database !!: " <<
@@ -224,7 +224,7 @@ void BlockchainLMDB::open(std::string const& filename, int const db_flags)
   if (m_open)
     throw0(DB_OPEN_FAILURE("Attempted to open db, but it's already open"));
 
-  std::filesystem::path direc(filename);
+  kth::path direc(filename);
   if (std::filesystem::exists(direc))
   {
     if ( ! std::filesystem::is_directory(direc))
@@ -237,7 +237,7 @@ void BlockchainLMDB::open(std::string const& filename, int const db_flags)
   }
 
   // check for existing LMDB files in base directory
-  std::filesystem::path old_files = direc.parent_path();
+  kth::path old_files = direc.parent_path();
   if (std::filesystem::exists(old_files / CRYPTONOTE_BLOCKCHAINDATA_FILENAME)
       || std::filesystem::exists(old_files / CRYPTONOTE_BLOCKCHAINDATA_LOCK_FILENAME))
   {
@@ -523,7 +523,7 @@ bool BlockchainLMDB::is_read_only() const {
 }
 uint64_t BlockchainLMDB::get_database_size() const {
   uint64_t size = 0;
-  std::filesystem::path datafile(m_folder);
+  kth::path datafile(m_folder);
   datafile /= CRYPTONOTE_BLOCKCHAINDATA_FILENAME;
   if ( ! epee::file_io_utils::get_file_size(datafile.string(), size))
     size = 0;

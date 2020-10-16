@@ -18,11 +18,10 @@
 namespace kth::database {
 
 /// This class is not thread safe.
-class KD_API unspent_transaction
-{
+class KD_API unspent_transaction {
 public:
-    typedef std::unordered_map<uint32_t, domain::chain::output> output_map;
-    typedef std::shared_ptr<output_map> output_map_ptr;
+    using output_map = std::unordered_map<uint32_t, domain::chain::output>;
+    using output_map_ptr = std::shared_ptr<output_map>;
 
     // Move/copy constructors.
     unspent_transaction(unspent_transaction&& other);
@@ -31,8 +30,7 @@ public:
     /// Constructors.
     explicit unspent_transaction(hash_digest const& hash);
     explicit unspent_transaction(const domain::chain::output_point& point);
-    explicit unspent_transaction(const domain::chain::transaction& tx, size_t height,
-        uint32_t median_time_past, bool confirmed);
+    explicit unspent_transaction(const domain::chain::transaction& tx, size_t height, uint32_t median_time_past, bool confirmed);
 
     /// Properties.
     size_t height() const;

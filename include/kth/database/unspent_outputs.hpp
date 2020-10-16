@@ -66,9 +66,9 @@ public:
 private:
     // A bidirection map is used for efficient output and position retrieval.
     // This produces the effect of a circular buffer tx hash table of outputs.
-    typedef boost::bimaps::bimap<
+    using unspent_transactions = boost::bimaps::bimap<
         boost::bimaps::unordered_set_of<unspent_transaction>,
-        boost::bimaps::set_of<uint32_t>> unspent_transactions;
+        boost::bimaps::set_of<uint32_t>>;
 
     // These are thread safe.
     size_t const capacity_;

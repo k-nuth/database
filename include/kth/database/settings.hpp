@@ -19,7 +19,7 @@ public:
     settings(domain::config::network context);
 
     /// Properties.
-    std::filesystem::path directory;
+    kth::path directory;
     bool flush_writes;
     uint16_t file_growth_rate;
     uint32_t index_start_height;

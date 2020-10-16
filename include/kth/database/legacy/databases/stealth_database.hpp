@@ -20,16 +20,14 @@
 
 namespace kth::database {
 
-class KD_API stealth_database
-{
+class KD_API stealth_database {
 public:
-    typedef domain::chain::stealth_compact::list list;
-    typedef std::filesystem::path path;
-    typedef std::shared_ptr<shared_mutex> mutex_ptr;
+    using list = domain::chain::stealth_compact::list;
+    using path = kth::path;
+    using mutex_ptr = std::shared_ptr<shared_mutex>;
 
     /// Construct the database.
-    stealth_database(const path& rows_filename, size_t expansion,
-        mutex_ptr mutex=nullptr);
+    stealth_database(const path& rows_filename, size_t expansion, mutex_ptr mutex=nullptr);
 
     /// Close the database (all threads must first be stopped).
     ~stealth_database();
@@ -47,8 +45,7 @@ public:
     list scan(const binary& filter, size_t from_height) const;
 
     /// Add a stealth row to the database.
-    void store(uint32_t prefix, uint32_t height,
-        const domain::chain::stealth_compact& row);
+    void store(uint32_t prefix, uint32_t height, const domain::chain::stealth_compact& row);
 
     /////// Delete stealth row (not implemented).
     ////bool unlink();

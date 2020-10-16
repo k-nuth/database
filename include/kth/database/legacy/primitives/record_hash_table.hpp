@@ -16,12 +16,11 @@
 namespace kth::database {
 
 template <typename KeyType>
-constexpr size_t hash_table_record_size(size_t value_size)
-{
+constexpr size_t hash_table_record_size(size_t value_size) {
     return std::tuple_size<KeyType>::value + sizeof(array_index) + value_size;
 }
 
-typedef hash_table_header<array_index, array_index> record_hash_table_header;
+using record_hash_table_header = hash_table_header<array_index, array_index>;
 
 /**
  * A hashtable mapping hashes to fixed sized values (records).
@@ -43,10 +42,9 @@ typedef hash_table_header<array_index, array_index> record_hash_table_header;
  * Using fixed size records is therefore faster.
  */
 template <typename KeyType>
-class record_hash_table
-{
+class record_hash_table {
 public:
-    typedef serializer<uint8_t*>::functor write_function;
+    using write_function = serializer<uint8_t*>::functor;
 
     record_hash_table(record_hash_table_header& header, record_manager& manager);
 

@@ -25,11 +25,10 @@ namespace kth::database {
 
 /// This class is thread safe, allowing concurent read and write.
 /// A change to the size of the memory map waits on and locks read and write.
-class KD_API memory_map
-{
+class KD_API memory_map {
 public:
-    typedef std::filesystem::path path;
-    typedef std::shared_ptr<shared_mutex> mutex_ptr;
+    using path = kth::path;
+    using mutex_ptr  = std::shared_ptr<shared_mutex>;
 
     static size_t const default_expansion;
 
@@ -65,9 +64,8 @@ public:
 
 private:
     static size_t file_size(int file_handle);
-    static int open_file(const std::filesystem::path& filename);
-    static bool handle_error(std::string const& context,
-        const std::filesystem::path& filename);
+    static int open_file(kth::path const& filename);
+    static bool handle_error(std::string const& context, kth::path const& filename);
 
     size_t page() const;
     bool unmap();
@@ -89,7 +87,7 @@ private:
     // File system.
     int const file_handle_;
     size_t const expansion_;
-    const std::filesystem::path filename_;
+    kth::path const filename_;
 
     // Protected by internal mutex.
     uint8_t* data_;

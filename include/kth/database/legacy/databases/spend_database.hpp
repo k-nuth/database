@@ -20,8 +20,7 @@
 
 namespace kth::database {
 
-struct KD_API spend_statinfo
-{
+struct KD_API spend_statinfo {
     /// Number of buckets used in the hashtable.
     /// load factor = rows / buckets
     size_t const buckets;
@@ -32,15 +31,13 @@ struct KD_API spend_statinfo
 
 /// This enables you to lookup the spend of an output point, returning
 /// the input point. It is a simple map.
-class KD_API spend_database
-{
+class KD_API spend_database {
 public:
-    typedef std::filesystem::path path;
-    typedef std::shared_ptr<shared_mutex> mutex_ptr;
+    using path = kth::path;
+    using mutex_ptr = std::shared_ptr<shared_mutex>;
 
     /// Construct the database.
-    spend_database(const path& filename, size_t buckets, size_t expansion,
-        mutex_ptr mutex=nullptr);
+    spend_database(const path& filename, size_t buckets, size_t expansion, mutex_ptr mutex=nullptr);
 
     /// Close the database (all threads must first be stopped).
     ~spend_database();
@@ -58,8 +55,7 @@ public:
     domain::chain::input_point get(const domain::chain::output_point& outpoint) const;
 
     /// Store a spend in the database.
-    void store(const domain::chain::output_point& outpoint,
-        const domain::chain::input_point& spend);
+    void store(const domain::chain::output_point& outpoint, const domain::chain::input_point& spend);
 
     /// Delete outpoint spend item from database.
     bool unlink(const domain::chain::output_point& outpoint);
@@ -74,7 +70,7 @@ public:
     spend_statinfo statinfo() const;
 
 private:
-    typedef record_hash_table<domain::chain::point> record_map;
+    using record_map = record_hash_table<domain::chain::point>;
 
     // The starting size of the hash table, used by create.
     size_t const initial_map_file_size_;

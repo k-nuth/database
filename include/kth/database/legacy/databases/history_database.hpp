@@ -37,8 +37,8 @@ struct KD_API history_statinfo
 class KD_API history_database
 {
 public:
-    typedef std::filesystem::path path;
-    typedef std::shared_ptr<shared_mutex> mutex_ptr;
+    using path = kth::path;
+    using mutex_ptr = std::shared_ptr<shared_mutex>;
 
     /// Construct the database.
     history_database(const path& lookup_filename, const path& rows_filename,
@@ -85,8 +85,8 @@ public:
     history_statinfo statinfo() const;
 
 private:
-    typedef record_hash_table<short_hash> record_map;
-    typedef record_multimap<short_hash> record_multiple_map;
+    using record_map = record_hash_table<short_hash>;
+    using record_multiple_map = record_multimap<short_hash>;
 
     // The starting size of the hash table, used by create.
     size_t const initial_map_file_size_;
