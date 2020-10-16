@@ -26,7 +26,7 @@ struct internal_database_directory_setup_fixture {
         remove_all(DIRECTORY, ec);
         REQUIRE(create_directories(DIRECTORY, ec));
 
-        internal_database db(DIRECTORY "/internal_db", 10000000, db_size,true);
+        internal_database db(fs::u8path(DIRECTORY "/internal_db"), 10000000, db_size,true);
         REQUIRE(db.create());
         REQUIRE(db.close());
         REQUIRE(db.open());
@@ -192,7 +192,7 @@ std::tuple<KTH_DB_env*, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_d
     REQUIRE(kth_db_env_set_maxdbs(env_, 6) == KTH_DB_SUCCESS);
     #endif
     
-    auto qqq = kth_db_env_open(env_, DIRECTORY "/internal_db", KTH_DB_NORDAHEAD | KTH_DB_NOSYNC | KTH_DB_NOTLS, 0664);
+    auto qqq = kth_db_env_open(env_, fs::u8path(DIRECTORY "/internal_db"), KTH_DB_NORDAHEAD | KTH_DB_NOSYNC | KTH_DB_NOTLS, 0664);
     
     REQUIRE(qqq == KTH_DB_SUCCESS);
     REQUIRE(kth_db_txn_begin(env_, NULL, 0, &db_txn) == KTH_DB_SUCCESS);
@@ -655,18 +655,18 @@ TEST_CASE("internal database  dummy clock", "[None]") {
 }
 
 TEST_CASE("internal database  adjust db size", "[None]") {
-    internal_database db(DIRECTORY "/internal_db", 10000000, 1, true);
+    internal_database db(fs::u8path(DIRECTORY "/internal_db"), 10000000, 1, true);
     REQUIRE(db.open());
 }
 
 TEST_CASE("internal database  open", "[None]") {
-    internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
+    internal_database db(fs::u8path(DIRECTORY "/internal_db"), 10000000, db_size, true);
     REQUIRE(db.open());
 }
 
 #if defined(KTH_DB_NEW_FULL)
 TEST_CASE("internal database  test get all transaction unconfirmed", "[None]") {
-    internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
+    internal_database db(fs::u8path(DIRECTORY "/internal_db"), 10000000, db_size, true);
     db.open();
     auto ret = db.get_all_transaction_unconfirmed();
 }
@@ -675,7 +675,7 @@ TEST_CASE("internal database  test get all transaction unconfirmed", "[None]") {
 TEST_CASE("internal database  insert genesis", "[None]") {
     auto const genesis = get_genesis();
 
-    internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
+    internal_database db(fs::u8path(DIRECTORY "/internal_db"), 10000000, db_size, true);
     REQUIRE(db.open());
     REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);
 
@@ -734,7 +734,7 @@ TEST_CASE("internal database  insert genesis", "[None]") {
 TEST_CASE("internal database  insert duplicate block", "[None]") {
     auto const genesis = get_genesis();
 
-    internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
+    internal_database db(fs::u8path(DIRECTORY "/internal_db"), 10000000, db_size, true);
     REQUIRE(db.open());
     auto res = db.push_block(genesis, 0, 1);
     
@@ -749,7 +749,7 @@ TEST_CASE("internal database  insert duplicate block", "[None]") {
 TEST_CASE("internal database  insert block genesis duplicate", "[None]") {
     auto const genesis = get_genesis();
 
-    internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
+    internal_database db(fs::u8path(DIRECTORY "/internal_db"), 10000000, db_size, true);
     REQUIRE(db.open());
     auto res = db.push_genesis(genesis);
     
@@ -766,7 +766,7 @@ TEST_CASE("internal database  insert block genesis duplicate", "[None]") {
 TEST_CASE("internal database  insert block genesis and get", "[None]") {
     auto const genesis = get_genesis();
 
-    internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
+    internal_database db(fs::u8path(DIRECTORY "/internal_db"), 10000000, db_size, true);
     REQUIRE(db.open());
     auto res = db.push_genesis(genesis);
     
@@ -785,7 +785,7 @@ TEST_CASE("internal database  insert block genesis and get", "[None]") {
 TEST_CASE("internal database  insert block genesis and get transaction", "[None]") {
     auto const genesis = get_genesis();
 
-    internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
+    internal_database db(fs::u8path(DIRECTORY "/internal_db"), 10000000, db_size, true);
     REQUIRE(db.open());
     auto res = db.push_genesis(genesis);
     
@@ -812,7 +812,7 @@ TEST_CASE("internal database  insert block genesis and get transaction", "[None]
 TEST_CASE("internal database  insert duplicate block by hash", "[None]") {
     auto const genesis = get_genesis();
 
-    internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
+    internal_database db(fs::u8path(DIRECTORY "/internal_db"), 10000000, db_size, true);
     REQUIRE(db.open());
     auto res = db.push_block(genesis, 0, 1);
     
@@ -829,7 +829,7 @@ TEST_CASE("internal database  insert success duplicate coinbase", "[None]") {
     auto const genesis = get_genesis();
     auto const fake = get_fake_genesis();
 
-    internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
+    internal_database db(fs::u8path(DIRECTORY "/internal_db"), 10000000, db_size, true);
     REQUIRE(db.open());
     auto res = db.push_block(genesis, 0, 1);
     
@@ -843,7 +843,7 @@ TEST_CASE("internal database  insert success duplicate coinbase", "[None]") {
 
 TEST_CASE("internal database  key not found", "[None]") {
     auto const spender = get_block("01000000ba8b9cda965dd8e536670f9ddec10e53aab14b20bacad27b9137190000000000190760b278fe7b8565fda3b968b918d5fd997f993b23674c0af3b6fde300b38f33a5914ce6ed5b1b01e32f570201000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b014effffffff0100f2052a01000000434104b68a50eaa0287eff855189f949c1c6e5f58b37c88231373d8a59809cbae83059cc6469d65c665ccfd1cfeb75c6e8e19413bba7fbff9bc762419a76d87b16086eac000000000100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000");
-    internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
+    internal_database db(fs::u8path(DIRECTORY "/internal_db"), 10000000, db_size, true);
     REQUIRE(db.open());
     REQUIRE(db.push_block(spender, 1, 1) == result_code::key_not_found);
 }
@@ -854,7 +854,7 @@ TEST_CASE("internal database  insert duplicate", "[None]") {
     // std::cout << encode_hash(orig.hash()) << std::endl;
     // std::cout << encode_hash(spender.hash()) << std::endl;
 
-    internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
+    internal_database db(fs::u8path(DIRECTORY "/internal_db"), 10000000, db_size, true);
     REQUIRE(db.open());
     REQUIRE(db.push_block(orig, 0, 1) == result_code::success);
     REQUIRE(db.push_block(spender, 1, 1) == result_code::success);
@@ -869,7 +869,7 @@ TEST_CASE("internal database  insert double spend block", "[None]") {
     // std::cout << encode_hash(orig.hash()) << std::endl;
     // std::cout << encode_hash(spender.hash()) << std::endl;
 
-    internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
+    internal_database db(fs::u8path(DIRECTORY "/internal_db"), 10000000, db_size, true);
     REQUIRE(db.open());
     REQUIRE(db.push_block(orig, 0, 1) == result_code::success);
     REQUIRE(db.push_block(spender0, 1, 1) == result_code::success);
@@ -882,7 +882,7 @@ TEST_CASE("internal database  spend", "[None]") {
     //80000
     auto const spender = get_block("01000000ba8b9cda965dd8e536670f9ddec10e53aab14b20bacad27b9137190000000000190760b278fe7b8565fda3b968b918d5fd997f993b23674c0af3b6fde300b38f33a5914ce6ed5b1b01e32f570201000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b014effffffff0100f2052a01000000434104b68a50eaa0287eff855189f949c1c6e5f58b37c88231373d8a59809cbae83059cc6469d65c665ccfd1cfeb75c6e8e19413bba7fbff9bc762419a76d87b16086eac000000000100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000");
 
-    internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
+    internal_database db(fs::u8path(DIRECTORY "/internal_db"), 10000000, db_size, true);
     REQUIRE(db.open());
     REQUIRE(db.push_block(orig, 0, 1) == result_code::success);
 
@@ -949,7 +949,7 @@ TEST_CASE("internal database  reorg", "[None]") {
     auto const spender = get_block(spender_enc);
 
     {
-        internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
+        internal_database db(fs::u8path(DIRECTORY "/internal_db"), 10000000, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.push_block(orig, 0, 1) == result_code::success);
         REQUIRE(db.push_block(spender, 1, 1) == result_code::success);
@@ -1038,7 +1038,7 @@ TEST_CASE("internal database  old blocks 0", "[None]") {
     using my_clock = dummy_clock<1284613427>;
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true); // 1 to 86 no entra el primero
         REQUIRE(db.open());
         REQUIRE(db.push_block(orig, 0, 1) == result_code::success);
         REQUIRE(db.push_block(spender, 1, 1) == result_code::success);
@@ -1122,7 +1122,7 @@ TEST_CASE("internal database  old blocks 1", "[None]") {
     using my_clock = dummy_clock<1284613427>;
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 87, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 87, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.push_block(orig, 0, 1) == result_code::success);
         REQUIRE(db.push_block(spender, 1, 1) == result_code::success);
@@ -1207,7 +1207,7 @@ TEST_CASE("internal database  old blocks 2", "[None]") {
     using my_clock = dummy_clock<1284613427 + 600>;
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 1, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.push_block(orig, 0, 1) == result_code::success);
         REQUIRE(db.push_block(spender, 1, 1) == result_code::success);
@@ -1299,7 +1299,7 @@ TEST_CASE("internal database  reorg index", "[None]") {
     auto const spender0 = get_block("01000000944bb801c604dda3d51758f292afdca8d973288434c8fe4bf0b5982d000000008a7d204ffe05282b05f280459401b59be41b089cefc911f4fb5641f90309d942b929a149ffff001d1b8d847f0301000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0804ffff001d02c500ffffffff0100f2052a01000000434104f4af426e464d972012256f4cbe5df528aa99b1ceb489968a56cf6b295e6fad1473be89f66fbd3d16adf3dfba7c5253517d11d1d188fe858720497c4fc0a1ef9dac00000000010000000465dabdbdb83e9820e4f666f3634d88308909789f7ae29e730812784a96485e3c000000004948304502204c52c2301dcc3f6af7a3ef2ad118185ca2d52a7ae90013332ad53732a085b8d4022100f074ab99e77d5d4c54eb6bfc82c42a094d7d7eaf632d52897ef058c617a2bb2301ffffffffb7404d6a9c451a9f527a7fbeb54839c2bca2eac7b138cdd700be19d733efa0fc000000004847304402206c55518aa596824d1e760afcfeb7b0103a1a82ea8dcd4c3474becc8246ba823702205009cbc40affa3414f9a139f38a86f81a401193f759fb514b9b1d4e2e49f82a401ffffffffcc07817ab589551d698ba7eb2a6efd6670d6951792ad52e2bd5832bf2f4930ec0000000049483045022100b485b4daa4af75b7b34b4f2338e7b96809c75fab5577905ade0789c7f821a69e022010d73d2a3c7fcfc6db911dead795b0aa7d5448447ad5efc7e516699955a18ac801fffffffff61fefef8ee758b273ee64e1bf5c07485dd74cd065a5ce0d59827e0700cad0d9000000004a493046022100bc6e89ee580d1c721b15c36d0a1218c9e78f6f7537616553341bbd1199fe615a02210093062f2c1a1c87f55b710011976a03dff57428e38dd640f6fbdef0fa52ad462d01ffffffff0100c817a80400000043410408998c08bbe6bba756e9b864722fe76ca403929382db2b120f9f621966b00af48f4b014b458bccd4f2acf63b1487ecb9547bc87bdecb08e9c4d08c138c76439aac00000000010000000115327dc99375fc1fdc02e15394369daa6e23ad4dc27e7c1c4af21606add5b068000000004a49304602210086b55b7f2fa5395d1e90a85115ada930afa01b86116d6bbeeecd8e2b97eefbac022100d653846d378845df2ced4b4923dcae4b6ddd5e8434b25e1602928235054c8d5301ffffffff0100f2052a01000000434104b68b035858a00051ca70dd4ba297168d9a3720b642c2e0cd08846bfbb144233b11b24c4b8565353b579bd7109800e42a1fc1e20dbdfbba6a12d0089aab313181ac00000000");
 
     {
-        internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
+        internal_database db(fs::u8path(DIRECTORY "/internal_db"), 10000000, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.push_block(b0, 0, 1) == result_code::success);
         REQUIRE(db.push_block(b1, 1, 1) == result_code::success);
@@ -1423,7 +1423,7 @@ TEST_CASE("internal database  reorg index2", "[None]") {
 
 
     {
-        internal_database db(DIRECTORY "/internal_db", 10000000, db_size, true);
+        internal_database db(fs::u8path(DIRECTORY "/internal_db"), 10000000, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.push_block(b0, 0, 1) == result_code::success);
         REQUIRE(db.push_block(b1, 1, 1) == result_code::success);
@@ -1634,7 +1634,7 @@ TEST_CASE("internal database  reorg 0", "[None]") {
 
     // Insert the First Block
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true); // 1 to 86 no entra el primero
         REQUIRE(db.open());
 
         //State A ------------------------------------------------------------
@@ -1715,7 +1715,7 @@ TEST_CASE("internal database  reorg 0", "[None]") {
 
     // Insert the Spender Block
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true); // 1 to 86 no entra el primero
         REQUIRE(db.open());
 
         //State B ------------------------------------------------------------
@@ -1863,7 +1863,7 @@ TEST_CASE("internal database  reorg 0", "[None]") {
 
     // Remove the Spender Block
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true); // 1 to 86 no entra el primero
         REQUIRE(db.open());
 
         //State C ------------------------------------------------------------
@@ -1973,7 +1973,7 @@ TEST_CASE("internal database  reorg 0", "[None]") {
 
     // Insert the Spender Block, again
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true); // 1 to 86 no entra el primero
         REQUIRE(db.open());
 
         //State B ------------------------------------------------------------
@@ -2163,7 +2163,7 @@ TEST_CASE("internal database  reorg 1", "[None]") {
 
     // Insert the First Block
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 1, db_size, true);
         REQUIRE(db.open());
 
         //State A ------------------------------------------------------------
@@ -2212,7 +2212,7 @@ TEST_CASE("internal database  reorg 1", "[None]") {
     
     // Insert the Spender Block
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 1, db_size, true);
         REQUIRE(db.open());
 
         //State B ------------------------------------------------------------
@@ -2285,7 +2285,7 @@ TEST_CASE("internal database  reorg 1", "[None]") {
 
     // Remove the Spender Block
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 1, db_size, true);
         REQUIRE(db.open());
 
         //State C ------------------------------------------------------------
@@ -2439,7 +2439,7 @@ TEST_CASE("internal database  prune", "[None]") {
     //KTH_DB_txn* db_txn;
     
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true); // 1 to 86 no entra el primero
         REQUIRE(db.open());
 
         REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);
@@ -2506,7 +2506,7 @@ TEST_CASE("internal database  prune", "[None]") {
 
     // ------------------------------------------------------------------------------------
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true); // 1 to 86 no entra el primero
         REQUIRE(db.open());
 
         REQUIRE(db.push_block(spender80000, 6, 1) == result_code::success);
@@ -2568,7 +2568,7 @@ TEST_CASE("internal database  prune", "[None]") {
 
     // ------------------------------------------------------------------------------------
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true); // 1 to 86 no entra el primero
         REQUIRE(db.open());
 
         REQUIRE(db.push_block(spender80000b, 7, 1) == result_code::success);
@@ -2633,7 +2633,7 @@ TEST_CASE("internal database  prune", "[None]") {
 
     // ------------------------------------------------------------------------------------
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true); // 1 to 86 no entra el primero
         REQUIRE(db.open());
 
         REQUIRE(db.push_block(spender80000c, 8, 1) == result_code::success);
@@ -2700,7 +2700,7 @@ TEST_CASE("internal database  prune", "[None]") {
 
     // ------------------------------------------------------------------------------------
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true); // 1 to 86 no entra el primero
         REQUIRE(db.open());
 
         REQUIRE(db.push_block(spender80000d, 9, 1) == result_code::success);
@@ -2769,7 +2769,7 @@ TEST_CASE("internal database  prune", "[None]") {
 
     // ------------------------------------------------------------------------------------
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true); // 1 to 86 no entra el primero
         REQUIRE(db.open());
 
         REQUIRE(db.push_block(spender80000e, 10, 1) == result_code::success);
@@ -2838,7 +2838,7 @@ TEST_CASE("internal database  prune", "[None]") {
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
@@ -2903,7 +2903,7 @@ TEST_CASE("internal database  prune", "[None]") {
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 11, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 11, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
@@ -2966,7 +2966,7 @@ TEST_CASE("internal database  prune", "[None]") {
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 10, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 10, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
@@ -3029,7 +3029,7 @@ TEST_CASE("internal database  prune", "[None]") {
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 5, db_size,true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 5, db_size,true);
         REQUIRE(db.open());
         REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
@@ -3092,7 +3092,7 @@ TEST_CASE("internal database  prune", "[None]") {
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 4, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 4, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
@@ -3154,7 +3154,7 @@ TEST_CASE("internal database  prune", "[None]") {
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 0, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
@@ -3303,7 +3303,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
     //KTH_DB_txn* db_txn;
     
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true); // 1 to 86 no entra el primero
         REQUIRE(db.open());
 
         REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);
@@ -3375,7 +3375,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
 
     // ------------------------------------------------------------------------------------
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true); // 1 to 86 no entra el primero
         REQUIRE(db.open());
 
         REQUIRE(db.push_block(spender80000, 6, 1) == result_code::success);
@@ -3442,7 +3442,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
 
     // ------------------------------------------------------------------------------------
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true); // 1 to 86 no entra el primero
         REQUIRE(db.open());
 
         REQUIRE(db.push_block(spender80000b, 7, 1) == result_code::success);
@@ -3517,7 +3517,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
     // ------------------------------------------------------------------------------------
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
@@ -3581,7 +3581,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 11, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 11, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
@@ -3644,7 +3644,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 10, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 10, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
@@ -3707,7 +3707,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 5, db_size,true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 5, db_size,true);
         REQUIRE(db.open());
         REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
@@ -3770,7 +3770,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 4, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 4, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.prune() == result_code::no_data_to_prune);
     }   //close() implicit
@@ -3833,7 +3833,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 1, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
@@ -3897,7 +3897,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
 
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 0, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
@@ -4045,7 +4045,7 @@ TEST_CASE("internal database  prune 3", "[None]") {
     //KTH_DB_txn* db_txn;
     
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true); // 1 to 86 no entra el primero
         REQUIRE(db.open());
 
         REQUIRE(db.push_block(genesis, 0, 1) == result_code::success);
@@ -4115,7 +4115,7 @@ TEST_CASE("internal database  prune 3", "[None]") {
 
     // ------------------------------------------------------------------------------------
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true); // 1 to 86 no entra el primero
         REQUIRE(db.open());
 
         REQUIRE(db.push_block(spender80000b, 6, 1) == result_code::success);
@@ -4183,7 +4183,7 @@ TEST_CASE("internal database  prune 3", "[None]") {
 
     // ------------------------------------------------------------------------------------
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 86, db_size, true); // 1 to 86 no entra el primero
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 86, db_size, true); // 1 to 86 no entra el primero
         REQUIRE(db.open());
 
         REQUIRE(db.push_block(spender80000, 7, 1) == result_code::success);
@@ -4253,7 +4253,7 @@ TEST_CASE("internal database  prune 3", "[None]") {
     // ------------------------------------------------------------------------------------
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 1, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
@@ -4317,7 +4317,7 @@ TEST_CASE("internal database  prune 3", "[None]") {
 
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 0, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.prune() == result_code::success);
     }   //close() implicit
@@ -4382,14 +4382,14 @@ TEST_CASE("internal database  prune 3", "[None]") {
 
 TEST_CASE("internal database  prune empty blockchain", "[None]") {
     using my_clock = dummy_clock<1284613427>;
-    internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 4, db_size, true);
+    internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 4, db_size, true);
     REQUIRE(db.open());
     REQUIRE(db.prune() == result_code::no_data_to_prune);
 }
 
 TEST_CASE("internal database  prune empty reorg pool", "[None]") {
     using my_clock = dummy_clock<1284613427>;
-    internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 1000, db_size, true);
+    internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 1000, db_size, true);
     REQUIRE(db.open());
     REQUIRE(db.push_block(get_genesis(), 0, 1) == result_code::success);
     REQUIRE(db.prune() == result_code::no_data_to_prune);
@@ -4398,7 +4398,7 @@ TEST_CASE("internal database  prune empty reorg pool", "[None]") {
 
 TEST_CASE("internal database  prune empty reorg pool 2", "[None]") {
     using my_clock = dummy_clock<1284613427>;
-    internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 0, db_size, true);
+    internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 0, db_size, true);
     REQUIRE(db.open());
     REQUIRE(db.push_block(get_genesis(), 0, 1) == result_code::success);
     REQUIRE(db.prune() == result_code::no_data_to_prune);
@@ -4407,7 +4407,7 @@ TEST_CASE("internal database  prune empty reorg pool 2", "[None]") {
 TEST_CASE("internal database  prune empty reorg pool 3", "[None]") {
     using my_clock = dummy_clock<1284613427>;
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 10000000, db_size, true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 10000000, db_size, true);
         REQUIRE(db.open());
         REQUIRE(db.push_block(get_genesis(), 0, 1) == result_code::success);
 
@@ -4506,7 +4506,7 @@ TEST_CASE("internal database  prune empty reorg pool 3", "[None]") {
     );
 
     {
-        internal_database_basis<my_clock> db(DIRECTORY "/internal_db", 3, db_size,true);
+        internal_database_basis<my_clock> db(fs::u8path(DIRECTORY "/internal_db"), 3, db_size,true);
         REQUIRE(db.open());
         REQUIRE(db.prune() == result_code::no_data_to_prune);
     }

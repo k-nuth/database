@@ -13,7 +13,7 @@ namespace kth::database {
 using namespace std::filesystem;
 
 settings::settings()
-    : directory("blockchain")
+    : directory(fs::u8path("blockchain"))
     , flush_writes(false)
     , file_growth_rate(50)
     , index_start_height(0)

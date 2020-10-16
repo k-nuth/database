@@ -77,7 +77,7 @@ bool store::create(const path& file_path) {
 // Construct.
 // ------------------------------------------------------------------------
 
-store::store(const path& prefix, bool with_indexes, bool flush_each_write)
+store::store(path const& prefix, bool with_indexes, bool flush_each_write)
 #ifdef KTH_DB_LEGACY
     : flush_each_write_(flush_each_write)
     , flush_lock_(prefix / FLUSH_LOCK)
