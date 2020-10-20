@@ -97,6 +97,8 @@ settings::settings(domain::config::network context)
 
             break;
         }
+
+#if defined(KTH_CURRENCY_BCH)        
         case domain::config::network::testnet4: {
 #if defined(KTH_DB_NEW_BLOCKS)
             db_max_size = 10 * (uint64_t(1) << 30);  //10 GiB
@@ -126,6 +128,37 @@ settings::settings(domain::config::network context)
 
             break;
         }
+        case domain::config::network::scalenet: {
+#if defined(KTH_DB_NEW_BLOCKS)
+            db_max_size = 10 * (uint64_t(1) << 30);  //10 GiB
+#elif defined(KTH_DB_NEW_FULL)
+            db_max_size = 20 * (uint64_t(1) << 30);  //20 GiB
+#elif defined(KTH_DB_NEW)
+            db_max_size = 5 * (uint64_t(1) << 30);  //5 GiB
+#endif // KTH_DB_NEW_BLOCKS
+
+            // TODO: optimize for scalenet.
+#ifdef KTH_DB_LEGACY
+            block_table_buckets = 650000;
+            transaction_table_buckets = 110000000;
+#endif // KTH_DB_LEGACY
+
+#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
+            transaction_unconfirmed_table_buckets = 10000;
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED    
+
+#ifdef KTH_DB_SPENDS
+            spend_table_buckets = 250000000;
+#endif // KTH_DB_SPENDS
+
+#ifdef KTH_DB_HISTORY
+            history_table_buckets = 107000000;
+#endif // KTH_DB_HISTORY    
+
+            break;
+        }
+
+#endif // defined(KTH_CURRENCY_BCH)
     }
 }
 
