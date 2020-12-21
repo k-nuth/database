@@ -418,6 +418,15 @@ set(kth_database_sources_just_kth
 if (DB_NEW)
     set(kth_database_sources_just_kth 
         ${kth_database_sources_just_kth}
+        src/databases/block_database.cpp
+        src/databases/internal_database.cpp
+        src/databases/header_database.cpp
+        src/databases/history_database.cpp
+        src/databases/reorg_database.cpp
+        src/databases/spend_database.cpp
+        src/databases/transaction_database.cpp
+        src/databases/transaction_unconfirmed_database.cpp
+        src/databases/utxo_database.cpp
         src/databases/utxo_entry.cpp
     )
 endif()
