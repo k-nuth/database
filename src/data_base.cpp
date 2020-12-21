@@ -552,7 +552,7 @@ code data_base::insert(domain::chain::block const& block, size_t height) {
     if (ec) return ec;
 
 #ifdef KTH_DB_NEW
-    auto res = internal_db_->push_block(block, height, median_time_past);
+    auto res = internal_db_->push_block<std::chrono::system_clock>(block, height, median_time_past);
     if ( ! succeed(res)) {
         return error::operation_failed_1;   //TODO(fernando): create a new operation_failed
     }
@@ -673,7 +673,7 @@ code data_base::push(block const& block, size_t height) {
     auto const median_time_past = block.header().validation.median_time_past;
 
 #ifdef KTH_DB_NEW
-    auto res = internal_db_->push_block(block, height, median_time_past);
+    auto res = internal_db_->push_block<std::chrono::system_clock>(block, height, median_time_past);
     if ( ! succeed(res)) {
         return error::operation_failed_6;   //TODO(fernando): create a new operation_failed
     }
@@ -1228,13 +1228,28 @@ void data_base::push_next(code const& ec, block_const_ptr_list_const_ptr blocks,
 
 void data_base::do_push(block_const_ptr block, size_t height, uint32_t median_time_past, dispatcher& dispatch, result_handler handler) {
 
+    // if (block->transactions().size() >= 10000) {
+    //     std::cout << block->transactions().size() << std::endl;
+    // }
+
+    // auto do_push_start = asio::steady_clock::now();
+
 #ifdef KTH_DB_NEW
     // LOG_DEBUG(LOG_DATABASE, "Write flushed to disk: ", ec.message());
-    auto res = internal_db_->push_block(*block, height, median_time_past);
+    auto res = internal_db_->push_block<std::chrono::system_clock>(*block, height, median_time_past);
     if ( ! succeed(res)) {
         handler(error::operation_failed_7); //TODO(fernando): create a new operation_failed
         return;
     }
+
+    // auto do_push_end = asio::steady_clock::now();
+    // auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(do_push_end - do_push_start).count();
+    
+    // if (block->transactions().size() >= 10000) {
+    //     std::cout << block->transactions().size() << std::endl;
+    //     std::cout << "ns: " << ns << " - seconds: " << ((double)ns / 1000000000) << std::endl;
+    // }
+
     block->validation.end_push = asio::steady_clock::now();
     // This is the end of the block sub-sequence.
     handler(error::success);
@@ -1302,14 +1317,21 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, hash_digest const
     auto const header_result = internal_db_->get_header(fork_hash);
 
     uint32_t top;
+    // // The fork point does not exist or failed to get it or the top, fail.
+    // if ( ! header_result.first.is_valid() ||  internal_db_->get_last_height(top) != result_code::success) {
+    //     //**--**
+    //     handler(error::operation_failed_9);
+    //     return;
+    // }
+    // auto const fork = header_result.second;
+
     // The fork point does not exist or failed to get it or the top, fail.
-    if ( ! header_result.first.is_valid() ||  internal_db_->get_last_height(top) != result_code::success) {
+    if ( internal_db_->get_last_height(top) != result_code::success) {
         //**--**
         handler(error::operation_failed_9);
         return;
     }
-
-    auto const fork = header_result.second;
+    auto const fork = top;
     
 #endif
 
