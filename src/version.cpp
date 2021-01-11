@@ -5,11 +5,11 @@
 
 #include <kth/database/version.hpp>
 
-namespace kth { namespace database {
+namespace kth::database {
 
 char const* version() {
     return KTH_DATABASE_VERSION;
 }
 
-}} // namespace kth
+} // namespace kth::database
 
