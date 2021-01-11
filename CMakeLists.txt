@@ -334,8 +334,6 @@ set(kth_database_sources_just_legacy
     src/version.cpp
 )
 
-
-
 if (DB_LEGACY)
     set(kth_database_sources_just_legacy 
         ${kth_database_sources_just_legacy}
