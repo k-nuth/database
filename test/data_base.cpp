@@ -17,7 +17,7 @@ using namespace boost::system;
 using namespace std::filesystem;
 
 #ifdef KTH_DB_LEGACY
-void test_block_exists(const data_base& interface, size_t height, const block& block0, bool indexed) {
+void test_block_exists(data_base const& interface, size_t height, block const& block0, bool indexed) {
 #ifdef KTH_DB_HISTORY
     auto const& history_store = interface.history();
 #endif // KTH_DB_HISTORY
@@ -123,7 +123,7 @@ void test_block_exists(const data_base& interface, size_t height, const block& b
 }
 
 
-void test_block_not_exists(const data_base& interface, const block& block0, bool indexed) {
+void test_block_not_exists(data_base const& interface, block const& block0, bool indexed) {
 #ifdef KTH_DB_HISTORY
     auto const& history_store = interface.history();
 #endif // KTH_DB_HISTORY
