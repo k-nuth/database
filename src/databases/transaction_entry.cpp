@@ -111,27 +111,27 @@ void transaction_entry::to_data(std::ostream& stream) const {
 // Deserialization.
 //-----------------------------------------------------------------------------
 
-bool transaction_entry::confirmed() {
+bool transaction_entry::confirmed() const {
     return position_ != position_max;
 }
 
-//Note(Knuth): We don't have spent information
-/*
-bool transaction_entry::is_spent(size_t fork_height) const {
+//TODO(fernando): We don't have spent information, yet.
 
-     // Cannot be spent if unconfirmed.
-    if (position_ == position_max)
-        return false;
+// bool transaction_entry::is_spent(size_t fork_height) const {
 
-    for (auto const& output : transaction_.outputs()) {
-        auto const spender_height =  output.validation.spender_height;
+//      // Cannot be spent if unconfirmed.
+//     if (position_ == position_max)
+//         return false;
 
-        // A spend from above the fork height is not an actual spend.
-        if (spender_height == domain::chain::output::validation::not_spent || spender_height > fork_height)
-            return false;
-    }
-    return true;
-}*/
+//     for (auto const& output : transaction_.outputs()) {
+//         auto const spender_height =  output.validation.spender_height;
+
+//         // A spend from above the fork height is not an actual spend.
+//         if (spender_height == domain::chain::output::validation::not_spent || spender_height > fork_height)
+//             return false;
+//     }
+//     return true;
+// }
 
 
 } // namespace kth::database
