@@ -212,9 +212,8 @@ private:
     // Synchronous writers.
     // ------------------------------------------------------------------------
 
-    bool push_transactions(domain::chain::block const& block, size_t height, uint32_t median_time_past, size_t bucket = 0, size_t buckets = 1);
-
 #ifdef KTH_DB_LEGACY    
+    bool push_transactions(domain::chain::block const& block, size_t height, uint32_t median_time_past, size_t bucket = 0, size_t buckets = 1);
     bool push_heights(domain::chain::block const& block, size_t height);
 #endif
 
@@ -252,7 +251,7 @@ private:
 
 
     code verify_insert(domain::chain::block const& block, size_t height);
-    code verify_push(domain::chain::block const& block, size_t height);
+    code verify_push(domain::chain::block const& block, size_t height) const;
 
 #if defined(KTH_DB_LEGACY)
     code verify_push(const domain::chain::transaction& tx);
