@@ -76,9 +76,9 @@ public:
         return source;
     }    
 
-    bool confirmed();
+    bool confirmed() const;
 
-    //Note(Knuth): we don't have spent information
+    //TODO(kth): we don't have spent information
     //bool is_spent(size_t fork_height) const;
 
     static
