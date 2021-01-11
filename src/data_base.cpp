@@ -5,8 +5,8 @@
 #include <kth/database/data_base.hpp>
 
 #include <algorithm>
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -15,10 +15,10 @@
 
 #include <boost/range/adaptor/reversed.hpp>
 
-#include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 #include <kth/database/settings.hpp>
 #include <kth/database/store.hpp>
+#include <kth/domain.hpp>
 
 namespace kth::database {
 
@@ -78,7 +78,7 @@ data_base::~data_base() {
 
 #if ! defined(KTH_DB_READONLY)
 // Throws if there is insufficient disk space, not idempotent.
-bool data_base::create(const block& genesis) {
+bool data_base::create(block const& genesis) {
 
 #ifdef KTH_DB_LEGACY
     ///////////////////////////////////////////////////////////////////////////
@@ -243,7 +243,7 @@ bool data_base::close() {
 
 // protected
 void data_base::start() {
-    // TODO: parameterize initial file sizes as record count or slab bytes?
+    // TODO(legacy): parameterize initial file sizes as record count or slab bytes?
 
 #ifdef KTH_DB_LEGACY
     blocks_ = std::make_shared<block_database>(block_table, block_index,
@@ -455,7 +455,7 @@ hash_digest get_previous_hash(internal_database const& db, size_t height) {
 
 
 //TODO(fernando): const?
-code data_base::verify_insert(const block& block, size_t height) {
+code data_base::verify_insert(block const& block, size_t height) {
     if (block.transactions().empty()) {
         return error::empty_block;
     }
@@ -478,8 +478,7 @@ code data_base::verify_insert(const block& block, size_t height) {
     return error::success;
 }
 
-//TODO(fernando): const?
-code data_base::verify_push(const block& block, size_t height) {
+code data_base::verify_push(block const& block, size_t height) const {
     if (block.transactions().empty()) {
         return error::empty_block;
     }
@@ -706,6 +705,7 @@ code data_base::push_genesis(block const& block) {
 }
 #endif // ! defined(KTH_DB_READONLY)
 
+#ifdef KTH_DB_LEGACY
 #if ! defined(KTH_DB_READONLY)
 // To push in order call with bucket = 0 and buckets = 1 (defaults).
 bool data_base::push_transactions(domain::chain::block const& block, size_t height, uint32_t median_time_past, size_t bucket /*= 0*/, size_t buckets/*= 1*/) {
@@ -748,6 +748,8 @@ bool data_base::push_transactions(domain::chain::block const& block, size_t heig
     return true;
 }
 #endif //! defined(KTH_DB_READONLY)
+#endif // KTH_DB_LEGACY
+
 
 #ifdef KTH_DB_LEGACY
 #if ! defined(KTH_DB_READONLY)
@@ -1148,8 +1150,7 @@ bool data_base::pop_inputs(const input::list& inputs, size_t height) {
         }
 #endif // KTH_DB_LEGACY
 
-        if (height < settings_.index_start_height)
-            continue;
+        if (height < settings_.index_start_height) continue;
 
 #ifdef KTH_DB_SPENDS
         // All spends are confirmed.
@@ -1206,7 +1207,7 @@ void data_base::push_all(block_const_ptr_list_const_ptr in_blocks, size_t first_
     push_next(error::success, in_blocks, 0, first_height, dispatch, handler);
 }
 
-// TODO: resolve inconsistency with height and median_time_past passing.
+// TODO(legacy): resolve inconsistency with height and median_time_past passing.
 void data_base::push_next(code const& ec, block_const_ptr_list_const_ptr blocks, size_t index, size_t height, dispatcher& dispatch, result_handler handler) {
     if (ec || index >= blocks->size()) {
         // This ends the loop.
@@ -1220,7 +1221,7 @@ void data_base::push_next(code const& ec, block_const_ptr_list_const_ptr blocks,
     // Set push start time for the block.
     block->validation.start_push = asio::steady_clock::now();
 
-    const result_handler next = std::bind(&data_base::push_next, this, _1, blocks, index + 1, height + 1, std::ref(dispatch), handler);
+    result_handler const next = std::bind(&data_base::push_next, this, _1, blocks, index + 1, height + 1, std::ref(dispatch), handler);
 
     // This is the beginning of the block sub-sequence.
     dispatch.concurrent(&data_base::do_push, this, block, height, median_time_past, std::ref(dispatch), next);
@@ -1293,7 +1294,7 @@ void data_base::handle_push_transactions(code const& ec, block_const_ptr block, 
     handler(error::success);
 }
 
-// TODO: make async and concurrency as appropriate.
+// TODO(legacy): make async and concurrency as appropriate.
 // This precludes popping the genesis block.
 void data_base::pop_above(block_const_ptr_list_ptr out_blocks, hash_digest const& fork_hash, dispatcher&, result_handler handler) {
     out_blocks->clear();
@@ -1343,7 +1344,7 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, hash_digest const
     for (size_t height = top; height > fork; --height) {
         domain::message::block next;
 
-        // TODO: parallelize pop of transactions within each block.
+        // TODO(legacy): parallelize pop of transactions within each block.
         if ( ! pop(next)) {
             //**--**
             handler(error::operation_failed_10);
@@ -1383,7 +1384,7 @@ bool data_base::set_database_flags(bool fast) {
 // This is designed for write exclusivity and read concurrency.
 void data_base::reorganize(infrastructure::config::checkpoint const& fork_point, block_const_ptr_list_const_ptr incoming_blocks, block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch, result_handler handler) {
     auto const next_height = safe_add(fork_point.height(), size_t(1));
-    const result_handler pop_handler = std::bind(&data_base::handle_pop, this, _1, incoming_blocks, next_height, std::ref(dispatch), handler);
+    result_handler const pop_handler = std::bind(&data_base::handle_pop, this, _1, incoming_blocks, next_height, std::ref(dispatch), handler);
 
 
 #ifdef KTH_DB_LEGACY
@@ -1404,7 +1405,7 @@ void data_base::reorganize(infrastructure::config::checkpoint const& fork_point,
 }
 
 void data_base::handle_pop(code const& ec, block_const_ptr_list_const_ptr incoming_blocks, size_t first_height, dispatcher& dispatch, result_handler handler) {
-    const result_handler push_handler = std::bind(&data_base::handle_push, this, _1, handler);
+    result_handler const push_handler = std::bind(&data_base::handle_push, this, _1, handler);
 
     if (ec) {
         push_handler(ec);
