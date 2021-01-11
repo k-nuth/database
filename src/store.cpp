@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <memory>
+
 #include <kth/domain.hpp>
 
 namespace kth::database {
