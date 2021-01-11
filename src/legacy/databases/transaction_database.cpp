@@ -13,7 +13,7 @@
 #include <kth/database/legacy/memory/memory.hpp>
 #include <kth/database/legacy/result/transaction_result.hpp>
 
-namespace kth { namespace database {
+namespace kth::database {
 
 using namespace kth::domain::chain;
 using namespace kth::machine;
