@@ -16,8 +16,8 @@
 #define KTH_DATABASE_VERSION "0.0.0"
 #endif
 
-namespace kth { namespace database {
+namespace kth::database {
 char const* version();
-}} // namespace kth
+}
 
 #endif // KTH_DATABASE_VERSION_HPP_
