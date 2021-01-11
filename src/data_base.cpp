@@ -1264,6 +1264,7 @@ void data_base::do_push(block_const_ptr block, size_t height, uint32_t median_ti
 #endif // KTH_DB_LEGACY
 }
 
+#ifdef KTH_DB_LEGACY
 void data_base::do_push_transactions(block_const_ptr block, size_t height, uint32_t median_time_past, size_t bucket, size_t buckets, result_handler handler) {
     auto const result = push_transactions(*block, height, median_time_past, bucket, buckets);
     handler(result ? error::success : error::operation_failed_7);
@@ -1293,6 +1294,7 @@ void data_base::handle_push_transactions(code const& ec, block_const_ptr block, 
     // This is the end of the block sub-sequence.
     handler(error::success);
 }
+#endif
 
 // TODO(legacy): make async and concurrency as appropriate.
 // This precludes popping the genesis block.

@@ -262,8 +262,11 @@ private:
 #if ! defined(KTH_DB_READONLY)
     void push_next(code const& ec, block_const_ptr_list_const_ptr blocks, size_t index, size_t height, dispatcher& dispatch, result_handler handler);
     void do_push(block_const_ptr block, size_t height, uint32_t median_time_past, dispatcher& dispatch, result_handler handler);
+
+#ifdef KTH_DB_LEGACY
     void do_push_transactions(block_const_ptr block, size_t height, uint32_t median_time_past, size_t bucket, size_t buckets, result_handler handler);
     void handle_push_transactions(code const& ec, block_const_ptr block, size_t height, result_handler handler);
+#endif
 
     void handle_pop(code const& ec, block_const_ptr_list_const_ptr incoming_blocks, size_t first_height, dispatcher& dispatch, result_handler handler);
     void handle_push(code const& ec, result_handler handler) const;
