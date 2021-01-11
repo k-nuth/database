@@ -77,7 +77,7 @@ settings::settings(domain::config::network context)
             break;
         }
         case domain::config::network::testnet: {
-            // TODO: optimize for testnet.
+            // TODO(fernando): optimize for testnet.
 #ifdef KTH_DB_LEGACY
             block_table_buckets = 650000;
             transaction_table_buckets = 110000000;
@@ -108,7 +108,7 @@ settings::settings(domain::config::network context)
             db_max_size = 5 * (uint64_t(1) << 30);  //5 GiB
 #endif // KTH_DB_NEW_BLOCKS
 
-            // TODO: optimize for testnet4.
+            // TODO(fernando): optimize for testnet4.
 #ifdef KTH_DB_LEGACY
             block_table_buckets = 650000;
             transaction_table_buckets = 110000000;
@@ -137,7 +137,7 @@ settings::settings(domain::config::network context)
             db_max_size = 5 * (uint64_t(1) << 30);  //5 GiB
 #endif // KTH_DB_NEW_BLOCKS
 
-            // TODO: optimize for scalenet.
+            // TODO(fernando): optimize for scalenet.
 #ifdef KTH_DB_LEGACY
             block_table_buckets = 650000;
             transaction_table_buckets = 110000000;
