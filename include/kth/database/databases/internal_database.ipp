@@ -22,33 +22,32 @@ using utxo_pool_t = std::unordered_map<domain::chain::point, utxo_entry>;
 template <typename Clock>
 result_code internal_database_basis::push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past) {
 
-    // KTH_DB_txn* db_txn;
-    // auto res0 = kth_db_txn_begin(env_, NULL, 0, &db_txn);
-    // if (res0 != KTH_DB_SUCCESS) {
-    //     LOG_ERROR(LOG_DATABASE, "Error begining LMDB Transaction [push_block] ", res0);
-    //     return result_code::other;
-    // }
+    KTH_DB_txn* db_txn;
+    auto res0 = kth_db_txn_begin(env_, NULL, 0, &db_txn);
+    if (res0 != KTH_DB_SUCCESS) {
+        LOG_ERROR(LOG_DATABASE, "Error begining LMDB Transaction [push_block] ", res0);
+        return result_code::other;
+    }
 
-    // // print_stats(db_txn);
+    // print_stats(db_txn);
 
-    // //TODO: save reorg blocks after the last checkpoint
-    // auto res = push_block(block, height, median_time_past, ! is_old_block<Clock>(block), db_txn);
-    // if ( !  succeed(res)) {
-    //     kth_db_txn_abort(db_txn);
-    //     return res;
-    // }
+    //TODO: save reorg blocks after the last checkpoint
+    auto res = push_block(block, height, median_time_past, ! is_old_block<Clock>(block), db_txn);
+    if ( !  succeed(res)) {
+        kth_db_txn_abort(db_txn);
+        return res;
+    }
 
-    // // print_stats(db_txn);
+    // print_stats(db_txn);
 
-    // auto res2 = kth_db_txn_commit(db_txn);
-    // if (res2 != KTH_DB_SUCCESS) {
-    //     LOG_ERROR(LOG_DATABASE, "Error commiting LMDB Transaction [push_block] ", res2);
-    //     return result_code::other;
-    // }
+    auto res2 = kth_db_txn_commit(db_txn);
+    if (res2 != KTH_DB_SUCCESS) {
+        LOG_ERROR(LOG_DATABASE, "Error commiting LMDB Transaction [push_block] ", res2);
+        return result_code::other;
+    }
 
-    // return res;
-
-    return result_code::success;
+    return res;
+    // return result_code::success;
 }
 
 #endif // ! defined(KTH_DB_READONLY)

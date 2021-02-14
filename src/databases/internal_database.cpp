@@ -851,7 +851,6 @@ result_code internal_database_basis::insert_outputs_error_treatment(uint32_t hei
     return res;
 }
 
-
 void internal_database_basis::print_stats(KTH_DB_txn* db_txn) {
     MDB_stat db_stats;
     auto ret = mdb_stat(db_txn, dbi_block_header_, &db_stats);
@@ -879,7 +878,6 @@ void internal_database_basis::print_stats(KTH_DB_txn* db_txn) {
         std::cout << "Reorg Pool Blocks count: " << db_stats.ms_entries << std::endl;
     }
 }
-
 
 result_code internal_database_basis::push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg, KTH_DB_txn* db_txn) {
     //precondition: block.transactions().size() >= 1
@@ -914,7 +912,7 @@ result_code internal_database_basis::push_block(domain::chain::block const& bloc
 #endif
     
     if (insert_reorg) {
-        // std::cout << "insert_reorg: " << insert_reorg << std::endl;
+        std::cout << "insert_reorg: " << insert_reorg << std::endl;
         res = push_block_reorg(block, height, db_txn, dbi_reorg_block_);
         if (res != result_code::success) {
             return res;
