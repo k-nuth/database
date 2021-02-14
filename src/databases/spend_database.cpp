@@ -2,16 +2,14 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef KTH_DATABASE_SPEND_DATABASE_IPP_
-#define KTH_DATABASE_SPEND_DATABASE_IPP_
+#include <kth/database/databases/internal_database.hpp>
 
 namespace kth::database {
 
 #if defined(KTH_DB_NEW_FULL)
 
 //public
-template <typename Clock>
-domain::chain::input_point internal_database_basis<Clock>::get_spend(domain::chain::output_point const& point) const {
+domain::chain::input_point internal_database_basis::get_spend(domain::chain::output_point const& point) const {
 
     auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);
     auto key = kth_db_make_value(keyarr.size(), keyarr.data());
@@ -46,8 +44,7 @@ domain::chain::input_point internal_database_basis<Clock>::get_spend(domain::cha
 #if ! defined(KTH_DB_READONLY)
 
 //pivate
-template <typename Clock>
-result_code internal_database_basis<Clock>::insert_spend(domain::chain::output_point const& out_point, domain::chain::input_point const& in_point, KTH_DB_txn* db_txn) {
+result_code internal_database_basis::insert_spend(domain::chain::output_point const& out_point, domain::chain::input_point const& in_point, KTH_DB_txn* db_txn) {
 
     auto keyarr = out_point.to_data(KTH_INTERNAL_DB_WIRE);
     auto key = kth_db_make_value(keyarr.size(), keyarr.data());   
@@ -68,8 +65,7 @@ result_code internal_database_basis<Clock>::insert_spend(domain::chain::output_p
     return result_code::success;
 }
 
-template <typename Clock>
-result_code internal_database_basis<Clock>::remove_transaction_spend_db(domain::chain::transaction const& tx, KTH_DB_txn* db_txn) {
+result_code internal_database_basis::remove_transaction_spend_db(domain::chain::transaction const& tx, KTH_DB_txn* db_txn) {
 
     for (auto const& input: tx.inputs()) {
 
@@ -89,8 +85,7 @@ result_code internal_database_basis<Clock>::remove_transaction_spend_db(domain::
     return result_code::success;
 }
 
-template <typename Clock>
-result_code internal_database_basis<Clock>::remove_spend(domain::chain::output_point const& out_point, KTH_DB_txn* db_txn) {
+result_code internal_database_basis::remove_spend(domain::chain::output_point const& out_point, KTH_DB_txn* db_txn) {
 
     auto keyarr = out_point.to_data(KTH_INTERNAL_DB_WIRE);      //TODO(fernando): podría estar afuera de la DBTx
     auto key = kth_db_make_value(keyarr.size(), keyarr.data());                     //TODO(fernando): podría estar afuera de la DBTx
@@ -114,5 +109,3 @@ result_code internal_database_basis<Clock>::remove_spend(domain::chain::output_p
 #endif // defined(KTH_DB_NEW_FULL)
 
 } // namespace kth::database
-
-#endif // KTH_DATABASE_SPEND_DATABASE_IPP_

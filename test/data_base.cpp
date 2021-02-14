@@ -340,7 +340,7 @@ TEST_CASE("data base  pushpop  test", "[None]") {
     std::cout << "push_all blocks #2 & #3" << std::endl;
     auto const block2_ptr = std::make_shared<domain::message::block const>(read_block(MAINNET_BLOCK2));
     auto const block3_ptr = std::make_shared<domain::message::block const>(read_block(MAINNET_BLOCK3));
-    auto const blocks_push_ptr = std::make_shared<const block_const_ptr_list>(block_const_ptr_list{ block2_ptr, block3_ptr });
+    auto const blocks_push_ptr = std::make_shared<block_const_ptr const_list>(block_const_ptr_list{ block2_ptr, block3_ptr });
     test_block_not_exists(instance, *block2_ptr, indexed);
     test_block_not_exists(instance, *block3_ptr, indexed);
     REQUIRE(push_all_result(instance == blocks_push_ptr, 2, dispatch), error::success);

@@ -2,16 +2,13 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef KTH_DATABASE_TRANSACTION_UNCONFIRMED_DATABASE_HPP_
-#define KTH_DATABASE_TRANSACTION_UNCONFIRMED_DATABASE_HPP_
+#include <kth/database/databases/internal_database.hpp>
 
 namespace kth::database {
 
 #if defined(KTH_DB_NEW_FULL)
 
-
-template <typename Clock>
-transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_unconfirmed(hash_digest const& hash) const {
+transaction_unconfirmed_entry internal_database_basis::get_transaction_unconfirmed(hash_digest const& hash) const {
     
     KTH_DB_txn* db_txn;
     auto res = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
@@ -28,8 +25,7 @@ transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_un
     return ret;
 }
 
-template <typename Clock>
-transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_unconfirmed(hash_digest const& hash, KTH_DB_txn* db_txn) const {
+transaction_unconfirmed_entry internal_database_basis::get_transaction_unconfirmed(hash_digest const& hash, KTH_DB_txn* db_txn) const {
     auto key = kth_db_make_value(hash.size(), const_cast<hash_digest&>(hash).data());
     KTH_DB_val value;
 
@@ -43,8 +39,7 @@ transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_un
     return res;
 }
 
-template <typename Clock>
-std::vector<transaction_unconfirmed_entry> internal_database_basis<Clock>::get_all_transaction_unconfirmed() const {
+std::vector<transaction_unconfirmed_entry> internal_database_basis::get_all_transaction_unconfirmed() const {
 
     std::vector<transaction_unconfirmed_entry> result;
 
@@ -90,8 +85,7 @@ std::vector<transaction_unconfirmed_entry> internal_database_basis<Clock>::get_a
 
 #if ! defined(KTH_DB_READONLY)
 
-template <typename Clock>
-result_code internal_database_basis<Clock>::remove_transaction_unconfirmed(hash_digest const& tx_id,  KTH_DB_txn* db_txn) {
+result_code internal_database_basis::remove_transaction_unconfirmed(hash_digest const& tx_id,  KTH_DB_txn* db_txn) {
 
     auto key = kth_db_make_value(tx_id.size(), const_cast<hash_digest&>(tx_id).data());
 
@@ -110,17 +104,15 @@ result_code internal_database_basis<Clock>::remove_transaction_unconfirmed(hash_
 
 #endif // ! defined(KTH_DB_READONLY)
 
-template <typename Clock>
 inline
-uint32_t internal_database_basis<Clock>::get_clock_now() const {
+uint32_t internal_database_basis::get_clock_now() const {
     auto const now = std::chrono::high_resolution_clock::now();
     return static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
 }
 
 #if ! defined(KTH_DB_READONLY)
 
-template <typename Clock>
-result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(domain::chain::transaction const& tx, uint32_t height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis::insert_transaction_unconfirmed(domain::chain::transaction const& tx, uint32_t height, KTH_DB_txn* db_txn) {
     
     uint32_t arrival_time = get_clock_now();
     
@@ -150,5 +142,3 @@ result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(domai
 
 
 } // namespace kth::database
-
-#endif // KTH_DATABASE_TRANSACTION_UNCONFIRMED_DATABASE_HPP_

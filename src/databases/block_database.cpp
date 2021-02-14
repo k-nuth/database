@@ -2,34 +2,12 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef KTH_DATABASE_BLOCK_DATABASE_IPP_
-#define KTH_DATABASE_BLOCK_DATABASE_IPP_
+#include <kth/database/databases/internal_database.hpp>
 
 namespace kth::database {
 
-/*
-#if defined(KTH_DB_NEW_FULL)
-    
-template <typename Clock>
-data_chunk internal_database_basis<Clock>::serialize_txs(domain::chain::block const& block) {
-    data_chunk ret;
-    auto const& txs = block.transactions();
-    ret.reserve(txs.size() * kth::hash_size);
-
-    for (auto const& tx : txs) {
-        auto hash = tx.hash();
-        ret.insert(ret.end(), hash.begin(), hash.end());
-    }
-    return ret;
-}
-
-#endif // defined(KTH_DB_NEW_FULL)
-*/
-
-
 //public
-template <typename Clock>
-std::pair<domain::chain::block, uint32_t> internal_database_basis<Clock>::get_block(hash_digest const& hash) const {
+std::pair<domain::chain::block, uint32_t> internal_database_basis::get_block(hash_digest const& hash) const {
     auto key = kth_db_make_value(hash.size(), const_cast<hash_digest&>(hash).data());
 
     KTH_DB_txn* db_txn;
@@ -58,8 +36,7 @@ std::pair<domain::chain::block, uint32_t> internal_database_basis<Clock>::get_bl
 }
 
 //public
-template <typename Clock>
-domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height) const { 
+domain::chain::block internal_database_basis::get_block(uint32_t height) const { 
     KTH_DB_txn* db_txn;
     auto res = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
     if (res != KTH_DB_SUCCESS) {
@@ -75,8 +52,7 @@ domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height) 
     return block;
 }
 
-template <typename Clock>
-domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height, KTH_DB_txn* db_txn) const {
+domain::chain::block internal_database_basis::get_block(uint32_t height, KTH_DB_txn* db_txn) const {
 
     auto key = kth_db_make_value(sizeof(height), &height);
     
@@ -156,7 +132,7 @@ domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height, 
     return domain::chain::block{header, std::move(tx_list)};
 
 #else
-    auto block = get_block_reorg(height, db_txn);
+    auto block = get_block_reorg(height, db_txn, dbi_reorg_block_);
     return block;
 #endif //defined(KTH_DB_NEW_FULL)
 }
@@ -167,11 +143,9 @@ domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height, 
 #if ! defined(KTH_DB_READONLY)
 
 #if defined(KTH_DB_NEW_BLOCKS)
-template <typename Clock>
-result_code internal_database_basis<Clock>::insert_block(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis::insert_block(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
 #elif defined(KTH_DB_NEW_FULL)
-template <typename Clock>
-result_code internal_database_basis<Clock>::insert_block(domain::chain::block const& block, uint32_t height, uint64_t tx_count, KTH_DB_txn* db_txn) {
+result_code internal_database_basis::insert_block(domain::chain::block const& block, uint32_t height, uint64_t tx_count, KTH_DB_txn* db_txn) {
 #endif
 
 /*#if defined(KTH_DB_NEW_BLOCKS)
@@ -224,8 +198,7 @@ auto key = kth_db_make_value(sizeof(height), &height);
     return result_code::success;
 }
 
-template <typename Clock>
-result_code internal_database_basis<Clock>::remove_blocks_db(uint32_t height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis::remove_blocks_db(uint32_t height, KTH_DB_txn* db_txn) {
     auto key = kth_db_make_value(sizeof(height), &height);
     
  #if defined(KTH_DB_NEW_BLOCKS)   
@@ -274,7 +247,4 @@ result_code internal_database_basis<Clock>::remove_blocks_db(uint32_t height, KT
 #endif // ! defined(KTH_DB_READONLY)
 #endif //defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
 
-
 } // namespace kth::database
-
-#endif // KTH_DATABASE_BLOCK_DATABASE_IPP_

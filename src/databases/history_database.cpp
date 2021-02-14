@@ -2,8 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef KTH_DATABASE_HISTORY_DATABASE_IPP_
-#define KTH_DATABASE_HISTORY_DATABASE_IPP_
+#include <kth/database/databases/internal_database.hpp>
 
 namespace kth::database {
 
@@ -11,8 +10,7 @@ namespace kth::database {
 
 #if ! defined(KTH_DB_READONLY)
 
-template <typename Clock>
-result_code internal_database_basis<Clock>::insert_history_db(domain::wallet::payment_address const& address, data_chunk const& entry, KTH_DB_txn* db_txn) {
+result_code internal_database_basis::insert_history_db(domain::wallet::payment_address const& address, data_chunk const& entry, KTH_DB_txn* db_txn) {
 
     auto key_arr = address.hash();     //TODO(fernando): should I take a reference?                               
     auto key = kth_db_make_value(key_arr.size(), key_arr.data());
@@ -31,8 +29,7 @@ result_code internal_database_basis<Clock>::insert_history_db(domain::wallet::pa
     return result_code::success;
 }
 
-template <typename Clock>
-result_code internal_database_basis<Clock>::insert_input_history(domain::chain::input_point const& inpoint, uint32_t height, domain::chain::input const& input, KTH_DB_txn* db_txn) {
+result_code internal_database_basis::insert_input_history(domain::chain::input_point const& inpoint, uint32_t height, domain::chain::input const& input, KTH_DB_txn* db_txn) {
     
     auto const& prevout = input.previous_output();
 
@@ -100,8 +97,7 @@ result_code internal_database_basis<Clock>::insert_input_history(domain::chain::
     return result_code::success;
 }
 
-template <typename Clock>
-result_code internal_database_basis<Clock>::insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, domain::chain::output const& output, KTH_DB_txn* db_txn ) {
+result_code internal_database_basis::insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, domain::chain::output const& output, KTH_DB_txn* db_txn ) {
     
     uint64_t history_count = get_history_count(db_txn);
     if (history_count == max_uint64) {
@@ -129,15 +125,12 @@ result_code internal_database_basis<Clock>::insert_output_history(hash_digest co
 
 #endif // ! defined(KTH_DB_READONLY)
 
-
-template <typename Clock>
 // static
-domain::chain::history_compact internal_database_basis<Clock>::history_entry_to_history_compact(history_entry const& entry) {
+domain::chain::history_compact internal_database_basis::history_entry_to_history_compact(history_entry const& entry) {
     return domain::chain::history_compact{entry.point_kind(), entry.point(), entry.height(), entry.value_or_checksum()};
 }
 
-template <typename Clock>
-domain::chain::history_compact::list internal_database_basis<Clock>::get_history(short_hash const& key, size_t limit, size_t from_height) const {
+domain::chain::history_compact::list internal_database_basis::get_history(short_hash const& key, size_t limit, size_t from_height) const {
 
     domain::chain::history_compact::list result;
 
@@ -194,8 +187,7 @@ domain::chain::history_compact::list internal_database_basis<Clock>::get_history
     return result;
 }
 
-template <typename Clock>
-std::vector<hash_digest> internal_database_basis<Clock>::get_history_txns(short_hash const& key, size_t limit, size_t from_height) const {
+std::vector<hash_digest> internal_database_basis::get_history_txns(short_hash const& key, size_t limit, size_t from_height) const {
 
     std::set<hash_digest> temp;
     std::vector<hash_digest> result;
@@ -265,8 +257,7 @@ std::vector<hash_digest> internal_database_basis<Clock>::get_history_txns(short_
 
 #if ! defined(KTH_DB_READONLY)
 
-template <typename Clock>
-result_code internal_database_basis<Clock>::remove_transaction_history_db(domain::chain::transaction const& tx, size_t height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis::remove_transaction_history_db(domain::chain::transaction const& tx, size_t height, KTH_DB_txn* db_txn) {
 
     for (auto const& output: tx.outputs()) {
         for (auto const& address : output.addresses()) {
@@ -320,8 +311,7 @@ result_code internal_database_basis<Clock>::remove_transaction_history_db(domain
     return result_code::success;
 }
 
-template <typename Clock>
-result_code internal_database_basis<Clock>::remove_history_db(const short_hash& key, size_t height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis::remove_history_db(const short_hash& key, size_t height, KTH_DB_txn* db_txn) {
 
     KTH_DB_cursor* cursor;
 
@@ -366,19 +356,15 @@ result_code internal_database_basis<Clock>::remove_history_db(const short_hash& 
 
 #endif // ! defined(KTH_DB_READONLY)
 
-
-template <typename Clock>
-uint64_t internal_database_basis<Clock>::get_history_count(KTH_DB_txn* db_txn) const {
-  MDB_stat db_stats;
-  auto ret = mdb_stat(db_txn, dbi_history_db_, &db_stats);
-  if (ret != KTH_DB_SUCCESS) {
-      return max_uint64;
-  }
-  return db_stats.ms_entries;
+uint64_t internal_database_basis::get_history_count(KTH_DB_txn* db_txn) const {
+    MDB_stat db_stats;
+    auto ret = mdb_stat(db_txn, dbi_history_db_, &db_stats);
+    if (ret != KTH_DB_SUCCESS) {
+        return max_uint64;
+    }
+    return db_stats.ms_entries;
 }
 
 #endif //KTH_NEW_DB_FULL
 
 } // namespace kth::database
-
-#endif // KTH_DATABASE_HISTORY_DATABASE_IPP_

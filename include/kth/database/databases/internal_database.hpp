@@ -16,55 +16,25 @@
 // #include <lmdb.h>
 // #endif
 
-#include <kth/database/databases/generic_db.hpp>
-
 #include <kth/domain.hpp>
 #include <kth/domain/chain/input_point.hpp>
 
-#include <kth/database/define.hpp>
-
-#include <kth/database/databases/result_code.hpp>
-#include <kth/database/databases/property_code.hpp>
-#include <kth/database/databases/tools.hpp>
-#include <kth/database/databases/utxo_entry.hpp>
+#include <kth/database/databases/db_parameters.hpp>
+#include <kth/database/databases/generic_db.hpp>
 #include <kth/database/databases/history_entry.hpp>
+#include <kth/database/databases/property_code.hpp>
+#include <kth/database/databases/result_code.hpp>
+#include <kth/database/databases/tools.hpp>
 #include <kth/database/databases/transaction_entry.hpp>
 #include <kth/database/databases/transaction_unconfirmed_entry.hpp>
+#include <kth/database/databases/utxo_entry.hpp>
+#include <kth/database/define.hpp>
 
 #include <kth/infrastructure.hpp>
 
-#ifdef KTH_INTERNAL_DB_4BYTES_INDEX
-#define KTH_INTERNAL_DB_WIRE true
-#else
-#define KTH_INTERNAL_DB_WIRE false
-#endif
-
-#if defined(KTH_DB_READONLY)
-#define KTH_DB_CONDITIONAL_CREATE 0
-#else
-#define KTH_DB_CONDITIONAL_CREATE KTH_DB_CREATE
-#endif
-
-#if defined(KTH_DB_READONLY)
-#define KTH_DB_CONDITIONAL_READONLY KTH_DB_RDONLY
-#else
-#define KTH_DB_CONDITIONAL_READONLY 0
-#endif
-
 namespace kth::database {
 
-#if defined(KTH_DB_NEW_FULL)
-constexpr size_t max_dbs_ = 13;
-#elif defined(KTH_DB_NEW_BLOCKS)
-constexpr size_t max_dbs_ = 8;
-#else
-constexpr size_t max_dbs_ = 7;
-#endif
-
-constexpr size_t env_open_mode_ = 0664;
-constexpr int directory_exists = 0;
-
-template <typename Clock = std::chrono::system_clock>
+// template <typename Clock = std::chrono::system_clock>
 class KD_API internal_database_basis {
 public:
     using path = kth::path;
@@ -107,10 +77,14 @@ public:
     bool close();
 
 #if ! defined(KTH_DB_READONLY)
+
+    void print_stats(KTH_DB_txn* db_txn);
+
     result_code push_genesis(domain::chain::block const& block);
 
     //TODO(fernando): optimization: consider passing a list of outputs to insert and a list of inputs to delete instead of an entire Block.
     //                  avoiding inserting and erasing internal spenders
+    template <typename Clock>
     result_code push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past);
 #endif
     
@@ -165,6 +139,7 @@ private:
 
     bool open_internal();
     
+    template <typename Clock>
     bool is_old_block(domain::chain::block const& block) const;
 
     size_t get_db_page_size() const;
@@ -178,12 +153,6 @@ private:
     utxo_entry get_utxo(domain::chain::output_point const& point, KTH_DB_txn* db_txn) const;
 
 #if ! defined(KTH_DB_READONLY)
-    result_code insert_reorg_pool(uint32_t height, KTH_DB_val& key, KTH_DB_txn* db_txn);
-    
-    result_code remove_utxo(uint32_t height, domain::chain::output_point const& point, bool insert_reorg, KTH_DB_txn* db_txn);
-    
-    result_code insert_utxo(domain::chain::output_point const& point, domain::chain::output const& output, data_chunk const& fixed_data, KTH_DB_txn* db_txn);
-
     result_code remove_inputs(hash_digest const& tx_id, uint32_t height, domain::chain::input::list const& inputs, bool insert_reorg, KTH_DB_txn* db_txn);
 
     result_code insert_outputs(hash_digest const& tx_id, uint32_t height, domain::chain::output::list const& outputs, data_chunk const& fixed_data, KTH_DB_txn* db_txn);
@@ -201,15 +170,11 @@ private:
 
     result_code push_block_header(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
     
-    result_code push_block_reorg(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
-
     result_code push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg, KTH_DB_txn* db_txn);
 
     result_code push_genesis(domain::chain::block const& block, KTH_DB_txn* db_txn);
 
     result_code remove_outputs(hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn);
-
-    result_code insert_output_from_reorg_and_remove(domain::chain::output_point const& point, KTH_DB_txn* db_txn);
 
     result_code insert_inputs(domain::chain::input::list const& inputs, KTH_DB_txn* db_txn);
 
@@ -224,25 +189,14 @@ private:
 
     result_code remove_block_header(hash_digest const& hash, uint32_t height, KTH_DB_txn* db_txn);
 
-    result_code remove_block_reorg(uint32_t height, KTH_DB_txn* db_txn);
-    
-    result_code remove_reorg_index(uint32_t height, KTH_DB_txn* db_txn);
-    
     result_code remove_block(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
 #endif
 
     domain::chain::header get_header(uint32_t height, KTH_DB_txn* db_txn) const;
 
-    domain::chain::block get_block_reorg(uint32_t height, KTH_DB_txn* db_txn) const;
-    domain::chain::block get_block_reorg(uint32_t height) const;
-
 #if ! defined(KTH_DB_READONLY)
     result_code remove_block(domain::chain::block const& block, uint32_t height);
-    result_code prune_reorg_index(uint32_t remove_until, KTH_DB_txn* db_txn);
-    result_code prune_reorg_block(uint32_t amount_to_delete, KTH_DB_txn* db_txn);
 #endif
-
-    result_code get_first_reorg_block_height(uint32_t& out_height) const;
 
     //TODO(fernando): is taking KTH_DB_val by value, is that Ok?
     result_code insert_reorg_into_pool(utxo_pool_t& pool, KTH_DB_val key_point, KTH_DB_txn* db_txn) const;
@@ -359,65 +313,33 @@ private:
 #endif
 };
 
-template <typename Clock>
-constexpr char internal_database_basis<Clock>::block_header_db_name[];           //key: block height, value: block header
-
-template <typename Clock>
-constexpr char internal_database_basis<Clock>::block_header_by_hash_db_name[];   //key: block hash, value: block height
-
-template <typename Clock>
-constexpr char internal_database_basis<Clock>::utxo_db_name[];                   //key: point, value: output
-
-template <typename Clock>
-constexpr char internal_database_basis<Clock>::reorg_pool_name[];                //key: key: point, value: output
-
-template <typename Clock>
-constexpr char internal_database_basis<Clock>::reorg_index_name[];               //key: block height, value: point list
-
-template <typename Clock>
-constexpr char internal_database_basis<Clock>::reorg_block_name[];               //key: block height, value: block
-
-template <typename Clock>
-constexpr char internal_database_basis<Clock>::db_properties_name[];                   //key: propery, value: data
+constexpr char internal_database_basis::block_header_db_name[];           //key: block height, value: block header
+constexpr char internal_database_basis::block_header_by_hash_db_name[];   //key: block hash, value: block height
+constexpr char internal_database_basis::utxo_db_name[];                   //key: point, value: output
+constexpr char internal_database_basis::reorg_pool_name[];                //key: key: point, value: output
+constexpr char internal_database_basis::reorg_index_name[];               //key: block height, value: point list
+constexpr char internal_database_basis::reorg_block_name[];               //key: block height, value: block
+constexpr char internal_database_basis::db_properties_name[];             //key: propery, value: data
 
 #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-template <typename Clock>
-constexpr char internal_database_basis<Clock>::block_db_name[];                  //key: block height, value: block
-                                                                                 //key: block height, value: tx hashes   
+constexpr char internal_database_basis::block_db_name[];                  //key: block height, value: block
+                                                                          //key: block height, value: tx hashes   
 #endif
 
 #ifdef KTH_DB_NEW_FULL
-template <typename Clock>
-constexpr char internal_database_basis<Clock>::transaction_db_name[];            //key: tx hash, value: tx
-
-template <typename Clock>
-constexpr char internal_database_basis<Clock>::transaction_hash_db_name[];            //key: tx hash, value: tx
-
-template <typename Clock>
-constexpr char internal_database_basis<Clock>::history_db_name[];            //key: tx hash, value: tx
-
-template <typename Clock>
-constexpr char internal_database_basis<Clock>::spend_db_name[];            //key: output_point, value: input_point
-
-template <typename Clock>
-constexpr char internal_database_basis<Clock>::transaction_unconfirmed_db_name[];     //key: tx hash, value: tx
-
+constexpr char internal_database_basis::transaction_db_name[];            //key: tx hash, value: tx
+constexpr char internal_database_basis::transaction_hash_db_name[];       //key: tx hash, value: tx
+constexpr char internal_database_basis::history_db_name[];                //key: tx hash, value: tx
+constexpr char internal_database_basis::spend_db_name[];                  //key: output_point, value: input_point
+constexpr char internal_database_basis::transaction_unconfirmed_db_name[];//key: tx hash, value: tx
 
 #endif
 
-using internal_database = internal_database_basis<std::chrono::system_clock>;
+// using internal_database = internal_database_basis<std::chrono::system_clock>;
+using internal_database = internal_database_basis;
 
 } // namespace kth::database
 
-
-#include <kth/database/databases/block_database.ipp>
-#include <kth/database/databases/header_database.ipp>
-#include <kth/database/databases/history_database.ipp>
-#include <kth/database/databases/spend_database.ipp>
-#include <kth/database/databases/transaction_unconfirmed_database.ipp>
 #include <kth/database/databases/internal_database.ipp>
-#include <kth/database/databases/reorg_database.ipp>
-#include <kth/database/databases/transaction_database.ipp>
-#include <kth/database/databases/utxo_database.ipp>
 
 #endif // KTH_DATABASE_INTERNAL_DATABASE_HPP_

@@ -2,18 +2,13 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef KTH_DATABASE_HEADER_DATABASE_IPP_
-#define KTH_DATABASE_HEADER_DATABASE_IPP_
-
-#include <kth/infrastructure.hpp>
+#include <kth/database/databases/internal_database.hpp>
 
 namespace kth::database {
 
 #if ! defined(KTH_DB_READONLY)
 
-template <typename Clock>
-result_code internal_database_basis<Clock>::push_block_header(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
-    
+result_code internal_database_basis::push_block_header(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
     auto valuearr = block.header().to_data(true);               //TODO(fernando): podría estar afuera de la DBTx
     auto key = kth_db_make_value(sizeof(height), &height);
     auto value = kth_db_make_value(valuearr.size(), valuearr.data());
@@ -46,9 +41,7 @@ result_code internal_database_basis<Clock>::push_block_header(domain::chain::blo
 }
 #endif // ! defined(KTH_DB_READONLY)
 
-
-template <typename Clock>
-domain::chain::header internal_database_basis<Clock>::get_header(uint32_t height, KTH_DB_txn* db_txn) const {
+domain::chain::header internal_database_basis::get_header(uint32_t height, KTH_DB_txn* db_txn) const {
     auto key = kth_db_make_value(sizeof(height), &height);
     KTH_DB_val value;
 
@@ -63,8 +56,7 @@ domain::chain::header internal_database_basis<Clock>::get_header(uint32_t height
 
 #if ! defined(KTH_DB_READONLY)
 
-template <typename Clock>
-result_code internal_database_basis<Clock>::remove_block_header(hash_digest const& hash, uint32_t height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis::remove_block_header(hash_digest const& hash, uint32_t height, KTH_DB_txn* db_txn) {
     auto key = kth_db_make_value(sizeof(height), &height);
     auto res = kth_db_del(db_txn, dbi_block_header_, &key, NULL);
     if (res == KTH_DB_NOTFOUND) {
@@ -95,5 +87,3 @@ result_code internal_database_basis<Clock>::remove_block_header(hash_digest cons
 
 
 } // namespace kth::database
-
-#endif // KTH_DATABASE_HEADER_DATABASE_IPP_

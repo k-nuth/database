@@ -2,16 +2,14 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef KTH_DATABASE_TRANSACTION_DATABASE_HPP_
-#define KTH_DATABASE_TRANSACTION_DATABASE_HPP_
+#include <kth/database/databases/internal_database.hpp>
 
 namespace kth::database {
 
 #if defined(KTH_DB_NEW_FULL)
 
 //public
-template <typename Clock>
-transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest const& hash, size_t fork_height) const {
+transaction_entry internal_database_basis::get_transaction(hash_digest const& hash, size_t fork_height) const {
     
     KTH_DB_txn* db_txn;
     auto res = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
@@ -31,9 +29,8 @@ transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest co
 
 #if ! defined(KTH_DB_READONLY)
 
-template <typename Clock>
 template <typename I>
-result_code internal_database_basis<Clock>::insert_transactions(I f, I l, uint32_t height, uint32_t median_time_past, uint64_t tx_count, KTH_DB_txn* db_txn) {
+result_code internal_database_basis::insert_transactions(I f, I l, uint32_t height, uint32_t median_time_past, uint64_t tx_count, KTH_DB_txn* db_txn) {
     
     auto id = tx_count;
     uint32_t pos = 0;
@@ -63,8 +60,7 @@ result_code internal_database_basis<Clock>::insert_transactions(I f, I l, uint32
 }
 #endif // ! defined(KTH_DB_READONLY)
 
-template <typename Clock>
-transaction_entry internal_database_basis<Clock>::get_transaction(uint64_t id, KTH_DB_txn* db_txn) const {
+transaction_entry internal_database_basis::get_transaction(uint64_t id, KTH_DB_txn* db_txn) const {
 
     auto key = kth_db_make_value(sizeof(id), &id);
     KTH_DB_val value;
@@ -81,8 +77,7 @@ transaction_entry internal_database_basis<Clock>::get_transaction(uint64_t id, K
     return entry;
 }
 
-template <typename Clock>
-transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest const& hash, size_t fork_height, KTH_DB_txn* db_txn) const {
+transaction_entry internal_database_basis::get_transaction(hash_digest const& hash, size_t fork_height, KTH_DB_txn* db_txn) const {
     auto key  = kth_db_make_value(hash.size(), const_cast<hash_digest&>(hash).data());
     KTH_DB_val value;
 
@@ -115,8 +110,7 @@ transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest co
 
 #if ! defined(KTH_DB_READONLY)
 
-template <typename Clock>
-result_code internal_database_basis<Clock>::insert_transaction(uint64_t id, domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, KTH_DB_txn* db_txn) {
+result_code internal_database_basis::insert_transaction(uint64_t id, domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, KTH_DB_txn* db_txn) {
     
     auto key = kth_db_make_value(sizeof(id), &id);
     
@@ -155,8 +149,7 @@ result_code internal_database_basis<Clock>::insert_transaction(uint64_t id, doma
     return result_code::success;
 }
 
-template <typename Clock>
-result_code internal_database_basis<Clock>::remove_transactions(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis::remove_transactions(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
     
     auto const& txs = block.transactions();
     uint32_t pos = 0;
@@ -359,8 +352,7 @@ result_code internal_database_basis<Clock>::remove_transactions(domain::chain::b
     return result_code::success;
 }
 
-template <typename Clock>
-result_code internal_database_basis<Clock>::update_transaction(domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, KTH_DB_txn* db_txn) {
+result_code internal_database_basis::update_transaction(domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, KTH_DB_txn* db_txn) {
     auto key_arr = tx.hash();                                    //TODO(fernando): podría estar afuera de la DBTx
     auto key  = kth_db_make_value(key_arr.size(), key_arr.data());
 
@@ -381,8 +373,7 @@ result_code internal_database_basis<Clock>::update_transaction(domain::chain::tr
     return result_code::success;
 }
 
-template <typename Clock>
-result_code internal_database_basis<Clock>::set_spend(domain::chain::output_point const& point, uint32_t spender_height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis::set_spend(domain::chain::output_point const& point, uint32_t spender_height, KTH_DB_txn* db_txn) {
 
     // Limit search to confirmed transactions at or below the spender height,
     // since a spender cannot spend above its own height.
@@ -415,24 +406,21 @@ result_code internal_database_basis<Clock>::set_spend(domain::chain::output_poin
     return result_code::success;
 }
 
-template <typename Clock>
-result_code internal_database_basis<Clock>::set_unspend(domain::chain::output_point const& point, KTH_DB_txn* db_txn) {
+result_code internal_database_basis::set_unspend(domain::chain::output_point const& point, KTH_DB_txn* db_txn) {
     return set_spend(point, domain::chain::output::validation::not_spent, db_txn);
 }
 #endif // ! defined(KTH_DB_READONLY)
 
-template <typename Clock>
-uint64_t internal_database_basis<Clock>::get_tx_count(KTH_DB_txn* db_txn) const {
-  MDB_stat db_stats;
-  auto ret = mdb_stat(db_txn, dbi_transaction_db_, &db_stats);
-  if (ret != KTH_DB_SUCCESS) {
-      return max_uint64;
-  }
-  return db_stats.ms_entries;
+//TODO(fernando): this must be a generic function
+uint64_t internal_database_basis::get_tx_count(KTH_DB_txn* db_txn) const {
+    MDB_stat db_stats;
+    auto ret = mdb_stat(db_txn, dbi_transaction_db_, &db_stats);
+    if (ret != KTH_DB_SUCCESS) {
+        return max_uint64;
+    }
+    return db_stats.ms_entries;
 }
 
 #endif //KTH_NEW_DB_FULL
 
 } // namespace kth::database
-
-#endif // KTH_DATABASE_TRANSACTION_DATABASE_HPP_
