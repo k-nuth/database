@@ -52,3 +52,4 @@ CMakeSettings.json
 
 .vscode/
 internal_database/
+.DS_Store
