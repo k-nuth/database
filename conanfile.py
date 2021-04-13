@@ -48,9 +48,9 @@ class KnuthDatabaseConan(KnuthConanFile):
         "tests": False,
         "tools": False,
         "currency": "BCH",
-        "microarchitecture": "_DUMMY_", 
+        "microarchitecture": "_DUMMY_",
         "fix_march": False,
-        "march_id": "_DUMMY_", 
+        "march_id": "_DUMMY_",
         "verbose": False,
         "measurements": False,
         "db": "default",
@@ -86,7 +86,7 @@ class KnuthDatabaseConan(KnuthConanFile):
             self.output.info("Using legacy DB")
 
         if self.options.tests:
-            self.requires("catch2/2.13.1@")
+            self.requires("catch2/2.13.4")
 
         self.requires("domain/0.X@%s/%s" % (self.user, self.channel))
 
@@ -98,7 +98,7 @@ class KnuthDatabaseConan(KnuthConanFile):
 
         self.options["*"].cached_rpc_data = self.options.cached_rpc_data
         self.options["*"].measurements = self.options.measurements
-        
+
         self.options["*"].db_readonly = self.options.db_readonly
         self.output.info("Compiling with read-only DB: %s" % (self.options.db_readonly,))
 
