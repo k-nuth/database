@@ -86,7 +86,7 @@ class KnuthDatabaseConan(KnuthConanFile):
             self.output.info("Using legacy DB")
 
         if self.options.tests:
-            self.requires("catch2/2.13.4")
+            self.requires("catch2/2.13.6")
 
         self.requires("domain/0.X@%s/%s" % (self.user, self.channel))
 
