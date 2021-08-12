@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2020 Knuth Project developers.
+// Copyright (c) 2016-2021 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -13,7 +13,7 @@
 #include <kth/database/legacy/memory/memory.hpp>
 #include <kth/database/legacy/result/transaction_result.hpp>
 
-namespace kth { namespace database {
+namespace kth::database {
 
 using namespace kth::domain::chain;
 using namespace kth::machine;

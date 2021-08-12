@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2020 Knuth Project developers.
+# Copyright (c) 2016-2021 Knuth Project developers.
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -333,8 +333,6 @@ set(kth_database_sources_just_legacy
     src/store.cpp
     src/version.cpp
 )
-
-
 
 if (DB_LEGACY)
     set(kth_database_sources_just_legacy 

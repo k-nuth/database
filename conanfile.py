@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2020 Knuth Project developers.
+# Copyright (c) 2016-2021 Knuth Project developers.
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -48,9 +48,9 @@ class KnuthDatabaseConan(KnuthConanFile):
         "tests": False,
         "tools": False,
         "currency": "BCH",
-        "microarchitecture": "_DUMMY_", 
+        "microarchitecture": "_DUMMY_",
         "fix_march": False,
-        "march_id": "_DUMMY_", 
+        "march_id": "_DUMMY_",
         "verbose": False,
         "measurements": False,
         "db": "default",
@@ -98,7 +98,7 @@ class KnuthDatabaseConan(KnuthConanFile):
 
         self.options["*"].cached_rpc_data = self.options.cached_rpc_data
         self.options["*"].measurements = self.options.measurements
-        
+
         self.options["*"].db_readonly = self.options.db_readonly
         self.output.info("Compiling with read-only DB: %s" % (self.options.db_readonly,))
 

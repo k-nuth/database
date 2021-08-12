@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2020 Knuth Project developers.
+// Copyright (c) 2016-2021 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -76,9 +76,9 @@ public:
         return source;
     }    
 
-    bool confirmed();
+    bool confirmed() const;
 
-    //Note(Knuth): we don't have spent information
+    //TODO(kth): we don't have spent information
     //bool is_spent(size_t fork_height) const;
 
     static

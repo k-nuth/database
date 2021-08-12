@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2020 Knuth Project developers.
+// Copyright (c) 2016-2021 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -16,8 +16,8 @@
 #define KTH_DATABASE_VERSION "0.0.0"
 #endif
 
-namespace kth { namespace database {
+namespace kth::database {
 char const* version();
-}} // namespace kth
+}
 
 #endif // KTH_DATABASE_VERSION_HPP_

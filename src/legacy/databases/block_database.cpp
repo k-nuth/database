@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2020 Knuth Project developers.
+// Copyright (c) 2016-2021 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -162,7 +162,7 @@ block_result block_database::get(hash_digest const& hash) const {
 }
 
 //WARNING!! : This is public interface, but apparently it is not used in Blockchain
-void block_database::store(const block& block, size_t height)
+void block_database::store(block const& block, size_t height)
 {
     KTH_ASSERT(height <= max_uint32);
     auto const height32 = static_cast<uint32_t>(height);
