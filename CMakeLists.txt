@@ -335,7 +335,7 @@ set(kth_database_sources_just_legacy
 )
 
 if (DB_LEGACY)
-    set(kth_database_sources_just_legacy 
+    set(kth_database_sources_just_legacy
         ${kth_database_sources_just_legacy}
         src/legacy/memory/accessor.cpp
         src/legacy/memory/allocator.cpp
@@ -346,7 +346,7 @@ if (DB_LEGACY)
         src/legacy/primitives/record_multimap_iterable.cpp
         src/legacy/primitives/record_multimap_iterator.cpp
         src/legacy/primitives/slab_manager.cpp
-    
+
         src/legacy/databases/block_database.cpp
         src/legacy/databases/transaction_database.cpp
         src/legacy/result/block_result.cpp
@@ -354,17 +354,17 @@ if (DB_LEGACY)
     )
 
     if (MSVC) # OR MINGW)
-        set(kth_database_sources_just_legacy 
+        set(kth_database_sources_just_legacy
             ${kth_database_sources_just_legacy}
             src/legacy/mman-win32/mman.c
         )
     endif()
-  
+
 endif()
 
 
 if (DB_TRANSACTION_UNCONFIRMED)
-    set(kth_database_sources_just_legacy 
+    set(kth_database_sources_just_legacy
         ${kth_database_sources_just_legacy}
         src/legacy/databases/transaction_unconfirmed_database.cpp
         src/legacy/result/transaction_unconfirmed_result.cpp
@@ -372,28 +372,28 @@ if (DB_TRANSACTION_UNCONFIRMED)
 endif()
 
 if (DB_SPENDS)
-    set(kth_database_sources_just_legacy 
+    set(kth_database_sources_just_legacy
         ${kth_database_sources_just_legacy}
         src/legacy/databases/spend_database.cpp
     )
 endif()
 
 if (DB_HISTORY)
-    set(kth_database_sources_just_legacy 
+    set(kth_database_sources_just_legacy
         ${kth_database_sources_just_legacy}
         src/legacy/databases/history_database.cpp
     )
 endif()
 
 if (DB_STEALTH)
-    set(kth_database_sources_just_legacy 
+    set(kth_database_sources_just_legacy
         ${kth_database_sources_just_legacy}
         src/legacy/databases/stealth_database.cpp
     )
 endif()
 
 if (DB_UNSPENT_LEGACY)
-    set(kth_database_sources_just_legacy 
+    set(kth_database_sources_just_legacy
         ${kth_database_sources_just_legacy}
         src/legacy/unspent_outputs.cpp
         src/legacy/unspent_transaction.cpp
@@ -401,7 +401,7 @@ if (DB_UNSPENT_LEGACY)
 endif()
 
 if (DB_LEGACY)
-    set(kth_database_sources_just_legacy 
+    set(kth_database_sources_just_legacy
         ${kth_database_sources_just_legacy}
             src/legacy/databases/block_database.cpp
             src/legacy/databases/transaction_database.cpp
@@ -414,14 +414,14 @@ set(kth_database_sources_just_kth
 )
 
 if (DB_NEW)
-    set(kth_database_sources_just_kth 
+    set(kth_database_sources_just_kth
         ${kth_database_sources_just_kth}
         src/databases/utxo_entry.cpp
     )
 endif()
 
 if (DB_NEW_FULL)
-    set(kth_database_sources_just_kth 
+    set(kth_database_sources_just_kth
         ${kth_database_sources_just_kth}
         src/databases/history_entry.cpp
         src/databases/transaction_entry.cpp
@@ -430,14 +430,14 @@ if (DB_NEW_FULL)
 endif()
 
 if (NOT JUST_KTH_SOURCES)
-  set(kth_database_sources 
+  set(kth_database_sources
     ${kth_database_sources_just_legacy}
   )
 endif()
 
-set(kth_database_sources 
-  ${kth_database_sources}   
-  ${kth_database_sources_just_kth}         
+set(kth_database_sources
+  ${kth_database_sources}
+  ${kth_database_sources_just_kth}
 )
 
 add_library(kth-database ${MODE} ${kth_database_sources})
@@ -567,7 +567,7 @@ if (WITH_TESTS)
     #     )
     # endif()
 
-    
+
     # if (DB_NEW)
     #     _add_tests(kth_database_test
     #         internal_db_tests
