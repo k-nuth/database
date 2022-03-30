@@ -873,7 +873,8 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
     result_code res;
 #endif
 
-        res = remove_utxo(height, prevout, insert_reorg, db_txn);
+        // res = remove_utxo(height, prevout, insert_reorg, db_txn);
+        res = remove_utxo(height, prevout, insert_reorg);
         if (res != result_code::success) {
             return res;
         }
