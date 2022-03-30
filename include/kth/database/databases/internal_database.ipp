@@ -1022,8 +1022,8 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
         return res0;
     }
 
-    fixed.back() = 0;   //The last byte equal to 0 means NonCoinbaseTx
-    res = push_transactions_non_coinbase(height, median_time_past, true, txs.begin() + 1, txs.end(), insert_reorg, db_txn);
+    // fixed.back() = 0;   //The last byte equal to 0 means NonCoinbaseTx
+    res = push_transactions_non_coinbase(height, median_time_past, false, txs.begin() + 1, txs.end(), insert_reorg, db_txn);
     if (res != result_code::success) {
         return res;
     }
