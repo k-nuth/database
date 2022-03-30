@@ -1077,7 +1077,8 @@ result_code internal_database_basis<Clock>::remove_outputs(hash_digest const& tx
     uint32_t pos = outputs.size() - 1;
     for (auto const& output: outputs) {
         domain::chain::output_point const point {txid, pos};
-        auto res = remove_utxo(0, point, false, db_txn);
+        // auto res = remove_utxo(0, point, false, db_txn);
+        auto res = remove_utxo(0, point, false);
         if (res != result_code::success) {
             return res;
         }
