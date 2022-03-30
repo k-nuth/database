@@ -12,6 +12,7 @@ namespace kth::database {
 template <typename Clock>
 // result_code internal_database_basis<Clock>::remove_utxo(uint32_t height, domain::chain::output_point const& point, bool insert_reorg, KTH_DB_txn* db_txn) {
 result_code internal_database_basis<Clock>::remove_utxo(uint32_t height, domain::chain::output_point const& point, bool insert_reorg) {
+    std::cout << "**************** remove_utxo\n";
     // auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);      //TODO(fernando): podría estar afuera de la DBTx
     // auto key = kth_db_make_value(keyarr.size(), keyarr.data());                 //TODO(fernando): podría estar afuera de la DBTx
 
@@ -42,6 +43,7 @@ result_code internal_database_basis<Clock>::remove_utxo(uint32_t height, domain:
 template <typename Clock>
 // result_code internal_database_basis<Clock>::insert_utxo(domain::chain::output_point const& point, domain::chain::output const& output, uint32_t height, uint32_t median_time_past, bool coinbase, KTH_DB_txn* db_txn) {
 result_code internal_database_basis<Clock>::insert_utxo(domain::chain::output_point const& point, domain::chain::output const& output, uint32_t height, uint32_t median_time_past, bool coinbase) {
+    std::cout << "**************** insert_utxo\n";
     // auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);                  //TODO(fernando): podría estar afuera de la DBTx
     // auto valuearr = utxo_entry::to_data_with_fixed(output, fixed_data);     //TODO(fernando): podría estar afuera de la DBTx
 
