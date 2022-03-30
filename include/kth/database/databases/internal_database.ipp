@@ -184,7 +184,7 @@ bool internal_database_basis<Clock>::close() {
 #endif
         kth_db_dbi_close(env_, dbi_block_header_);
         kth_db_dbi_close(env_, dbi_block_header_by_hash_);
-        kth_db_dbi_close(env_, dbi_utxo_);
+        // kth_db_dbi_close(env_, dbi_utxo_);
         // kth_db_dbi_close(env_, dbi_reorg_pool_);
         // kth_db_dbi_close(env_, dbi_reorg_index_);
         // kth_db_dbi_close(env_, dbi_reorg_block_);
@@ -272,17 +272,22 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
 
 template <typename Clock>
 utxo_entry internal_database_basis<Clock>::get_utxo(domain::chain::output_point const& point, KTH_DB_txn* db_txn) const {
-
-    auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);
-    auto key = kth_db_make_value(keyarr.size(), keyarr.data());
-    KTH_DB_val value;
-
-    auto res0 = kth_db_get(db_txn, dbi_utxo_, &key, &value);
-    if (res0 != KTH_DB_SUCCESS) {
+    auto f = utxo_set_.find(point);
+    if (f == utxo_set_.end()) {
         return utxo_entry{};
     }
+    return f->second;
 
-    return domain::create<utxo_entry>(db_value_to_data_chunk(value));
+    // auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);
+    // auto key = kth_db_make_value(keyarr.size(), keyarr.data());
+    // KTH_DB_val value;
+
+    // auto res0 = kth_db_get(db_txn, dbi_utxo_, &key, &value);
+    // if (res0 != KTH_DB_SUCCESS) {
+    //     return utxo_entry{};
+    // }
+
+    // return domain::create<utxo_entry>(db_value_to_data_chunk(value));
 }
 
 template <typename Clock>
@@ -769,10 +774,10 @@ bool internal_database_basis<Clock>::open_databases() {
         return false;
     }
 
-    res = kth_db_dbi_open(db_txn, utxo_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_utxo_);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
-    }
+    // res = kth_db_dbi_open(db_txn, utxo_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_utxo_);
+    // if (res != KTH_DB_SUCCESS) {
+    //     return false;
+    // }
 
     // res = kth_db_dbi_open(db_txn, reorg_pool_name, KTH_DB_CONDITIONAL_CREATE, &dbi_reorg_pool_);
     // if (res != KTH_DB_SUCCESS) {
@@ -889,11 +894,10 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx_id, uint32_t height, domain::chain::output::list const& outputs, data_chunk const& fixed_data, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx_id, uint32_t height, domain::chain::output::list const& outputs, uint32_t height, uint32_t median_time_past, bool coinbase, KTH_DB_txn* db_txn) {
     uint32_t pos = 0;
     for (auto const& output: outputs) {
-
-        auto res = insert_utxo(domain::chain::point{tx_id, pos}, output, fixed_data, db_txn);
+        auto res = insert_utxo(domain::chain::point{tx_id, pos}, output, height, median_time_past, coinbase, db_txn);
         if (res != result_code::success) {
             return res;
         }
@@ -913,8 +917,8 @@ result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_outputs_error_treatment(uint32_t height, data_chunk const& fixed_data, hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn) {
-    auto res = insert_outputs(txid,height, outputs, fixed_data, db_txn);
+result_code internal_database_basis<Clock>::insert_outputs_error_treatment(uint32_t height, uint32_t height, uint32_t median_time_past, bool coinbase, hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn) {
+    auto res = insert_outputs(txid,height, outputs, height, median_time_past, coinbase, db_txn);
 
     if (res == result_code::duplicated_key) {
         //TODO(fernando): log and continue
@@ -925,12 +929,12 @@ result_code internal_database_basis<Clock>::insert_outputs_error_treatment(uint3
 
 template <typename Clock>
 template <typename I>
-result_code internal_database_basis<Clock>::push_transactions_outputs_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::push_transactions_outputs_non_coinbase(uint32_t height, uint32_t height, uint32_t median_time_past, bool coinbase, I f, I l, KTH_DB_txn* db_txn) {
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
 
     while (f != l) {
         auto const& tx = *f;
-        auto res = insert_outputs_error_treatment(height, fixed_data, tx.hash(), tx.outputs(), db_txn);
+        auto res = insert_outputs_error_treatment(height, height, median_time_past, coinbase, tx.hash(), tx.outputs(), db_txn);
         if (res != result_code::success) {
             return res;
         }
@@ -955,10 +959,10 @@ result_code internal_database_basis<Clock>::remove_transactions_inputs_non_coinb
 
 template <typename Clock>
 template <typename I>
-result_code internal_database_basis<Clock>::push_transactions_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, bool insert_reorg, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::push_transactions_non_coinbase(uint32_t height, uint32_t height, uint32_t median_time_past, bool coinbase, I f, I l, bool insert_reorg, KTH_DB_txn* db_txn) {
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
 
-    auto res = push_transactions_outputs_non_coinbase(height, fixed_data, f, l, db_txn);
+    auto res = push_transactions_outputs_non_coinbase(height, height, median_time_past, coinbase, f, l, db_txn);
     if (res != result_code::success) {
         return res;
     }
@@ -1012,14 +1016,14 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
 
     auto const& coinbase = txs.front();
 
-    auto fixed = utxo_entry::to_data_fixed(height, median_time_past, true);                                     //TODO(fernando): podría estar afuera de la DBTx
-    auto res0 = insert_outputs_error_treatment(height, fixed, coinbase.hash(), coinbase.outputs(), db_txn);     //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
+    // auto fixed = utxo_entry::to_data_fixed(height, median_time_past, true);                                     //TODO(fernando): podría estar afuera de la DBTx
+    auto res0 = insert_outputs_error_treatment(height, height, median_time_past, true, coinbase.hash(), coinbase.outputs(), db_txn);     //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
     if ( ! succeed(res0)) {
         return res0;
     }
 
     fixed.back() = 0;   //The last byte equal to 0 means NonCoinbaseTx
-    res = push_transactions_non_coinbase(height, fixed, txs.begin() + 1, txs.end(), insert_reorg, db_txn);
+    res = push_transactions_non_coinbase(height, height, median_time_past, true, txs.begin() + 1, txs.end(), insert_reorg, db_txn);
     if (res != result_code::success) {
         return res;
     }
