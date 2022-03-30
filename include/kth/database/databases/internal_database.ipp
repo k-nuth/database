@@ -757,6 +757,9 @@ int compare_uint64(KTH_DB_val const* a, KTH_DB_val const* b) {
 
 template <typename Clock>
 bool internal_database_basis<Clock>::open_databases() {
+
+    std::cout << "******************************** open_databases() ********** 100\n";
+
     KTH_DB_txn* db_txn;
 
     auto res = kth_db_txn_begin(env_, NULL, KTH_DB_CONDITIONAL_READONLY, &db_txn);
