@@ -63,7 +63,7 @@ result_code internal_database_basis<Clock>::insert_utxo(domain::chain::output_po
     if (f != utxo_set_.end()) {
         return result_code::duplicated_key;
     }
-    utxo_set_.emplace_hint(f, point, output, height, median_time_past, coinbase);
+    utxo_set_.emplace_hint(f, point, utxo_entry{output, height, median_time_past, coinbase});
 
     return result_code::success;
 }
