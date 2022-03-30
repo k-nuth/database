@@ -459,47 +459,47 @@ result_code internal_database_basis<Clock>::pop_block(domain::chain::block& out_
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::prune() {
-    //TODO: (Mario) add overload with tx
-    uint32_t last_height;
-    auto res = get_last_height(last_height);
+    // //TODO: (Mario) add overload with tx
+    // uint32_t last_height;
+    // auto res = get_last_height(last_height);
 
-    if (res == result_code::db_empty) return result_code::no_data_to_prune;
-    if (res != result_code::success) return res;
-    if (last_height < reorg_pool_limit_) return result_code::no_data_to_prune;
+    // if (res == result_code::db_empty) return result_code::no_data_to_prune;
+    // if (res != result_code::success) return res;
+    // if (last_height < reorg_pool_limit_) return result_code::no_data_to_prune;
 
-    uint32_t first_height;
-    res = get_first_reorg_block_height(first_height);
-    if (res == result_code::db_empty) return result_code::no_data_to_prune;
-    if (res != result_code::success) return res;
-    if (first_height > last_height) return result_code::db_corrupt;
+    // uint32_t first_height;
+    // res = get_first_reorg_block_height(first_height);
+    // if (res == result_code::db_empty) return result_code::no_data_to_prune;
+    // if (res != result_code::success) return res;
+    // if (first_height > last_height) return result_code::db_corrupt;
 
-    auto reorg_count = last_height - first_height + 1;
-    if (reorg_count <= reorg_pool_limit_) return result_code::no_data_to_prune;
+    // auto reorg_count = last_height - first_height + 1;
+    // if (reorg_count <= reorg_pool_limit_) return result_code::no_data_to_prune;
 
-    auto amount_to_delete = reorg_count - reorg_pool_limit_;
-    auto remove_until = first_height + amount_to_delete;
+    // auto amount_to_delete = reorg_count - reorg_pool_limit_;
+    // auto remove_until = first_height + amount_to_delete;
 
-    KTH_DB_txn* db_txn;
-    auto zzz = kth_db_txn_begin(env_, NULL, 0, &db_txn);
-    if (zzz != KTH_DB_SUCCESS) {
-        return result_code::other;
-    }
+    // KTH_DB_txn* db_txn;
+    // auto zzz = kth_db_txn_begin(env_, NULL, 0, &db_txn);
+    // if (zzz != KTH_DB_SUCCESS) {
+    //     return result_code::other;
+    // }
 
-    res = prune_reorg_block(amount_to_delete, db_txn);
-    if (res != result_code::success) {
-        kth_db_txn_abort(db_txn);
-        return res;
-    }
+    // res = prune_reorg_block(amount_to_delete, db_txn);
+    // if (res != result_code::success) {
+    //     kth_db_txn_abort(db_txn);
+    //     return res;
+    // }
 
-    res = prune_reorg_index(remove_until, db_txn);
-    if (res != result_code::success) {
-        kth_db_txn_abort(db_txn);
-        return res;
-    }
+    // res = prune_reorg_index(remove_until, db_txn);
+    // if (res != result_code::success) {
+    //     kth_db_txn_abort(db_txn);
+    //     return res;
+    // }
 
-    if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
-        return result_code::other;
-    }
+    // if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
+    //     return result_code::other;
+    // }
 
     return result_code::success;
 }
