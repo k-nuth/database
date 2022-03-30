@@ -894,7 +894,7 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx_id, uint32_t height, domain::chain::output::list const& outputs, uint32_t height, uint32_t median_time_past, bool coinbase, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx_id, uint32_t height, domain::chain::output::list const& outputs, uint32_t median_time_past, bool coinbase, KTH_DB_txn* db_txn) {
     uint32_t pos = 0;
     for (auto const& output: outputs) {
         auto res = insert_utxo(domain::chain::point{tx_id, pos}, output, height, median_time_past, coinbase, db_txn);
@@ -918,7 +918,7 @@ result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_outputs_error_treatment(uint32_t height, uint32_t median_time_past, bool coinbase, hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn) {
-    auto res = insert_outputs(txid,height, outputs, height, median_time_past, coinbase, db_txn);
+    auto res = insert_outputs(txid, height, outputs, median_time_past, coinbase, db_txn);
 
     if (res == result_code::duplicated_key) {
         //TODO(fernando): log and continue

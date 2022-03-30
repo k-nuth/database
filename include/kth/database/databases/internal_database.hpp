@@ -188,7 +188,7 @@ private:
 
     result_code remove_inputs(hash_digest const& tx_id, uint32_t height, domain::chain::input::list const& inputs, bool insert_reorg, KTH_DB_txn* db_txn);
 
-    result_code insert_outputs(hash_digest const& tx_id, uint32_t height, domain::chain::output::list const& outputs, uint32_t height, uint32_t median_time_past, bool coinbase, KTH_DB_txn* db_txn);
+    result_code insert_outputs(hash_digest const& tx_id, uint32_t height, domain::chain::output::list const& outputs, uint32_t median_time_past, bool coinbase, KTH_DB_txn* db_txn);
 
     result_code insert_outputs_error_treatment(uint32_t height, uint32_t median_time_past, bool coinbase, hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn);
 
