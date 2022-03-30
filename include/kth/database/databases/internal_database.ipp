@@ -512,24 +512,24 @@ result_code internal_database_basis<Clock>::prune() {
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_reorg_into_pool(utxo_pool_t& pool, KTH_DB_val key_point, KTH_DB_txn* db_txn) const {
 
-    KTH_DB_val value;
-    auto res = kth_db_get(db_txn, dbi_reorg_pool_, &key_point, &value);
-    if (res == KTH_DB_NOTFOUND) {
-        LOG_INFO(LOG_DATABASE, "Key not found in reorg pool [insert_reorg_into_pool] ", res);
-        return result_code::key_not_found;
-    }
+    // KTH_DB_val value;
+    // auto res = kth_db_get(db_txn, dbi_reorg_pool_, &key_point, &value);
+    // if (res == KTH_DB_NOTFOUND) {
+    //     LOG_INFO(LOG_DATABASE, "Key not found in reorg pool [insert_reorg_into_pool] ", res);
+    //     return result_code::key_not_found;
+    // }
 
-    if (res != KTH_DB_SUCCESS) {
-        LOG_ERROR(LOG_DATABASE, "Error in reorg pool [insert_reorg_into_pool] ", res);
-        return result_code::other;
-    }
+    // if (res != KTH_DB_SUCCESS) {
+    //     LOG_ERROR(LOG_DATABASE, "Error in reorg pool [insert_reorg_into_pool] ", res);
+    //     return result_code::other;
+    // }
 
-    auto entry_data = db_value_to_data_chunk(value);
-    auto entry = domain::create<utxo_entry>(entry_data);
+    // auto entry_data = db_value_to_data_chunk(value);
+    // auto entry = domain::create<utxo_entry>(entry_data);
 
-    auto point_data = db_value_to_data_chunk(key_point);
-    auto point = domain::create<domain::chain::output_point>(point_data, KTH_INTERNAL_DB_WIRE);
-    pool.insert({point, std::move(entry)});     //TODO(fernando): use emplace?
+    // auto point_data = db_value_to_data_chunk(key_point);
+    // auto point = domain::create<domain::chain::output_point>(point_data, KTH_INTERNAL_DB_WIRE);
+    // pool.insert({point, std::move(entry)});     //TODO(fernando): use emplace?
 
     return result_code::success;
 }
