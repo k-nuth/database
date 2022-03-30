@@ -68,6 +68,7 @@ constexpr int directory_exists = 0;
 
 
 
+#include <boost/functional/hash.hpp>
 
 // Standard hash.
 //-----------------------------------------------------------------------------
