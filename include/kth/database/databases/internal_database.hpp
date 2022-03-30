@@ -64,6 +64,48 @@ constexpr size_t max_dbs_ = 7;
 constexpr size_t env_open_mode_ = 0664;
 constexpr int directory_exists = 0;
 
+
+
+
+
+
+// Standard hash.
+//-----------------------------------------------------------------------------
+
+namespace std {
+
+template <>
+struct hash<kth::domain::chain::output_point> {
+    size_t operator()(kth::domain::chain::output_point const& point) const {
+        size_t seed = 0;
+        boost::hash_combine(seed, point.hash());
+        boost::hash_combine(seed, point.index());
+        return seed;
+    }
+};
+
+// // Extend std namespace with the non-wire size of point (database key size).
+// template <>
+// struct tuple_size<domain::chain::output_point> {
+//     static
+//     auto const value = std::tuple_size<kth::hash_digest>::value + sizeof(uint16_t);
+
+//     operator std::size_t() const {
+//         return value;
+//     }
+// };
+
+} // namespace std
+
+
+
+
+
+
+
+
+
+
 template <typename Clock = std::chrono::system_clock>
 class KD_API internal_database_basis {
 public:

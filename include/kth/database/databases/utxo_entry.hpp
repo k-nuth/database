@@ -44,18 +44,18 @@ public:
     template <typename R, KTH_IS_READER(R)>
     bool from_data(R& source) {
         reset();
-        
+
         output_.from_data(source, false);
         height_ = source.read_4_bytes_little_endian();
         median_time_past_ = source.read_4_bytes_little_endian();
         coinbase_ = source.read_byte();
-        
+
         if ( ! source) {
             reset();
         }
 
         return source;
-    }    
+    }
 
     static
     data_chunk to_data_fixed(uint32_t height, uint32_t median_time_past, bool coinbase);
