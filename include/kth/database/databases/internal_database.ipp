@@ -917,7 +917,7 @@ result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_outputs_error_treatment(uint32_t height, uint32_t height, uint32_t median_time_past, bool coinbase, hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_outputs_error_treatment(uint32_t height, uint32_t median_time_past, bool coinbase, hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn) {
     auto res = insert_outputs(txid,height, outputs, height, median_time_past, coinbase, db_txn);
 
     if (res == result_code::duplicated_key) {
@@ -929,12 +929,12 @@ result_code internal_database_basis<Clock>::insert_outputs_error_treatment(uint3
 
 template <typename Clock>
 template <typename I>
-result_code internal_database_basis<Clock>::push_transactions_outputs_non_coinbase(uint32_t height, uint32_t height, uint32_t median_time_past, bool coinbase, I f, I l, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::push_transactions_outputs_non_coinbase(uint32_t height, uint32_t median_time_past, bool coinbase, I f, I l, KTH_DB_txn* db_txn) {
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
 
     while (f != l) {
         auto const& tx = *f;
-        auto res = insert_outputs_error_treatment(height, height, median_time_past, coinbase, tx.hash(), tx.outputs(), db_txn);
+        auto res = insert_outputs_error_treatment(height, median_time_past, coinbase, tx.hash(), tx.outputs(), db_txn);
         if (res != result_code::success) {
             return res;
         }
@@ -959,10 +959,10 @@ result_code internal_database_basis<Clock>::remove_transactions_inputs_non_coinb
 
 template <typename Clock>
 template <typename I>
-result_code internal_database_basis<Clock>::push_transactions_non_coinbase(uint32_t height, uint32_t height, uint32_t median_time_past, bool coinbase, I f, I l, bool insert_reorg, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::push_transactions_non_coinbase(uint32_t height, uint32_t median_time_past, bool coinbase, I f, I l, bool insert_reorg, KTH_DB_txn* db_txn) {
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
 
-    auto res = push_transactions_outputs_non_coinbase(height, height, median_time_past, coinbase, f, l, db_txn);
+    auto res = push_transactions_outputs_non_coinbase(height, median_time_past, coinbase, f, l, db_txn);
     if (res != result_code::success) {
         return res;
     }
@@ -1017,13 +1017,13 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
     auto const& coinbase = txs.front();
 
     // auto fixed = utxo_entry::to_data_fixed(height, median_time_past, true);                                     //TODO(fernando): podría estar afuera de la DBTx
-    auto res0 = insert_outputs_error_treatment(height, height, median_time_past, true, coinbase.hash(), coinbase.outputs(), db_txn);     //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
+    auto res0 = insert_outputs_error_treatment(height, median_time_past, true, coinbase.hash(), coinbase.outputs(), db_txn);     //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
     if ( ! succeed(res0)) {
         return res0;
     }
 
     fixed.back() = 0;   //The last byte equal to 0 means NonCoinbaseTx
-    res = push_transactions_non_coinbase(height, height, median_time_past, true, txs.begin() + 1, txs.end(), insert_reorg, db_txn);
+    res = push_transactions_non_coinbase(height, median_time_past, true, txs.begin() + 1, txs.end(), insert_reorg, db_txn);
     if (res != result_code::success) {
         return res;
     }

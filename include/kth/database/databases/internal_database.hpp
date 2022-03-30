@@ -190,16 +190,16 @@ private:
 
     result_code insert_outputs(hash_digest const& tx_id, uint32_t height, domain::chain::output::list const& outputs, uint32_t height, uint32_t median_time_past, bool coinbase, KTH_DB_txn* db_txn);
 
-    result_code insert_outputs_error_treatment(uint32_t height, uint32_t height, uint32_t median_time_past, bool coinbase, hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn);
+    result_code insert_outputs_error_treatment(uint32_t height, uint32_t median_time_past, bool coinbase, hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn);
 
     template <typename I>
-    result_code push_transactions_outputs_non_coinbase(uint32_t height, uint32_t height, uint32_t median_time_past, bool coinbase, I f, I l, KTH_DB_txn* db_txn);
+    result_code push_transactions_outputs_non_coinbase(uint32_t height, uint32_t median_time_past, bool coinbase, I f, I l, KTH_DB_txn* db_txn);
 
     template <typename I>
     result_code remove_transactions_inputs_non_coinbase(uint32_t height, I f, I l, bool insert_reorg, KTH_DB_txn* db_txn);
 
     template <typename I>
-    result_code push_transactions_non_coinbase(uint32_t height, uint32_t height, uint32_t median_time_past, bool coinbase, I f, I l, bool insert_reorg, KTH_DB_txn* db_txn);
+    result_code push_transactions_non_coinbase(uint32_t height, uint32_t median_time_past, bool coinbase, I f, I l, bool insert_reorg, KTH_DB_txn* db_txn);
 
     result_code push_block_header(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
 
