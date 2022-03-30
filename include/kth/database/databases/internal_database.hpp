@@ -51,27 +51,12 @@
 #define KTH_DB_CONDITIONAL_READONLY 0
 #endif
 
-namespace kth::database {
-
-#if defined(KTH_DB_NEW_FULL)
-constexpr size_t max_dbs_ = 13;
-#elif defined(KTH_DB_NEW_BLOCKS)
-constexpr size_t max_dbs_ = 8;
-#else
-constexpr size_t max_dbs_ = 7;
-#endif
-
-constexpr size_t env_open_mode_ = 0664;
-constexpr int directory_exists = 0;
-
-
-
-
-
-#include <boost/functional/hash.hpp>
 
 // Standard hash.
 //-----------------------------------------------------------------------------
+
+#include <boost/functional/hash.hpp>
+
 
 namespace std {
 
@@ -97,6 +82,25 @@ struct hash<kth::domain::chain::output_point> {
 // };
 
 } // namespace std
+
+
+
+namespace kth::database {
+
+#if defined(KTH_DB_NEW_FULL)
+constexpr size_t max_dbs_ = 13;
+#elif defined(KTH_DB_NEW_BLOCKS)
+constexpr size_t max_dbs_ = 8;
+#else
+constexpr size_t max_dbs_ = 7;
+#endif
+
+constexpr size_t env_open_mode_ = 0664;
+constexpr int directory_exists = 0;
+
+
+
+
 
 
 
