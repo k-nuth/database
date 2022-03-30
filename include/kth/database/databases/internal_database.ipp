@@ -185,9 +185,9 @@ bool internal_database_basis<Clock>::close() {
         kth_db_dbi_close(env_, dbi_block_header_);
         kth_db_dbi_close(env_, dbi_block_header_by_hash_);
         kth_db_dbi_close(env_, dbi_utxo_);
-        kth_db_dbi_close(env_, dbi_reorg_pool_);
-        kth_db_dbi_close(env_, dbi_reorg_index_);
-        kth_db_dbi_close(env_, dbi_reorg_block_);
+        // kth_db_dbi_close(env_, dbi_reorg_pool_);
+        // kth_db_dbi_close(env_, dbi_reorg_index_);
+        // kth_db_dbi_close(env_, dbi_reorg_block_);
         kth_db_dbi_close(env_, dbi_properties_);
 
         #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
@@ -774,20 +774,20 @@ bool internal_database_basis<Clock>::open_databases() {
         return false;
     }
 
-    res = kth_db_dbi_open(db_txn, reorg_pool_name, KTH_DB_CONDITIONAL_CREATE, &dbi_reorg_pool_);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
-    }
+    // res = kth_db_dbi_open(db_txn, reorg_pool_name, KTH_DB_CONDITIONAL_CREATE, &dbi_reorg_pool_);
+    // if (res != KTH_DB_SUCCESS) {
+    //     return false;
+    // }
 
-    res = kth_db_dbi_open(db_txn, reorg_index_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_INTEGERKEY | KTH_DB_DUPFIXED, &dbi_reorg_index_);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
-    }
+    // res = kth_db_dbi_open(db_txn, reorg_index_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_INTEGERKEY | KTH_DB_DUPFIXED, &dbi_reorg_index_);
+    // if (res != KTH_DB_SUCCESS) {
+    //     return false;
+    // }
 
-    res = kth_db_dbi_open(db_txn, reorg_block_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_reorg_block_);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
-    }
+    // res = kth_db_dbi_open(db_txn, reorg_block_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_reorg_block_);
+    // if (res != KTH_DB_SUCCESS) {
+    //     return false;
+    // }
 
     res = kth_db_dbi_open(db_txn, db_properties_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_properties_);
     if (res != KTH_DB_SUCCESS) {
