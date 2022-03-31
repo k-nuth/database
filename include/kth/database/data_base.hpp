@@ -13,10 +13,6 @@
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 
-#ifdef KTH_DB_LEGACY
-#include <kth/database/legacy/databases/block_database.hpp>
-#endif // KTH_DB_LEGACY
-
 #ifdef KTH_DB_NEW
 #include <kth/database/databases/internal_database.hpp>
 #endif // KTH_DB_NEW
@@ -25,9 +21,6 @@
 #include <kth/database/legacy/databases/spend_database.hpp>
 #endif // KTH_DB_SPENDS
 
-#ifdef KTH_DB_LEGACY
-#include <kth/database/legacy/databases/transaction_database.hpp>
-#endif // KTH_DB_LEGACY
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
 #include <kth/database/legacy/databases/transaction_unconfirmed_database.hpp>
@@ -70,11 +63,6 @@ public:
 #endif
 
 #ifdef KTH_DB_LEGACY
-    /// Open all databases.
-    bool open() override;
-
-    /// Close all databases.
-    bool close() override;
 #else
     /// Open all databases.
     bool open();
@@ -88,11 +76,6 @@ public:
 
     // Readers.
     // ------------------------------------------------------------------------
-
-#ifdef KTH_DB_LEGACY
-    const block_database& blocks() const;
-    const transaction_database& transactions() const;
-#endif // KTH_DB_LEGACY
 
 #ifdef KTH_DB_NEW
     internal_database const& internal_db() const;
@@ -122,14 +105,6 @@ public:
 
 #if ! defined(KTH_DB_READONLY)
 
-#ifdef KTH_DB_LEGACY
-    /// Create flush lock if flush_writes is true, and set sequential lock.
-    bool begin_insert() const;
-
-    /// Clear flush lock if flush_writes is true, and clear sequential lock.
-    bool end_insert() const;
-#endif // KTH_DB_LEGACY
-
     /// Store a block in the database.
     /// Returns store_block_duplicate if a block already exists at height.
     code insert(domain::chain::block const& block, size_t height);
@@ -157,10 +132,6 @@ protected:
     void start();
 
 #if ! defined(KTH_DB_READONLY)
-#ifdef KTH_DB_LEGACY
-    void synchronize();
-    bool flush() const override;
-#endif // KTH_DB_LEGACY
 
     // Sets error if first_height is not the current top + 1 or not linked.
     void push_all(block_const_ptr_list_const_ptr in_blocks, size_t first_height, dispatcher& dispatch, result_handler handler);
@@ -171,10 +142,6 @@ protected:
     void pop_above(block_const_ptr_list_ptr out_blocks, hash_digest const& fork_hash, dispatcher& dispatch, result_handler handler);
 #endif // ! defined(KTH_DB_READONLY)
 
-#ifdef KTH_DB_LEGACY
-    std::shared_ptr<block_database> blocks_;
-    std::shared_ptr<transaction_database> transactions_;
-#endif // KTH_DB_LEGACY
 
 #ifdef KTH_DB_NEW
     std::shared_ptr<internal_database> internal_db_;
@@ -205,43 +172,8 @@ private:
     /// TODO comment
     code push_genesis(domain::chain::block const& block);
 
-#ifdef KTH_DB_LEGACY
-    code push_legacy(domain::chain::block const& block, size_t height);
-#endif
-
     // Synchronous writers.
     // ------------------------------------------------------------------------
-
-#ifdef KTH_DB_LEGACY    
-    bool push_transactions(domain::chain::block const& block, size_t height, uint32_t median_time_past, size_t bucket = 0, size_t buckets = 1);
-    bool push_heights(domain::chain::block const& block, size_t height);
-#endif
-
-#if defined(KTH_DB_LEGACY) && (defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY))
-    void push_inputs(hash_digest const& tx_hash, size_t height, const inputs& inputs);
-#endif // defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY)    
-
-#ifdef KTH_DB_HISTORY
-    void push_outputs(hash_digest const& tx_hash, size_t height, const outputs& outputs);
-#endif // KTH_DB_HISTORY
-
-#ifdef KTH_DB_STEALTH
-    void push_stealth(hash_digest const& tx_hash, size_t height, const outputs& outputs);
-#endif // KTH_DB_STEALTH
-
-#if defined(KTH_CURRENCY_BCH) && defined(KTH_DB_LEGACY)
-    // bool pop_input_and_unconfirm(size_t height, domain::chain::transaction const& tx);
-    bool pop_output_and_unconfirm(size_t height, domain::chain::transaction const& tx);
-
-    template <typename I>
-    bool pop_transactions_inputs_unconfirm_non_coinbase(size_t height, I f, I l);
-
-    template <typename I>
-    bool pop_transactions_outputs_non_coinbase(size_t height, I f, I l);
-
-    template <typename I>
-    bool pop_transactions_non_coinbase(size_t height, I f, I l);
-#endif 
 
     bool pop(domain::chain::block& out_block);
     bool pop_inputs(const inputs& inputs, size_t height);
@@ -253,20 +185,12 @@ private:
     code verify_insert(domain::chain::block const& block, size_t height);
     code verify_push(domain::chain::block const& block, size_t height) const;
 
-#if defined(KTH_DB_LEGACY)
-    code verify_push(const domain::chain::transaction& tx);
-#endif
 
     // Asynchronous writers.
     // ------------------------------------------------------------------------
 #if ! defined(KTH_DB_READONLY)
     void push_next(code const& ec, block_const_ptr_list_const_ptr blocks, size_t index, size_t height, dispatcher& dispatch, result_handler handler);
     void do_push(block_const_ptr block, size_t height, uint32_t median_time_past, dispatcher& dispatch, result_handler handler);
-
-#ifdef KTH_DB_LEGACY
-    void do_push_transactions(block_const_ptr block, size_t height, uint32_t median_time_past, size_t bucket, size_t buckets, result_handler handler);
-    void handle_push_transactions(code const& ec, block_const_ptr block, size_t height, result_handler handler);
-#endif
 
     void handle_pop(code const& ec, block_const_ptr_list_const_ptr incoming_blocks, size_t first_height, dispatcher& dispatch, result_handler handler);
     void handle_push(code const& ec, result_handler handler) const;
@@ -279,13 +203,6 @@ private:
     std::atomic<bool> closed_;
     settings const& settings_;
 
-#ifdef KTH_DB_LEGACY
-    // Used to prevent concurrent unsafe writes.
-    mutable shared_mutex write_mutex_;
-
-    // Used to prevent concurrent file remapping.
-    std::shared_ptr<shared_mutex> remap_mutex_;
-#endif // KTH_DB_LEGACY
 
 };
 

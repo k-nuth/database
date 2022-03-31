@@ -12,7 +12,7 @@ namespace kth::database {
 
 template <typename Clock>
 transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_unconfirmed(hash_digest const& hash) const {
-    
+
     KTH_DB_txn* db_txn;
     auto res = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
     if (res != KTH_DB_SUCCESS) {
@@ -29,7 +29,7 @@ transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_un
 }
 
 template <typename Clock>
-transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_unconfirmed(hash_digest const& hash, KTH_DB_txn* db_txn) const {
+transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_unconfirmed(hash_digest const& hash) const {
     auto key = kth_db_make_value(hash.size(), const_cast<hash_digest&>(hash).data());
     KTH_DB_val value;
 
@@ -63,11 +63,11 @@ std::vector<transaction_unconfirmed_entry> internal_database_basis<Clock>::get_a
 
     KTH_DB_val key;
     KTH_DB_val value;
-    
-    
+
+
     int rc;
     if ((rc = kth_db_cursor_get(cursor, &key, &value, KTH_DB_NEXT)) == 0) {
-       
+
         auto data = db_value_to_data_chunk(value);
         auto res = domain::create<transaction_unconfirmed_entry>(data);
         result.push_back(res);
@@ -77,8 +77,8 @@ std::vector<transaction_unconfirmed_entry> internal_database_basis<Clock>::get_a
             auto res = domain::create<transaction_unconfirmed_entry>(data);
             result.push_back(res);
         }
-    } 
-    
+    }
+
     kth_db_cursor_close(cursor);
 
     if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
@@ -91,7 +91,7 @@ std::vector<transaction_unconfirmed_entry> internal_database_basis<Clock>::get_a
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_transaction_unconfirmed(hash_digest const& tx_id,  KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_transaction_unconfirmed(hash_digest const& tx_id) {
 
     auto key = kth_db_make_value(tx_id.size(), const_cast<hash_digest&>(tx_id).data());
 
@@ -120,21 +120,21 @@ uint32_t internal_database_basis<Clock>::get_clock_now() const {
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(domain::chain::transaction const& tx, uint32_t height, KTH_DB_txn* db_txn) {
-    
+result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(domain::chain::transaction const& tx, uint32_t height) {
+
     uint32_t arrival_time = get_clock_now();
-    
+
     auto key_arr = tx.hash();                                    //TODO(fernando): podría estar afuera de la DBTx
     auto key = kth_db_make_value(key_arr.size(), key_arr.data());
 
     auto value_arr = transaction_unconfirmed_entry::factory_to_data(tx, arrival_time, height);
-    auto value = kth_db_make_value(value_arr.size(), value_arr.data()); 
+    auto value = kth_db_make_value(value_arr.size(), value_arr.data());
 
     auto res = kth_db_put(db_txn, dbi_transaction_unconfirmed_db_, &key, &value, KTH_DB_NOOVERWRITE);
     if (res == KTH_DB_KEYEXIST) {
         LOG_INFO(LOG_DATABASE, "Duplicate key in Transaction Unconfirmed DB [insert_transaction_unconfirmed] ", res);
         return result_code::duplicated_key;
-    }        
+    }
 
     if (res != KTH_DB_SUCCESS) {
         LOG_INFO(LOG_DATABASE, "Error saving in Transaction Unconfirmed DB [insert_transaction_unconfirmed] ", res);

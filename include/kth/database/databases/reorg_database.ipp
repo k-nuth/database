@@ -10,7 +10,7 @@ namespace kth::database {
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_reorg_pool(uint32_t height, KTH_DB_val& key, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_reorg_pool(uint32_t height, KTH_DB_val& key) {
     // KTH_DB_val value;
     // //TODO: use cursors
     // auto res = kth_db_get(db_txn, dbi_utxo_, &key, &value);
@@ -51,7 +51,7 @@ result_code internal_database_basis<Clock>::insert_reorg_pool(uint32_t height, K
 
 //TODO : remove this database in db_new_with_blocks and db_new_full
 template <typename Clock>
-result_code internal_database_basis<Clock>::push_block_reorg(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::push_block_reorg(domain::chain::block const& block, uint32_t height) {
 
     // auto valuearr = block.to_data(false);               //TODO(fernando): podría estar afuera de la DBTx
     // auto key = kth_db_make_value(sizeof(height), &height);              //TODO(fernando): podría estar afuera de la DBTx
@@ -71,7 +71,7 @@ result_code internal_database_basis<Clock>::push_block_reorg(domain::chain::bloc
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_output_from_reorg_and_remove(domain::chain::output_point const& point, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_output_from_reorg_and_remove(domain::chain::output_point const& point) {
     // auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);
     // auto key = kth_db_make_value(keyarr.size(), keyarr.data());
 
@@ -109,7 +109,7 @@ result_code internal_database_basis<Clock>::insert_output_from_reorg_and_remove(
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_block_reorg(uint32_t height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_block_reorg(uint32_t height) {
 
     // auto key = kth_db_make_value(sizeof(height), &height);
     // auto res = kth_db_del(db_txn, dbi_reorg_block_, &key, NULL);
@@ -125,7 +125,7 @@ result_code internal_database_basis<Clock>::remove_block_reorg(uint32_t height, 
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_reorg_index(uint32_t height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_reorg_index(uint32_t height) {
 
     // auto key = kth_db_make_value(sizeof(height), &height);
     // auto res = kth_db_del(db_txn, dbi_reorg_index_, &key, NULL);
@@ -143,7 +143,7 @@ result_code internal_database_basis<Clock>::remove_reorg_index(uint32_t height, 
 #endif // ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-domain::chain::block internal_database_basis<Clock>::get_block_reorg(uint32_t height, KTH_DB_txn* db_txn) const {
+domain::chain::block internal_database_basis<Clock>::get_block_reorg(uint32_t height) const {
     // auto key = kth_db_make_value(sizeof(height), &height);
     // KTH_DB_val value;
 
@@ -157,29 +157,10 @@ domain::chain::block internal_database_basis<Clock>::get_block_reorg(uint32_t he
     return {};
 }
 
-template <typename Clock>
-domain::chain::block internal_database_basis<Clock>::get_block_reorg(uint32_t height) const {
-    // KTH_DB_txn* db_txn;
-    // auto zzz = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
-    // if (zzz != KTH_DB_SUCCESS) {
-    //     return {};
-    // }
-
-    // auto res = get_block_reorg(height, db_txn);
-
-    // if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
-    //     return {};
-    // }
-
-    // return res;
-
-    return {};
-}
-
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::prune_reorg_index(uint32_t remove_until, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::prune_reorg_index(uint32_t remove_until) {
     // KTH_DB_cursor* cursor;
     // if (kth_db_cursor_open(db_txn, dbi_reorg_index_, &cursor) != KTH_DB_SUCCESS) {
     //     return result_code::other;
@@ -216,7 +197,7 @@ result_code internal_database_basis<Clock>::prune_reorg_index(uint32_t remove_un
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::prune_reorg_block(uint32_t amount_to_delete, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::prune_reorg_block(uint32_t amount_to_delete) {
     // //precondition: amount_to_delete >= 1
 
     // KTH_DB_cursor* cursor;

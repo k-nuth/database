@@ -57,6 +57,9 @@ message( STATUS "Knuth: Compiling for ${MICROARCHITECTURE}")
 set(MARCH_ID "" CACHE STRING "Specify the Microarchitecture ID (x86_64|...).")
 message( STATUS "Knuth: Compiling for Microarchitecture ID ${MARCH_ID}")
 
+message( STATUS "Knuth: CONAN_CXX_FLAGS ${CONAN_CXX_FLAGS}")
+message( STATUS "Knuth: CONAN_C_FLAGS ${CONAN_C_FLAGS}")
+
 
 # Implement --with-measurements and declare WITH_MEASUREMENTS.
 #------------------------------------------------------------------------------
@@ -310,6 +313,10 @@ _add_cxx_compile_flag(-fvisibility-hidden _has_visibility_hidden_flag)
 # Hide inlines from external libs. Enabled in gcc only.
 #------------------------------------------------------------------------------
 _add_cxx_compile_flag(-fvisibility-inlines-hidden _has_visibility_inlines_hidden_flag)
+
+
+_add_link_flag(-fno-omit-frame-pointer _has_no_omit_frame_pointer_flag)
+
 
 # Target Windows Vista. Enabled in msvc only.
 #------------------------------------------------------------------------------
