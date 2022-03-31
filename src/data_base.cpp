@@ -138,7 +138,7 @@ void data_base::start() {
 
 #ifdef KTH_DB_NEW
     internal_db_ = std::make_shared<internal_database>(internal_db_dir, settings_.reorg_pool_limit, settings_.db_max_size, settings_.safe_mode);
-    printf("-*-*-*-*-*-*-*--*-* internal_db_: %x\n", internal_db_.get());
+    // printf("-*-*-*-*-*-*-*--*-* internal_db_: %x\n", internal_db_.get());
     // std::cout << "********************** data_base::start() after make_shared\n";
 #endif // KTH_DB_NEW
 }
@@ -149,13 +149,13 @@ void data_base::start() {
 #ifdef KTH_DB_NEW
 internal_database const& data_base::internal_db() const {
     // std::cout << "********************** data_base::internal_db()\n";
-    printf("-*-*-*-*-*-*-*--*-* data_base::internal_db() -- internal_db_: %x\n", internal_db_.get());
-    auto const& res = *internal_db_;
-    printf("-*-*-*-*-*-*-*--*-* data_base::internal_db() -- internal_db_: %x\n", internal_db_.get());
-    return res;
+    // printf("-*-*-*-*-*-*-*--*-* data_base::internal_db() -- internal_db_: %x\n", internal_db_.get());
+    // auto const& res = *internal_db_;
+    // printf("-*-*-*-*-*-*-*--*-* data_base::internal_db() -- internal_db_: %x\n", internal_db_.get());
+    // return res;
 
 
-    // return *internal_db_;
+    return *internal_db_;
 }
 #endif // KTH_DB_NEW
 
