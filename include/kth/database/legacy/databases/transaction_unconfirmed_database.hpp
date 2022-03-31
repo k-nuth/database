@@ -82,7 +82,7 @@ public:
                 tx.recompute_hash();
                 return f(tx);
             } else {
-                std::cout << "transaction_unconfirmed_database::for_each nullptr slab\n";
+                // std::cout << "transaction_unconfirmed_database::for_each nullptr slab\n";
             }
             return true;
         });
@@ -95,7 +95,7 @@ public:
                 transaction_unconfirmed_result res(slab);
                 return f(res);
             } else {
-                std::cout << "transaction_unconfirmed_database::for_each nullptr slab\n";
+                // std::cout << "transaction_unconfirmed_database::for_each nullptr slab\n";
             }
             return true;
         });

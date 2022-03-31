@@ -14,7 +14,7 @@ namespace kth::database {
 template <typename Clock>
 // result_code internal_database_basis<Clock>::push_block_header(domain::chain::block const& block, uint32_t height) {
 result_code internal_database_basis<Clock>::push_block_header(domain::chain::block const& block, uint32_t height) {
-    std::cout << "********************** internal_database_basis::push_block_header()\n";
+    // std::cout << "********************** internal_database_basis::push_block_header()\n";
 
 
     // auto valuearr = block.header().to_data(true);               //TODO(fernando): podría estar afuera de la DBTx
@@ -65,7 +65,7 @@ result_code internal_database_basis<Clock>::push_block_header(domain::chain::blo
 
 template <typename Clock>
 domain::chain::header internal_database_basis<Clock>::get_header(uint32_t height) const {
-    std::cout << "********************** internal_database_basis::get_header()\n";
+    // std::cout << "********************** internal_database_basis::get_header()\n";
     // auto key = kth_db_make_value(sizeof(height), &height);
     // KTH_DB_val value;
 

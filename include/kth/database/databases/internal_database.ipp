@@ -25,7 +25,7 @@ internal_database_basis<Clock>::~internal_database_basis() {
 
 template <typename Clock>
 bool internal_database_basis<Clock>::create() {
-    std::cout << "********************** internal_database_basis::create()\n";
+    // std::cout << "********************** internal_database_basis::create()\n";
     std::error_code ec;
 
     auto ret = open_internal();
@@ -38,13 +38,13 @@ bool internal_database_basis<Clock>::create() {
         return false;
     }
 
-    std::cout << "****************** create() ************ OK\n";
+    // std::cout << "****************** create() ************ OK\n";
     return true;
 }
 
 template <typename Clock>
 bool internal_database_basis<Clock>::create_db_mode_property() {
-    std::cout << "********************** internal_database_basis::create_db_mode_property()\n";
+    // std::cout << "********************** internal_database_basis::create_db_mode_property()\n";
     return true;
 }
 
@@ -53,28 +53,28 @@ bool internal_database_basis<Clock>::create_db_mode_property() {
 
 template <typename Clock>
 bool internal_database_basis<Clock>::open() {
-    std::cout << "********************** internal_database_basis::open()\n";
+    // std::cout << "********************** internal_database_basis::open()\n";
 
     auto ret = open_internal();
     if ( ! ret ) {
-        std::cout << "********************** internal_database_basis::open() - 2\n";
+        // std::cout << "********************** internal_database_basis::open() - 2\n";
         return false;
     }
 
     ret = verify_db_mode_property();
     if ( ! ret ) {
-        std::cout << "********************** internal_database_basis::open() - 3\n";
+        // std::cout << "********************** internal_database_basis::open() - 3\n";
         return false;
     }
 
-    std::cout << "****************** open() ************ OK\n";
+    // std::cout << "****************** open() ************ OK\n";
     return true;
 }
 
 
 template <typename Clock>
 bool internal_database_basis<Clock>::open_internal() {
-    std::cout << "********************** internal_database_basis::open_internal()\n";
+    // std::cout << "********************** internal_database_basis::open_internal()\n";
 
     if ( ! create_and_open_environment()) {
         LOG_ERROR(LOG_DATABASE, "Error configuring LMDB environment.");
@@ -86,13 +86,13 @@ bool internal_database_basis<Clock>::open_internal() {
 
 template <typename Clock>
 bool internal_database_basis<Clock>::verify_db_mode_property() const {
-    std::cout << "********************** internal_database_basis::verify_db_mode_property()\n";
+    // std::cout << "********************** internal_database_basis::verify_db_mode_property()\n";
     return true;
 }
 
 template <typename Clock>
 bool internal_database_basis<Clock>::close() {
-    std::cout << "********************** internal_database_basis::close()\n";
+    // std::cout << "********************** internal_database_basis::close()\n";
     if (db_opened_) {
         db_opened_ = false;
     }
@@ -104,7 +104,7 @@ bool internal_database_basis<Clock>::close() {
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past) {
-    std::cout << "********************** internal_database_basis::push_block()\n";
+    // std::cout << "********************** internal_database_basis::push_block()\n";
 
     auto res = push_block(block, height, median_time_past, ! is_old_block(block));
     return res;
@@ -115,7 +115,7 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
 
 template <typename Clock>
 utxo_entry internal_database_basis<Clock>::get_utxo(domain::chain::output_point const& point) const {
-    std::cout << "********************** internal_database_basis::get_utxo()\n";
+    // std::cout << "********************** internal_database_basis::get_utxo()\n";
     auto f = utxo_set_.find(point);
     if (f == utxo_set_.end()) {
         return utxo_entry{};
@@ -126,20 +126,20 @@ utxo_entry internal_database_basis<Clock>::get_utxo(domain::chain::output_point 
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::get_last_height(uint32_t& out_height) const {
-    // std::cout << "++++++++++++++++++++++++++++++++++++++++ internal_database_basis::get_last_height()" << std::endl;
+    // // std::cout << "++++++++++++++++++++++++++++++++++++++++ internal_database_basis::get_last_height()" << std::endl;
 
     // printf("-*-*-*-*-*-*-*--*-* this: %x\n", this);
 
     out_height = last_height_;
 
-    // std::cout << "++++++++++++++++++++++++++++++++++++++++ internal_database_basis::get_last_height() - last_height_: " << last_height_  << std::endl;
-    // std::cout << "++++++++++++++++++++++++++++++++++++++++ internal_database_basis::get_last_height() - out_height: " << out_height  << std::endl;
+    // // std::cout << "++++++++++++++++++++++++++++++++++++++++ internal_database_basis::get_last_height() - last_height_: " << last_height_  << std::endl;
+    // // std::cout << "++++++++++++++++++++++++++++++++++++++++ internal_database_basis::get_last_height() - out_height: " << out_height  << std::endl;
     return result_code::success;
 }
 
 template <typename Clock>
 std::pair<domain::chain::header, uint32_t> internal_database_basis<Clock>::get_header(hash_digest const& hash) const {
-    std::cout << "********************** internal_database_basis::get_header()\n";
+    // std::cout << "********************** internal_database_basis::get_header()\n";
 
     auto f = headers_by_hash_.find(hash);
     if (f == headers_by_hash_.end()) {
@@ -152,7 +152,7 @@ std::pair<domain::chain::header, uint32_t> internal_database_basis<Clock>::get_h
 
 template <typename Clock>
 domain::chain::header::list internal_database_basis<Clock>::get_headers(uint32_t from, uint32_t to) const {
-    std::cout << "********************** internal_database_basis::get_headers()\n";
+    // std::cout << "********************** internal_database_basis::get_headers()\n";
     return {};
 }
 
@@ -160,7 +160,7 @@ domain::chain::header::list internal_database_basis<Clock>::get_headers(uint32_t
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::pop_block(domain::chain::block& out_block) {
-    std::cout << "********************** internal_database_basis::pop_block()\n";
+    // std::cout << "********************** internal_database_basis::pop_block()\n";
     uint32_t height;
 
     //TODO: (Mario) use only one transaction ?
@@ -189,7 +189,7 @@ result_code internal_database_basis<Clock>::pop_block(domain::chain::block& out_
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::prune() {
-    std::cout << "********************** internal_database_basis::prune()\n";
+    // std::cout << "********************** internal_database_basis::prune()\n";
     return result_code::success;
 }
 
@@ -198,7 +198,7 @@ result_code internal_database_basis<Clock>::prune() {
 
 template <typename Clock>
 std::pair<result_code, utxo_pool_t> internal_database_basis<Clock>::get_utxo_pool_from(uint32_t from, uint32_t to) const {
-    std::cout << "********************** internal_database_basis::get_utxo_pool_from()\n";
+    // std::cout << "********************** internal_database_basis::get_utxo_pool_from()\n";
     return {};
 
     // throw "get_utxo_pool_from";
@@ -212,13 +212,13 @@ std::pair<result_code, utxo_pool_t> internal_database_basis<Clock>::get_utxo_poo
 
 template <typename Clock>
 bool internal_database_basis<Clock>::is_old_block(domain::chain::block const& block) const {
-    std::cout << "********************** internal_database_basis::is_old_block()\n";
+    // std::cout << "********************** internal_database_basis::is_old_block()\n";
     return is_old_block_<Clock>(block, limit_);
 }
 
 template <typename Clock>
 bool internal_database_basis<Clock>::create_and_open_environment() {
-    std::cout << "********************** internal_database_basis::create_and_open_environment()\n";
+    // std::cout << "********************** internal_database_basis::create_and_open_environment()\n";
     return true;
 }
 
@@ -229,15 +229,15 @@ int compare_uint64(KTH_DB_val const* a, KTH_DB_val const* b) {
     const uint64_t va = *(const uint64_t *)kth_db_get_data(*a);
     const uint64_t vb = *(const uint64_t *)kth_db_get_data(*b);
 
-    //std::cout << "va: " << va << std::endl;
-    //std::cout << "vb: " << va << std::endl;
+    //// std::cout << "va: " << va << std::endl;
+    //// std::cout << "vb: " << va << std::endl;
 
     return (va < vb) ? -1 : va > vb;
 }
 
 template <typename Clock>
 bool internal_database_basis<Clock>::open_databases() {
-    std::cout << "********************** internal_database_basis::open_databases()\n";
+    // std::cout << "********************** internal_database_basis::open_databases()\n";
 
 
     // KTH_DB_txn* db_txn;
@@ -335,7 +335,7 @@ bool internal_database_basis<Clock>::open_databases() {
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_id, uint32_t height, domain::chain::input::list const& inputs, bool insert_reorg) {
-    std::cout << "********************** internal_database_basis::remove_inputs()\n";
+    // std::cout << "********************** internal_database_basis::remove_inputs()\n";
     uint32_t pos = 0;
     for (auto const& input: inputs) {
 
@@ -382,7 +382,7 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx_id, uint32_t height, domain::chain::output::list const& outputs, uint32_t median_time_past, bool coinbase) {
-    std::cout << "********************** internal_database_basis::insert_outputs()\n";
+    // std::cout << "********************** internal_database_basis::insert_outputs()\n";
     uint32_t pos = 0;
     for (auto const& output: outputs) {
         // auto res = insert_utxo(domain::chain::point{tx_id, pos}, output, height, median_time_past, coinbase);
@@ -407,7 +407,7 @@ result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_outputs_error_treatment(uint32_t height, uint32_t median_time_past, bool coinbase, hash_digest const& txid, domain::chain::output::list const& outputs) {
-    std::cout << "********************** internal_database_basis::insert_outputs_error_treatment()\n";
+    // std::cout << "********************** internal_database_basis::insert_outputs_error_treatment()\n";
     auto res = insert_outputs(txid, height, outputs, median_time_past, coinbase);
 
     if (res == result_code::duplicated_key) {
@@ -420,7 +420,7 @@ result_code internal_database_basis<Clock>::insert_outputs_error_treatment(uint3
 template <typename Clock>
 template <typename I>
 result_code internal_database_basis<Clock>::push_transactions_outputs_non_coinbase(uint32_t height, uint32_t median_time_past, bool coinbase, I f, I l) {
-    std::cout << "********************** internal_database_basis::push_transactions_outputs_non_coinbase()\n";
+    // std::cout << "********************** internal_database_basis::push_transactions_outputs_non_coinbase()\n";
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
 
     while (f != l) {
@@ -437,7 +437,7 @@ result_code internal_database_basis<Clock>::push_transactions_outputs_non_coinba
 template <typename Clock>
 template <typename I>
 result_code internal_database_basis<Clock>::remove_transactions_inputs_non_coinbase(uint32_t height, I f, I l, bool insert_reorg) {
-    std::cout << "********************** internal_database_basis::remove_transactions_inputs_non_coinbase()\n";
+    // std::cout << "********************** internal_database_basis::remove_transactions_inputs_non_coinbase()\n";
     while (f != l) {
         auto const& tx = *f;
         auto res = remove_inputs(tx.hash(), height, tx.inputs(), insert_reorg);
@@ -452,7 +452,7 @@ result_code internal_database_basis<Clock>::remove_transactions_inputs_non_coinb
 template <typename Clock>
 template <typename I>
 result_code internal_database_basis<Clock>::push_transactions_non_coinbase(uint32_t height, uint32_t median_time_past, bool coinbase, I f, I l, bool insert_reorg) {
-    std::cout << "********************** internal_database_basis::push_transactions_non_coinbase()\n";
+    // std::cout << "********************** internal_database_basis::push_transactions_non_coinbase()\n";
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
 
     auto res = push_transactions_outputs_non_coinbase(height, median_time_past, coinbase, f, l);
@@ -466,7 +466,7 @@ result_code internal_database_basis<Clock>::push_transactions_non_coinbase(uint3
 template <typename Clock>
 // result_code internal_database_basis<Clock>::push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg) {
 result_code internal_database_basis<Clock>::push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg) {
-    std::cout << "********************** internal_database_basis::push_block()\n";
+    // std::cout << "********************** internal_database_basis::push_block()\n";
     //precondition: block.transactions().size() >= 1
 
     // auto res = push_block_header(block, height);
@@ -480,7 +480,7 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
 #if defined(KTH_DB_NEW_BLOCKS)
     res = insert_block(block, height);
     if (res != result_code::success) {
-        // std::cout << "22222222222222" << static_cast<uint32_t>(res) << "\n";
+        // // std::cout << "22222222222222" << static_cast<uint32_t>(res) << "\n";
         return res;
     }
 
@@ -490,7 +490,7 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
 
     res = insert_block(block, height, tx_count);
     if (res != result_code::success) {
-        // std::cout << "22222222222222" << static_cast<uint32_t>(res) << "\n";
+        // // std::cout << "22222222222222" << static_cast<uint32_t>(res) << "\n";
         return res;
     }
 
@@ -533,7 +533,7 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
 template <typename Clock>
 // result_code internal_database_basis<Clock>::push_genesis(domain::chain::block const& block) {
 result_code internal_database_basis<Clock>::push_genesis(domain::chain::block const& block) {
-    std::cout << "********************** internal_database_basis::push_genesis()\n";
+    // std::cout << "********************** internal_database_basis::push_genesis()\n";
 
 
 //     auto res = push_block_header(block, 0);
@@ -577,7 +577,7 @@ result_code internal_database_basis<Clock>::push_genesis(domain::chain::block co
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_outputs(hash_digest const& txid, domain::chain::output::list const& outputs) {
-    std::cout << "********************** internal_database_basis::remove_outputs()\n";
+    // std::cout << "********************** internal_database_basis::remove_outputs()\n";
     uint32_t pos = outputs.size() - 1;
     for (auto const& output: outputs) {
         domain::chain::output_point const point {txid, pos};
@@ -593,7 +593,7 @@ result_code internal_database_basis<Clock>::remove_outputs(hash_digest const& tx
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_inputs(domain::chain::input::list const& inputs) {
-    std::cout << "********************** internal_database_basis::insert_inputs()\n";
+    // std::cout << "********************** internal_database_basis::insert_inputs()\n";
     for (auto const& input: inputs) {
         auto const& point = input.previous_output();
 
@@ -608,7 +608,7 @@ result_code internal_database_basis<Clock>::insert_inputs(domain::chain::input::
 template <typename Clock>
 template <typename I>
 result_code internal_database_basis<Clock>::insert_transactions_inputs_non_coinbase(I f, I l) {
-    std::cout << "********************** internal_database_basis::insert_transactions_inputs_non_coinbase()\n";
+    // std::cout << "********************** internal_database_basis::insert_transactions_inputs_non_coinbase()\n";
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
 
     while (f != l) {
@@ -626,7 +626,7 @@ result_code internal_database_basis<Clock>::insert_transactions_inputs_non_coinb
 template <typename Clock>
 template <typename I>
 result_code internal_database_basis<Clock>::remove_transactions_outputs_non_coinbase(I f, I l) {
-    std::cout << "********************** internal_database_basis::remove_transactions_outputs_non_coinbase()\n";
+    // std::cout << "********************** internal_database_basis::remove_transactions_outputs_non_coinbase()\n";
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
 
     while (f != l) {
@@ -644,7 +644,7 @@ result_code internal_database_basis<Clock>::remove_transactions_outputs_non_coin
 template <typename Clock>
 template <typename I>
 result_code internal_database_basis<Clock>::remove_transactions_non_coinbase(I f, I l) {
-    std::cout << "********************** internal_database_basis::remove_transactions_non_coinbase()\n";
+    // std::cout << "********************** internal_database_basis::remove_transactions_non_coinbase()\n";
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
 
     auto res = insert_transactions_inputs_non_coinbase(f, l);
@@ -657,7 +657,7 @@ result_code internal_database_basis<Clock>::remove_transactions_non_coinbase(I f
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_block(domain::chain::block const& block, uint32_t height) {
-    std::cout << "********************** internal_database_basis::remove_block()\n";
+    // std::cout << "********************** internal_database_basis::remove_block()\n";
     //precondition: block.transactions().size() >= 1
 
     auto const& txs = block.transactions();

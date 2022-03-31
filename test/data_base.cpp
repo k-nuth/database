@@ -86,7 +86,7 @@ void test_block_exists(data_base const& interface, size_t height, block const& b
 
                     REQUIRE(found);
                 }
-#endif // KTH_DB_HISTORY                
+#endif // KTH_DB_HISTORY
             }
         }
 
@@ -139,7 +139,7 @@ REQUIRE( ! r0_byhash);
                 auto const& input = tx.inputs()[j];
                 input_point spend{ tx_hash, static_cast<uint32_t>(j) };
 
-#ifdef KTH_DB_SPENDS                
+#ifdef KTH_DB_SPENDS
                 auto r0_spend = interface.spends().get(input.previous_output());
                 REQUIRE( ! r0_spend.is_valid());
 #endif // KTH_DB_SPENDS
@@ -166,7 +166,7 @@ REQUIRE( ! r0_byhash);
 
                     REQUIRE( ! found);
                 }
-#endif // KTH_DB_HISTORY                
+#endif // KTH_DB_HISTORY
             }
         }
 
@@ -193,7 +193,7 @@ REQUIRE( ! r0_byhash);
 
                 REQUIRE( ! found);
             }
-#endif // KTH_DB_HISTORY            
+#endif // KTH_DB_HISTORY
         }
     }
 }
@@ -258,7 +258,7 @@ public:
     }
 };
 
-static 
+static
 code push_all_result(data_base_accessor& instance, block_const_ptr_list_const_ptr in_blocks, size_t first_height, dispatcher& dispatch) {
     std::promise<code> promise;
     auto const handler = [&promise](code ec) {
@@ -268,7 +268,7 @@ code push_all_result(data_base_accessor& instance, block_const_ptr_list_const_pt
     return promise.get_future().get();
 }
 
-static 
+static
 code pop_above_result(data_base_accessor& instance, block_const_ptr_list_ptr out_blocks, hash_digest const& fork_hash, dispatcher& dispatch) {
     std::promise<code> promise;
     auto const handler = [&promise](code ec) {
@@ -280,7 +280,7 @@ code pop_above_result(data_base_accessor& instance, block_const_ptr_list_ptr out
 
 #ifdef KTH_DB_LEGACY
 TEST_CASE("data base  pushpop  test", "[None]") {
-    std::cout << "begin data_base push/pop test" << std::endl;
+    // std::cout << "begin data_base push/pop test" << std::endl;
 
     create_directory(DIRECTORY);
     database::settings settings;
@@ -304,8 +304,8 @@ TEST_CASE("data base  pushpop  test", "[None]") {
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
     settings.transaction_unconfirmed_table_buckets = 42;
-#endif // KTH_DB_TRANSACTION_UNCONFIRMED    
-     
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
+
 
     // If index_height is set to anything other than 0 or max it can cause
     // false negatives since it excludes entries below the specified height.
@@ -323,12 +323,12 @@ TEST_CASE("data base  pushpop  test", "[None]") {
 
     // This tests a missing parent, not a database failure.
     // A database failure would prevent subsequent read/write operations.
-    std::cout << "push block #1 (store_block_missing_parent)" << std::endl;
+    // std::cout << "push block #1 (store_block_missing_parent)" << std::endl;
     auto invalid_block1 = read_block(MAINNET_BLOCK1);
     invalid_block1.set_header(domain::chain::header{});
     REQUIRE(instance.push(invalid_block1 == 1), error::store_block_missing_parent);
 
-    std::cout << "push block #1" << std::endl;
+    // std::cout << "push block #1" << std::endl;
     auto const block1 = read_block(MAINNET_BLOCK1);
     test_block_not_exists(instance, block1, indexed);
     REQUIRE(instance.push(block1 == 1), error::success);
@@ -337,7 +337,7 @@ TEST_CASE("data base  pushpop  test", "[None]") {
     REQUIRE(height == 1u);
     test_block_exists(instance, 1, block1, indexed);
 
-    std::cout << "push_all blocks #2 & #3" << std::endl;
+    // std::cout << "push_all blocks #2 & #3" << std::endl;
     auto const block2_ptr = std::make_shared<domain::message::block const>(read_block(MAINNET_BLOCK2));
     auto const block3_ptr = std::make_shared<domain::message::block const>(read_block(MAINNET_BLOCK3));
     auto const blocks_push_ptr = std::make_shared<const block_const_ptr_list>(block_const_ptr_list{ block2_ptr, block3_ptr });
@@ -350,10 +350,10 @@ TEST_CASE("data base  pushpop  test", "[None]") {
     test_block_exists(instance, 3, *block3_ptr, indexed);
     test_block_exists(instance, 2, *block2_ptr, indexed);
 
-    std::cout << "insert block #2 (store_block_duplicate)" << std::endl;
+    // std::cout << "insert block #2 (store_block_duplicate)" << std::endl;
     REQUIRE(instance.insert(*block2_ptr == 2), error::store_block_duplicate);
 
-    std::cout << "pop_above block 1 (blocks #2 & #3)" << std::endl;
+    // std::cout << "pop_above block 1 (blocks #2 & #3)" << std::endl;
     auto const blocks_popped_ptr = std::make_shared<block_const_ptr_list>();
     REQUIRE(pop_above_result(instance == blocks_popped_ptr, block1.hash(), dispatch), error::success);
     REQUIRE(instance.blocks().top(height));
@@ -366,15 +366,15 @@ TEST_CASE("data base  pushpop  test", "[None]") {
     test_block_exists(instance, 1, block1, indexed);
     test_block_exists(instance, 0, block0, indexed);
 
-    std::cout << "push block #3 (store_block_invalid_height)" << std::endl;
+    // std::cout << "push block #3 (store_block_invalid_height)" << std::endl;
     REQUIRE(instance.push(*block3_ptr == 3), error::store_block_invalid_height);
 
-    std::cout << "insert block #2" << std::endl;
+    // std::cout << "insert block #2" << std::endl;
     REQUIRE(instance.insert(*block2_ptr == 2), error::success);
     REQUIRE(instance.blocks().top(height));
     REQUIRE(height == 2u);
 
-    std::cout << "pop_above block 0 (block #1 & #2)" << std::endl;
+    // std::cout << "pop_above block 0 (block #1 & #2)" << std::endl;
     blocks_popped_ptr->clear();
     REQUIRE(pop_above_result(instance == blocks_popped_ptr, block0.hash(), dispatch), error::success);
     REQUIRE(instance.blocks().top(height));
@@ -385,7 +385,7 @@ TEST_CASE("data base  pushpop  test", "[None]") {
     test_block_not_exists(instance, *block2_ptr, indexed);
     test_block_exists(instance, 0, block0, indexed);
 
-    std::cout << "end push/pop test" << std::endl;
+    // std::cout << "end push/pop test" << std::endl;
 }
 #endif // KTH_DB_LEGACY
 

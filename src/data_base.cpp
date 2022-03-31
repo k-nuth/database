@@ -57,7 +57,7 @@ data_base::data_base(settings const& settings)
 }
 
 data_base::~data_base() {
-    std::cout << "********************** data_base::~data_base()\n";
+    // std::cout << "********************** data_base::~data_base()\n";
     close();
 }
 
@@ -67,7 +67,7 @@ data_base::~data_base() {
 #if ! defined(KTH_DB_READONLY)
 // Throws if there is insufficient disk space, not idempotent.
 bool data_base::create(block const& genesis) {
-    std::cout << "********************** data_base::create()\n";
+    // std::cout << "********************** data_base::create()\n";
 
     start();
 
@@ -92,7 +92,7 @@ bool data_base::create(block const& genesis) {
 // Must be called before performing queries, not idempotent.
 // May be called after stop and/or after close in order to reopen.
 bool data_base::open() {
-    std::cout << "********************** data_base::open()\n";
+    // std::cout << "********************** data_base::open()\n";
 
     start();
 
@@ -109,14 +109,14 @@ bool data_base::open() {
 
     closed_ = false;
 
-    std::cout << "********************** data_base::open() - opened: " << opened << "\n";
+    // std::cout << "********************** data_base::open() - opened: " << opened << "\n";
     return opened;
 }
 
 // Close is idempotent and thread safe.
 // Optional as the database will close on destruct.
 bool data_base::close() {
-    std::cout << "********************** data_base::close()\n";
+    // std::cout << "********************** data_base::close()\n";
 
     if (closed_) {
         return true;
@@ -134,12 +134,12 @@ bool data_base::close() {
 
 // protected
 void data_base::start() {
-    std::cout << "********************** data_base::start()\n";
+    // std::cout << "********************** data_base::start()\n";
 
 #ifdef KTH_DB_NEW
     internal_db_ = std::make_shared<internal_database>(internal_db_dir, settings_.reorg_pool_limit, settings_.db_max_size, settings_.safe_mode);
     printf("-*-*-*-*-*-*-*--*-* internal_db_: %x\n", internal_db_.get());
-    std::cout << "********************** data_base::start() after make_shared\n";
+    // std::cout << "********************** data_base::start() after make_shared\n";
 #endif // KTH_DB_NEW
 }
 
@@ -148,7 +148,7 @@ void data_base::start() {
 
 #ifdef KTH_DB_NEW
 internal_database const& data_base::internal_db() const {
-    std::cout << "********************** data_base::internal_db()\n";
+    // std::cout << "********************** data_base::internal_db()\n";
     printf("-*-*-*-*-*-*-*--*-* data_base::internal_db() -- internal_db_: %x\n", internal_db_.get());
     auto const& res = *internal_db_;
     printf("-*-*-*-*-*-*-*--*-* data_base::internal_db() -- internal_db_: %x\n", internal_db_.get());
@@ -165,7 +165,7 @@ internal_database const& data_base::internal_db() const {
 
 //TODO(fernando): const?
 code data_base::verify_insert(block const& block, size_t height) {
-    std::cout << "********************** data_base::verify_insert()\n";
+    // std::cout << "********************** data_base::verify_insert()\n";
     if (block.transactions().empty()) {
         return error::empty_block;
     }
@@ -183,7 +183,7 @@ code data_base::verify_insert(block const& block, size_t height) {
 }
 
 code data_base::verify_push(block const& block, size_t height) const {
-    std::cout << "********************** data_base::verify_push()\n";
+    // std::cout << "********************** data_base::verify_push()\n";
     if (block.transactions().empty()) {
         return error::empty_block;
     }
@@ -208,7 +208,7 @@ code data_base::verify_push(block const& block, size_t height) const {
 // Add block to the database at the given height (gaps allowed/created).
 // This is designed for write concurrency but only with itself.
 code data_base::insert(domain::chain::block const& block, size_t height) {
-    std::cout << "********************** data_base::insert()\n";
+    // std::cout << "********************** data_base::insert()\n";
 
     auto const median_time_past = block.header().validation.median_time_past;
 
@@ -231,7 +231,7 @@ code data_base::insert(domain::chain::block const& block, size_t height) {
 
 // This is designed for write exclusivity and read concurrency.
 code data_base::push(domain::chain::transaction const& tx, uint32_t forks) {
-    std::cout << "********************** data_base::push()\n";
+    // std::cout << "********************** data_base::push()\n";
 #ifdef KTH_DB_LEGACY
 #elif defined(KTH_DB_NEW_FULL)
     //We insert only in transaction unconfirmed here
@@ -248,7 +248,7 @@ code data_base::push(domain::chain::transaction const& tx, uint32_t forks) {
 // Add a block in order (creates no gaps, must be at top).
 // This is designed for write exclusivity and read concurrency.
 code data_base::push(block const& block, size_t height) {
-    std::cout << "********************** data_base::push()\n";
+    // std::cout << "********************** data_base::push()\n";
 
     auto const median_time_past = block.header().validation.median_time_past;
 
@@ -266,7 +266,7 @@ code data_base::push(block const& block, size_t height) {
 // private
 // Add the Genesis block
 code data_base::push_genesis(block const& block) {
-    std::cout << "********************** data_base::push_genesis()\n";
+    // std::cout << "********************** data_base::push_genesis()\n";
 
 #ifdef KTH_DB_NEW
     auto res = internal_db_->push_genesis(block);
@@ -285,7 +285,7 @@ code data_base::push_genesis(block const& block) {
 #if ! defined(KTH_DB_READONLY)
 // A false return implies store corruption.
 bool data_base::pop(block& out_block) {
-    std::cout << "********************** data_base::pop()\n";
+    // std::cout << "********************** data_base::pop()\n";
 
     auto const start_time = asio::steady_clock::now();
 
@@ -306,7 +306,7 @@ bool data_base::pop(block& out_block) {
 #if ! defined(KTH_DB_READONLY)
 // A false return implies store corruption.
 bool data_base::pop(block& out_block) {
-    std::cout << "********************** data_base::pop()\n";
+    // std::cout << "********************** data_base::pop()\n";
 
     auto const start_time = asio::steady_clock::now();
 
@@ -327,7 +327,7 @@ bool data_base::pop(block& out_block) {
 #if ! defined(KTH_DB_READONLY)
 // A false return implies store corruption.
 bool data_base::pop_inputs(const input::list& inputs, size_t height) {
-    std::cout << "********************** data_base::pop_inputs()\n";
+    // std::cout << "********************** data_base::pop_inputs()\n";
     // Loop in reverse.
     for (auto const& input: reverse(inputs)) {
 
@@ -353,7 +353,7 @@ bool data_base::pop_inputs(const input::list& inputs, size_t height) {
 
 // A false return implies store corruption.
 bool data_base::pop_outputs(const output::list& outputs, size_t height) {
-    std::cout << "********************** data_base::pop_outputs()\n";
+    // std::cout << "********************** data_base::pop_outputs()\n";
     if (height < settings_.index_start_height) {
         return true;
     }
@@ -383,7 +383,7 @@ bool data_base::pop_outputs(const output::list& outputs, size_t height) {
 // If the dispatch threadpool is shut down when this is running the handler
 // will never be invoked, resulting in a threadpool.join indefinite hang.
 void data_base::push_all(block_const_ptr_list_const_ptr in_blocks, size_t first_height, dispatcher& dispatch, result_handler handler) {
-    std::cout << "********************** data_base::push_all()\n";
+    // std::cout << "********************** data_base::push_all()\n";
     DEBUG_ONLY(safe_add(in_blocks->size(), first_height));
 
     // This is the beginning of the push_all sequence.
@@ -392,7 +392,7 @@ void data_base::push_all(block_const_ptr_list_const_ptr in_blocks, size_t first_
 
 // TODO(legacy): resolve inconsistency with height and median_time_past passing.
 void data_base::push_next(code const& ec, block_const_ptr_list_const_ptr blocks, size_t index, size_t height, dispatcher& dispatch, result_handler handler) {
-    std::cout << "********************** data_base::push_next()\n";
+    // std::cout << "********************** data_base::push_next()\n";
     if (ec || index >= blocks->size()) {
         // This ends the loop.
         handler(ec);
@@ -430,7 +430,7 @@ void data_base::do_push(block_const_ptr block, size_t height, uint32_t median_ti
 // TODO(legacy): make async and concurrency as appropriate.
 // This precludes popping the genesis block.
 void data_base::pop_above(block_const_ptr_list_ptr out_blocks, hash_digest const& fork_hash, dispatcher&, result_handler handler) {
-    std::cout << "********************** data_base::pop_above()\n";
+    // std::cout << "********************** data_base::pop_above()\n";
     out_blocks->clear();
 
 #ifdef KTH_DB_NEW
@@ -495,7 +495,7 @@ code data_base::prune_reorg() {
 #if ! defined(KTH_DB_READONLY)
 // This is designed for write exclusivity and read concurrency.
 void data_base::reorganize(infrastructure::config::checkpoint const& fork_point, block_const_ptr_list_const_ptr incoming_blocks, block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch, result_handler handler) {
-    std::cout << "********************** data_base::reorganize()\n";
+    // std::cout << "********************** data_base::reorganize()\n";
     auto const next_height = safe_add(fork_point.height(), size_t(1));
     result_handler const pop_handler = std::bind(&data_base::handle_pop, this, _1, incoming_blocks, next_height, std::ref(dispatch), handler);
 
@@ -504,7 +504,7 @@ void data_base::reorganize(infrastructure::config::checkpoint const& fork_point,
 }
 
 void data_base::handle_pop(code const& ec, block_const_ptr_list_const_ptr incoming_blocks, size_t first_height, dispatcher& dispatch, result_handler handler) {
-    std::cout << "********************** data_base::handle_pop()\n";
+    // std::cout << "********************** data_base::handle_pop()\n";
     result_handler const push_handler = std::bind(&data_base::handle_push, this, _1, handler);
 
     if (ec) {
@@ -518,7 +518,7 @@ void data_base::handle_pop(code const& ec, block_const_ptr_list_const_ptr incomi
 // We never invoke the caller's handler under the mutex, we never fail to clear
 // the mutex, and we always invoke the caller's handler exactly once.
 void data_base::handle_push(code const& ec, result_handler handler) const {
-    std::cout << "********************** data_base::handle_push()\n";
+    // std::cout << "********************** data_base::handle_push()\n";
 
     if (ec) {
         handler(ec);

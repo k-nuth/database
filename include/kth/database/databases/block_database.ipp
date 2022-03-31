@@ -10,7 +10,7 @@ namespace kth::database {
 //public
 template <typename Clock>
 std::pair<domain::chain::block, uint32_t> internal_database_basis<Clock>::get_block(hash_digest const& hash) const {
-    std::cout << "********************** internal_database_basis::get_block()\n";
+    // std::cout << "********************** internal_database_basis::get_block()\n";
     // auto key = kth_db_make_value(hash.size(), const_cast<hash_digest&>(hash).data());
 
     // KTH_DB_txn* db_txn;
@@ -44,7 +44,7 @@ std::pair<domain::chain::block, uint32_t> internal_database_basis<Clock>::get_bl
 
 template <typename Clock>
 domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height) const {
-    std::cout << "********************** internal_database_basis::get_block()\n";
+    // std::cout << "********************** internal_database_basis::get_block()\n";
 
     auto key = kth_db_make_value(sizeof(height), &height);
 
@@ -142,7 +142,7 @@ template <typename Clock>
 result_code internal_database_basis<Clock>::insert_block(domain::chain::block const& block, uint32_t height, uint64_t tx_count) {
 #endif
 
-    std::cout << "********************** internal_database_basis::insert_block()\n";
+    // std::cout << "********************** internal_database_basis::insert_block()\n";
 
 /*#if defined(KTH_DB_NEW_BLOCKS)
     auto data = block.to_data(false);
@@ -196,7 +196,7 @@ auto key = kth_db_make_value(sizeof(height), &height);
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_blocks_db(uint32_t height) {
-    std::cout << "********************** internal_database_basis::remove_blocks_db()\n";
+    // std::cout << "********************** internal_database_basis::remove_blocks_db()\n";
     auto key = kth_db_make_value(sizeof(height), &height);
 
  #if defined(KTH_DB_NEW_BLOCKS)
