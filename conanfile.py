@@ -80,7 +80,8 @@ class KnuthDatabaseConan(KnuthConanFile):
                 self.requires("libmdbx/0.7.0@kth/stable")
                 self.output.info("Using libmdbx for DB management")
             else:
-                self.requires("lmdb/0.9.24@kth/stable")
+                # self.requires("lmdb/0.9.24@kth/stable")
+                self.requires("lmdb/0.9.29")
                 self.output.info("Using lmdb for DB management")
         else:
             self.output.info("Using legacy DB")
