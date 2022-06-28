@@ -120,6 +120,7 @@ class KnuthDatabaseConan(KnuthConanFile):
         cmake.definitions["WITH_CACHED_RPC_DATA"] = option_on_off(self.options.cached_rpc_data)
         cmake.definitions["LOG_LIBRARY"] = self.options.log
         cmake.definitions["USE_LIBMDBX"] = option_on_off(self.options.use_libmdbx)
+        cmake.definitions["CONAN_DISABLE_CHECK_COMPILER"] = option_on_off(True)
 
         if self.options.cmake_export_compile_commands:
             cmake.definitions["CMAKE_EXPORT_COMPILE_COMMANDS"] = option_on_off(self.options.cmake_export_compile_commands)
