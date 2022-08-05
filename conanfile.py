@@ -93,6 +93,9 @@ class KnuthDatabaseConan(KnuthConanFile):
 
         self.requires("domain/0.X@%s/%s" % (self.user, self.channel))
 
+    def validate(self):
+        KnuthConanFile.validate(self)
+
     def config_options(self):
         KnuthConanFile.config_options(self)
 

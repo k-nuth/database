@@ -51,8 +51,8 @@ option(WITH_TOOLS "Compile with tools." OFF)
 set(KTH_PROJECT_VERSION "-" CACHE STRING "Specify the Knuth Project Version.")
 # message(${KTH_PROJECT_VERSION})
 
-set(KTH_MARCH_ID "" CACHE STRING "Specify the Microarchitecture ID (x86_64|...).")
-message( STATUS "Knuth: Compiling for Microarchitecture ID ${KTH_MARCH_ID}")
+set(MARCH_ID "" CACHE STRING "Specify the Microarchitecture ID (x86_64|...).")
+message( STATUS "Knuth: Compiling for Microarchitecture ID ${MARCH_ID}")
 
 
 # Implement --with-measurements and declare WITH_MEASUREMENTS.
