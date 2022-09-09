@@ -15,7 +15,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Check for baseline language coverage in the compiler for the C++14 standard.
 #------------------------------------------------------------------------------
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Process options.
@@ -764,6 +764,7 @@ set(_kth_headers
         kth/database/databases/transaction_database.hpp
         kth/database/databases/transaction_unconfirmed_database.hpp
         kth/database/define.hpp
+
         kth/database/legacy/impl/hash_table_header.ipp
         kth/database/legacy/impl/record_hash_table.ipp
         kth/database/legacy/impl/record_multimap.ipp
@@ -771,6 +772,7 @@ set(_kth_headers
         kth/database/legacy/impl/remainder.ipp
         kth/database/legacy/impl/slab_hash_table.ipp
         kth/database/legacy/impl/slab_row.ipp
+
         kth/database/legacy/memory/accessor.hpp
         kth/database/legacy/memory/allocator.hpp
         kth/database/legacy/memory/memory.hpp
@@ -784,6 +786,7 @@ set(_kth_headers
         kth/database/legacy/primitives/record_multimap_iterator.hpp
         kth/database/legacy/primitives/slab_hash_table.hpp
         kth/database/legacy/primitives/slab_manager.hpp
+
         kth/database/result/block_result.hpp
         kth/database/result/transaction_result.hpp
         kth/database/result/transaction_unconfirmed_result.hpp

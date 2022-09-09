@@ -53,6 +53,7 @@
 #include <kth/database/legacy/databases/transaction_unconfirmed_database.hpp>
 #endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
+#ifdef KTH_DB_LEGACY
 #include <kth/database/legacy/memory/accessor.hpp>
 #include <kth/database/legacy/memory/allocator.hpp>
 #include <kth/database/legacy/memory/memory.hpp>
@@ -66,6 +67,7 @@
 #include <kth/database/legacy/primitives/record_multimap_iterator.hpp>
 #include <kth/database/legacy/primitives/slab_hash_table.hpp>
 #include <kth/database/legacy/primitives/slab_manager.hpp>
+#endif // KTH_DB_LEGACY
 
 #ifdef KTH_DB_LEGACY
 #include <kth/database/legacy/result/block_result.hpp>
