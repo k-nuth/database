@@ -18,13 +18,14 @@ settings::settings()
 
 #if defined(KTH_DB_NEW)
     , reorg_pool_limit(100)      //TODO(fernando): look for a good default
-                                
+
 #if defined(KTH_DB_NEW_BLOCKS)
     , db_max_size(200 * (uint64_t(1) << 30))  //200 GiB     //TODO(fernando): look for a good default
 #elif defined(KTH_DB_NEW_FULL)
     , db_max_size(600 * (uint64_t(1) << 30))  //600 GiB     //TODO(fernando): look for a good default
-#else                                                         
-    , db_max_size(100 * (uint64_t(1) << 30))  //100 GiB     //TODO(fernando): look for a good default
+#else
+    // , db_max_size(100 * (uint64_t(1) << 30))  //100 GiB     //TODO(fernando): look for a good default
+    , db_max_size(10 * (uint64_t(1) << 30))  //100 GiB     //TODO(fernando): look for a good default
 #endif // KTH_DB_NEW_BLOCKS
 
     , safe_mode(true)
@@ -38,7 +39,7 @@ settings::settings()
 #endif // KTH_DB_LEGACY
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
     , transaction_unconfirmed_table_buckets(0)
-#endif // KTH_DB_TRANSACTION_UNCONFIRMED    
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
 #ifdef KTH_DB_SPENDS
     , spend_table_buckets(0)
@@ -46,7 +47,7 @@ settings::settings()
 
 #ifdef KTH_DB_HISTORY
     , history_table_buckets(0)
-#endif // KTH_DB_HISTORY    
+#endif // KTH_DB_HISTORY
 
 // #ifdef KTH_DB_UNSPENT_LEGACY
     , cache_capacity(0)
@@ -65,7 +66,7 @@ settings::settings(domain::config::network context)
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
             transaction_unconfirmed_table_buckets = 10000;
-#endif // KTH_DB_TRANSACTION_UNCONFIRMED    
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
 #ifdef KTH_DB_SPENDS
             spend_table_buckets = 250000000;
@@ -73,7 +74,7 @@ settings::settings(domain::config::network context)
 
 #ifdef KTH_DB_HISTORY
             history_table_buckets = 107000000;
-#endif // KTH_DB_HISTORY    
+#endif // KTH_DB_HISTORY
             break;
         }
         case domain::config::network::testnet: {
@@ -85,7 +86,7 @@ settings::settings(domain::config::network context)
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
             transaction_unconfirmed_table_buckets = 10000;
-#endif // KTH_DB_TRANSACTION_UNCONFIRMED    
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
 #ifdef KTH_DB_SPENDS
             spend_table_buckets = 250000000;
@@ -93,12 +94,12 @@ settings::settings(domain::config::network context)
 
 #ifdef KTH_DB_HISTORY
             history_table_buckets = 107000000;
-#endif // KTH_DB_HISTORY    
+#endif // KTH_DB_HISTORY
 
             break;
         }
 
-#if defined(KTH_CURRENCY_BCH)        
+#if defined(KTH_CURRENCY_BCH)
         case domain::config::network::testnet4: {
 #if defined(KTH_DB_NEW_BLOCKS)
             db_max_size = 10 * (uint64_t(1) << 30);  //10 GiB
@@ -116,7 +117,7 @@ settings::settings(domain::config::network context)
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
             transaction_unconfirmed_table_buckets = 10000;
-#endif // KTH_DB_TRANSACTION_UNCONFIRMED    
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
 #ifdef KTH_DB_SPENDS
             spend_table_buckets = 250000000;
@@ -124,7 +125,7 @@ settings::settings(domain::config::network context)
 
 #ifdef KTH_DB_HISTORY
             history_table_buckets = 107000000;
-#endif // KTH_DB_HISTORY    
+#endif // KTH_DB_HISTORY
 
             break;
         }
@@ -145,7 +146,7 @@ settings::settings(domain::config::network context)
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
             transaction_unconfirmed_table_buckets = 10000;
-#endif // KTH_DB_TRANSACTION_UNCONFIRMED    
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
 #ifdef KTH_DB_SPENDS
             spend_table_buckets = 250000000;
@@ -153,7 +154,7 @@ settings::settings(domain::config::network context)
 
 #ifdef KTH_DB_HISTORY
             history_table_buckets = 107000000;
-#endif // KTH_DB_HISTORY    
+#endif // KTH_DB_HISTORY
 
             break;
         }
