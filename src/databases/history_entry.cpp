@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -11,7 +11,7 @@
 
 #include <kth/infrastructure.hpp>
 
-namespace kth::database { 
+namespace kth::database {
 
 history_entry::history_entry(uint64_t id, domain::chain::point const& point, domain::chain::point_kind kind, uint32_t height, uint32_t index, uint64_t value_or_checksum)
     : id_(id), point_(point), point_kind_(kind), height_(height), index_(index), value_or_checksum_(value_or_checksum)

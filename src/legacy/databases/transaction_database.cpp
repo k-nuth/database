@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -159,7 +159,7 @@ transaction_result transaction_database::get(hash_digest const& hash, size_t for
     return {};
 }
 
-bool transaction_database::get_output(output& out_output, size_t& out_height, uint32_t& out_median_time_past, 
+bool transaction_database::get_output(output& out_output, size_t& out_height, uint32_t& out_median_time_past,
     bool& out_coinbase, output_point const& point, size_t fork_height, bool require_confirmed) const {
 
 #ifdef KTH_DB_UNSPENT_LEGACY
@@ -218,7 +218,7 @@ bool transaction_database::get_output_is_confirmed(output& out_output, size_t& o
     transaction_result result(slab, point.hash(), 0, 0, 0);
     out_output = result.output(point.index());
     out_is_confirmed = result.position() != unconfirmed;
-    
+
     return true;
 }
 // median_time_past added in v3.3

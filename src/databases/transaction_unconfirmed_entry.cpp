@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -11,7 +11,7 @@
 
 #include <kth/infrastructure.hpp>
 
-namespace kth::database { 
+namespace kth::database {
 
 transaction_unconfirmed_entry::transaction_unconfirmed_entry(domain::chain::transaction const& tx, uint32_t arrival_time, uint32_t height)
     : transaction_(tx), arrival_time_(arrival_time), height_(height)
@@ -44,14 +44,14 @@ bool transaction_unconfirmed_entry::is_valid() const {
 // Size.
 //-----------------------------------------------------------------------------
 // constexpr
-//TODO(fernando): make this constexpr 
+//TODO(fernando): make this constexpr
 size_t transaction_unconfirmed_entry::serialized_size(domain::chain::transaction const& tx) {
 #if defined(KTH_CACHED_RPC_DATA)
-    return tx.serialized_size(false, true, true) 
+    return tx.serialized_size(false, true, true)
 #else
-    return tx.serialized_size(false, true) 
+    return tx.serialized_size(false, true)
 #endif
-         + sizeof(uint32_t) // arrival_time 
+         + sizeof(uint32_t) // arrival_time
          + sizeof(uint32_t); //height
 }
 

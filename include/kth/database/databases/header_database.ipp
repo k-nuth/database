@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -13,22 +13,22 @@ namespace kth::database {
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::push_block_header(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
-    
+
     auto valuearr = block.header().to_data(true);               //TODO(fernando): podría estar afuera de la DBTx
     auto key = kth_db_make_value(sizeof(height), &height);
     auto value = kth_db_make_value(valuearr.size(), valuearr.data());
-    
+
     auto res = kth_db_put(db_txn, dbi_block_header_, &key, &value, KTH_DB_APPEND);
     if (res == KTH_DB_KEYEXIST) {
         //TODO(fernando): El logging en general no está bueno que esté en la DbTx.
-        LOG_INFO(LOG_DATABASE, "Duplicate key inserting block header [push_block_header] ", res);        //TODO(fernando): podría estar afuera de la DBTx. 
+        LOG_INFO(LOG_DATABASE, "Duplicate key inserting block header [push_block_header] ", res);        //TODO(fernando): podría estar afuera de la DBTx.
         return result_code::duplicated_key;
     }
     if (res != KTH_DB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE, "Error inserting block header  [push_block_header] ", res);        
+        LOG_INFO(LOG_DATABASE, "Error inserting block header  [push_block_header] ", res);
         return result_code::other;
     }
-    
+
     auto key_by_hash_arr = block.hash();                                    //TODO(fernando): podría estar afuera de la DBTx
     auto key_by_hash = kth_db_make_value(key_by_hash_arr.size(), key_by_hash_arr.data());
 

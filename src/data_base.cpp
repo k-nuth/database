@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -43,12 +43,12 @@ using namespace std::placeholders;
 data_base::data_base(settings const& settings)
     : closed_(true)
     , settings_(settings)
-#ifdef KTH_DB_LEGACY    
+#ifdef KTH_DB_LEGACY
     , remap_mutex_(std::make_shared<shared_mutex>())
 #endif
     , store(settings.directory, settings.index_start_height < without_indexes, settings.flush_writes)
 {
-   
+
 #ifdef KTH_DB_LEGACY
         LOG_DEBUG(LOG_DATABASE)
        , "Buckets: "
@@ -66,7 +66,7 @@ data_base::data_base(settings const& settings)
 
 #ifdef KTH_DB_LEGACY
         ;
-#endif // KTH_DB_LEGACY        
+#endif // KTH_DB_LEGACY
 }
 
 data_base::~data_base() {
@@ -113,19 +113,19 @@ bool data_base::create(block const& genesis) {
 
 #ifdef KTH_DB_WITH_INDEXES
     if (use_indexes()) {
-        created = created 
+        created = created
 #ifdef KTH_DB_SPENDS
-                && spends_->create() 
+                && spends_->create()
 #endif // KTH_DB_SPENDS
 #ifdef KTH_DB_HISTORY
-                && history_->create() 
+                && history_->create()
 #endif // KTH_DB_HISTORY
-#ifdef KTH_DB_STEALTH                
+#ifdef KTH_DB_STEALTH
                 && stealth_->create()
-#endif // KTH_DB_STEALTH                
+#endif // KTH_DB_STEALTH
                 ;
     }
-#endif // KTH_DB_WITH_INDEXES    
+#endif // KTH_DB_WITH_INDEXES
 
     if ( ! created) {
         return false;
@@ -156,12 +156,12 @@ bool data_base::open() {
 
     auto opened = true
 #ifdef KTH_DB_LEGACY
-                && blocks_->open() 
-                && transactions_->open() 
+                && blocks_->open()
+                && transactions_->open()
 #endif // KTH_DB_LEGACY
 
 #ifdef KTH_DB_NEW
-                && internal_db_->open() 
+                && internal_db_->open()
 #endif // KTH_DB_NEW
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
@@ -171,16 +171,16 @@ bool data_base::open() {
 
 #ifdef KTH_DB_WITH_INDEXES
     if (use_indexes()) {
-        opened = opened 
+        opened = opened
 #ifdef KTH_DB_SPENDS
                 && spends_->open()
 #endif // KTH_DB_SPENDS
 #ifdef KTH_DB_HISTORY
-                && history_->open() 
+                && history_->open()
 #endif // KTH_DB_HISTORY
-#ifdef KTH_DB_STEALTH                
+#ifdef KTH_DB_STEALTH
                 && stealth_->open()
-#endif // KTH_DB_STEALTH                
+#endif // KTH_DB_STEALTH
                 ;
     }
 #endif // KTH_DB_WITH_INDEXES
@@ -202,12 +202,12 @@ bool data_base::close() {
 
     auto closed = true
 #ifdef KTH_DB_LEGACY
-                && blocks_->close() 
-                && transactions_->close() 
+                && blocks_->close()
+                && transactions_->close()
 #endif // KTH_DB_LEGACY
 
 #ifdef KTH_DB_NEW
-                && internal_db_->close() 
+                && internal_db_->close()
 #endif // KTH_DB_NEW
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
@@ -217,23 +217,23 @@ bool data_base::close() {
 
 #ifdef KTH_DB_WITH_INDEXES
     if (use_indexes()) {
-        closed = closed 
+        closed = closed
 #ifdef KTH_DB_SPENDS
                 && spends_->close()
 #endif // KTH_DB_SPENDS
 #ifdef KTH_DB_HISTORY
-                && history_->close() 
+                && history_->close()
 #endif // KTH_DB_HISTORY
-#ifdef KTH_DB_STEALTH                
+#ifdef KTH_DB_STEALTH
                 && stealth_->close()
-#endif // KTH_DB_STEALTH                
+#endif // KTH_DB_STEALTH
                 ;
     }
 #endif // KTH_DB_WITH_INDEXES
 
 
-    return closed 
-#ifdef KTH_DB_LEGACY    
+    return closed
+#ifdef KTH_DB_LEGACY
             && store::close()
     // Unlock exclusive file access and conditionally the global flush lock.
     ///////////////////////////////////////////////////////////////////////////
@@ -306,8 +306,8 @@ bool data_base::flush() const {
     ////    return true;
 
     auto flushed = true
-                && blocks_->flush() 
-                && transactions_->flush() 
+                && blocks_->flush()
+                && transactions_->flush()
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
                 && transactions_unconfirmed_->flush()
@@ -316,16 +316,16 @@ bool data_base::flush() const {
 
 #ifdef KTH_DB_WITH_INDEXES
     if (use_indexes()) {
-        flushed = flushed 
+        flushed = flushed
 #ifdef KTH_DB_SPENDS
-                && spends_->flush() 
+                && spends_->flush()
 #endif // KTH_DB_SPENDS
 #ifdef KTH_DB_HISTORY
-                && history_->flush() 
+                && history_->flush()
 #endif // KTH_DB_HISTORY
-#ifdef KTH_DB_STEALTH                
+#ifdef KTH_DB_STEALTH
                 && stealth_->flush()
-#endif // KTH_DB_STEALTH                
+#endif // KTH_DB_STEALTH
                 ;
     }
 #endif // KTH_DB_WITH_INDEXES
@@ -353,9 +353,9 @@ void data_base::synchronize() {
         history_->synchronize();
 #endif // KTH_DB_HISTORY
 
-#ifdef KTH_DB_STEALTH                
+#ifdef KTH_DB_STEALTH
         stealth_->synchronize();
-#endif // KTH_DB_STEALTH                
+#endif // KTH_DB_STEALTH
     }
 #endif // KTH_DB_WITH_INDEXES
 
@@ -420,14 +420,14 @@ stealth_database const& data_base::stealth() const {
 // ----------------------------------------------------------------------------
 
 #ifdef KTH_DB_LEGACY
-static inline 
+static inline
 size_t get_next_height(const block_database& blocks) {
     size_t current_height;
     auto const empty_chain = !blocks.top(current_height);
     return empty_chain ? 0 : current_height + 1;
 }
 
-static inline 
+static inline
 hash_digest get_previous_hash(const block_database& blocks, size_t height) {
     return height == 0 ? null_hash : blocks.get(height - 1).header().hash();
 }
@@ -435,7 +435,7 @@ hash_digest get_previous_hash(const block_database& blocks, size_t height) {
 
 
 #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-static inline 
+static inline
 uint32_t get_next_height(internal_database const& db) {
     uint32_t current_height;
     auto res = db.get_last_height(current_height);
@@ -447,7 +447,7 @@ uint32_t get_next_height(internal_database const& db) {
     return current_height + 1;
 }
 
-static inline 
+static inline
 hash_digest get_previous_hash(internal_database const& db, size_t height) {
     return height == 0 ? null_hash : db.get_header(height - 1).hash();
 }
@@ -545,7 +545,7 @@ bool data_base::end_insert() const {
 code data_base::insert(domain::chain::block const& block, size_t height) {
 
     auto const median_time_past = block.header().validation.median_time_past;
-    
+
     auto const ec = verify_insert(block, height);
 
     if (ec) return ec;
@@ -558,7 +558,7 @@ code data_base::insert(domain::chain::block const& block, size_t height) {
 #endif // KTH_DB_NEW
 
 #ifdef KTH_DB_LEGACY
-    
+
     if ( ! push_transactions(block, height, median_time_past) || ! push_heights(block, height)) {
         return error::operation_failed_1;
     }
@@ -618,7 +618,7 @@ code data_base::push(domain::chain::transaction const& tx, uint32_t forks) {
     internal_db_->push_transaction_unconfirmed(tx, forks);
     return error::success;  //TODO(fernando): store the transactions in a new mempool
 
-#else 
+#else
     return error::success;
 #endif // KTH_DB_LEGACY
 }
@@ -734,7 +734,7 @@ bool data_base::push_transactions(domain::chain::block const& block, size_t heig
         if (position != 0) {
             push_inputs(tx_hash, height, tx.inputs());
         }
-#endif // defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY)        
+#endif // defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY)
 
 #ifdef KTH_DB_HISTORY
         push_outputs(tx_hash, height, tx.outputs());
@@ -742,7 +742,7 @@ bool data_base::push_transactions(domain::chain::block const& block, size_t heig
 
 #ifdef KTH_DB_STEALTH
         push_stealth(tx_hash, height, tx.outputs());
-#endif // KTH_DB_STEALTH        
+#endif // KTH_DB_STEALTH
     }
 
     return true;
@@ -774,7 +774,7 @@ bool data_base::push_heights(domain::chain::block const& block, size_t height) {
 #if defined(KTH_DB_LEGACY) && (defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY))
 #if ! defined(KTH_DB_READONLY)
 void data_base::push_inputs(hash_digest const& tx_hash, size_t height, const input::list& inputs) {
-    
+
     for (uint32_t index = 0; index < inputs.size(); ++index) {
         auto const& input = inputs[index];
         const input_point inpoint {tx_hash, index};
@@ -803,7 +803,7 @@ void data_base::push_inputs(hash_digest const& tx_hash, size_t height, const inp
                     break;
                 }
             }
-            
+
             if (valid) {
                 for (auto const& address : input.addresses()) {
                     history_->add_input(address.hash(), inpoint, height, prevout);
@@ -845,7 +845,7 @@ void data_base::push_outputs(hash_digest const& tx_hash, size_t height, const ou
     }
 }
 #endif // ! defined(KTH_DB_READONLY)
-#endif // KTH_DB_HISTORY    
+#endif // KTH_DB_HISTORY
 
 #ifdef KTH_DB_STEALTH
 #if ! defined(KTH_DB_READONLY)
@@ -892,7 +892,7 @@ void data_base::push_stealth(hash_digest const& tx_hash, size_t height, const ou
 #ifdef KTH_DB_LEGACY
 
 // bool data_base::pop_input_and_unconfirm(size_t height, domain::chain::transaction const& tx) {
-   
+
 //     if ( ! pop_inputs(tx.inputs(), height)) {
 //         return false;
 //     }
@@ -912,7 +912,7 @@ void data_base::push_stealth(hash_digest const& tx_hash, size_t height, const ou
 
 #if ! defined(KTH_DB_READONLY)
 bool data_base::pop_output_and_unconfirm(size_t height, domain::chain::transaction const& tx) {
-   
+
     if ( ! pop_outputs(tx.outputs(), height)) {
         return false;
     }
@@ -933,7 +933,7 @@ bool data_base::pop_output_and_unconfirm(size_t height, domain::chain::transacti
 template <typename I>
 bool data_base::pop_transactions_inputs_unconfirm_non_coinbase(size_t height, I f, I l) {
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
-    
+
     while (f != l) {
         auto const& tx = *f;
         if ( ! pop_inputs(tx.inputs(), height)) {
@@ -944,7 +944,7 @@ bool data_base::pop_transactions_inputs_unconfirm_non_coinbase(size_t height, I 
         //     return false;
         // }
         ++f;
-    } 
+    }
 
     return true;
 }
@@ -952,14 +952,14 @@ bool data_base::pop_transactions_inputs_unconfirm_non_coinbase(size_t height, I 
 template <typename I>
 bool data_base::pop_transactions_outputs_non_coinbase(size_t height, I f, I l) {
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
-    
+
     while (f != l) {
         auto const& tx = *f;
         if ( ! pop_output_and_unconfirm(height, tx)) {
             return false;
         }
         ++f;
-    } 
+    }
     return true;
 }
 
@@ -977,7 +977,7 @@ bool data_base::pop_transactions_non_coinbase(size_t height, I f, I l) {
 #if ! defined(KTH_DB_READONLY)
 // A false return implies store corruption.
 bool data_base::pop(block& out_block) {
-    
+
     auto const start_time = asio::steady_clock::now();
 
 #ifdef KTH_DB_NEW
@@ -988,7 +988,7 @@ bool data_base::pop(block& out_block) {
 
 #ifdef KTH_DB_LEGACY
     size_t height;
-    
+
     // The blockchain is empty (nothing to pop, not even genesis).
     if ( ! blocks_->top(height)) {
         return false;
@@ -1040,8 +1040,8 @@ bool data_base::pop(block& out_block) {
 
     // Synchronise everything that was changed.
     synchronize();
-   
-    // Return the block (with header/block metadata and pop start time). 
+
+    // Return the block (with header/block metadata and pop start time).
     out_block = domain::chain::block(block.header(), std::move(transactions));
 
 #endif // KTH_DB_LEGACY
@@ -1057,7 +1057,7 @@ bool data_base::pop(block& out_block) {
 #if ! defined(KTH_DB_READONLY)
 // A false return implies store corruption.
 bool data_base::pop(block& out_block) {
-    
+
     auto const start_time = asio::steady_clock::now();
 
 #ifdef KTH_DB_NEW
@@ -1068,7 +1068,7 @@ bool data_base::pop(block& out_block) {
 
 #ifdef KTH_DB_LEGACY
     size_t height;
-    
+
     // The blockchain is empty (nothing to pop, not even genesis).
     if ( ! blocks_->top(height)) {
         return false;
@@ -1124,8 +1124,8 @@ bool data_base::pop(block& out_block) {
 
     // Synchronise everything that was changed.
     synchronize();
-   
-    // Return the block (with header/block metadata and pop start time). 
+
+    // Return the block (with header/block metadata and pop start time).
     out_block = domain::chain::block(block.header(), std::move(transactions));
 
 #endif // KTH_DB_LEGACY
@@ -1313,7 +1313,7 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, hash_digest const
     }
 
     auto const fork = header_result.second;
-    
+
 #endif
 
 #ifdef KTH_DB_LEGACY

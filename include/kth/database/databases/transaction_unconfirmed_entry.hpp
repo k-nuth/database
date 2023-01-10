@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -27,8 +27,8 @@ public:
 
     bool is_valid() const;
 
-    //TODO(fernando): make this constexpr 
-    // constexpr 
+    //TODO(fernando): make this constexpr
+    // constexpr
     static
     size_t serialized_size(domain::chain::transaction const& tx);
 
@@ -48,14 +48,14 @@ public:
     template <typename R, KTH_IS_READER(R)>
     bool from_data(R& source) {
         reset();
-    
-#if defined(KTH_CACHED_RPC_DATA)    
+
+#if defined(KTH_CACHED_RPC_DATA)
         transaction_.from_data(source, false, true, true);
 #else
         transaction_.from_data(source, false, true);
 #endif
         arrival_time_ = source.read_4_bytes_little_endian();
-        
+
         height_ = source.read_4_bytes_little_endian();
 
         if ( ! source) {
@@ -63,7 +63,7 @@ public:
         }
 
         return source;
-    }    
+    }
 
     static
     data_chunk factory_to_data(domain::chain::transaction const& tx, uint32_t arrival_time, uint32_t height);
@@ -75,7 +75,7 @@ public:
     static
     void factory_to_data(W& sink, domain::chain::transaction const& tx, uint32_t arrival_time, uint32_t height) {
 
-#if defined(KTH_CACHED_RPC_DATA)    
+#if defined(KTH_CACHED_RPC_DATA)
         tx.to_data(sink, false, true, true);
 #else
         tx.to_data(sink, false, true);

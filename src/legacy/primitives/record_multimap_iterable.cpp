@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -10,7 +10,7 @@
 #include <kth/database/legacy/primitives/record_multimap_iterator.hpp>
 
 namespace kth::database {
-    
+
 record_multimap_iterable::record_multimap_iterable(
     const record_manager& manager, array_index begin)
   : begin_(begin), manager_(manager)

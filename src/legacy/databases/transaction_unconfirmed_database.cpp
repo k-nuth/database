@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -24,9 +24,9 @@ static constexpr auto metadata_size = arrival_time_size;
 
 #if defined(KTH_CURRENCY_BCH)
 size_t const transaction_unconfirmed_database::unconfirmed = max_uint32;
-#else 
+#else
 size_t const transaction_unconfirmed_database::unconfirmed = max_uint16;
-#endif    
+#endif
 
 // Transactions uses a hash table index, O(1).
 transaction_unconfirmed_database::transaction_unconfirmed_database(const path& map_filename, size_t buckets, size_t expansion, mutex_ptr mutex)
@@ -149,7 +149,7 @@ void transaction_unconfirmed_database::store(const domain::chain::transaction& t
 
         // WRITE THE TX
         //TODO WITNESS
-#if defined(KTH_CACHED_RPC_DATA)    
+#if defined(KTH_CACHED_RPC_DATA)
         tx.to_data(serial, false, witness, true);
 #else
         tx.to_data(serial, false, witness);
@@ -157,7 +157,7 @@ void transaction_unconfirmed_database::store(const domain::chain::transaction& t
     };
 
 
-#if defined(KTH_CACHED_RPC_DATA)    
+#if defined(KTH_CACHED_RPC_DATA)
     auto const tx_size = tx.serialized_size(false, witness, true);
 #else
     auto const tx_size = tx.serialized_size(false, witness);

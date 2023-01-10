@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -16,10 +16,10 @@ namespace kth::database {
 
 class KD_API record_list {
 public:
-    static 
+    static
     constexpr array_index empty = kth::max_uint32;
-    
-    static 
+
+    static
     constexpr size_t index_size = sizeof(array_index);
 
     using write_function = serializer<uint8_t*>::functor;

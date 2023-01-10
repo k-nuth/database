@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -15,13 +15,13 @@
 
 namespace kth::database {
 
-inline 
+inline
 size_t multimap_record_size(size_t value_size) {
     return sizeof(array_index) + value_size;
 }
 
 template <typename KeyType>
-constexpr 
+constexpr
 size_t hash_table_multimap_record_size() {
     // The hash table maps a key only to the first record index.
     return hash_table_record_size<KeyType>(sizeof(array_index));
