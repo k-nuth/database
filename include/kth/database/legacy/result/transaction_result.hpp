@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,7 +17,7 @@ namespace kth::database {
 
 #if defined(KTH_CURRENCY_BCH)
 using position_t = uint32_t;
-#else 
+#else
 using position_t = uint16_t;
 #endif
 

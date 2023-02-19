@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -14,7 +14,7 @@ namespace kth::database {
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_history_db(domain::wallet::payment_address const& address, data_chunk const& entry, KTH_DB_txn* db_txn) {
 
-    auto key_arr = address.hash();     //TODO(fernando): should I take a reference?                               
+    auto key_arr = address.hash();     //TODO(fernando): should I take a reference?
     auto key = kth_db_make_value(key_arr.size(), key_arr.data());
     auto value = kth_db_make_value(entry.size(), const_cast<data_chunk&>(entry).data());
 
@@ -33,34 +33,34 @@ result_code internal_database_basis<Clock>::insert_history_db(domain::wallet::pa
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_input_history(domain::chain::input_point const& inpoint, uint32_t height, domain::chain::input const& input, KTH_DB_txn* db_txn) {
-    
+
     auto const& prevout = input.previous_output();
 
     if (prevout.validation.cache.is_valid()) {
-        
+
         uint64_t history_count = get_history_count(db_txn);
-    
+
         if (history_count == max_uint64) {
             LOG_INFO(LOG_DATABASE, "Error getting history items count");
             return result_code::other;
         }
 
         uint64_t id = history_count;
-        
+
         // This results in a complete and unambiguous history for the
         // address since standard outputs contain unambiguous address data.
         for (auto const& address : prevout.validation.cache.addresses()) {
             auto valuearr = history_entry::factory_to_data(id, inpoint, domain::chain::point_kind::spend, height, inpoint.index(), prevout.checksum());
-            auto res = insert_history_db(address, valuearr, db_txn); 
+            auto res = insert_history_db(address, valuearr, db_txn);
             if (res != result_code::success) {
                 return res;
             }
-            ++id;        
+            ++id;
         }
     } else {
             //During an IBD with checkpoints some previous output info is missing.
             //We can recover it by accessing the database
-            
+
             //TODO (Mario) check if we can query UTXO
             //TODO (Mario) requiere_confirmed = true ??
 
@@ -69,7 +69,7 @@ result_code internal_database_basis<Clock>::insert_input_history(domain::chain::
             //auto entry = get_transaction(prevout.hash(), max_uint32, true, db_txn);
 
             if (entry.is_valid()) {
-                
+
                 //auto const& tx = entry.transaction();
 
                 //auto const& out_output = tx.outputs()[prevout.index()];
@@ -81,14 +81,14 @@ result_code internal_database_basis<Clock>::insert_input_history(domain::chain::
                 }
 
                 uint64_t id = history_count;
-            
+
                 auto const& out_output = entry.output();
                 for (auto const& address : out_output.addresses()) {
                     auto valuearr = history_entry::factory_to_data(id, inpoint, domain::chain::point_kind::spend, height, inpoint.index(), prevout.checksum());
-                    auto res = insert_history_db(address, valuearr, db_txn); 
+                    auto res = insert_history_db(address, valuearr, db_txn);
                     if (res != result_code::success) {
                         return res;
-                    }   
+                    }
                     ++id;
                 }
             }
@@ -102,7 +102,7 @@ result_code internal_database_basis<Clock>::insert_input_history(domain::chain::
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, domain::chain::output const& output, KTH_DB_txn* db_txn ) {
-    
+
     uint64_t history_count = get_history_count(db_txn);
     if (history_count == max_uint64) {
         LOG_INFO(LOG_DATABASE, "Error getting history items count");
@@ -110,14 +110,14 @@ result_code internal_database_basis<Clock>::insert_output_history(hash_digest co
     }
 
     uint64_t id = history_count;
-    
+
     auto const outpoint = domain::chain::output_point {tx_hash, index};
     auto const value = output.value();
 
     // Standard outputs contain unambiguous address data.
     for (auto const& address : output.addresses()) {
         auto valuearr = history_entry::factory_to_data(id, outpoint, domain::chain::point_kind::output, height, index, value);
-        auto res = insert_history_db(address, valuearr, db_txn); 
+        auto res = insert_history_db(address, valuearr, db_txn);
         if (res != result_code::success) {
             return res;
         }
@@ -161,16 +161,16 @@ domain::chain::history_compact::list internal_database_basis<Clock>::get_history
     KTH_DB_val value;
     int rc;
     if ((rc = kth_db_cursor_get(cursor, &key_hash, &value, MDB_SET)) == 0) {
-       
+
         auto data = db_value_to_data_chunk(value);
         auto entry = domain::create<history_entry>(data);
-        
+
         if (from_height == 0 || entry.height() >= from_height) {
             result.push_back(history_entry_to_history_compact(entry));
         }
 
         while ((rc = kth_db_cursor_get(cursor, &key_hash, &value, MDB_NEXT_DUP)) == 0) {
-        
+
             if (limit > 0 && result.size() >= limit) {
                 break;
             }
@@ -181,10 +181,10 @@ domain::chain::history_compact::list internal_database_basis<Clock>::get_history
             if (from_height == 0 || entry.height() >= from_height) {
                 result.push_back(history_entry_to_history_compact(entry));
             }
-            
+
         }
-    } 
-    
+    }
+
     kth_db_cursor_close(cursor);
 
     if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
@@ -220,10 +220,10 @@ std::vector<hash_digest> internal_database_basis<Clock>::get_history_txns(short_
     KTH_DB_val value;
     int rc;
     if ((rc = kth_db_cursor_get(cursor, &key_hash, &value, MDB_SET)) == 0) {
-       
+
         auto data = db_value_to_data_chunk(value);
         auto entry = domain::create<history_entry>(data);
-        
+
         if (from_height == 0 || entry.height() >= from_height) {
             // Avoid inserting the same tx
             auto const & pair = temp.insert(entry.point().hash());
@@ -234,7 +234,7 @@ std::vector<hash_digest> internal_database_basis<Clock>::get_history_txns(short_
         }
 
         while ((rc = kth_db_cursor_get(cursor, &key_hash, &value, MDB_NEXT_DUP)) == 0) {
-        
+
             if (limit > 0 && result.size() >= limit) {
                 break;
             }
@@ -250,10 +250,10 @@ std::vector<hash_digest> internal_database_basis<Clock>::get_history_txns(short_
                     result.push_back(*pair.first);
                 }
             }
-            
+
         }
-    } 
-    
+    }
+
     kth_db_cursor_close(cursor);
 
     if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
@@ -278,11 +278,11 @@ result_code internal_database_basis<Clock>::remove_transaction_history_db(domain
     }
 
     for (auto const& input: tx.inputs()) {
-        
+
         auto const& prevout = input.previous_output();
 
-        if (prevout.validation.cache.is_valid()) { 
-            for (auto const& address : prevout.validation.cache.addresses()) { 
+        if (prevout.validation.cache.is_valid()) {
+            for (auto const& address : prevout.validation.cache.addresses()) {
                 auto res = remove_history_db(address, height, db_txn);
                 if (res != result_code::success) {
                     return res;
@@ -294,7 +294,7 @@ result_code internal_database_basis<Clock>::remove_transaction_history_db(domain
             auto const& entry = get_transaction(prevout.hash(), max_uint32, db_txn);
 
             if (entry.is_valid()) {
-                
+
                 auto const& tx = entry.transaction();
                 auto const& out_output = tx.outputs()[prevout.index()];
 
@@ -306,7 +306,7 @@ result_code internal_database_basis<Clock>::remove_transaction_history_db(domain
                     }
                 }
             }
-            
+
             /*
             for (auto const& address : input.addresses()) {
                 auto res = remove_history_db(address, height, db_txn);
@@ -333,12 +333,12 @@ result_code internal_database_basis<Clock>::remove_history_db(const short_hash& 
     KTH_DB_val value;
     int rc;
     if ((rc = kth_db_cursor_get(cursor, &key_hash, &value, MDB_SET)) == 0) {
-       
+
         auto data = db_value_to_data_chunk(value);
         auto entry = domain::create<history_entry>(data);
-        
+
         if (entry.height() == height) {
-            
+
             if (kth_db_cursor_del(cursor, 0) != KTH_DB_SUCCESS) {
                 kth_db_cursor_close(cursor);
                 return result_code::other;
@@ -346,7 +346,7 @@ result_code internal_database_basis<Clock>::remove_history_db(const short_hash& 
         }
 
         while ((rc = kth_db_cursor_get(cursor, &key_hash, &value, MDB_NEXT_DUP)) == 0) {
-        
+
             auto data = db_value_to_data_chunk(value);
             auto entry = domain::create<history_entry>(data);
 
@@ -357,8 +357,8 @@ result_code internal_database_basis<Clock>::remove_history_db(const short_hash& 
                 }
             }
         }
-    } 
-    
+    }
+
     kth_db_cursor_close(cursor);
 
     return result_code::success;

@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -183,7 +183,7 @@ bool unspent_outputs::get(output& out_output, size_t& out_height,
     ///////////////////////////////////////////////////////////////////////////
 }
 
-bool unspent_outputs::get_is_confirmed(output& out_output, size_t& out_height, 
+bool unspent_outputs::get_is_confirmed(output& out_output, size_t& out_height,
     bool& out_coinbase, bool& out_is_confirmed, const output_point& point, size_t fork_height,
     bool require_confirmed) const {
     if (disabled())

@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -24,13 +24,13 @@ public:
     using path = kth::path;
     using handle = sequential_lock::handle;
 
-    static 
+    static
     size_t const without_indexes;
 
 
 #ifdef KTH_DB_LEGACY
     /// Create a single file with one byte of arbitrary data.
-    static 
+    static
     bool create(path const& file_path);
 #endif // KTH_DB_LEGACY
 
@@ -95,7 +95,7 @@ public:
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
     path const transaction_unconfirmed_table;
-#endif // KTH_DB_STEALTH        
+#endif // KTH_DB_STEALTH
 
     /// Optional indexes.
 #ifdef KTH_DB_SPENDS
@@ -127,7 +127,7 @@ private:
 protected:
 #ifdef KTH_DB_WITH_INDEXES
     bool const use_indexes_;
-#endif    
+#endif
     bool use_indexes() const;
 };
 

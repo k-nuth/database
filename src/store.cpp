@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -30,7 +30,7 @@ using namespace kth::database;
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
 #define TRANSACTION_UNCONFIRMED_TABLE "transaction_unconfirmed_table"
-#endif // KTH_DB_TRANSACTION_UNCONFIRMED    
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
 #ifdef KTH_DB_SPENDS
 #define SPEND_TABLE "spend_table"
@@ -39,11 +39,11 @@ using namespace kth::database;
 #ifdef KTH_DB_HISTORY
 #define HISTORY_TABLE "history_table"
 #define HISTORY_ROWS "history_rows"
-#endif // KTH_DB_HISTORY    
+#endif // KTH_DB_HISTORY
 
 #ifdef KTH_DB_STEALTH
 #define STEALTH_ROWS "stealth_rows"
-#endif // KTH_DB_STEALTH        
+#endif // KTH_DB_STEALTH
 
 
 
@@ -56,7 +56,7 @@ bool store::use_indexes() const {
     return use_indexes_;
 #else
     return false;
-#endif   
+#endif
 }
 
 
@@ -95,7 +95,7 @@ store::store(path const& prefix, bool with_indexes, bool flush_each_write)
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
     , transaction_unconfirmed_table(prefix / TRANSACTION_UNCONFIRMED_TABLE)
-#endif // KTH_DB_TRANSACTION_UNCONFIRMED    
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
 
     // Optional indexes.
 #ifdef KTH_DB_SPENDS
@@ -105,7 +105,7 @@ store::store(path const& prefix, bool with_indexes, bool flush_each_write)
 #ifdef KTH_DB_HISTORY
     , history_table(prefix / HISTORY_TABLE)
     , history_rows(prefix / HISTORY_ROWS)
-#endif // KTH_DB_HISTORY    
+#endif // KTH_DB_HISTORY
 
 #ifdef KTH_DB_STEALTH
     , stealth_rows(prefix / STEALTH_ROWS)
@@ -123,13 +123,13 @@ store::store(path const& prefix, bool with_indexes, bool flush_each_write)
 
 // Create files.
 bool store::create() {
-    auto const created = create(block_table) 
-                        && create(block_index) 
-                        && create(transaction_table) 
+    auto const created = create(block_table)
+                        && create(block_index)
+                        && create(transaction_table)
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
                         && create(transaction_unconfirmed_table)
-#endif // KTH_DB_TRANSACTION_UNCONFIRMED    
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
                         ;
 
     if ( ! use_indexes()) {
@@ -137,25 +137,25 @@ bool store::create() {
     }
 
     return
-        created 
+        created
 #ifdef KTH_DB_SPENDS
-            && create(spend_table) 
+            && create(spend_table)
 #endif // KTH_DB_SPENDS
 
 #ifdef KTH_DB_HISTORY
             && create(history_table)
-            && create(history_rows) 
-#endif // KTH_DB_HISTORY    
+            && create(history_rows)
+#endif // KTH_DB_HISTORY
 
 #ifdef KTH_DB_STEALTH
             && create(stealth_rows)
-#endif // KTH_DB_STEALTH        
+#endif // KTH_DB_STEALTH
             ;
 }
 
 bool store::open() {
-    return exclusive_lock_.lock() 
-        && flush_lock_.try_lock() 
+    return exclusive_lock_.lock()
+        && flush_lock_.try_lock()
         && (flush_each_write_ || flush_lock_.lock_shared());
 }
 
