@@ -3,7 +3,7 @@
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 import os
-from conans import CMake
+from conan import CMake
 from kthbuild import option_on_off, march_conan_manip, pass_march_to_compiler
 from kthbuild import KnuthConanFile
 
@@ -66,15 +66,19 @@ class KnuthDatabaseConan(KnuthConanFile):
         "use_libmdbx": False,
     }
 
-    generators = "cmake"
+    # generators = "cmake"
     exports = "conan_*", "ci_utils/*"
     exports_sources = "src/*", "CMakeLists.txt", "cmake/*", "kth-databaseConfig.cmake.in", "knuthbuildinfo.cmake", "include/*", "test/*", "tools/*"
 
     package_files = "build/lkth-database.a"
-    build_policy = "missing"
+    # build_policy = "missing"
 
     def _is_legacy_db(self):
         return self.options.db == "legacy" or self.options.db == "legacy_full"
+
+    def build_requirements(self):
+        if self.options.tests:
+            self.test_requires("catch2/3.3.1")
 
     def requirements(self):
         if not self._is_legacy_db():
@@ -88,13 +92,12 @@ class KnuthDatabaseConan(KnuthConanFile):
         else:
             self.output.info("Using legacy DB")
 
-        if self.options.tests:
-            self.requires("catch2/3.3.1")
-
         self.requires("domain/0.X@%s/%s" % (self.user, self.channel))
 
     def validate(self):
         KnuthConanFile.validate(self)
+        if self.info.settings.compiler.cppstd:
+            check_min_cppstd(self, "20")
 
     def config_options(self):
         KnuthConanFile.config_options(self)
@@ -119,6 +122,16 @@ class KnuthDatabaseConan(KnuthConanFile):
     def package_id(self):
         KnuthConanFile.package_id(self)
 
+    def layout(self):
+        cmake_layout(self)
+
+    def generate(self):
+        tc = CMakeToolchain(self)
+        # tc.variables["CMAKE_VERBOSE_MAKEFILE"] = True
+        tc.generate()
+        tc = CMakeDeps(self)
+        tc.generate()
+
     def build(self):
         cmake = self.cmake_basis()
         cmake.definitions["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
@@ -131,7 +144,8 @@ class KnuthDatabaseConan(KnuthConanFile):
         if self.options.cmake_export_compile_commands:
             cmake.definitions["CMAKE_EXPORT_COMPILE_COMMANDS"] = option_on_off(self.options.cmake_export_compile_commands)
 
-        cmake.configure(source_dir=self.source_folder)
+        # cmake.configure(source_dir=self.source_folder)
+        cmake.configure()
 
         if not self.options.cmake_export_compile_commands:
             cmake.build()
