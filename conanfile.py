@@ -81,9 +81,6 @@ class KnuthDatabaseConan(KnuthConanFileV2):
         else:
             self.output.info("Using legacy DB")
 
-        if self.options.tests:
-            self.requires("catch2/2.13.8")
-
     def validate(self):
         KnuthConanFileV2.validate(self)
         if self.info.settings.compiler.cppstd:
