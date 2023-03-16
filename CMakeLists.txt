@@ -1,21 +1,16 @@
-# Copyright (c) 2016-2022 Knuth Project developers.
+# Copyright (c) 2016-2023 Knuth Project developers.
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.15)
 
-# kth-database
-#==============================================================================
-project(kth-database
-        VERSION 0
-        LANGUAGES CXX C)
-#        VERSION 0.11.0
+project(kth-database VERSION 0 LANGUAGES CXX C)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Check for baseline language coverage in the compiler for the C++14 standard.
 #------------------------------------------------------------------------------
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Process options.
@@ -23,12 +18,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Implement --use-conan
 #------------------------------------------------------------------------------
-option(USE_CONAN "Use Conan Build Tool." OFF)
-option(NO_CONAN_AT_ALL "Conan totally disabled." OFF)
+# option(USE_CONAN "Use Conan Build Tool." OFF)
+# option(NO_CONAN_AT_ALL "Conan totally disabled." OFF)
 
-if (NO_CONAN_AT_ALL)
-  set(USE_CONAN OFF)
-endif()
+# if (NO_CONAN_AT_ALL)
+#   set(USE_CONAN OFF)
+# endif()
 
 
 # Inherit --enable-shared and define BOOST_TEST_DYN_LINK.
@@ -204,46 +199,47 @@ endif()
 message(STATUS "Knuth: Cryptocurrency: ${CURRENCY}")
 
 
-# Conan infrastructure
-#==============================================================================
-if(EXISTS ${CMAKE_SOURCE_DIR}/ci_utils/cmake/knuthbuildinfo.cmake)
-    include(${CMAKE_SOURCE_DIR}/ci_utils/cmake/knuthbuildinfo.cmake)
-else()
-    message( STATUS "knuthbuildinfo doent exists")
-endif()
+# # Conan infrastructure
+# #==============================================================================
+# if(EXISTS ${CMAKE_SOURCE_DIR}/ci_utils/cmake/knuthbuildinfo.cmake)
+#     include(${CMAKE_SOURCE_DIR}/ci_utils/cmake/knuthbuildinfo.cmake)
+# else()
+#     message( STATUS "knuthbuildinfo doent exists")
+# endif()
 
 
 
 # Check dependencies.
 #==============================================================================
 #------------------------------------------------------------------------------
-if (NO_CONAN_AT_ALL)
-  # Require Boost of at least version 1.56.0 and output ${boost_CPPFLAGS/LDFLAGS}.
-  #------------------------------------------------------------------------------
-  if (NOT ENABLE_SHARED)
-    set(Boost_USE_STATIC_LIBS ON)
-  endif()
+# if (NO_CONAN_AT_ALL)
+#   # Require Boost of at least version 1.56.0 and output ${boost_CPPFLAGS/LDFLAGS}.
+#   #------------------------------------------------------------------------------
+#   if (NOT ENABLE_SHARED)
+#     set(Boost_USE_STATIC_LIBS ON)
+#   endif()
 
-  if (MSVC)
-    find_package(
-      Boost 1.56.0 REQUIRED
-      COMPONENTS atomic chrono date_time filesystem iostreams locale log log_setup program_options regex system thread unit_test_framework
-    )
-  else()
-    find_package(
-      Boost 1.56.0 REQUIRED
-      COMPONENTS chrono date_time filesystem iostreams locale log program_options regex system thread unit_test_framework
-    )
-  endif()
-endif()
+#   if (MSVC)
+#     find_package(
+#       Boost 1.56.0 REQUIRED
+#       COMPONENTS atomic chrono date_time filesystem iostreams locale log log_setup program_options regex system thread unit_test_framework
+#     )
+#   else()
+#     find_package(
+#       Boost 1.56.0 REQUIRED
+#       COMPONENTS chrono date_time filesystem iostreams locale log program_options regex system thread unit_test_framework
+#     )
+#   endif()
+# endif()
 
-if (NOT USE_CONAN)
-    # Require kth-domain of at least version 0 and output ${kth_domain_CPPFLAGS/LIBS/PKG}.
-    #------------------------------------------------------------------------------
-    if (NOT TARGET kth-domain)
-            find_package(kth-domain 0 REQUIRED)
-    endif()
-endif()
+# if (NOT USE_CONAN)
+#     # Require kth-domain of at least version 0 and output ${kth_domain_CPPFLAGS/LIBS/PKG}.
+#     #------------------------------------------------------------------------------
+#     if (NOT TARGET kth-domain)
+#             find_package(kth-domain 0 REQUIRED)
+#     endif()
+# endif()
+find_package(kth-domain REQUIRED)
 
 
 # Set flags.
@@ -494,13 +490,18 @@ endif()
 # endif()
 
 
-if (NOT USE_CONAN)
-    target_link_libraries(kth-database PUBLIC kth-domain)
-endif()
+# if (NOT USE_CONAN)
+#     target_link_libraries(kth-database PUBLIC kth-domain)
+# endif()
+target_link_libraries(kth-database PUBLIC kth-domain)
 
-if (NOT NO_CONAN_AT_ALL)
-  target_link_libraries(kth-database PUBLIC ${CONAN_LIBS})
-endif()
+find_package(Lmdb REQUIRED)
+target_link_libraries(kth-database PUBLIC lmdb::lmdb)
+
+
+# if (NOT NO_CONAN_AT_ALL)
+#   # target_link_libraries(kth-database PUBLIC ${CONAN_LIBS})
+# endif()
 
 
 # if (USE_CONAN)
@@ -513,14 +514,11 @@ _group_sources(kth-database "${CMAKE_CURRENT_LIST_DIR}")
 
 # Tests
 #==============================================================================
-
 if (WITH_TESTS)
     enable_testing()
-endif()
+    find_package(Catch2 3 REQUIRED)
 
-# local: test/kth_database_test
-#------------------------------------------------------------------------------
-if (WITH_TESTS)
+
     if (DB_LEGACY)
         add_executable(kth_database_test
                 test/block_database.cpp
@@ -541,37 +539,16 @@ if (WITH_TESTS)
                 )
     endif()
 
-    target_include_directories(kth_database_test PUBLIC
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>)
+    target_include_directories(kth_database_test PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>)
 
     target_link_libraries(kth_database_test PUBLIC kth-database)
+    target_link_libraries(kth_database_test PRIVATE Catch2::Catch2WithMain)
 
     _group_sources(kth_database_test "${CMAKE_CURRENT_LIST_DIR}/test")
 
     include(CTest)
     include(Catch)
     catch_discover_tests(kth_database_test)
-
-    # # _add_tests(kth_database_test
-    # #         hash_table_tests
-    # #         structure_tests
-    # # )
-
-    # if (DB_LEGACY)
-    #     _add_tests(kth_database_test
-    #             database_tests
-    #             data_base_tests
-    #     )
-    # endif()
-
-
-    # if (DB_NEW)
-    #     _add_tests(kth_database_test
-    #         internal_db_tests
-    #     )
-    # endif()
-
-
 endif()
 
 # Tools

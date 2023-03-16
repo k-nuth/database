@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -212,14 +212,14 @@ private:
     // Synchronous writers.
     // ------------------------------------------------------------------------
 
-#ifdef KTH_DB_LEGACY    
+#ifdef KTH_DB_LEGACY
     bool push_transactions(domain::chain::block const& block, size_t height, uint32_t median_time_past, size_t bucket = 0, size_t buckets = 1);
     bool push_heights(domain::chain::block const& block, size_t height);
 #endif
 
 #if defined(KTH_DB_LEGACY) && (defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY))
     void push_inputs(hash_digest const& tx_hash, size_t height, const inputs& inputs);
-#endif // defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY)    
+#endif // defined(KTH_DB_SPENDS) || defined(KTH_DB_HISTORY)
 
 #ifdef KTH_DB_HISTORY
     void push_outputs(hash_digest const& tx_hash, size_t height, const outputs& outputs);
@@ -241,7 +241,7 @@ private:
 
     template <typename I>
     bool pop_transactions_non_coinbase(size_t height, I f, I l);
-#endif 
+#endif
 
     bool pop(domain::chain::block& out_block);
     bool pop_inputs(const inputs& inputs, size_t height);

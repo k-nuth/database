@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -11,7 +11,7 @@
 
 #include <kth/infrastructure.hpp>
 
-namespace kth::database { 
+namespace kth::database {
 
 utxo_entry::utxo_entry(domain::chain::output output, uint32_t height, uint32_t median_time_past, bool coinbase)
     : output_(std::move(output)), height_(height), median_time_past_(median_time_past), coinbase_(coinbase)

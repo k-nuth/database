@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -39,7 +39,7 @@ std::chrono::seconds blocks_to_seconds(uint32_t blocks) {
 
 inline
 data_chunk db_value_to_data_chunk(KTH_DB_val const& value) {
-    return data_chunk{static_cast<uint8_t*>(kth_db_get_data(value)), 
+    return data_chunk{static_cast<uint8_t*>(kth_db_get_data(value)),
                       static_cast<uint8_t*>(kth_db_get_data(value)) + kth_db_get_size(value)};
 }
 

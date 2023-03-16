@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -86,7 +86,7 @@ void test_block_exists(data_base const& interface, size_t height, block const& b
 
                     REQUIRE(found);
                 }
-#endif // KTH_DB_HISTORY                
+#endif // KTH_DB_HISTORY
             }
         }
 
@@ -139,7 +139,7 @@ REQUIRE( ! r0_byhash);
                 auto const& input = tx.inputs()[j];
                 input_point spend{ tx_hash, static_cast<uint32_t>(j) };
 
-#ifdef KTH_DB_SPENDS                
+#ifdef KTH_DB_SPENDS
                 auto r0_spend = interface.spends().get(input.previous_output());
                 REQUIRE( ! r0_spend.is_valid());
 #endif // KTH_DB_SPENDS
@@ -166,7 +166,7 @@ REQUIRE( ! r0_byhash);
 
                     REQUIRE( ! found);
                 }
-#endif // KTH_DB_HISTORY                
+#endif // KTH_DB_HISTORY
             }
         }
 
@@ -193,7 +193,7 @@ REQUIRE( ! r0_byhash);
 
                 REQUIRE( ! found);
             }
-#endif // KTH_DB_HISTORY            
+#endif // KTH_DB_HISTORY
         }
     }
 }
@@ -258,7 +258,7 @@ public:
     }
 };
 
-static 
+static
 code push_all_result(data_base_accessor& instance, block_const_ptr_list_const_ptr in_blocks, size_t first_height, dispatcher& dispatch) {
     std::promise<code> promise;
     auto const handler = [&promise](code ec) {
@@ -268,7 +268,7 @@ code push_all_result(data_base_accessor& instance, block_const_ptr_list_const_pt
     return promise.get_future().get();
 }
 
-static 
+static
 code pop_above_result(data_base_accessor& instance, block_const_ptr_list_ptr out_blocks, hash_digest const& fork_hash, dispatcher& dispatch) {
     std::promise<code> promise;
     auto const handler = [&promise](code ec) {
@@ -304,8 +304,8 @@ TEST_CASE("data base  pushpop  test", "[None]") {
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
     settings.transaction_unconfirmed_table_buckets = 42;
-#endif // KTH_DB_TRANSACTION_UNCONFIRMED    
-     
+#endif // KTH_DB_TRANSACTION_UNCONFIRMED
+
 
     // If index_height is set to anything other than 0 or max it can cause
     // false negatives since it excludes entries below the specified height.
@@ -389,4 +389,4 @@ TEST_CASE("data base  pushpop  test", "[None]") {
 }
 #endif // KTH_DB_LEGACY
 
-// End Boost Suite
+// End Test Suite

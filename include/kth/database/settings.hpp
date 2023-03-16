@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -38,7 +38,7 @@ public:
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
     uint32_t transaction_unconfirmed_table_buckets;
-#endif // KTH_DB_STEALTH        
+#endif // KTH_DB_STEALTH
 
 #ifdef KTH_DB_SPENDS
     uint32_t spend_table_buckets;
@@ -52,9 +52,9 @@ public:
     uint32_t cache_capacity;
 // #endif // KTH_DB_UNSPENT_LEGACY
 
-#if defined(WITH_REMOTE_DATABASE)    
+#if defined(WITH_REMOTE_DATABASE)
     infrastructure::config::endpoint replier;
-#endif //defined(WITH_REMOTE_DATABASE)        
+#endif //defined(WITH_REMOTE_DATABASE)
 
 };
 

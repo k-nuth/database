@@ -1,9 +1,9 @@
-# Copyright (c) 2016-2022 Knuth Project developers.
+# Copyright (c) 2016-2023 Knuth Project developers.
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 import os
-from conans import CMake
+from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain, cmake_layout
 from kthbuild import option_on_off, march_conan_manip, pass_march_to_compiler
 from kthbuild import KnuthConanFile
 
@@ -66,15 +66,19 @@ class KnuthDatabaseConan(KnuthConanFile):
         "use_libmdbx": False,
     }
 
-    generators = "cmake"
+    # generators = "cmake"
     exports = "conan_*", "ci_utils/*"
     exports_sources = "src/*", "CMakeLists.txt", "cmake/*", "kth-databaseConfig.cmake.in", "knuthbuildinfo.cmake", "include/*", "test/*", "tools/*"
 
     package_files = "build/lkth-database.a"
-    build_policy = "missing"
+    # build_policy = "missing"
 
     def _is_legacy_db(self):
         return self.options.db == "legacy" or self.options.db == "legacy_full"
+
+    def build_requirements(self):
+        if self.options.tests:
+            self.test_requires("catch2/3.3.1")
 
     def requirements(self):
         if not self._is_legacy_db():
@@ -88,13 +92,12 @@ class KnuthDatabaseConan(KnuthConanFile):
         else:
             self.output.info("Using legacy DB")
 
-        if self.options.tests:
-            self.requires("catch2/2.13.8")
-
         self.requires("domain/0.X@%s/%s" % (self.user, self.channel))
 
     def validate(self):
         KnuthConanFile.validate(self)
+        if self.info.settings.compiler.cppstd:
+            check_min_cppstd(self, "20")
 
     def config_options(self):
         KnuthConanFile.config_options(self)
@@ -119,19 +122,28 @@ class KnuthDatabaseConan(KnuthConanFile):
     def package_id(self):
         KnuthConanFile.package_id(self)
 
-    def build(self):
-        cmake = self.cmake_basis()
-        cmake.definitions["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
-        cmake.definitions["DB_READONLY_MODE"] = option_on_off(self.options.db_readonly)
-        cmake.definitions["WITH_CACHED_RPC_DATA"] = option_on_off(self.options.cached_rpc_data)
-        cmake.definitions["LOG_LIBRARY"] = self.options.log
-        cmake.definitions["USE_LIBMDBX"] = option_on_off(self.options.use_libmdbx)
-        cmake.definitions["CONAN_DISABLE_CHECK_COMPILER"] = option_on_off(True)
+    def layout(self):
+        cmake_layout(self)
+
+    def generate(self):
+        tc = self.cmake_toolchain_basis()
+        # tc.variables["CMAKE_VERBOSE_MAKEFILE"] = True
+        tc.variables["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
+        tc.variables["DB_READONLY_MODE"] = option_on_off(self.options.db_readonly)
+        tc.variables["WITH_CACHED_RPC_DATA"] = option_on_off(self.options.cached_rpc_data)
+        tc.variables["LOG_LIBRARY"] = self.options.log
+        tc.variables["USE_LIBMDBX"] = option_on_off(self.options.use_libmdbx)
+        tc.variables["CONAN_DISABLE_CHECK_COMPILER"] = option_on_off(True)
 
         if self.options.cmake_export_compile_commands:
-            cmake.definitions["CMAKE_EXPORT_COMPILE_COMMANDS"] = option_on_off(self.options.cmake_export_compile_commands)
+            tc.variables["CMAKE_EXPORT_COMPILE_COMMANDS"] = option_on_off(self.options.cmake_export_compile_commands)
+        tc.generate()
+        tc = CMakeDeps(self)
+        tc.generate()
 
-        cmake.configure(source_dir=self.source_folder)
+    def build(self):
+        cmake = CMake(self)
+        cmake.configure()
 
         if not self.options.cmake_export_compile_commands:
             cmake.build()

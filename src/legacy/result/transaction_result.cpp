@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 Knuth Project developers.
+// Copyright (c) 2016-2023 Knuth Project developers.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -146,7 +146,7 @@ domain::chain::transaction transaction_result::transaction(bool witness) const {
 #if defined(KTH_CURRENCY_BCH)
     witness = false;
     bool from_data_witness = false;
-#else 
+#else
     bool from_data_witness = true;
 #endif
     KTH_ASSERT(slab_);
