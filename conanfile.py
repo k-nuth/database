@@ -64,6 +64,7 @@ class KnuthDatabaseConan(KnuthConanFileV2):
         self.requires("infrastructure/0.24.0")
         self.requires("domain/0.29.0")
 
+        self.requires("boost/1.81.0")
         self.requires("fmt/9.1.0")
         self.requires("spdlog/1.11.0")
 
