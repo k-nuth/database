@@ -3,41 +3,35 @@
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 import os
+from conan import ConanFile
+from conan.tools.build.cppstd import check_min_cppstd
 from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain, cmake_layout
-from kthbuild import option_on_off, march_conan_manip, pass_march_to_compiler
-from kthbuild import KnuthConanFile
+from conan.tools.files import copy #, apply_conandata_patches, export_conandata_patches, get, rm, rmdir
+from kthbuild import KnuthConanFileV2, option_on_off
 
-class KnuthDatabaseConan(KnuthConanFile):
-    def recipe_dir(self):
-        return os.path.dirname(os.path.abspath(__file__))
+required_conan_version = ">=2.0"
 
+class KnuthDatabaseConan(KnuthConanFileV2):
     name = "database"
-    # version = get_version()
     license = "http://www.boost.org/users/license.html"
     url = "https://github.com/k-nuth/database/tree/conan-build/conanfile.py"
     description = "High Performance Blockchain Database"
     settings = "os", "compiler", "build_type", "arch"
-
-    # if Version(conan_version) < Version(get_conan_req_version()):
-    #     raise Exception ("Conan version should be greater or equal than %s. Detected: %s." % (get_conan_req_version(), conan_version))
 
     options = {"shared": [True, False],
                "fPIC": [True, False],
                "tests": [True, False],
                "tools": [True, False],
                "currency": ['BCH', 'BTC', 'LTC'],
-
-               "march_id": "ANY",
+               "march_id": ["ANY"],
                "march_strategy": ["download_if_possible", "optimized", "download_or_fail"],
-
                "verbose": [True, False],
                "measurements": [True, False],
                "db": ['legacy', 'legacy_full', 'pruned', 'default', 'full'],
                "db_readonly": [True, False],
                "cached_rpc_data": [True, False],
-               "cxxflags": "ANY",
-               "cflags": "ANY",
-               "glibcxx_supports_cxx11_abi": "ANY",
+               "cxxflags": ["ANY"],
+               "cflags": ["ANY"],
                "cmake_export_compile_commands": [True, False],
                "log": ["boost", "spdlog", "binlog"],
                "use_libmdbx": [True, False],
@@ -49,29 +43,18 @@ class KnuthDatabaseConan(KnuthConanFile):
         "tests": False,
         "tools": False,
         "currency": "BCH",
-
-        "march_id": "_DUMMY_",
         "march_strategy": "download_if_possible",
-
         "verbose": False,
         "measurements": False,
         "db": "default",
         "db_readonly": False,
         "cached_rpc_data": False,
-        "cxxflags": "_DUMMY_",
-        "cflags": "_DUMMY_",
-        "glibcxx_supports_cxx11_abi": "_DUMMY_",
         "cmake_export_compile_commands": False,
         "log": "spdlog",
         "use_libmdbx": False,
     }
 
-    # generators = "cmake"
-    exports = "conan_*", "ci_utils/*"
-    exports_sources = "src/*", "CMakeLists.txt", "cmake/*", "kth-databaseConfig.cmake.in", "knuthbuildinfo.cmake", "include/*", "test/*", "tools/*"
-
-    package_files = "build/lkth-database.a"
-    # build_policy = "missing"
+    exports_sources = "src/*", "CMakeLists.txt", "ci_utils/cmake/*", "cmake/*", "knuthbuildinfo.cmake", "include/*", "test/*", "tools/*"
 
     def _is_legacy_db(self):
         return self.options.db == "legacy" or self.options.db == "legacy_full"
@@ -81,29 +64,36 @@ class KnuthDatabaseConan(KnuthConanFile):
             self.test_requires("catch2/3.3.1")
 
     def requirements(self):
+        self.requires("infrastructure/0.24.0")
+        self.requires("domain/0.29.0")
+
+        self.requires("boost/1.81.0")
+        self.requires("fmt/9.1.0")
+        self.requires("spdlog/1.11.0")
+
         if not self._is_legacy_db():
             if self.options.use_libmdbx:
                 self.requires("libmdbx/0.7.0@kth/stable")
                 self.output.info("Using libmdbx for DB management")
             else:
-                # self.requires("lmdb/0.9.24@kth/stable")
                 self.requires("lmdb/0.9.29")
                 self.output.info("Using lmdb for DB management")
         else:
             self.output.info("Using legacy DB")
 
-        self.requires("domain/0.X@%s/%s" % (self.user, self.channel))
+        if self.options.tests:
+            self.requires("catch2/2.13.8")
 
     def validate(self):
-        KnuthConanFile.validate(self)
+        KnuthConanFileV2.validate(self)
         if self.info.settings.compiler.cppstd:
             check_min_cppstd(self, "20")
 
     def config_options(self):
-        KnuthConanFile.config_options(self)
+        KnuthConanFileV2.config_options(self)
 
     def configure(self):
-        KnuthConanFile.configure(self)
+        KnuthConanFileV2.configure(self)
 
         self.options["*"].cached_rpc_data = self.options.cached_rpc_data
         self.options["*"].measurements = self.options.measurements
@@ -120,7 +110,7 @@ class KnuthDatabaseConan(KnuthConanFile):
         self.output.info("Compiling with log: %s" % (self.options.log,))
 
     def package_id(self):
-        KnuthConanFile.package_id(self)
+        KnuthConanFileV2.package_id(self)
 
     def layout(self):
         cmake_layout(self)
@@ -137,6 +127,7 @@ class KnuthDatabaseConan(KnuthConanFile):
 
         if self.options.cmake_export_compile_commands:
             tc.variables["CMAKE_EXPORT_COMPILE_COMMANDS"] = option_on_off(self.options.cmake_export_compile_commands)
+
         tc.generate()
         tc = CMakeDeps(self)
         tc.generate()
@@ -152,20 +143,18 @@ class KnuthDatabaseConan(KnuthConanFile):
                 cmake.test()
                 # cmake.test(target="tests")
 
-    def imports(self):
-        self.copy("*.h", "", "include")
+    # def imports(self):
+    #     self.copy("*.h", "", "include")
 
     def package(self):
-        self.copy("*.h", dst="include", src="include")
-        self.copy("*.hpp", dst="include", src="include")
-        self.copy("*.ipp", dst="include", src="include")
-        self.copy("*.lib", dst="lib", keep_path=False)
-        self.copy("*.dll", dst="bin", keep_path=False)
-        self.copy("*.dylib*", dst="lib", keep_path=False)
-        self.copy("*.so", dst="lib", keep_path=False)
-        self.copy("*.a", dst="lib", keep_path=False)
+        cmake = CMake(self)
+        cmake.install()
+        # rmdir(self, os.path.join(self.package_folder, "lib", "cmake"))
+        # rmdir(self, os.path.join(self.package_folder, "lib", "pkgconfig"))
+        # rmdir(self, os.path.join(self.package_folder, "res"))
+        # rmdir(self, os.path.join(self.package_folder, "share"))
 
     def package_info(self):
         self.cpp_info.includedirs = ['include']
-        self.cpp_info.libs = ["kth-database"]
+        self.cpp_info.libs = ["database"]
 
