@@ -14,24 +14,18 @@ required_conan_version = ">=2.0"
 
 class KnuthDatabaseConan(KnuthConanFileV2):
     name = "database"
-    # version = get_version()
     license = "http://www.boost.org/users/license.html"
     url = "https://github.com/k-nuth/database/tree/conan-build/conanfile.py"
     description = "High Performance Blockchain Database"
     settings = "os", "compiler", "build_type", "arch"
-
-    # if Version(conan_version) < Version(get_conan_req_version()):
-    #     raise Exception ("Conan version should be greater or equal than %s. Detected: %s." % (get_conan_req_version(), conan_version))
 
     options = {"shared": [True, False],
                "fPIC": [True, False],
                "tests": [True, False],
                "tools": [True, False],
                "currency": ['BCH', 'BTC', 'LTC'],
-
                "march_id": ["ANY"],
                "march_strategy": ["download_if_possible", "optimized", "download_or_fail"],
-
                "verbose": [True, False],
                "measurements": [True, False],
                "db": ['legacy', 'legacy_full', 'pruned', 'default', 'full'],
@@ -50,9 +44,7 @@ class KnuthDatabaseConan(KnuthConanFileV2):
         "tests": False,
         "tools": False,
         "currency": "BCH",
-
         "march_strategy": "download_if_possible",
-
         "verbose": False,
         "measurements": False,
         "db": "default",
@@ -63,23 +55,23 @@ class KnuthDatabaseConan(KnuthConanFileV2):
         "use_libmdbx": False,
     }
 
-    # generators = "cmake"
-    # exports = "conan_*", "ci_utils/*"
-    exports_sources = "src/*", "CMakeLists.txt", "ci_utils/cmake/*", "cmake/*", "kth-databaseConfig.cmake.in", "knuthbuildinfo.cmake", "include/*", "test/*", "tools/*"
-
-    package_files = "build/lkth-database.a"
-    build_policy = "missing"
+    exports_sources = "src/*", "CMakeLists.txt", "ci_utils/cmake/*", "cmake/*", "knuthbuildinfo.cmake", "include/*", "test/*", "tools/*"
 
     def _is_legacy_db(self):
         return self.options.db == "legacy" or self.options.db == "legacy_full"
 
     def requirements(self):
+        self.requires("infrastructure/0.24.0")
+        self.requires("domain/0.29.0")
+
+        self.requires("fmt/9.1.0")
+        self.requires("spdlog/1.11.0")
+
         if not self._is_legacy_db():
             if self.options.use_libmdbx:
                 self.requires("libmdbx/0.7.0@kth/stable")
                 self.output.info("Using libmdbx for DB management")
             else:
-                # self.requires("lmdb/0.9.24@kth/stable")
                 self.requires("lmdb/0.9.29")
                 self.output.info("Using lmdb for DB management")
         else:
@@ -87,8 +79,6 @@ class KnuthDatabaseConan(KnuthConanFileV2):
 
         if self.options.tests:
             self.requires("catch2/2.13.8")
-
-        self.requires("domain/0.X@%s/%s" % (self.user, self.channel))
 
     def validate(self):
         KnuthConanFileV2.validate(self)
@@ -147,8 +137,8 @@ class KnuthDatabaseConan(KnuthConanFileV2):
                 cmake.test()
                 # cmake.test(target="tests")
 
-    def imports(self):
-        self.copy("*.h", "", "include")
+    # def imports(self):
+    #     self.copy("*.h", "", "include")
 
     def package(self):
         cmake = CMake(self)
@@ -160,5 +150,5 @@ class KnuthDatabaseConan(KnuthConanFileV2):
 
     def package_info(self):
         self.cpp_info.includedirs = ['include']
-        self.cpp_info.libs = ["kth-database"]
+        self.cpp_info.libs = ["database"]
 
