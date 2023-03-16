@@ -7,8 +7,7 @@ from conan import ConanFile
 from conan.tools.build.cppstd import check_min_cppstd
 from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain, cmake_layout
 from conan.tools.files import copy #, apply_conandata_patches, export_conandata_patches, get, rm, rmdir
-from kthbuild import option_on_off, march_conan_manip, pass_march_to_compiler
-from kthbuild import KnuthConanFileV2
+from kthbuild import KnuthConanFileV2, option_on_off
 
 required_conan_version = ">=2.0"
 
@@ -60,6 +59,10 @@ class KnuthDatabaseConan(KnuthConanFileV2):
     def _is_legacy_db(self):
         return self.options.db == "legacy" or self.options.db == "legacy_full"
 
+    def build_requirements(self):
+        if self.options.tests:
+            self.test_requires("catch2/3.3.1")
+
     def requirements(self):
         self.requires("infrastructure/0.24.0")
         self.requires("domain/0.29.0")
@@ -83,6 +86,8 @@ class KnuthDatabaseConan(KnuthConanFileV2):
 
     def validate(self):
         KnuthConanFileV2.validate(self)
+        if self.info.settings.compiler.cppstd:
+            check_min_cppstd(self, "20")
 
     def config_options(self):
         KnuthConanFileV2.config_options(self)

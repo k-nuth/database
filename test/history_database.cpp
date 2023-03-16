@@ -177,5 +177,5 @@ TEST_CASE("history database  test", "[None]")
 }
 #endif // KTH_DB_HISTORY
 
-// End Boost Suite
+// End Test Suite
 

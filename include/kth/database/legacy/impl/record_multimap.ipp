@@ -14,13 +14,10 @@ template <typename KeyType>
 record_multimap<KeyType>::record_multimap(record_hash_table_type& map,
     record_manager& manager)
   : map_(map), manager_(manager)
-{
-}
+{}
 
 template <typename KeyType>
-void record_multimap<KeyType>::store(const KeyType& key,
-    write_function write)
-{
+void record_multimap<KeyType>::store(const KeyType& key, write_function write) {
     // Allocate and populate new unlinked row.
     record_list record(manager_);
     auto const begin = record.create(write);
@@ -35,17 +32,13 @@ void record_multimap<KeyType>::store(const KeyType& key,
     record.link(old_begin);
 
     if (old_begin == record_list::empty) {
-        map_.store(key, [=](serializer<uint8_t*>& serial)
-        {
+        map_.store(key, [=](serializer<uint8_t*>& serial) {
             //*****************************************************************
             serial.template write_little_endian<array_index>(begin);
             //*****************************************************************
         });
-    }
-    else
-    {
-        map_.update(key, [=](serializer<uint8_t*>& serial)
-        {
+    } else {
+        map_.update(key, [=, this](serializer<uint8_t*>& serial) {
             // Critical Section
             ///////////////////////////////////////////////////////////////////
             unique_lock lock(update_mutex_);

@@ -85,4 +85,4 @@ TEST_CASE("spend database  test", "[None]") {
 }
 #endif // KTH_DB_SPEND
 
-// End Boost Suite
+// End Test Suite

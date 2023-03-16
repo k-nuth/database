@@ -1,7 +1,7 @@
 <!-- <a target="_blank" href="http://semver.org">![Version][badge.version]</a> -->
 <!-- <a target="_blank" href="https://cirrus-ci.com/github/k-nuth/database">![Build Status][badge.Cirrus]</a> -->
 
-# database <a target="_blank" href="https://github.com/k-nuth/database/releases">![Github Releases][badge.release]</a> <a target="_blank" href="https://travis-ci.org/k-nuth/database">![Build status][badge.Travis]</a> <a target="_blank" href="https://ci.appveyor.com/projects/k-nuth/database">![Build Status][badge.Appveyor]</a> <a href="#">![CPP][badge.cpp]</a> <a target="_blank" href="https://t.me/knuth_cash">![Telegram][badge.telegram]</a> <a target="_blank" href="https://k-nuth.slack.com/">![Slack][badge.slack]</a>
+# database <a target="_blank" href="https://github.com/k-nuth/database/releases">![Github Releases][badge.release]</a> <a target="_blank" href="https://github.com/k-nuth/database/actions">![Build status][badge.GhA]</a> <a href="#">![CPP][badge.cpp]</a> <a target="_blank" href="https://t.me/knuth_cash">![Telegram][badge.telegram]</a> <a target="_blank" href="https://k-nuth.slack.com/">![Slack][badge.slack]</a>
 
 > High Performance Blockchain Database
 
@@ -36,6 +36,7 @@ Each of our modules has its own Github repository, but in case you want to creat
 [badge.Travis]: https://travis-ci.org/k-nuth/database.svg?branch=master
 [badge.Appveyor]: https://ci.appveyor.com/api/projects/status/github/k-nuth/database?svg=true&branch=master
 [badge.Cirrus]: https://api.cirrus-ci.com/github/k-nuth/database.svg?branch=master
+[badge.GhA]: https://github.com/k-nuth/database/workflows/Build%20and%20Test/badge.svg?branch=master
 [badge.version]: https://badge.fury.io/gh/k-nuth%2Fdatabase.svg
 [badge.release]: https://img.shields.io/github/release/k-nuth/database.svg
 [badge.cpp]: https://img.shields.io/badge/C++-17-blue.svg?style=flat&logo=c%2B%2B

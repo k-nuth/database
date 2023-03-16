@@ -192,7 +192,7 @@ std::tuple<KTH_DB_env*, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_d
     REQUIRE(kth_db_env_set_maxdbs(env_, 6) == KTH_DB_SUCCESS);
     #endif
 
-    auto qqq = kth_db_env_open(env_, fs::u8path(DIRECTORY "/internal_db"), KTH_DB_NORDAHEAD | KTH_DB_NOSYNC | KTH_DB_NOTLS, 0664);
+    auto qqq = kth_db_env_open(env_, fs::u8path(DIRECTORY "/internal_db").c_str(), KTH_DB_NORDAHEAD | KTH_DB_NOSYNC | KTH_DB_NOTLS, 0664);
 
     REQUIRE(qqq == KTH_DB_SUCCESS);
     REQUIRE(kth_db_txn_begin(env_, NULL, 0, &db_txn) == KTH_DB_SUCCESS);
@@ -4584,4 +4584,4 @@ BlockHash 0000000054d4f171b0eab3cd4e31da4ce5a1a06f27b39bf36c5902c9bb8ef5c4
 
 // #endif // KTH_DB_NEW
 
-// End Boost Suite
+// End Test Suite

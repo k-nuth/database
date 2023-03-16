@@ -27,14 +27,14 @@ namespace std {
 
 template <>
 struct hash<tiny_hash> {
-    size_t operator()(const tiny_hash& value) const {
+    size_t operator()(tiny_hash const& value) const {
         return boost::hash_range(value.begin(), value.end());
     }
 };
 
 template <>
 struct hash<little_hash> {
-    size_t operator()(const little_hash& value) const {
+    size_t operator()(little_hash const& value) const {
         return boost::hash_range(value.begin(), value.end());
     }
 };
@@ -402,5 +402,5 @@ TEST_CASE("slab hash table  test", "[None]") {
 ////    REQUIRE( ! ht.unlink(invalid));
 ////}
 
-// End Boost Suite
+// End Test Suite
 
