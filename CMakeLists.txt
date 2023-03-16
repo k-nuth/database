@@ -392,8 +392,6 @@ if (WITH_TESTS)
     enable_testing()
     find_package(Catch2 3 REQUIRED)
 
-
-if (WITH_TESTS)
     if (DB_LEGACY)
         add_executable(kth_database_test
                 test/block_database.cpp
