@@ -48,8 +48,8 @@ option(WITH_TESTS "Compile with unit tests." ON)
 option(WITH_TOOLS "Compile with tools." OFF)
 
 
-set(KTH_PROJECT_VERSION "-" CACHE STRING "Specify the Knuth Project Version.")
-# message(${KTH_PROJECT_VERSION})
+# set(KTH_PROJECT_VERSION "-" CACHE STRING "Specify the Knuth Project Version.")
+# # message(${KTH_PROJECT_VERSION})
 
 set(MARCH_ID "" CACHE STRING "Specify the Microarchitecture ID (x86_64|...).")
 message( STATUS "Knuth: Compiling for Microarchitecture ID ${MARCH_ID}")
@@ -481,7 +481,7 @@ target_include_directories(kth-database PUBLIC
 
 
 # target_compile_definitions(kth-database PUBLIC -DKTH_PROJECT_VERSION="\\"${KTH_PROJECT_VERSION}\\"") #TODO(fernando): manage with Conan????
-target_compile_definitions(kth-database PUBLIC -DKTH_PROJECT_VERSION="${KTH_PROJECT_VERSION}") #TODO(fernando): manage with Conan????
+# target_compile_definitions(kth-database PUBLIC -DKTH_PROJECT_VERSION="${KTH_PROJECT_VERSION}") #TODO(fernando): manage with Conan????
 
 if (NOT ENABLE_SHARED)
     target_compile_definitions(kth-database PUBLIC -DKD_STATIC -DBC_STATIC)

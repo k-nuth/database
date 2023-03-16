@@ -3,14 +3,16 @@
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 import os
-from conans import CMake
+from conan import ConanFile
+from conan.tools.build.cppstd import check_min_cppstd
+from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain, cmake_layout
+from conan.tools.files import copy #, apply_conandata_patches, export_conandata_patches, get, rm, rmdir
 from kthbuild import option_on_off, march_conan_manip, pass_march_to_compiler
-from kthbuild import KnuthConanFile
+from kthbuild import KnuthConanFileV2
 
-class KnuthDatabaseConan(KnuthConanFile):
-    def recipe_dir(self):
-        return os.path.dirname(os.path.abspath(__file__))
+required_conan_version = ">=2.0"
 
+class KnuthDatabaseConan(KnuthConanFileV2):
     name = "database"
     # version = get_version()
     license = "http://www.boost.org/users/license.html"
@@ -27,7 +29,7 @@ class KnuthDatabaseConan(KnuthConanFile):
                "tools": [True, False],
                "currency": ['BCH', 'BTC', 'LTC'],
 
-               "march_id": "ANY",
+               "march_id": ["ANY"],
                "march_strategy": ["download_if_possible", "optimized", "download_or_fail"],
 
                "verbose": [True, False],
@@ -35,9 +37,8 @@ class KnuthDatabaseConan(KnuthConanFile):
                "db": ['legacy', 'legacy_full', 'pruned', 'default', 'full'],
                "db_readonly": [True, False],
                "cached_rpc_data": [True, False],
-               "cxxflags": "ANY",
-               "cflags": "ANY",
-               "glibcxx_supports_cxx11_abi": "ANY",
+               "cxxflags": ["ANY"],
+               "cflags": ["ANY"],
                "cmake_export_compile_commands": [True, False],
                "log": ["boost", "spdlog", "binlog"],
                "use_libmdbx": [True, False],
@@ -50,7 +51,6 @@ class KnuthDatabaseConan(KnuthConanFile):
         "tools": False,
         "currency": "BCH",
 
-        "march_id": "_DUMMY_",
         "march_strategy": "download_if_possible",
 
         "verbose": False,
@@ -58,17 +58,14 @@ class KnuthDatabaseConan(KnuthConanFile):
         "db": "default",
         "db_readonly": False,
         "cached_rpc_data": False,
-        "cxxflags": "_DUMMY_",
-        "cflags": "_DUMMY_",
-        "glibcxx_supports_cxx11_abi": "_DUMMY_",
         "cmake_export_compile_commands": False,
         "log": "spdlog",
         "use_libmdbx": False,
     }
 
-    generators = "cmake"
-    exports = "conan_*", "ci_utils/*"
-    exports_sources = "src/*", "CMakeLists.txt", "cmake/*", "kth-databaseConfig.cmake.in", "knuthbuildinfo.cmake", "include/*", "test/*", "tools/*"
+    # generators = "cmake"
+    # exports = "conan_*", "ci_utils/*"
+    exports_sources = "src/*", "CMakeLists.txt", "ci_utils/cmake/*", "cmake/*", "kth-databaseConfig.cmake.in", "knuthbuildinfo.cmake", "include/*", "test/*", "tools/*"
 
     package_files = "build/lkth-database.a"
     build_policy = "missing"
@@ -94,13 +91,13 @@ class KnuthDatabaseConan(KnuthConanFile):
         self.requires("domain/0.X@%s/%s" % (self.user, self.channel))
 
     def validate(self):
-        KnuthConanFile.validate(self)
+        KnuthConanFileV2.validate(self)
 
     def config_options(self):
-        KnuthConanFile.config_options(self)
+        KnuthConanFileV2.config_options(self)
 
     def configure(self):
-        KnuthConanFile.configure(self)
+        KnuthConanFileV2.configure(self)
 
         self.options["*"].cached_rpc_data = self.options.cached_rpc_data
         self.options["*"].measurements = self.options.measurements
@@ -117,21 +114,31 @@ class KnuthDatabaseConan(KnuthConanFile):
         self.output.info("Compiling with log: %s" % (self.options.log,))
 
     def package_id(self):
-        KnuthConanFile.package_id(self)
+        KnuthConanFileV2.package_id(self)
 
-    def build(self):
-        cmake = self.cmake_basis()
-        cmake.definitions["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
-        cmake.definitions["DB_READONLY_MODE"] = option_on_off(self.options.db_readonly)
-        cmake.definitions["WITH_CACHED_RPC_DATA"] = option_on_off(self.options.cached_rpc_data)
-        cmake.definitions["LOG_LIBRARY"] = self.options.log
-        cmake.definitions["USE_LIBMDBX"] = option_on_off(self.options.use_libmdbx)
-        cmake.definitions["CONAN_DISABLE_CHECK_COMPILER"] = option_on_off(True)
+    def layout(self):
+        cmake_layout(self)
+
+    def generate(self):
+        tc = self.cmake_toolchain_basis()
+        # tc.variables["CMAKE_VERBOSE_MAKEFILE"] = True
+        tc.variables["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
+        tc.variables["DB_READONLY_MODE"] = option_on_off(self.options.db_readonly)
+        tc.variables["WITH_CACHED_RPC_DATA"] = option_on_off(self.options.cached_rpc_data)
+        tc.variables["LOG_LIBRARY"] = self.options.log
+        tc.variables["USE_LIBMDBX"] = option_on_off(self.options.use_libmdbx)
+        tc.variables["CONAN_DISABLE_CHECK_COMPILER"] = option_on_off(True)
 
         if self.options.cmake_export_compile_commands:
-            cmake.definitions["CMAKE_EXPORT_COMPILE_COMMANDS"] = option_on_off(self.options.cmake_export_compile_commands)
+            tc.variables["CMAKE_EXPORT_COMPILE_COMMANDS"] = option_on_off(self.options.cmake_export_compile_commands)
 
-        cmake.configure(source_dir=self.source_folder)
+        tc.generate()
+        tc = CMakeDeps(self)
+        tc.generate()
+
+    def build(self):
+        cmake = CMake(self)
+        cmake.configure()
 
         if not self.options.cmake_export_compile_commands:
             cmake.build()
@@ -144,14 +151,12 @@ class KnuthDatabaseConan(KnuthConanFile):
         self.copy("*.h", "", "include")
 
     def package(self):
-        self.copy("*.h", dst="include", src="include")
-        self.copy("*.hpp", dst="include", src="include")
-        self.copy("*.ipp", dst="include", src="include")
-        self.copy("*.lib", dst="lib", keep_path=False)
-        self.copy("*.dll", dst="bin", keep_path=False)
-        self.copy("*.dylib*", dst="lib", keep_path=False)
-        self.copy("*.so", dst="lib", keep_path=False)
-        self.copy("*.a", dst="lib", keep_path=False)
+        cmake = CMake(self)
+        cmake.install()
+        # rmdir(self, os.path.join(self.package_folder, "lib", "cmake"))
+        # rmdir(self, os.path.join(self.package_folder, "lib", "pkgconfig"))
+        # rmdir(self, os.path.join(self.package_folder, "res"))
+        # rmdir(self, os.path.join(self.package_folder, "share"))
 
     def package_info(self):
         self.cpp_info.includedirs = ['include']
