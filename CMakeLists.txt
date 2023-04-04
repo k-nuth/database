@@ -375,10 +375,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC domain::domain)
 
 # target_link_libraries(${PROJECT_NAME} PUBLIC fmt::fmt)
 # target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog)
-# target_link_libraries(${PROJECT_NAME} PUBLIC lmdb::lmdb)
 # target_link_libraries(${PROJECT_NAME} PUBLIC Boost::boost)
-
-
+target_link_libraries(${PROJECT_NAME} PUBLIC lmdb::lmdb)
 
 if (MINGW)
     target_link_libraries(${PROJECT_NAME} PUBLIC ws2_32 wsock32)
