@@ -290,7 +290,7 @@ private:
     domain::chain::history_compact history_entry_to_history_compact(history_entry const& entry);
 
 #if ! defined(KTH_DB_READONLY)
-    result_code remove_history_db(const short_hash& key, size_t height, KTH_DB_txn* db_txn);
+    result_code remove_history_db(short_hash const& key, size_t height, KTH_DB_txn* db_txn);
 
     result_code remove_transaction_history_db(domain::chain::transaction const& tx, size_t height, KTH_DB_txn* db_txn);
 

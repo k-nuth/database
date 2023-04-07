@@ -270,7 +270,7 @@ result_code internal_database_basis<Clock>::remove_transaction_history_db(domain
 
     for (auto const& output: tx.outputs()) {
         for (auto const& address : output.addresses()) {
-            auto res = remove_history_db(address, height, db_txn);
+            auto res = remove_history_db(address.hash20(), height, db_txn);
             if (res != result_code::success) {
                 return res;
             }
@@ -283,7 +283,7 @@ result_code internal_database_basis<Clock>::remove_transaction_history_db(domain
 
         if (prevout.validation.cache.is_valid()) {
             for (auto const& address : prevout.validation.cache.addresses()) {
-                auto res = remove_history_db(address, height, db_txn);
+                auto res = remove_history_db(address.hash20(), height, db_txn);
                 if (res != result_code::success) {
                     return res;
                 }
@@ -300,7 +300,7 @@ result_code internal_database_basis<Clock>::remove_transaction_history_db(domain
 
                 for (auto const& address : out_output.addresses()) {
 
-                    auto res = remove_history_db(address, height, db_txn);
+                    auto res = remove_history_db(address.hash20(), height, db_txn);
                     if (res != result_code::success) {
                         return res;
                     }
@@ -309,7 +309,7 @@ result_code internal_database_basis<Clock>::remove_transaction_history_db(domain
 
             /*
             for (auto const& address : input.addresses()) {
-                auto res = remove_history_db(address, height, db_txn);
+                auto res = remove_history_db(address.hash20(), height, db_txn);
                 if (res != result_code::success) {
                     return res;
                 }
@@ -321,7 +321,7 @@ result_code internal_database_basis<Clock>::remove_transaction_history_db(domain
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_history_db(const short_hash& key, size_t height, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_history_db(short_hash const& key, size_t height, KTH_DB_txn* db_txn) {
 
     KTH_DB_cursor* cursor;
 

@@ -104,7 +104,7 @@ bool history_database::flush() const {
 // Queries.
 // ----------------------------------------------------------------------------
 
-void history_database::add_output(const short_hash& key, const output_point& outpoint, size_t output_height, uint64_t value) {
+void history_database::add_output(short_hash const& key, const output_point& outpoint, size_t output_height, uint64_t value) {
     auto const output_height32 = safe_unsigned<uint32_t>(output_height);
 
     auto const write = [&](serializer<uint8_t*>& serial) {
@@ -117,7 +117,7 @@ void history_database::add_output(const short_hash& key, const output_point& out
     rows_multimap_.store(key, write);
 }
 
-void history_database::add_input(const short_hash& key, const output_point& inpoint, size_t input_height, const input_point& previous) {
+void history_database::add_input(short_hash const& key, const output_point& inpoint, size_t input_height, const input_point& previous) {
     auto const input_height32 = safe_unsigned<uint32_t>(input_height);
 
     auto const write = [&](serializer<uint8_t*>& serial) {
@@ -131,11 +131,11 @@ void history_database::add_input(const short_hash& key, const output_point& inpo
 }
 
 // This is the history unlink.
-bool history_database::delete_last_row(const short_hash& key) {
+bool history_database::delete_last_row(short_hash const& key) {
     return rows_multimap_.unlink(key);
 }
 
-history_compact::list history_database::get(const short_hash& key, size_t limit, size_t from_height) const {
+history_compact::list history_database::get(short_hash const& key, size_t limit, size_t from_height) const {
     // Read the height value from the row.
     auto const read_height = [](uint8_t* data) {
         return from_little_endian_unsafe<uint32_t>(data + height_position);
@@ -182,7 +182,7 @@ history_compact::list history_database::get(const short_hash& key, size_t limit,
     return result;
 }
 
-std::vector<hash_digest> history_database::get_txns(const short_hash& key, size_t limit, size_t from_height) const {
+std::vector<hash_digest> history_database::get_txns(short_hash const& key, size_t limit, size_t from_height) const {
 
     // Read the height value from the row.
     auto const read_hash = [](uint8_t* data) {

@@ -55,22 +55,22 @@ public:
     bool close();
 
     /// Add an output row to the key. If key doesn't exist it will be created.
-    void add_output(const short_hash& key, const domain::chain::output_point& outpoint,
+    void add_output(short_hash const& key, const domain::chain::output_point& outpoint,
         size_t output_height, uint64_t value);
 
     /// Add an input to the key. If key doesn't exist it will be created.
-    void add_input(const short_hash& key, const domain::chain::output_point& inpoint,
+    void add_input(short_hash const& key, const domain::chain::output_point& inpoint,
         size_t input_height, const domain::chain::input_point& previous);
 
     /// Delete the last row that was added to key.
-    bool delete_last_row(const short_hash& key);
+    bool delete_last_row(short_hash const& key);
 
     /// Get the output and input points associated with the address hash.
-    domain::chain::history_compact::list get(const short_hash& key, size_t limit,
+    domain::chain::history_compact::list get(short_hash const& key, size_t limit,
         size_t from_height) const;
 
     /// Get the txns associated with the address hash.
-    std::vector<hash_digest> get_txns(const short_hash& key, size_t limit,
+    std::vector<hash_digest> get_txns(short_hash const& key, size_t limit,
                                      size_t from_height) const;
 
     /// Commit latest inserts.
