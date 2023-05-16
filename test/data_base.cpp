@@ -73,7 +73,7 @@ void test_block_exists(data_base const& interface, size_t height, block const& b
 
 #ifdef KTH_DB_HISTORY
                 for (auto const& address : addresses) {
-                    auto history = history_store.get(address.hash(), 0, 0);
+                    auto history = history_store.get(address.hash20(), 0, 0);
                     auto found = false;
 
                     for (auto const& row: history) {
@@ -101,7 +101,7 @@ void test_block_exists(data_base const& interface, size_t height, block const& b
 
 #ifdef KTH_DB_HISTORY
             for (auto const& address : addresses) {
-                auto history = history_store.get(address.hash(), 0, 0);
+                auto history = history_store.get(address.hash20(), 0, 0);
                 auto found = false;
 
                 for (auto const& row: history) {
@@ -154,7 +154,7 @@ REQUIRE( ! r0_byhash);
 
 #ifdef KTH_DB_HISTORY
                 for (auto const& address : addresses) {
-                    auto history = history_store.get(address.hash(), 0, 0);
+                    auto history = history_store.get(address.hash20(), 0, 0);
                     auto found = false;
 
                     for (auto const& row: history) {
@@ -181,7 +181,7 @@ REQUIRE( ! r0_byhash);
 
 #ifdef KTH_DB_HISTORY
             for (auto const& address : addresses) {
-                auto history = history_store.get(address.hash(), 0, 0);
+                auto history = history_store.get(address.hash20(), 0, 0);
                 auto found = false;
 
                 for (auto const& row: history) {

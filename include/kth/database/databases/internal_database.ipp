@@ -663,7 +663,6 @@ size_t internal_database_basis<Clock>::adjust_db_size(size_t size) const {
     // return size + (mod != 0) ? (page_size - mod) : 0;
 }
 
-
 template <typename Clock>
 bool internal_database_basis<Clock>::create_and_open_environment() {
 
