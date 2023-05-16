@@ -789,7 +789,7 @@ void data_base::push_inputs(hash_digest const& tx_hash, size_t height, const inp
             // This results in a complete and unambiguous history for the
             // address since standard outputs contain unambiguous address data.
             for (auto const& address : prevout.validation.cache.addresses()) {
-                history_->add_input(address.hash(), inpoint, height, prevout);
+                history_->add_input(address.hash20(), inpoint, height, prevout);
             }
         } else {
             // For any p2pk spend this creates no record (insufficient data).
@@ -806,7 +806,7 @@ void data_base::push_inputs(hash_digest const& tx_hash, size_t height, const inp
 
             if (valid) {
                 for (auto const& address : input.addresses()) {
-                    history_->add_input(address.hash(), inpoint, height, prevout);
+                    history_->add_input(address.hash20(), inpoint, height, prevout);
                 }
             } else {
                 //During an IBD with checkpoints some previous output info is missing.
@@ -818,7 +818,7 @@ void data_base::push_inputs(hash_digest const& tx_hash, size_t height, const inp
 
                 if (transactions_->get_output(prev_output, output_height, output_median_time_past, output_is_coinbase, prevout, MAX_UINT64, false)) {
                     for (auto const& address : prev_output.addresses()) {
-                        history_->add_input(address.hash(), inpoint, height, prevout);
+                        history_->add_input(address.hash20(), inpoint, height, prevout);
                     }
                 }
             }
@@ -840,7 +840,7 @@ void data_base::push_outputs(hash_digest const& tx_hash, size_t height, const ou
 
         // Standard outputs contain unambiguous address data.
         for (auto const& address : output.addresses()) {
-            history_->add_output(address.hash(), outpoint, height, value);
+            history_->add_output(address.hash20(), outpoint, height, value);
         }
     }
 }
@@ -876,7 +876,7 @@ void data_base::push_stealth(hash_digest const& tx_hash, size_t height, const ou
         // The payment address versions are arbitrary and unused here.
         const stealth_compact row {
             unsigned_ephemeral_key,
-            address.hash(),
+            address.hash20(),
             tx_hash
         };
 
@@ -1162,7 +1162,7 @@ bool data_base::pop_inputs(const input::list& inputs, size_t height) {
 #ifdef KTH_DB_HISTORY
         // Delete can fail if index start has been changed between restarts.
         for (auto const& address : input.addresses()) {
-            /* bool */ history_->delete_last_row(address.hash());
+            /* bool */ history_->delete_last_row(address.hash20());
         }
 #endif // KTH_DB_HISTORY
     }
@@ -1181,7 +1181,7 @@ bool data_base::pop_outputs(const output::list& outputs, size_t height) {
     for (auto const output : reverse(outputs)) {
         // Delete can fail if index start has been changed between restarts.
         for (auto const& address : output.addresses()) {
-            /* bool */ history_->delete_last_row(address.hash());
+            /* bool */ history_->delete_last_row(address.hash20());
         }
 
         // All stealth entries are confirmed.

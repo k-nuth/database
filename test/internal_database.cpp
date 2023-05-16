@@ -570,7 +570,7 @@ size_t db_count_index_by_height(KTH_DB_env *env, KTH_DB_dbi dbi, size_t height) 
 }
 
 size_t db_count_db_by_address(KTH_DB_env *env, KTH_DB_dbi dbi, domain::wallet::payment_address const& address) {
-    auto hash = address.hash();
+    auto hash = address.hash20();
     auto key = kth_db_make_value(hash.size(), hash.data());
 
 	KTH_DB_txn *txn;
@@ -712,7 +712,7 @@ TEST_CASE("internal database  insert genesis", "[None]") {
     auto const& address = domain::wallet::payment_address("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa");
     REQUIRE(address);
 
-    auto history_list = db.get_history(address.hash(),max_uint32,0);
+    auto history_list = db.get_history(address.hash20(),max_uint32,0);
     REQUIRE(history_list.size() == 1);
 
     auto history_item = history_list[0];
@@ -1647,7 +1647,7 @@ TEST_CASE("internal database  reorg 0", "[None]") {
         REQUIRE(address);
 
 #if defined(KTH_DB_NEW_FULL)
-        auto history_list = db.get_history(address.hash(),max_uint32,0);
+        auto history_list = db.get_history(address.hash20(),max_uint32,0);
         REQUIRE(history_list.size() == 1);
 
         auto history_item = history_list[0];
@@ -1747,7 +1747,7 @@ TEST_CASE("internal database  reorg 0", "[None]") {
         auto const& address = domain::wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
         REQUIRE(address);
 
-        auto history_list = db.get_history(address.hash(),max_uint32,0);
+        auto history_list = db.get_history(address.hash20(),max_uint32,0);
         REQUIRE(history_list.size() == 2);
 
         auto history_item = history_list[0];
@@ -1895,7 +1895,7 @@ TEST_CASE("internal database  reorg 0", "[None]") {
         /*auto const& address = domain::wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
         REQUIRE(address);
 
-        auto history_list = db.get_history(address.hash(),max_uint32,0);
+        auto history_list = db.get_history(address.hash20(),max_uint32,0);
         REQUIRE(history_list.size() == 1);
 
         auto history_item = history_list[0];
@@ -2005,7 +2005,7 @@ TEST_CASE("internal database  reorg 0", "[None]") {
         auto const& address = domain::wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
         REQUIRE(address);
 
-        auto history_list = db.get_history(address.hash(),max_uint32,0);
+        auto history_list = db.get_history(address.hash20(),max_uint32,0);
         REQUIRE(history_list.size() == 2);
 
         auto history_item = history_list[0];

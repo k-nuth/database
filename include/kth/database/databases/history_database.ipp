@@ -14,7 +14,7 @@ namespace kth::database {
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_history_db(domain::wallet::payment_address const& address, data_chunk const& entry, KTH_DB_txn* db_txn) {
 
-    auto key_arr = address.hash();     //TODO(fernando): should I take a reference?
+    auto key_arr = address.hash20();     //TODO(fernando): should I take a reference?
     auto key = kth_db_make_value(key_arr.size(), key_arr.data());
     auto value = kth_db_make_value(entry.size(), const_cast<data_chunk&>(entry).data());
 
