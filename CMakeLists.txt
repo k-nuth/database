@@ -30,6 +30,10 @@ option(DB_NEW_FULL "DB New Full enabled." OFF)
 option(JUST_KTH_SOURCES "Just Knuth source code to be linted." OFF)
 option(USE_LIBMDBX "Uses libmdbx DB library." OFF)
 
+
+option(GLOBAL_BUILD "" OFF)
+
+
 set(MARCH_ID "" CACHE STRING "Specify the Microarchitecture ID (x86_64|...).")
 message( STATUS "Knuth: Compiling for Microarchitecture ID ${MARCH_ID}")
 
@@ -129,7 +133,10 @@ endif()
 
 message(STATUS "Knuth: Cryptocurrency: ${CURRENCY}")
 
-find_package(domain REQUIRED)
+if (NOT GLOBAL_BUILD)
+  find_package(domain REQUIRED)
+endif()
+
 find_package(lmdb 0.9.29 REQUIRED)
 
 include(CheckCXXCompilerFlag)
