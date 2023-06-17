@@ -160,9 +160,9 @@ bool data_base::open() {
                 && transactions_->open()
 #endif // KTH_DB_LEGACY
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
                 && internal_db_->open()
-#endif // KTH_DB_NEW
+#endif // defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
                 && transactions_unconfirmed_->open()
@@ -206,9 +206,9 @@ bool data_base::close() {
                 && transactions_->close()
 #endif // KTH_DB_LEGACY
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
                 && internal_db_->close()
-#endif // KTH_DB_NEW
+#endif // defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
                 && transactions_unconfirmed_->close()
@@ -255,9 +255,9 @@ void data_base::start() {
         settings_.cache_capacity, remap_mutex_);
 #endif // KTH_DB_LEGACY
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
     internal_db_ = std::make_shared<internal_database>(internal_db_dir, settings_.reorg_pool_limit, settings_.db_max_size, settings_.safe_mode);
-#endif // KTH_DB_NEW
+#endif // defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
     //TODO(fernando): transaction_table_buckets and file_growth_rate
@@ -382,11 +382,11 @@ transaction_database const& data_base::transactions() const {
 }
 #endif // KTH_DB_LEGACY
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 internal_database const& data_base::internal_db() const {
     return *internal_db_;
 }
-#endif // KTH_DB_NEW
+#endif // defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
@@ -434,7 +434,7 @@ hash_digest get_previous_hash(const block_database& blocks, size_t height) {
 #endif // KTH_DB_LEGACY
 
 
-#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
 static inline
 uint32_t get_next_height(internal_database const& db) {
     uint32_t current_height;
@@ -451,7 +451,7 @@ static inline
 hash_digest get_previous_hash(internal_database const& db, size_t height) {
     return height == 0 ? null_hash : db.get_header(height - 1).hash();
 }
-#endif // defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#endif // defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
 
 
 //TODO(fernando): const?
@@ -492,8 +492,7 @@ code data_base::verify_push(block const& block, size_t height) const {
         return error::store_block_missing_parent;
     }
 
-#elif defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-
+#elif defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     if (get_next_height(internal_db()) != height) {
         return error::store_block_invalid_height;
     }
@@ -501,7 +500,6 @@ code data_base::verify_push(block const& block, size_t height) const {
     if (block.header().previous_block_hash() != get_previous_hash(internal_db(), height)) {
         return error::store_block_missing_parent;
     }
-
 #endif // KTH_DB_LEGACY
 
     return error::success;
@@ -550,12 +548,12 @@ code data_base::insert(domain::chain::block const& block, size_t height) {
 
     if (ec) return ec;
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
     auto res = internal_db_->push_block(block, height, median_time_past);
     if ( ! succeed(res)) {
         return error::operation_failed_1;   //TODO(fernando): create a new operation_failed
     }
-#endif // KTH_DB_NEW
+#endif // defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 
 #ifdef KTH_DB_LEGACY
 
@@ -613,7 +611,7 @@ code data_base::push(domain::chain::transaction const& tx, uint32_t forks) {
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     ///////////////////////////////////////////////////////////////////////////
 
-#elif defined(KTH_DB_NEW_FULL)
+#elif defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     //We insert only in transaction unconfirmed here
     internal_db_->push_transaction_unconfirmed(tx, forks);
     return error::success;  //TODO(fernando): store the transactions in a new mempool
@@ -671,12 +669,12 @@ code data_base::push(block const& block, size_t height) {
 
     auto const median_time_past = block.header().validation.median_time_past;
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
     auto res = internal_db_->push_block(block, height, median_time_past);
     if ( ! succeed(res)) {
         return error::operation_failed_6;   //TODO(fernando): create a new operation_failed
     }
-#endif // KTH_DB_NEW
+#endif // defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 
 #ifdef KTH_DB_LEGACY
     return push_legacy(block, height);
@@ -689,12 +687,12 @@ code data_base::push(block const& block, size_t height) {
 // Add the Genesis block
 code data_base::push_genesis(block const& block) {
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
     auto res = internal_db_->push_genesis(block);
     if ( ! succeed(res)) {
         return error::operation_failed_6;   //TODO(fernando): create a new operation_failed
     }
-#endif // KTH_DB_NEW
+#endif // defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 
 #ifdef KTH_DB_LEGACY
     size_t const height = 0;
@@ -980,7 +978,7 @@ bool data_base::pop(block& out_block) {
 
     auto const start_time = asio::steady_clock::now();
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
     if (internal_db_->pop_block(out_block) != result_code::success) {
         return false;
     }
@@ -1060,7 +1058,7 @@ bool data_base::pop(block& out_block) {
 
     auto const start_time = asio::steady_clock::now();
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
     if (internal_db_->pop_block(out_block) != result_code::success) {
         return false;
     }
@@ -1229,7 +1227,7 @@ void data_base::push_next(code const& ec, block_const_ptr_list_const_ptr blocks,
 
 void data_base::do_push(block_const_ptr block, size_t height, uint32_t median_time_past, dispatcher& dispatch, result_handler handler) {
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
     // LOG_DEBUG(LOG_DATABASE, "Write flushed to disk: ", ec.message());
     auto res = internal_db_->push_block(*block, height, median_time_past);
     if ( ! succeed(res)) {
@@ -1239,7 +1237,7 @@ void data_base::do_push(block_const_ptr block, size_t height, uint32_t median_ti
     block->validation.end_push = asio::steady_clock::now();
     // This is the end of the block sub-sequence.
     handler(error::success);
-#endif // KTH_DB_NEW
+#endif // defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 
 #ifdef KTH_DB_LEGACY
     result_handler block_complete = std::bind(&data_base::handle_push_transactions, this, _1, block, height, handler);
@@ -1301,7 +1299,7 @@ void data_base::handle_push_transactions(code const& ec, block_const_ptr block, 
 void data_base::pop_above(block_const_ptr_list_ptr out_blocks, hash_digest const& fork_hash, dispatcher&, result_handler handler) {
     out_blocks->clear();
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
     auto const header_result = internal_db_->get_header(fork_hash);
 
     uint32_t top;
@@ -1362,22 +1360,22 @@ void data_base::pop_above(block_const_ptr_list_ptr out_blocks, hash_digest const
 }
 
 code data_base::prune_reorg() {
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
     auto res = internal_db_->prune();
     if ( ! succeed_prune(res)) {
         LOG_ERROR(LOG_DATABASE, "Error pruning the reorganization pool, code: ", static_cast<std::underlying_type<result_code>::type>(res));
         return error::unknown;
     }
-#endif // KTH_DB_NEW
+#endif // defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
     return error::success;
 }
 #endif // ! defined(KTH_DB_READONLY)
 
 /*
 bool data_base::set_database_flags(bool fast) {
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
     return internal_db_->set_fast_flags_environment(fast);
-#endif // KTH_DB_NEW
+#endif // defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
     return true;
 }
 */
@@ -1436,10 +1434,10 @@ void data_base::handle_push(code const& ec, result_handler handler) const {
     handler(end_write() ? error::success : error::operation_failed_12);
     // End Sequential Lock and Flush Lock
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#elif defined(KTH_DB_NEW)
+#elif defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
     handler(error::success);
 #else
-#error You must define KTH_DB_LEGACY or KTH_DB_NEW
+#error You must define KTH_DB_LEGACY or KTH_DB_NEW or KTH_DB_DYNAMIC.
 #endif
 }
 #endif // ! defined(KTH_DB_READONLY)

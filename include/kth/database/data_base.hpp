@@ -17,9 +17,9 @@
 #include <kth/database/legacy/databases/block_database.hpp>
 #endif // KTH_DB_LEGACY
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 #include <kth/database/databases/internal_database.hpp>
-#endif // KTH_DB_NEW
+#endif // defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 
 #ifdef KTH_DB_SPENDS
 #include <kth/database/legacy/databases/spend_database.hpp>
@@ -94,9 +94,9 @@ public:
     const transaction_database& transactions() const;
 #endif // KTH_DB_LEGACY
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
     internal_database const& internal_db() const;
-#endif // KTH_DB_NEW
+#endif // defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
     const transaction_unconfirmed_database& transactions_unconfirmed() const;
@@ -176,9 +176,9 @@ protected:
     std::shared_ptr<transaction_database> transactions_;
 #endif // KTH_DB_LEGACY
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
     std::shared_ptr<internal_database> internal_db_;
-#endif // KTH_DB_NEW
+#endif // defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
     std::shared_ptr<transaction_unconfirmed_database> transactions_unconfirmed_;

@@ -7,7 +7,7 @@
 
 namespace kth::database {
 
-#if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
 
 //public
 template <typename Clock>
@@ -111,7 +111,7 @@ result_code internal_database_basis<Clock>::remove_spend(domain::chain::output_p
 #endif // ! defined(KTH_DB_READONLY)
 
 
-#endif // defined(KTH_DB_NEW_FULL)
+#endif // defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
 
 } // namespace kth::database
 

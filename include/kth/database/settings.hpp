@@ -12,6 +12,14 @@
 
 namespace kth::database {
 
+#if defined(KTH_DB_DYNAMIC)
+enum class db_mode_type {
+    pruned,
+    default,
+    full,
+};
+#endif // defined(KTH_DB_DYNAMIC)
+
 /// Common database configuration settings, properties not thread safe.
 class KD_API settings {
 public:
@@ -24,11 +32,15 @@ public:
     uint16_t file_growth_rate;
     uint32_t index_start_height;
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_DYNAMIC)
+    db_mode_type db_mode;
+#endif // defined(KTH_DB_DYNAMIC)
+
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
     uint32_t reorg_pool_limit;
     uint64_t db_max_size;
     bool safe_mode;
-#endif // KTH_DB_NEW
+#endif // defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 
 
 #ifdef KTH_DB_LEGACY

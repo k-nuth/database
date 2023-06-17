@@ -271,7 +271,7 @@ void transaction_database::store(const domain::chain::transaction& tx, size_t he
 
         // WRITE THE TX
         tx.to_data(serial, false, KTH_WITNESS_DEFAULT
-        #ifdef KTH_CACHED_RPC_DATA
+#ifdef KTH_CACHED_RPC_DATA
             , false
         #endif
         );

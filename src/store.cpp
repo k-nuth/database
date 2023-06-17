@@ -24,9 +24,9 @@ using namespace kth::database;
 #define TRANSACTION_TABLE "transaction_table"
 #endif // KTH_DB_LEGACY
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 #define INTERNAL_DB_DIR "internal_db"
-#endif // KTH_DB_NEW
+#endif // defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
 #define TRANSACTION_UNCONFIRMED_TABLE "transaction_unconfirmed_table"
@@ -89,9 +89,9 @@ store::store(path const& prefix, bool with_indexes, bool flush_each_write)
     , transaction_table(prefix / TRANSACTION_TABLE)
 #endif // KTH_DB_LEGACY
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
     : internal_db_dir(prefix / INTERNAL_DB_DIR)
-#endif // KTH_DB_NEW
+#endif // defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
     , transaction_unconfirmed_table(prefix / TRANSACTION_UNCONFIRMED_TABLE)

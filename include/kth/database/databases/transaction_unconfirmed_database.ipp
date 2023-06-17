@@ -7,7 +7,7 @@
 
 namespace kth::database {
 
-#if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
 
 
 template <typename Clock>

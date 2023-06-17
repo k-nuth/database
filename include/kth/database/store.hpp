@@ -89,9 +89,9 @@ public:
     path const transaction_table;
 #endif // KTH_DB_LEGACY
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
     path const internal_db_dir;
-#endif // KTH_DB_NEW
+#endif // defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 
 #ifdef KTH_DB_TRANSACTION_UNCONFIRMED
     path const transaction_unconfirmed_table;

@@ -29,9 +29,9 @@
 #include <kth/database/legacy/databases/block_database.hpp>
 #endif // KTH_DB_LEGACY
 
-#ifdef KTH_DB_NEW
+#if defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 #include <kth/database/databases/internal_database.hpp>
-#endif // KTH_DB_NEW
+#endif // defined(KTH_DB_NEW) || defined(KTH_DB_DYNAMIC)
 
 #ifdef KTH_DB_HISTORY
 #include <kth/database/legacy/databases/history_database.hpp>

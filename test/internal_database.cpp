@@ -91,10 +91,10 @@ domain::chain::block get_fake_genesis() {
 }
 
 void close_everything(KTH_DB_env* e, KTH_DB_dbi& db0, KTH_DB_dbi& db1, KTH_DB_dbi& db2, KTH_DB_dbi& db3, KTH_DB_dbi& db4, KTH_DB_dbi& db5
-#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
 , KTH_DB_dbi& db6
 #endif
-#ifdef KTH_DB_NEW_FULL
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
 , KTH_DB_dbi& db7
 , KTH_DB_dbi& db8
 , KTH_DB_dbi& db9
@@ -110,11 +110,11 @@ void close_everything(KTH_DB_env* e, KTH_DB_dbi& db0, KTH_DB_dbi& db1, KTH_DB_db
     kth_db_dbi_close(e, db4);
     kth_db_dbi_close(e, db5);
 
-#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     kth_db_dbi_close(e, db6);
 #endif
 
-#ifdef KTH_DB_NEW_FULL
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     kth_db_dbi_close(e, db7);
     kth_db_dbi_close(e, db8);
     kth_db_dbi_close(e, db9);
@@ -126,11 +126,11 @@ void close_everything(KTH_DB_env* e, KTH_DB_dbi& db0, KTH_DB_dbi& db1, KTH_DB_db
 }
 
 std::tuple<KTH_DB_env*, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_dbi
-#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
 , KTH_DB_dbi
 #endif
 
-#ifdef KTH_DB_NEW_FULL
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
 , KTH_DB_dbi
 , KTH_DB_dbi
 , KTH_DB_dbi
@@ -147,17 +147,17 @@ std::tuple<KTH_DB_env*, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_d
     KTH_DB_dbi dbi_block_header_by_hash_;
     KTH_DB_dbi dbi_reorg_block_;
 
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     KTH_DB_dbi dbi_block_db_;
-    #endif
+#endif
 
-    #if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
     KTH_DB_dbi dbi_transaction_db_;
     KTH_DB_dbi dbi_history_db_;
     KTH_DB_dbi dbi_spend_db_;
     KTH_DB_dbi dbi_transaction_hash_db_;
     KTH_DB_dbi dbi_transaction_unconfirmed_db_;
-    #endif
+#endif
 
     KTH_DB_txn* db_txn;
 
@@ -168,29 +168,29 @@ std::tuple<KTH_DB_env*, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_d
     char reorg_index_name[] = "reorg_index";
     char reorg_block_name[] = "reorg_block";
 
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     //Blocks DB
     char block_db_name[] = "blocks";
-    #endif
+#endif
 
-    #ifdef KTH_DB_NEW_FULL
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     char transaction_db_name[] = "transactions";
     char transaction_hash_db_name[] = "transactions_hash";
     char transaction_unconfirmed_db_name[] = "transactions_unconfirmed";
     char history_db_name[] = "history";
     char spend_db_name[] = "spend";
-    #endif
+#endif
 
     REQUIRE(kth_db_env_create(&env_) == KTH_DB_SUCCESS);
     REQUIRE(kth_db_env_set_mapsize(env_, db_size) == KTH_DB_SUCCESS);
 
-    #ifdef KTH_DB_NEW_BLOCKS
-    REQUIRE(kth_db_env_set_maxdbs(env_, 7) == KTH_DB_SUCCESS);
-    #elif KTH_DB_NEW_FULL
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     REQUIRE(kth_db_env_set_maxdbs(env_, 12) == KTH_DB_SUCCESS);
-    #else
+#elif defined(KTH_DB_NEW_BLOCKS)
+    REQUIRE(kth_db_env_set_maxdbs(env_, 7) == KTH_DB_SUCCESS);
+#else
     REQUIRE(kth_db_env_set_maxdbs(env_, 6) == KTH_DB_SUCCESS);
-    #endif
+#endif
 
     auto qqq = kth_db_env_open(env_, fs::u8path(DIRECTORY "/internal_db").c_str(), KTH_DB_NORDAHEAD | KTH_DB_NOSYNC | KTH_DB_NOTLS, 0664);
 
@@ -205,29 +205,28 @@ std::tuple<KTH_DB_env*, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_dbi, KTH_DB_d
     REQUIRE(kth_db_dbi_open(db_txn, reorg_index_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_INTEGERKEY | KTH_DB_DUPFIXED, &dbi_reorg_index_) == KTH_DB_SUCCESS);
     REQUIRE(kth_db_dbi_open(db_txn, reorg_block_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_reorg_block_) == KTH_DB_SUCCESS);
 
-    #if defined(KTH_DB_NEW_BLOCKS)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_DYNAMIC)
     REQUIRE(kth_db_dbi_open(db_txn, block_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_block_db_) == KTH_DB_SUCCESS);
-    #endif
+#endif
 
-    #if defined(KTH_DB_NEW_FULL)
-
+#if defined(KTH_DB_NEW_FULL)
     REQUIRE(kth_db_dbi_open(db_txn, block_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_INTEGERKEY | KTH_DB_DUPFIXED  | MDB_INTEGERDUP, &dbi_block_db_)== KTH_DB_SUCCESS);
     REQUIRE(kth_db_dbi_open(db_txn, transaction_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_transaction_db_)== KTH_DB_SUCCESS);
     REQUIRE(kth_db_dbi_open(db_txn, transaction_hash_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_transaction_hash_db_)== KTH_DB_SUCCESS);
     REQUIRE(kth_db_dbi_open(db_txn, history_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_DUPFIXED, &dbi_history_db_)== KTH_DB_SUCCESS);
     REQUIRE(kth_db_dbi_open(db_txn, spend_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_spend_db_)== KTH_DB_SUCCESS);
     REQUIRE(kth_db_dbi_open(db_txn, transaction_unconfirmed_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_transaction_unconfirmed_db_) == KTH_DB_SUCCESS);
-    #endif
+#endif
 
     REQUIRE(kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS);
 
-    #ifdef KTH_DB_NEW_BLOCKS
-        return {env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_, dbi_block_db_};
-    #elif KTH_DB_NEW_FULL
-        return {env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_, dbi_block_db_, dbi_transaction_db_, dbi_history_db_,dbi_spend_db_, dbi_transaction_hash_db_, dbi_transaction_unconfirmed_db_ };
-    #else
-        return {env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_};
-    #endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
+    return {env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_, dbi_block_db_, dbi_transaction_db_, dbi_history_db_,dbi_spend_db_, dbi_transaction_hash_db_, dbi_transaction_unconfirmed_db_ };
+#elif defined(KTH_DB_NEW_BLOCKS)
+    return {env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_, dbi_block_db_};
+#else
+    return {env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_};
+#endif
 }
 
 
@@ -300,7 +299,7 @@ void check_reorg_output_doesnt_exists(KTH_DB_env* env_, KTH_DB_dbi& dbi_reorg_po
 }
 
 
-#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
 void check_blocks_db_just_existence(KTH_DB_env* env_, KTH_DB_dbi& dbi_blocks_db_, uint32_t height) {
     KTH_DB_txn* db_txn;
 
@@ -325,7 +324,7 @@ void check_blocks_db_doesnt_exists(KTH_DB_env* env_, KTH_DB_dbi& dbi_blocks_db_,
 
 #endif
 
-#if defined(KTH_DB_NEW_BLOCKS)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_DYNAMIC)
 
 void check_blocks_db(KTH_DB_env* env_, KTH_DB_dbi& dbi_blocks_db_, uint32_t height) {
     KTH_DB_txn* db_txn;
@@ -645,8 +644,6 @@ struct dummy_clock {
 
 // BOOST_FIXTURE_TEST_SUITE(internal_db_tests, internal_database_directory_setup_fixture)
 
-// #ifdef KTH_DB_NEW
-
 TEST_CASE("internal database  dummy clock", "[None]") {
     auto start = dummy_clock<200>::now();
     auto end = dummy_clock<200>::now();
@@ -685,9 +682,9 @@ TEST_CASE("internal database  insert genesis", "[None]") {
     REQUIRE(db.get_header(0).is_valid());
     REQUIRE(db.get_header(0).hash() == genesis.hash());
 
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     REQUIRE(db.get_block(0).header().hash() == genesis.hash());
-    #endif
+#endif
 
     hash_digest txid;
     std::string txid_enc = "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b";
@@ -761,7 +758,7 @@ TEST_CASE("internal database  insert block genesis duplicate", "[None]") {
     REQUIRE( ! succeed(res));
 }
 
-#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
 
 TEST_CASE("internal database  insert block genesis and get", "[None]") {
     auto const genesis = get_genesis();
@@ -963,30 +960,30 @@ TEST_CASE("internal database  reorg", "[None]") {
     KTH_DB_dbi dbi_block_header_by_hash_;
     KTH_DB_dbi dbi_reorg_block_;
 
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     KTH_DB_dbi dbi_block_db_;
-    #endif
+#endif
 
-    #if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
     KTH_DB_dbi dbi_transaction_db_;
     KTH_DB_dbi dbi_transaction_hash_db_;
     KTH_DB_dbi dbi_transaction_unconfirmed_db_;
     KTH_DB_dbi dbi_history_db_;
     KTH_DB_dbi dbi_spend_db_;
-    #endif
+#endif
 
     //KTH_DB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     check_reorg_output(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0, "00f2052a01000000434104283338ffd784c198147f99aed2cc16709c90b1522e3b3637b312a6f9130e0eda7081e373a96d36be319710cd5c134aaffba81ff08650d7de8af332fe4d8cde20ac");
@@ -995,29 +992,29 @@ TEST_CASE("internal database  reorg", "[None]") {
     check_reorg_block(env_, dbi_reorg_block_, 0, orig_enc);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
-#if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_, 0);
-    check_blocks_db(env_, dbi_block_db_, 1);
-#elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_ ,  0);
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
     auto const& address = domain::wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
     REQUIRE(address);
     REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address) == 2);
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, 1);
 #endif
 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 }
 
@@ -1052,30 +1049,30 @@ TEST_CASE("internal database  old blocks 0", "[None]") {
     KTH_DB_dbi dbi_block_header_by_hash_;
     KTH_DB_dbi dbi_reorg_block_;
 
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     KTH_DB_dbi dbi_block_db_;
-    #endif
+#endif
 
-    #if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC) || defined(KTH_DB_DYNAMIC)
     KTH_DB_dbi dbi_transaction_db_;
     KTH_DB_dbi dbi_transaction_hash_db_;
     KTH_DB_dbi dbi_transaction_unconfirmed_db_;
     KTH_DB_dbi dbi_history_db_;
     KTH_DB_dbi dbi_spend_db_;
-    #endif
+#endif
 
     //KTH_DB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     check_reorg_output(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0, "00f2052a01000000434104283338ffd784c198147f99aed2cc16709c90b1522e3b3637b312a6f9130e0eda7081e373a96d36be319710cd5c134aaffba81ff08650d7de8af332fe4d8cde20ac");
@@ -1084,25 +1081,25 @@ TEST_CASE("internal database  old blocks 0", "[None]") {
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 0);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
-#if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_, 0);
-    check_blocks_db(env_, dbi_block_db_, 1);
-#elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_ ,  0);
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, 1);
 #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 }
 
@@ -1136,30 +1133,30 @@ TEST_CASE("internal database  old blocks 1", "[None]") {
     KTH_DB_dbi dbi_block_header_by_hash_;
     KTH_DB_dbi dbi_reorg_block_;
 
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     KTH_DB_dbi dbi_block_db_;
-    #endif
+#endif
 
-    #if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
     KTH_DB_dbi dbi_transaction_db_;
     KTH_DB_dbi dbi_transaction_hash_db_;
     KTH_DB_dbi dbi_transaction_unconfirmed_db_;
     KTH_DB_dbi dbi_history_db_;
     KTH_DB_dbi dbi_spend_db_;
-    #endif
+#endif
 
     //KTH_DB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     check_reorg_output(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0, "00f2052a01000000434104283338ffd784c198147f99aed2cc16709c90b1522e3b3637b312a6f9130e0eda7081e373a96d36be319710cd5c134aaffba81ff08650d7de8af332fe4d8cde20ac");
@@ -1168,25 +1165,25 @@ TEST_CASE("internal database  old blocks 1", "[None]") {
     check_reorg_block(env_, dbi_reorg_block_, 0, orig_enc);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
- #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_, 0);
-    check_blocks_db(env_, dbi_block_db_, 1);
-#elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_ ,  0);
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, 1);
 #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
-    , dbi_transaction_unconfirmed_db_
-    #endif
+        , dbi_transaction_unconfirmed_db_
+#endif
     );
 }
 
@@ -1220,30 +1217,30 @@ TEST_CASE("internal database  old blocks 2", "[None]") {
     KTH_DB_dbi dbi_block_header_;
     KTH_DB_dbi dbi_block_header_by_hash_;
     KTH_DB_dbi dbi_reorg_block_;
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     KTH_DB_dbi dbi_block_db_;
-    #endif
+#endif
 
-    #if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
     KTH_DB_dbi dbi_transaction_db_;
     KTH_DB_dbi dbi_transaction_hash_db_;
     KTH_DB_dbi dbi_transaction_unconfirmed_db_;
     KTH_DB_dbi dbi_history_db_;
     KTH_DB_dbi dbi_spend_db_;
-    #endif
+#endif
 
     //KTH_DB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
@@ -1253,25 +1250,25 @@ TEST_CASE("internal database  old blocks 2", "[None]") {
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 1);
     // check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
-#if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_, 0);
-    check_blocks_db(env_, dbi_block_db_, 1);
-#elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_ ,  0);
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, 1);
 #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 }
 
@@ -1319,30 +1316,30 @@ TEST_CASE("internal database  reorg index", "[None]") {
     KTH_DB_dbi dbi_block_header_by_hash_;
     KTH_DB_dbi dbi_reorg_block_;
 
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)|| defined(KTH_DB_DYNAMIC)
     KTH_DB_dbi dbi_block_db_;
-    #endif
+#endif
 
-    #if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
     KTH_DB_dbi dbi_transaction_db_;
     KTH_DB_dbi dbi_transaction_hash_db_;
     KTH_DB_dbi dbi_transaction_unconfirmed_db_;
     KTH_DB_dbi dbi_history_db_;
     KTH_DB_dbi dbi_spend_db_;
-    #endif
+#endif
 
     //KTH_DB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)|| defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "3c5e48964a781208739ee27a9f78098930884d63f366f6e420983eb8bdbdda65", 0);
@@ -1351,20 +1348,20 @@ TEST_CASE("internal database  reorg index", "[None]") {
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "d9d0ca00077e82590dcea565d04cd75d48075cbfe164ee73b258e78eefef1ff6", 0);
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "68b0d5ad0616f24a1c7c7ec24dad236eaa9d369453e102dc1ffc7593c97d3215", 0);
 
-#if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_, 0);
-    check_blocks_db(env_, dbi_block_db_, 1);
-    check_blocks_db(env_, dbi_block_db_, 2);
-    check_blocks_db(env_, dbi_block_db_, 3);
-    check_blocks_db(env_, dbi_block_db_, 4);
-    check_blocks_db(env_, dbi_block_db_, 5);
-#elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_ ,  0);
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 2);
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 3);
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 4);
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 5);
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, 5);
 #endif
 
 
@@ -1377,16 +1374,16 @@ TEST_CASE("internal database  reorg index", "[None]") {
     check_index_and_pool(env_, dbi_reorg_index_, dbi_reorg_pool_);
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
-    , dbi_transaction_unconfirmed_db_
-    #endif
+        , dbi_transaction_unconfirmed_db_
+#endif
     );
 }
 
@@ -1468,30 +1465,30 @@ TEST_CASE("internal database  reorg index2", "[None]") {
     KTH_DB_dbi dbi_block_header_by_hash_;
     KTH_DB_dbi dbi_reorg_block_;
 
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     KTH_DB_dbi dbi_block_db_;
-    #endif
+#endif
 
-    #if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
     KTH_DB_dbi dbi_transaction_db_;
     KTH_DB_dbi dbi_transaction_hash_db_;
     KTH_DB_dbi dbi_transaction_unconfirmed_db_;
     KTH_DB_dbi dbi_history_db_;
     KTH_DB_dbi dbi_spend_db_;
-    #endif
+#endif
 
     //KTH_DB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     check_reorg_output_just_existence(env_, dbi_reorg_pool_, "3c5e48964a781208739ee27a9f78098930884d63f366f6e420983eb8bdbdda65", 0);
@@ -1504,16 +1501,7 @@ TEST_CASE("internal database  reorg index2", "[None]") {
 
 
 
-#if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_, 0);
-    check_blocks_db(env_, dbi_block_db_, 1);
-    check_blocks_db(env_, dbi_block_db_, 2);
-    check_blocks_db(env_, dbi_block_db_, 3);
-    check_blocks_db(env_, dbi_block_db_, 4);
-    check_blocks_db(env_, dbi_block_db_, 5);
-    check_blocks_db(env_, dbi_block_db_, 6);
-    check_blocks_db(env_, dbi_block_db_, 7);
-#elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_ ,  0);
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 2);
@@ -1522,11 +1510,20 @@ TEST_CASE("internal database  reorg index2", "[None]") {
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 5);
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 6);
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 7);
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_, 0);
+    check_blocks_db(env_, dbi_block_db_, 1);
+    check_blocks_db(env_, dbi_block_db_, 2);
+    check_blocks_db(env_, dbi_block_db_, 3);
+    check_blocks_db(env_, dbi_block_db_, 4);
+    check_blocks_db(env_, dbi_block_db_, 5);
+    check_blocks_db(env_, dbi_block_db_, 6);
+    check_blocks_db(env_, dbi_block_db_, 7);
 #endif
 
 
- REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 6);
- REQUIRE(db_count_items(env_, dbi_reorg_index_) == 6);
+    REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 6);
+    REQUIRE(db_count_items(env_, dbi_reorg_index_) == 6);
 
     REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 6) == 5);
     REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 1);
@@ -1535,16 +1532,16 @@ TEST_CASE("internal database  reorg index2", "[None]") {
     check_index_and_pool(env_, dbi_reorg_index_, dbi_reorg_pool_);
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 }
 
@@ -1618,18 +1615,18 @@ TEST_CASE("internal database  reorg 0", "[None]") {
     KTH_DB_dbi dbi_block_header_by_hash_;
     KTH_DB_dbi dbi_reorg_block_;
 
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     KTH_DB_dbi dbi_block_db_;
-    #endif
+#endif
 
 
-    #if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
     KTH_DB_dbi dbi_transaction_db_;
     KTH_DB_dbi dbi_transaction_hash_db_;
     KTH_DB_dbi dbi_transaction_unconfirmed_db_;
     KTH_DB_dbi dbi_history_db_;
     KTH_DB_dbi dbi_spend_db_;
-    #endif
+#endif
 
 
     // Insert the First Block
@@ -1667,24 +1664,21 @@ TEST_CASE("internal database  reorg 0", "[None]") {
 
     //KTH_DB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
 
-#if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_, 0);
-#elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 0);
-
 
     auto const& address = domain::wallet::payment_address("1JBSCVF6VM6QjFZyTnbpLjoCJTQEqVbepG");
     REQUIRE(address);
@@ -1694,6 +1688,8 @@ TEST_CASE("internal database  reorg 0", "[None]") {
     print_db_entries_count(env_, dbi_transaction_db_);
     check_transactions_db_just_existence(env_,dbi_transaction_db_,0);
     REQUIRE(db_count_items(env_, dbi_transaction_db_) == 1);
+#elif defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_DYNAMIC)
+    check_blocks_db(env_, dbi_block_db_, 0);
 #endif
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
@@ -1701,16 +1697,16 @@ TEST_CASE("internal database  reorg 0", "[None]") {
     REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
     // Insert the Spender Block
@@ -1804,10 +1800,10 @@ TEST_CASE("internal database  reorg 0", "[None]") {
 
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
 #endif
-#ifdef KTH_DB_NEW_FULL
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
@@ -1824,12 +1820,8 @@ TEST_CASE("internal database  reorg 0", "[None]") {
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 0);
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
-#if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_, 1);
-#elif defined(KTH_DB_NEW_FULL)
-
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_, 1);
-
 
     auto const& address4 = domain::wallet::payment_address("18REpJroZy5eYCtqK1jwwgQUvVkPojy2rR");
     REQUIRE(address4);
@@ -1839,20 +1831,20 @@ TEST_CASE("internal database  reorg 0", "[None]") {
     REQUIRE(address1);
     REQUIRE(db_count_db_by_address(env_, dbi_history_db_, address1) == 1);
 
-
-
     print_db_entries_count(env_, dbi_transaction_db_);
     check_transactions_db_just_existence(env_,dbi_transaction_db_,0);
     check_transactions_db_just_existence(env_,dbi_transaction_db_,1);
     check_transactions_db_just_existence(env_,dbi_transaction_db_,2);
     REQUIRE(db_count_items(env_, dbi_transaction_db_) == 3);
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_, 1);
 #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
 #endif
-#ifdef KTH_DB_NEW_FULL
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
@@ -1926,16 +1918,16 @@ TEST_CASE("internal database  reorg 0", "[None]") {
 
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
@@ -1943,11 +1935,7 @@ TEST_CASE("internal database  reorg 0", "[None]") {
     REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
 
 
-#if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db_doesnt_exists(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,0);
-#elif defined(KTH_DB_NEW_FULL)
-
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db_doesnt_exists(env_, dbi_block_db_,1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
 
@@ -1956,19 +1944,23 @@ TEST_CASE("internal database  reorg 0", "[None]") {
     check_transactions_db_doesnt_exists(env_,dbi_transaction_db_,1);
     check_transactions_db_doesnt_exists(env_,dbi_transaction_db_,2);
     REQUIRE(db_count_items(env_, dbi_transaction_db_) == 1);
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db_doesnt_exists(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,0);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
         , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
     // Insert the Spender Block, again
@@ -2066,16 +2058,16 @@ TEST_CASE("internal database  reorg 0", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
 
@@ -2088,10 +2080,7 @@ TEST_CASE("internal database  reorg 0", "[None]") {
     check_reorg_block(env_, dbi_reorg_block_, 1, spender_enc);
 
 
-#if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-#elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
 
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
@@ -2101,19 +2090,23 @@ TEST_CASE("internal database  reorg 0", "[None]") {
     check_transactions_db_just_existence(env_,dbi_transaction_db_,1);
     check_transactions_db_just_existence(env_,dbi_transaction_db_,2);
     REQUIRE(db_count_items(env_, dbi_transaction_db_) == 3);
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
 #endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
         , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 }
 
@@ -2149,17 +2142,17 @@ TEST_CASE("internal database  reorg 1", "[None]") {
     KTH_DB_dbi dbi_reorg_block_;
     //KTH_DB_txn* db_txn;
 
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     KTH_DB_dbi dbi_block_db_;
-    #endif
+#endif
 
-    #if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
     KTH_DB_dbi dbi_transaction_db_;
     KTH_DB_dbi dbi_transaction_hash_db_;
     KTH_DB_dbi dbi_transaction_unconfirmed_db_;
     KTH_DB_dbi dbi_history_db_;
     KTH_DB_dbi dbi_spend_db_;
-    #endif
+#endif
 
     // Insert the First Block
     {
@@ -2174,16 +2167,16 @@ TEST_CASE("internal database  reorg 1", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
 
@@ -2191,23 +2184,24 @@ TEST_CASE("internal database  reorg 1", "[None]") {
     REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
     REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
 
-    #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
-    , dbi_transaction_unconfirmed_db_
-    #endif
+        , dbi_transaction_unconfirmed_db_
+#endif
     );
 
     // Insert the Spender Block
@@ -2242,16 +2236,16 @@ TEST_CASE("internal database  reorg 1", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
@@ -2262,25 +2256,26 @@ TEST_CASE("internal database  reorg 1", "[None]") {
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 0);
     check_reorg_block_doesnt_exists(env_, dbi_reorg_block_, 1);
 
-    #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_,dbi_block_header_, dbi_transaction_db_,1);
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
     // Remove the Spender Block
@@ -2294,38 +2289,39 @@ TEST_CASE("internal database  reorg 1", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
 
-    #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_,0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_,1);
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
-    , dbi_transaction_unconfirmed_db_
-    #endif
+        , dbi_transaction_unconfirmed_db_
+#endif
     );
 
 
@@ -2424,17 +2420,17 @@ TEST_CASE("internal database  prune", "[None]") {
     KTH_DB_dbi dbi_block_header_;
     KTH_DB_dbi dbi_block_header_by_hash_;
 
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     KTH_DB_dbi dbi_block_db_;
-    #endif
+#endif
 
-    #if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
     KTH_DB_dbi dbi_transaction_db_;
     KTH_DB_dbi dbi_transaction_hash_db_;
     KTH_DB_dbi dbi_transaction_unconfirmed_db_;
     KTH_DB_dbi dbi_history_db_;
     KTH_DB_dbi dbi_spend_db_;
-    #endif
+#endif
 
     //KTH_DB_txn* db_txn;
 
@@ -2453,16 +2449,16 @@ TEST_CASE("internal database  prune", "[None]") {
 
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
@@ -2473,35 +2469,35 @@ TEST_CASE("internal database  prune", "[None]") {
     REQUIRE(db_count_items(env_, dbi_block_header_) == 6);
     REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 6);
 
-
-    #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+#endif
 
     // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
     // ------------------------------------------------------------------------------------
@@ -2514,16 +2510,16 @@ TEST_CASE("internal database  prune", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 1);
@@ -2534,15 +2530,7 @@ TEST_CASE("internal database  prune", "[None]") {
     REQUIRE(db_count_items(env_, dbi_block_header_) == 7);
     REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 7);
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -2550,20 +2538,28 @@ TEST_CASE("internal database  prune", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+#endif
 
     // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
     // ------------------------------------------------------------------------------------
@@ -2576,16 +2572,16 @@ TEST_CASE("internal database  prune", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 2);
@@ -2597,16 +2593,7 @@ TEST_CASE("internal database  prune", "[None]") {
     REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 8);
 
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -2615,19 +2602,28 @@ TEST_CASE("internal database  prune", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
-    , dbi_transaction_unconfirmed_db_
-    #endif
+        , dbi_transaction_unconfirmed_db_
+#endif
     );
 
 
@@ -2641,16 +2637,16 @@ TEST_CASE("internal database  prune", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 3);
@@ -2662,17 +2658,7 @@ TEST_CASE("internal database  prune", "[None]") {
     REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 9);
 
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-    check_blocks_db(env_, dbi_block_db_,8);
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -2682,19 +2668,29 @@ TEST_CASE("internal database  prune", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 8);
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    check_blocks_db(env_, dbi_block_db_,8);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
-    , dbi_transaction_unconfirmed_db_
-    #endif
+        , dbi_transaction_unconfirmed_db_
+#endif
     );
 
 
@@ -2708,16 +2704,16 @@ TEST_CASE("internal database  prune", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 4);
@@ -2728,19 +2724,7 @@ TEST_CASE("internal database  prune", "[None]") {
     REQUIRE(db_count_items(env_, dbi_block_header_) == 10);
     REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 10);
 
-
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-    check_blocks_db(env_, dbi_block_db_,8);
-    check_blocks_db(env_, dbi_block_db_,9);
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -2751,19 +2735,30 @@ TEST_CASE("internal database  prune", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 8);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 9);
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    check_blocks_db(env_, dbi_block_db_,8);
+    check_blocks_db(env_, dbi_block_db_,9);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
 
@@ -2777,16 +2772,16 @@ TEST_CASE("internal database  prune", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
@@ -2797,19 +2792,7 @@ TEST_CASE("internal database  prune", "[None]") {
     REQUIRE(db_count_items(env_, dbi_block_header_) == 11);
     REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 11);
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-    check_blocks_db(env_, dbi_block_db_,8);
-    check_blocks_db(env_, dbi_block_db_,9);
-    check_blocks_db(env_, dbi_block_db_,10);
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -2821,20 +2804,32 @@ TEST_CASE("internal database  prune", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 8);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 9);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 10);
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    check_blocks_db(env_, dbi_block_db_,8);
+    check_blocks_db(env_, dbi_block_db_,9);
+    check_blocks_db(env_, dbi_block_db_,10);
+#endif
 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
     {
@@ -2844,16 +2839,16 @@ TEST_CASE("internal database  prune", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
@@ -2862,19 +2857,7 @@ TEST_CASE("internal database  prune", "[None]") {
 
 
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-    check_blocks_db(env_, dbi_block_db_,8);
-    check_blocks_db(env_, dbi_block_db_,9);
-    check_blocks_db(env_, dbi_block_db_,10);
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -2886,20 +2869,32 @@ TEST_CASE("internal database  prune", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 8);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 9);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 10);
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    check_blocks_db(env_, dbi_block_db_,8);
+    check_blocks_db(env_, dbi_block_db_,9);
+    check_blocks_db(env_, dbi_block_db_,10);
+#endif
 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
     {
@@ -2909,35 +2904,23 @@ TEST_CASE("internal database  prune", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
     REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-    check_blocks_db(env_, dbi_block_db_,8);
-    check_blocks_db(env_, dbi_block_db_,9);
-    check_blocks_db(env_, dbi_block_db_,10);
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -2949,20 +2932,32 @@ TEST_CASE("internal database  prune", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 8);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 9);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 10);
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    check_blocks_db(env_, dbi_block_db_,8);
+    check_blocks_db(env_, dbi_block_db_,9);
+    check_blocks_db(env_, dbi_block_db_,10);
+#endif
 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
     {
@@ -2972,35 +2967,23 @@ TEST_CASE("internal database  prune", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
     REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-    check_blocks_db(env_, dbi_block_db_,8);
-    check_blocks_db(env_, dbi_block_db_,9);
-    check_blocks_db(env_, dbi_block_db_,10);
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -3012,20 +2995,32 @@ TEST_CASE("internal database  prune", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 8);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 9);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 10);
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    check_blocks_db(env_, dbi_block_db_,8);
+    check_blocks_db(env_, dbi_block_db_,9);
+    check_blocks_db(env_, dbi_block_db_,10);
+#endif
 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
-    , dbi_transaction_unconfirmed_db_
-    #endif
+        , dbi_transaction_unconfirmed_db_
+#endif
     );
 
     {
@@ -3035,35 +3030,23 @@ TEST_CASE("internal database  prune", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
     REQUIRE(db_count_items(env_, dbi_reorg_index_) == 5);
     REQUIRE(db_count_items(env_, dbi_reorg_block_) == 5);
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-    check_blocks_db(env_, dbi_block_db_,8);
-    check_blocks_db(env_, dbi_block_db_,9);
-    check_blocks_db(env_, dbi_block_db_,10);
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -3075,20 +3058,32 @@ TEST_CASE("internal database  prune", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 8);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 9);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 10);
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    check_blocks_db(env_, dbi_block_db_,8);
+    check_blocks_db(env_, dbi_block_db_,9);
+    check_blocks_db(env_, dbi_block_db_,10);
+#endif
 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
     {
@@ -3098,35 +3093,23 @@ TEST_CASE("internal database  prune", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 4);
     REQUIRE(db_count_items(env_, dbi_reorg_index_) == 4);
     REQUIRE(db_count_items(env_, dbi_reorg_block_) == 4);
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-    check_blocks_db(env_, dbi_block_db_,8);
-    check_blocks_db(env_, dbi_block_db_,9);
-    check_blocks_db(env_, dbi_block_db_,10);
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -3138,19 +3121,32 @@ TEST_CASE("internal database  prune", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 8);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 9);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 10);
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    check_blocks_db(env_, dbi_block_db_,8);
+    check_blocks_db(env_, dbi_block_db_,9);
+    check_blocks_db(env_, dbi_block_db_,10);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
     {
@@ -3160,35 +3156,23 @@ TEST_CASE("internal database  prune", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
     REQUIRE(db_count_items(env_, dbi_reorg_index_) == 0);
     REQUIRE(db_count_items(env_, dbi_reorg_block_) == 0);
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-    check_blocks_db(env_, dbi_block_db_,8);
-    check_blocks_db(env_, dbi_block_db_,9);
-    check_blocks_db(env_, dbi_block_db_,10);
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -3200,19 +3184,31 @@ TEST_CASE("internal database  prune", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 8);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 9);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 10);
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+    check_blocks_db(env_, dbi_block_db_,8);
+    check_blocks_db(env_, dbi_block_db_,9);
+    check_blocks_db(env_, dbi_block_db_,10);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
 }
@@ -3288,17 +3284,17 @@ TEST_CASE("internal database  prune 2", "[None]") {
     KTH_DB_dbi dbi_block_header_;
     KTH_DB_dbi dbi_block_header_by_hash_;
 
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     KTH_DB_dbi dbi_block_db_;
-    #endif
+#endif
 
-    #if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
     KTH_DB_dbi dbi_transaction_db_;
     KTH_DB_dbi dbi_transaction_hash_db_;
     KTH_DB_dbi dbi_transaction_unconfirmed_db_;
     KTH_DB_dbi dbi_history_db_;
     KTH_DB_dbi dbi_spend_db_;
-    #endif
+#endif
 
     //KTH_DB_txn* db_txn;
 
@@ -3317,16 +3313,16 @@ TEST_CASE("internal database  prune 2", "[None]") {
 
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
@@ -3338,36 +3334,36 @@ TEST_CASE("internal database  prune 2", "[None]") {
     REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 6);
 
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+#endif
 
 
 
     // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
-    , dbi_transaction_unconfirmed_db_
-    #endif
+        , dbi_transaction_unconfirmed_db_
+#endif
     );
 
 
@@ -3383,16 +3379,16 @@ TEST_CASE("internal database  prune 2", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 1);
@@ -3407,15 +3403,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
 
 
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -3423,20 +3411,28 @@ TEST_CASE("internal database  prune 2", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+#endif
 
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
-    , dbi_transaction_unconfirmed_db_
-    #endif
+        , dbi_transaction_unconfirmed_db_
+#endif
     );
 
 
@@ -3450,16 +3446,16 @@ TEST_CASE("internal database  prune 2", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
@@ -3474,18 +3470,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
     REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 8);
 
 
-
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -3494,20 +3479,28 @@ TEST_CASE("internal database  prune 2", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
-
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
 
@@ -3523,16 +3516,16 @@ TEST_CASE("internal database  prune 2", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
@@ -3544,18 +3537,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
     REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
 
-
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -3564,20 +3546,28 @@ TEST_CASE("internal database  prune 2", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
-
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
     {
@@ -3587,16 +3577,16 @@ TEST_CASE("internal database  prune 2", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
@@ -3608,17 +3598,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
     REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -3627,20 +3607,28 @@ TEST_CASE("internal database  prune 2", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
-
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
     {
@@ -3650,16 +3638,16 @@ TEST_CASE("internal database  prune 2", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
@@ -3671,17 +3659,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
     REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -3690,20 +3668,28 @@ TEST_CASE("internal database  prune 2", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
-
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
     {
@@ -3713,16 +3699,16 @@ TEST_CASE("internal database  prune 2", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
@@ -3733,18 +3719,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
     REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 4);
     REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
-
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -3753,20 +3728,28 @@ TEST_CASE("internal database  prune 2", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
-
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
     {
@@ -3776,16 +3759,16 @@ TEST_CASE("internal database  prune 2", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
@@ -3797,17 +3780,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
     REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -3816,20 +3789,28 @@ TEST_CASE("internal database  prune 2", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
-
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
     {
@@ -3839,16 +3820,16 @@ TEST_CASE("internal database  prune 2", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 4);
@@ -3860,17 +3841,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
     REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -3879,20 +3850,28 @@ TEST_CASE("internal database  prune 2", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
-
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
 
@@ -3903,16 +3882,16 @@ TEST_CASE("internal database  prune 2", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
@@ -3925,17 +3904,7 @@ TEST_CASE("internal database  prune 2", "[None]") {
 
 
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -3944,19 +3913,29 @@ TEST_CASE("internal database  prune 2", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+#endif
 
-    #endif
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
 }
@@ -4030,17 +4009,17 @@ TEST_CASE("internal database  prune 3", "[None]") {
     KTH_DB_dbi dbi_block_header_;
     KTH_DB_dbi dbi_block_header_by_hash_;
 
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     KTH_DB_dbi dbi_block_db_;
-    #endif
+#endif
 
-    #if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
     KTH_DB_dbi dbi_transaction_db_;
     KTH_DB_dbi dbi_transaction_hash_db_;
     KTH_DB_dbi dbi_transaction_unconfirmed_db_;
     KTH_DB_dbi dbi_history_db_;
     KTH_DB_dbi dbi_spend_db_;
-    #endif
+#endif
 
     //KTH_DB_txn* db_txn;
 
@@ -4059,16 +4038,16 @@ TEST_CASE("internal database  prune 3", "[None]") {
 
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
@@ -4079,37 +4058,34 @@ TEST_CASE("internal database  prune 3", "[None]") {
     REQUIRE(db_count_items(env_, dbi_block_header_) == 6);
     REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 6);
 
-
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 3);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
-
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+#endif
 
     // check_reorg_output_doesnt_exists(env_, dbi_reorg_pool_, "f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6", 0);
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
 
@@ -4123,16 +4099,16 @@ TEST_CASE("internal database  prune 3", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 4);
@@ -4147,16 +4123,7 @@ TEST_CASE("internal database  prune 3", "[None]") {
     REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 7);
 
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -4164,20 +4131,27 @@ TEST_CASE("internal database  prune 3", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 4);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
-
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
 
@@ -4191,16 +4165,16 @@ TEST_CASE("internal database  prune 3", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 5);
@@ -4214,17 +4188,7 @@ TEST_CASE("internal database  prune 3", "[None]") {
     REQUIRE(db_count_items(env_, dbi_block_header_) == 8);
     REQUIRE(db_count_items(env_, dbi_block_header_by_hash_) == 8);
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -4233,19 +4197,29 @@ TEST_CASE("internal database  prune 3", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+#endif
 
-    #endif
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
     // ------------------------------------------------------------------------------------
@@ -4259,16 +4233,16 @@ TEST_CASE("internal database  prune 3", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 1);
@@ -4280,17 +4254,7 @@ TEST_CASE("internal database  prune 3", "[None]") {
     REQUIRE(db_exists_height(env_, dbi_reorg_block_, 7));
 
 
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -4299,20 +4263,28 @@ TEST_CASE("internal database  prune 3", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
-
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
 
@@ -4323,16 +4295,16 @@ TEST_CASE("internal database  prune 3", "[None]") {
     }   //close() implicit
 
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 0);
@@ -4343,18 +4315,7 @@ TEST_CASE("internal database  prune 3", "[None]") {
     REQUIRE(db_count_index_by_height(env_, dbi_reorg_index_, 7) == 0);
     REQUIRE( !  db_exists_height(env_, dbi_reorg_block_, 7));
 
-
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-    check_blocks_db(env_, dbi_block_db_,3);
-    check_blocks_db(env_, dbi_block_db_,4);
-    check_blocks_db(env_, dbi_block_db_,5);
-    check_blocks_db(env_, dbi_block_db_,6);
-    check_blocks_db(env_, dbi_block_db_,7);
-
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
@@ -4363,19 +4324,30 @@ TEST_CASE("internal database  prune 3", "[None]") {
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 5);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 6);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 7);
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+    check_blocks_db(env_, dbi_block_db_,3);
+    check_blocks_db(env_, dbi_block_db_,4);
+    check_blocks_db(env_, dbi_block_db_,5);
+    check_blocks_db(env_, dbi_block_db_,6);
+    check_blocks_db(env_, dbi_block_db_,7);
+#endif
 
-    #endif
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
 }
@@ -4448,61 +4420,57 @@ TEST_CASE("internal database  prune empty reorg pool 3", "[None]") {
     KTH_DB_dbi dbi_block_header_;
     KTH_DB_dbi dbi_block_header_by_hash_;
 
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     KTH_DB_dbi dbi_block_db_;
-    #endif
+#endif
 
-    #if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL)
     KTH_DB_dbi dbi_transaction_db_;
     KTH_DB_dbi dbi_transaction_hash_db_;
     KTH_DB_dbi dbi_transaction_unconfirmed_db_;
     KTH_DB_dbi dbi_history_db_;
     KTH_DB_dbi dbi_spend_db_;
-    #endif
+#endif
 
     //KTH_DB_txn* db_txn;
     std::tie(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     , dbi_transaction_db_
     , dbi_history_db_
     , dbi_spend_db_
     , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     ) = open_dbs();
 
     REQUIRE(db_count_items(env_, dbi_reorg_pool_) == 2);
     REQUIRE(db_count_items(env_, dbi_reorg_index_) == 2);
     REQUIRE(db_count_items(env_, dbi_reorg_block_) == 3);
 
-
-
-     #if defined(KTH_DB_NEW_BLOCKS)
-    check_blocks_db(env_, dbi_block_db_,0);
-    check_blocks_db(env_, dbi_block_db_,1);
-    check_blocks_db(env_, dbi_block_db_,2);
-
-    #elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 0);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 1);
     check_blocks_db(env_, dbi_block_db_, dbi_block_header_, dbi_transaction_db_, 2);
-
-    #endif
+#elif defined(KTH_DB_NEW_BLOCKS)
+    check_blocks_db(env_, dbi_block_db_,0);
+    check_blocks_db(env_, dbi_block_db_,1);
+    check_blocks_db(env_, dbi_block_db_,2);
+#endif
 
     close_everything(env_, dbi_utxo_, dbi_reorg_pool_, dbi_reorg_index_, dbi_block_header_, dbi_block_header_by_hash_, dbi_reorg_block_
-    #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_block_db_
-    #endif
-    #ifdef KTH_DB_NEW_FULL
+#endif
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         , dbi_transaction_db_
         , dbi_history_db_
         , dbi_spend_db_
         , dbi_transaction_hash_db_
     , dbi_transaction_unconfirmed_db_
-    #endif
+#endif
     );
 
     {
@@ -4581,7 +4549,5 @@ BlockHash 0000000054d4f171b0eab3cd4e31da4ce5a1a06f27b39bf36c5902c9bb8ef5c4
 0100000021a06106f13b4f0112a63e77fae3a48ffe10716ff3cdfb35371032990000000015327dc99375fc1fdc02e15394369daa6e23ad4dc27e7c1c4af21606add5b068dadf9949ffff001dda8444000101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0804ffff001d029600ffffffff0100f2052a0100000043410475804bd8be2560ab2ebd170228429814d60e58d7415a93dc51f23e4cb2f8b5188dd56fa8d519e9ef9c16d6ab22c1c8304e10e74a28444eb26821948b2d1482a4ac00000000
 
 */
-
-// #endif // KTH_DB_NEW
 
 // End Test Suite

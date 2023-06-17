@@ -2,8 +2,6 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-// #ifdef KTH_DB_NEW
-
 #include <kth/database/databases/utxo_entry.hpp>
 
 #include <cstddef>
@@ -121,5 +119,3 @@ void utxo_entry::to_data(std::ostream& stream) const {
 }
 
 } // namespace kth::database
-
-// #endif // KTH_DB_NEW

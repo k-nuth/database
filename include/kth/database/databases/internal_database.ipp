@@ -65,7 +65,7 @@ bool internal_database_basis<Clock>::create_db_mode_property() {
 
     db_mode_code db_mode_;
 
-#if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     db_mode_ = db_mode_code::db_new_full;
 #elif defined(KTH_DB_NEW_BLOCKS)
     db_mode_ = db_mode_code::db_new_with_blocks;
@@ -152,7 +152,7 @@ bool internal_database_basis<Clock>::verify_db_mode_property() const {
         return false;
     }
 
-#if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     auto db_mode_node_ = db_mode_code::db_new_full;
 #elif defined(KTH_DB_NEW_BLOCKS)
     auto db_mode_node_ = db_mode_code::db_new_with_blocks;
@@ -190,17 +190,17 @@ bool internal_database_basis<Clock>::close() {
         kth_db_dbi_close(env_, dbi_reorg_block_);
         kth_db_dbi_close(env_, dbi_properties_);
 
-        #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         kth_db_dbi_close(env_, dbi_block_db_);
-        #endif
+#endif
 
-        #if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         kth_db_dbi_close(env_, dbi_transaction_db_);
         kth_db_dbi_close(env_, dbi_transaction_hash_db_);
         kth_db_dbi_close(env_, dbi_history_db_);
         kth_db_dbi_close(env_, dbi_spend_db_);
         kth_db_dbi_close(env_, dbi_transaction_unconfirmed_db_);
-        #endif
+#endif
 
         db_opened_ = false;
     }
@@ -611,7 +611,7 @@ std::pair<result_code, utxo_pool_t> internal_database_basis<Clock>::get_utxo_poo
     return {result_code::success, pool};
 }
 
-#if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
@@ -636,7 +636,7 @@ result_code internal_database_basis<Clock>::push_transaction_unconfirmed(domain:
 }
 
 #endif // ! defined(KTH_DB_READONLY)
-#endif // defined(KTH_DB_NEW_FULL)
+#endif // defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
 
 // Private functions
 // ------------------------------------------------------------------------------------------------------
@@ -791,14 +791,14 @@ bool internal_database_basis<Clock>::open_databases() {
         return false;
     }
 
-#if defined(KTH_DB_NEW_BLOCKS)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_DYNAMIC)
     res = kth_db_dbi_open(db_txn, block_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_block_db_);
     if (res != KTH_DB_SUCCESS) {
         return false;
     }
 #endif
 
-#if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
 
     res = kth_db_dbi_open(db_txn, block_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_INTEGERKEY | KTH_DB_DUPFIXED  | MDB_INTEGERDUP, &dbi_block_db_);
     if (res != KTH_DB_SUCCESS) {
@@ -832,7 +832,7 @@ bool internal_database_basis<Clock>::open_databases() {
 
     mdb_set_dupsort(db_txn, dbi_history_db_, compare_uint64);
 
-#endif //KTH_DB_NEW_FULL
+#endif // defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
 
     db_opened_ = kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS;
     return db_opened_;
@@ -848,7 +848,7 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
         domain::chain::input_point const inpoint {tx_id, pos};
         auto const& prevout = input.previous_output();
 
-#if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         auto res = insert_input_history(inpoint, height, input, db_txn);
         if (res != result_code::success) {
             return res;
@@ -860,7 +860,6 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
         if (res != result_code::success) {
             return res;
         }*/
-
 #else
     result_code res;
 #endif
@@ -870,14 +869,12 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
             return res;
         }
 
-#if defined(KTH_DB_NEW_FULL)
-
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         //insert in spend database
         res = insert_spend(prevout, inpoint, db_txn);
         if (res != result_code::success) {
             return res;
         }
-
 #endif
 
         ++pos;
@@ -895,14 +892,12 @@ result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx
             return res;
         }
 
-        #if defined(KTH_DB_NEW_FULL)
-
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
         res = insert_output_history(tx_id, height, pos, output, db_txn);
         if (res != result_code::success) {
             return res;
         }
-
-        #endif
+#endif
 
         ++pos;
     }
@@ -974,20 +969,11 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
 
     auto const& txs = block.transactions();
 
-#if defined(KTH_DB_NEW_BLOCKS)
-    res = insert_block(block, height, db_txn);
-    if (res != result_code::success) {
-        // std::cout << "22222222222222" << static_cast<uint32_t>(res) << "\n";
-        return res;
-    }
-
-#elif defined(KTH_DB_NEW_FULL)
-
+#if defined(KTH_DB_NEW_FULL)|| defined(KTH_DB_DYNAMIC)
     auto tx_count = get_tx_count(db_txn);
 
     res = insert_block(block, height, tx_count, db_txn);
     if (res != result_code::success) {
-        // std::cout << "22222222222222" << static_cast<uint32_t>(res) << "\n";
         return res;
     }
 
@@ -997,7 +983,11 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
     } else if (res != result_code::success) {
         return res;
     }
-
+#elif defined(KTH_DB_NEW_BLOCKS)
+    res = insert_block(block, height, db_txn);
+    if (res != result_code::success) {
+        return res;
+    }
 #endif
 
     if ( insert_reorg ) {
@@ -1034,9 +1024,7 @@ result_code internal_database_basis<Clock>::push_genesis(domain::chain::block co
         return res;
     }
 
-#if defined(KTH_DB_NEW_BLOCKS)
-    res = insert_block(block, 0, db_txn);
-#elif defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     auto tx_count = get_tx_count(db_txn);
     res = insert_block(block, 0, tx_count, db_txn);
 
@@ -1058,7 +1046,8 @@ result_code internal_database_basis<Clock>::push_genesis(domain::chain::block co
     if (res != result_code::success) {
         return res;
     }
-
+#elif defined(KTH_DB_NEW_BLOCKS)
+    res = insert_block(block, 0, db_txn);
 #endif
 
     return res;
@@ -1174,20 +1163,20 @@ result_code internal_database_basis<Clock>::remove_block(domain::chain::block co
         return res;
     }
 
-#if defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     //Transaction Database
     res = remove_transactions(block, height, db_txn);
     if (res != result_code::success) {
         return res;
     }
-#endif //defined(KTH_DB_NEW_FULL)
+#endif //defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
 
-#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
     res = remove_blocks_db(height, db_txn);
     if (res != result_code::success) {
         return res;
     }
-#endif //defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+#endif //defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
 
     return result_code::success;
 }
