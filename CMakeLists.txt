@@ -17,16 +17,10 @@ option(WITH_TESTS "Compile with unit tests." ON)
 option(WITH_TOOLS "Compile with tools." OFF)
 option(WITH_MEASUREMENTS "Measurements enabled." OFF)
 option(DB_READONLY_MODE "Readonly DB mode enabled." OFF)
-option(DB_NEW "DB New enabled." OFF)
-option(DB_NEW_BLOCKS "DB Blocks New enabled." OFF)
-option(DB_NEW_FULL "DB New Full enabled." OFF)
-option(DB_DYNAMIC "Dynamic DB. DB Mode selected on Runtime." OFF)
 option(JUST_KTH_SOURCES "Just Knuth source code to be linted." OFF)
 option(USE_LIBMDBX "Uses libmdbx DB library." OFF)
 
-
 option(GLOBAL_BUILD "" OFF)
-
 
 set(MARCH_ID "" CACHE STRING "Specify the Microarchitecture ID (x86_64|...).")
 message( STATUS "Knuth: Compiling for Microarchitecture ID ${MARCH_ID}")
@@ -124,24 +118,22 @@ if (ENABLE_SHARED)
     set(MODE SHARED)
 endif()
 
+
+
+
 set(kth_sources_just_kth
+    ${kth_sources_just_kth}
+    src/data_base.cpp
+    src/settings.cpp
+    src/store.cpp
+    src/version.cpp
+
+    src/databases/utxo_entry.cpp
+    src/databases/history_entry.cpp
+    src/databases/transaction_entry.cpp
+    src/databases/transaction_unconfirmed_entry.cpp
 )
 
-if (DB_NEW)
-    set(kth_sources_just_kth
-        ${kth_sources_just_kth}
-        src/databases/utxo_entry.cpp
-    )
-endif()
-
-if (DB_NEW_FULL)
-    set(kth_sources_just_kth
-        ${kth_sources_just_kth}
-        src/databases/history_entry.cpp
-        src/databases/transaction_entry.cpp
-        src/databases/transaction_unconfirmed_entry.cpp
-    )
-endif()
 
 set(kth_sources
   ${kth_sources}
@@ -172,9 +164,9 @@ set(kth_headers
   include/kth/database/databases/spend_database.ipp
   include/kth/database/databases/utxo_database.ipp
   include/kth/database/databases/header_database.ipp
-  include/kth/database/unspent_outputs.hpp
   include/kth/database/settings.hpp
-  include/kth/database/unspent_transaction.hpp
+  # include/kth/database/unspent_outputs.hpp
+  # include/kth/database/unspent_transaction.hpp
   include/kth/database/version.hpp
   include/kth/database.hpp
 )
@@ -212,12 +204,10 @@ if (WITH_TESTS)
     enable_testing()
     find_package(Catch2 3 REQUIRED)
 
-    if (DB_NEW)
-        add_executable(kth_database_test
-                test/main.cpp
-                test/internal_database.cpp
-                )
-    endif()
+    add_executable(kth_database_test
+            test/main.cpp
+            test/internal_database.cpp
+            )
 
     target_include_directories(kth_database_test PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>)
 

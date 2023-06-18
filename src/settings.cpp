@@ -23,7 +23,7 @@ constexpr
 auto get_db_max_size_mainnet(db_mode_type mode) {
     return mode == db_mode_type::pruned
         ? db_size_pruned_mainnet
-        : mode == db_mode_type::default
+        : mode == db_mode_type::blocks
             ? db_size_default_mainnet
             : db_size_full_mainnet;
 }
@@ -31,15 +31,14 @@ auto get_db_max_size_mainnet(db_mode_type mode) {
 constexpr auto get_db_max_size_testnet4(db_mode_type mode) {
     return mode == db_mode_type::pruned
         ? db_size_pruned_testnet4
-        : mode == db_mode_type::default
+        : mode == db_mode_type::blocks
             ? db_size_default_testnet4
             : db_size_full_testnet4;
 }
 
 settings::settings()
     : directory(u8"blockchain")
-    , flush_writes(false)
-    , db_mode(db_mode_type::default)
+    , db_mode(db_mode_type::blocks)
     , reorg_pool_limit(100)      //TODO(fernando): look for a good default
     , db_max_size(get_db_max_size_mainnet(db_mode))
     , safe_mode(true)

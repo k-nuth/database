@@ -9,14 +9,9 @@
 #include <filesystem>
 
 #include <kth/database/define.hpp>
+#include <kth/database/databases/property_code.hpp>
 
 namespace kth::database {
-
-enum class db_mode_type {
-    pruned,
-    default,
-    full,
-};
 
 /// Common database configuration settings, properties not thread safe.
 class KD_API settings {
@@ -26,8 +21,6 @@ public:
 
     /// Properties.
     kth::path directory;
-    bool flush_writes;
-
     db_mode_type db_mode;
     uint32_t reorg_pool_limit;
     uint64_t db_max_size;

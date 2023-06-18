@@ -7,8 +7,6 @@
 
 namespace kth::database {
 
-#if defined(KTH_DB_NEW_FULL)
-
 //public
 template <typename Clock>
 domain::chain::input_point internal_database_basis<Clock>::get_spend(domain::chain::output_point const& point) const {
@@ -111,7 +109,6 @@ result_code internal_database_basis<Clock>::remove_spend(domain::chain::output_p
 #endif // ! defined(KTH_DB_READONLY)
 
 
-#endif // defined(KTH_DB_NEW_FULL)
 
 } // namespace kth::database
 

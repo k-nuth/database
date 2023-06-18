@@ -43,7 +43,7 @@ using namespace std::placeholders;
 data_base::data_base(settings const& settings)
     : closed_(true)
     , settings_(settings)
-    , store(settings.directory, settings.flush_writes)
+    , store(settings.directory)
 {}
 
 data_base::~data_base() {
@@ -63,6 +63,7 @@ bool data_base::create(block const& genesis) {
 #if ! defined(KTH_DB_READONLY)
                 && internal_db_->create()
 #endif
+    ;
 
     if ( ! created) {
         return false;
@@ -113,7 +114,6 @@ internal_database const& data_base::internal_db() const {
 // Synchronous writers.
 // ----------------------------------------------------------------------------
 
-#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
 static inline
 uint32_t get_next_height(internal_database const& db) {
     uint32_t current_height;
@@ -130,8 +130,6 @@ static inline
 hash_digest get_previous_hash(internal_database const& db, size_t height) {
     return height == 0 ? null_hash : db.get_header(height - 1).hash();
 }
-#endif // defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-
 
 //TODO(fernando): const?
 code data_base::verify_insert(block const& block, size_t height) {
@@ -153,8 +151,10 @@ code data_base::verify_push(block const& block, size_t height) const {
         return error::empty_block;
     }
 
-#if defined(KTH_DB_LEGACY)
-#elif defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
+    if (settings_.db_mode == db_mode_type::pruned) {
+        return error::success;
+    }
+
     if (get_next_height(internal_db()) != height) {
         return error::store_block_invalid_height;
     }
@@ -162,10 +162,10 @@ code data_base::verify_push(block const& block, size_t height) const {
     if (block.header().previous_block_hash() != get_previous_hash(internal_db(), height)) {
         return error::store_block_missing_parent;
     }
-#endif
 
     return error::success;
 }
+
 
 #if ! defined(KTH_DB_READONLY)
 
@@ -192,16 +192,15 @@ code data_base::insert(domain::chain::block const& block, size_t height) {
 
 // This is designed for write exclusivity and read concurrency.
 code data_base::push(domain::chain::transaction const& tx, uint32_t forks) {
-#ifdef KTH_DB_LEGACY
-#elif defined(KTH_DB_NEW_FULL)
+    if (settings_.db_mode != db_mode_type::full) {
+        return error::success;
+    }
+
     //We insert only in transaction unconfirmed here
     internal_db_->push_transaction_unconfirmed(tx, forks);
     return error::success;  //TODO(fernando): store the transactions in a new mempool
-
-#else
-    return error::success;
-#endif
 }
+
 #endif // ! defined(KTH_DB_READONLY)
 
 #if ! defined(KTH_DB_READONLY)

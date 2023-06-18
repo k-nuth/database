@@ -96,7 +96,7 @@ domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height, 
         kth_db_cursor_close(cursor);
 
         return domain::chain::block{header, std::move(tx_list)};
-    } else if (db_mode_ == db_mode_type::default) {
+    } else if (db_mode_ == db_mode_type::blocks) {
         KTH_DB_val value;
 
         if (kth_db_get(db_txn, dbi_block_db_, &key, &value) != KTH_DB_SUCCESS) {
@@ -122,14 +122,30 @@ result_code internal_database_basis<Clock>::insert_block(domain::chain::block co
 
     auto key = kth_db_make_value(sizeof(height), &height);
 
-#if defined(KTH_DB_NEW_FULL)
+    if (db_mode_ == db_mode_type::full) {
 
-    auto const& txs = block.transactions();
+        auto const& txs = block.transactions();
 
-    for (uint64_t i = tx_count; i < tx_count + txs.size(); ++i) {
-        auto value = kth_db_make_value(sizeof(i), &i);
+        for (uint64_t i = tx_count; i < tx_count + txs.size(); ++i) {
+            auto value = kth_db_make_value(sizeof(i), &i);
 
-        auto res = kth_db_put(db_txn, dbi_block_db_, &key, &value, MDB_APPENDDUP);
+            auto res = kth_db_put(db_txn, dbi_block_db_, &key, &value, MDB_APPENDDUP);
+            if (res == KTH_DB_KEYEXIST) {
+                LOG_INFO(LOG_DATABASE, "Duplicate key in Block DB [insert_block] ", res);
+                return result_code::duplicated_key;
+            }
+
+            if (res != KTH_DB_SUCCESS) {
+                LOG_INFO(LOG_DATABASE, "Error saving in Block DB [insert_block] ", res);
+                return result_code::other;
+            }
+        }
+    } else if (db_mode_ == db_mode_type::blocks) {
+        //TODO: store tx hash
+        auto data = block.to_data(false);
+        auto value = kth_db_make_value(data.size(), data.data());
+
+        auto res = kth_db_put(db_txn, dbi_block_db_, &key, &value, KTH_DB_APPEND);
         if (res == KTH_DB_KEYEXIST) {
             LOG_INFO(LOG_DATABASE, "Duplicate key in Block DB [insert_block] ", res);
             return result_code::duplicated_key;
@@ -140,23 +156,6 @@ result_code internal_database_basis<Clock>::insert_block(domain::chain::block co
             return result_code::other;
         }
     }
-
-#elif defined(KTH_DB_NEW_BLOCKS)
-    //TODO: store tx hash
-    auto data = block.to_data(false);
-    auto value = kth_db_make_value(data.size(), data.data());
-
-    auto res = kth_db_put(db_txn, dbi_block_db_, &key, &value, KTH_DB_APPEND);
-    if (res == KTH_DB_KEYEXIST) {
-        LOG_INFO(LOG_DATABASE, "Duplicate key in Block DB [insert_block] ", res);
-        return result_code::duplicated_key;
-    }
-
-    if (res != KTH_DB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE, "Error saving in Block DB [insert_block] ", res);
-        return result_code::other;
-    }
-#endif
 
     return result_code::success;
 }
@@ -189,7 +188,7 @@ result_code internal_database_basis<Clock>::remove_blocks_db(uint32_t height, KT
         }
 
         kth_db_cursor_close(cursor);
-    } else if (db_mode == db_mode_type::default) {
+    } else if (db_mode_ == db_mode_type::blocks) {
         auto res = kth_db_del(db_txn, dbi_block_db_, &key, NULL);
         if (res == KTH_DB_NOTFOUND) {
             LOG_INFO(LOG_DATABASE, "Key not found deleting blocks DB in LMDB [remove_blocks_db] - kth_db_del: ", res);

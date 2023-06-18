@@ -13,10 +13,16 @@ enum class property_code {
     db_mode = 0,
 };
 
-enum class db_mode_code {
-    db_new = 0,
-    db_new_with_blocks = 1,
-    db_new_full = 2
+// enum class db_mode_code {
+//     db_new = 0,
+//     db_new_with_blocks = 1,
+//     db_new_full = 2
+// };
+
+enum class db_mode_type {
+    pruned,
+    blocks,
+    full,
 };
 
 } // namespace kth::database
