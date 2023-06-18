@@ -112,7 +112,6 @@ class KnuthDatabaseConan(KnuthConanFileV2):
         # tc.variables["CMAKE_VERBOSE_MAKEFILE"] = True
         tc.variables["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
         tc.variables["DB_READONLY_MODE"] = option_on_off(self.options.db_readonly)
-        tc.variables["WITH_CACHED_RPC_DATA"] = option_on_off(self.options.cached_rpc_data)
         tc.variables["LOG_LIBRARY"] = self.options.log
         tc.variables["USE_LIBMDBX"] = option_on_off(self.options.use_libmdbx)
         tc.variables["CONAN_DISABLE_CHECK_COMPILER"] = option_on_off(True)

@@ -53,7 +53,7 @@
 
 namespace kth::database {
 
-#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
+#if defined(KTH_DB_NEW_FULL)
 constexpr size_t max_dbs_ = 13;
 #elif defined(KTH_DB_NEW_BLOCKS)
 constexpr size_t max_dbs_ = 8;
@@ -78,19 +78,19 @@ public:
     constexpr static char reorg_block_name[] = "reorg_block";
     constexpr static char db_properties_name[] = "properties";
 
-#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
     //Blocks DB
     constexpr static char block_db_name[] = "blocks";
-#endif //defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
+#endif //defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
 
-#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
+#if defined(KTH_DB_NEW_FULL)
     //Transactions
     constexpr static char transaction_db_name[] = "transactions";
     constexpr static char transaction_hash_db_name[] = "transactions_hash";
     constexpr static char history_db_name[] = "history";
     constexpr static char spend_db_name[] = "spend";
     constexpr static char transaction_unconfirmed_db_name[] = "transaction_unconfirmed";
-#endif  // defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
+#endif  // defined(KTH_DB_NEW_FULL)
 
     internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size, bool safe_mode);
     ~internal_database_basis();
@@ -135,7 +135,7 @@ public:
     std::pair<domain::chain::block, uint32_t> get_block(hash_digest const& hash) const;
     domain::chain::block get_block(uint32_t height) const;
 
-#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
+#if defined(KTH_DB_NEW_FULL)
     transaction_entry get_transaction(hash_digest const& hash, size_t fork_height) const;
 
     domain::chain::history_compact::list get_history(short_hash const& key, size_t limit, size_t from_height) const;
@@ -150,7 +150,7 @@ public:
 #if ! defined(KTH_DB_READONLY)
     result_code push_transaction_unconfirmed(domain::chain::transaction const& tx, uint32_t height);
 #endif // ! defined(KTH_DB_READONLY)
-#endif // defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
+#endif // defined(KTH_DB_NEW_FULL)
 
 private:
 
@@ -244,20 +244,20 @@ private:
     //TODO(fernando): is taking KTH_DB_val by value, is that Ok?
     result_code insert_reorg_into_pool(utxo_pool_t& pool, KTH_DB_val key_point, KTH_DB_txn* db_txn) const;
 
-#if (defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_DYNAMIC)) && ! defined(KTH_DB_READONLY)
+#if (defined(KTH_DB_NEW_BLOCKS) ) && ! defined(KTH_DB_READONLY)
     result_code insert_block(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
 #endif
 
 
 #if ! defined(KTH_DB_READONLY)
-#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
     result_code remove_blocks_db(uint32_t height, KTH_DB_txn* db_txn);
-#endif //defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
+#endif //defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
 #endif
 
     domain::chain::block get_block(uint32_t height, KTH_DB_txn* db_txn) const;
 
-#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
+#if defined(KTH_DB_NEW_FULL)
     domain::chain::block get_block(hash_digest const& hash, KTH_DB_txn* db_txn) const;
 
 #if ! defined(KTH_DB_READONLY)
@@ -322,7 +322,7 @@ private:
 
 
 
-#endif //defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
+#endif //defined(KTH_DB_NEW_FULL)
 
 // Data members ----------------------------
     path const db_dir_;
@@ -330,6 +330,7 @@ private:
     std::chrono::seconds const limit_;
     bool env_created_ = false;
     bool db_opened_ = false;
+    db_mode_type db_mode_;
     uint64_t db_max_size_;
     bool safe_mode_;
     //bool fast_mode = false;
@@ -343,12 +344,12 @@ private:
     KTH_DB_dbi dbi_reorg_block_;
     KTH_DB_dbi dbi_properties_;
 
-#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
     //Blocks DB
     KTH_DB_dbi dbi_block_db_;
 #endif
 
-#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
+#if defined(KTH_DB_NEW_FULL)
     KTH_DB_dbi dbi_transaction_db_;
     KTH_DB_dbi dbi_transaction_hash_db_;
     KTH_DB_dbi dbi_history_db_;
@@ -378,13 +379,13 @@ constexpr char internal_database_basis<Clock>::reorg_block_name[];              
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::db_properties_name[];                   //key: propery, value: data
 
-#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
+#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::block_db_name[];                  //key: block height, value: block
                                                                                  //key: block height, value: tx hashes
 #endif
 
-#if defined(KTH_DB_NEW_FULL) || defined(KTH_DB_DYNAMIC)
+#if defined(KTH_DB_NEW_FULL)
 template <typename Clock>
 constexpr char internal_database_basis<Clock>::transaction_db_name[];            //key: tx hash, value: tx
 
