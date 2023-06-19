@@ -25,6 +25,7 @@ enum class db_mode_type {
     full,
 };
 
+inline
 std::istream& operator>> (std::istream &in, db_mode_type& db_mode) {
     using namespace boost::program_options;
 
