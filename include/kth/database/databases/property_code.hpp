@@ -23,7 +23,7 @@ enum class db_mode_type {
     full,
 };
 
-istream& operator>> (istream &in, db_mode_type& db_mode) {
+std::istream& operator>> (std::istream &in, db_mode_type& db_mode) {
     std::string mode_str;
     in >> mode_str;
 
