@@ -7,8 +7,6 @@
 
 namespace kth::database {
 
-#if defined(KTH_DB_NEW_FULL)
-
 //public
 template <typename Clock>
 transaction_entry internal_database_basis<Clock>::get_transaction(hash_digest const& hash, size_t fork_height) const {
@@ -431,7 +429,7 @@ uint64_t internal_database_basis<Clock>::get_tx_count(KTH_DB_txn* db_txn) const 
   return db_stats.ms_entries;
 }
 
-#endif //KTH_NEW_DB_FULL
+
 
 } // namespace kth::database
 

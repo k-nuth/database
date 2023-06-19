@@ -7,9 +7,6 @@
 
 namespace kth::database {
 
-#if defined(KTH_DB_NEW_FULL)
-
-
 template <typename Clock>
 transaction_unconfirmed_entry internal_database_basis<Clock>::get_transaction_unconfirmed(hash_digest const& hash) const {
 
@@ -145,9 +142,6 @@ result_code internal_database_basis<Clock>::insert_transaction_unconfirmed(domai
 }
 
 #endif // ! defined(KTH_DB_READONLY)
-
-#endif //KTH_NEW_DB_FULL
-
 
 } // namespace kth::database
 

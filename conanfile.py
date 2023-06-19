@@ -27,7 +27,7 @@ class KnuthDatabaseConan(KnuthConanFileV2):
                "march_strategy": ["download_if_possible", "optimized", "download_or_fail"],
                "verbose": [True, False],
                "measurements": [True, False],
-               "db": ['legacy', 'legacy_full', 'pruned', 'default', 'full'],
+               "db": ['dynamic'],
                "db_readonly": [True, False],
                "cached_rpc_data": [True, False],
                "cxxflags": ["ANY"],
@@ -46,7 +46,7 @@ class KnuthDatabaseConan(KnuthConanFileV2):
         "march_strategy": "download_if_possible",
         "verbose": False,
         "measurements": False,
-        "db": "default",
+        "db": "dynamic",
         "db_readonly": False,
         "cached_rpc_data": False,
         "cmake_export_compile_commands": False,
@@ -56,9 +56,6 @@ class KnuthDatabaseConan(KnuthConanFileV2):
 
     exports_sources = "src/*", "CMakeLists.txt", "ci_utils/cmake/*", "cmake/*", "knuthbuildinfo.cmake", "include/*", "test/*", "tools/*"
 
-    def _is_legacy_db(self):
-        return self.options.db == "legacy" or self.options.db == "legacy_full"
-
     def build_requirements(self):
         if self.options.tests:
             self.test_requires("catch2/3.3.2")
@@ -66,15 +63,12 @@ class KnuthDatabaseConan(KnuthConanFileV2):
     def requirements(self):
         self.requires("domain/0.29.0", transitive_headers=True, transitive_libs=True)
 
-        if not self._is_legacy_db():
-            if self.options.use_libmdbx:
-                self.requires("libmdbx/0.7.0@kth/stable", transitive_headers=True, transitive_libs=True)
-                self.output.info("Using libmdbx for DB management")
-            else:
-                self.requires("lmdb/0.9.29", transitive_headers=True, transitive_libs=True)
-                self.output.info("Using lmdb for DB management")
+        if self.options.use_libmdbx:
+            self.requires("libmdbx/0.7.0@kth/stable", transitive_headers=True, transitive_libs=True)
+            self.output.info("Using libmdbx for DB management")
         else:
-            self.output.info("Using legacy DB")
+            self.requires("lmdb/0.9.29", transitive_headers=True, transitive_libs=True)
+            self.output.info("Using lmdb for DB management")
 
     def validate(self):
         KnuthConanFileV2.validate(self)
@@ -112,7 +106,6 @@ class KnuthDatabaseConan(KnuthConanFileV2):
         # tc.variables["CMAKE_VERBOSE_MAKEFILE"] = True
         tc.variables["WITH_MEASUREMENTS"] = option_on_off(self.options.measurements)
         tc.variables["DB_READONLY_MODE"] = option_on_off(self.options.db_readonly)
-        tc.variables["WITH_CACHED_RPC_DATA"] = option_on_off(self.options.cached_rpc_data)
         tc.variables["LOG_LIBRARY"] = self.options.log
         tc.variables["USE_LIBMDBX"] = option_on_off(self.options.use_libmdbx)
         tc.variables["CONAN_DISABLE_CHECK_COMPILER"] = option_on_off(True)

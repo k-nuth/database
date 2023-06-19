@@ -17,22 +17,10 @@ option(WITH_TESTS "Compile with unit tests." ON)
 option(WITH_TOOLS "Compile with tools." OFF)
 option(WITH_MEASUREMENTS "Measurements enabled." OFF)
 option(DB_READONLY_MODE "Readonly DB mode enabled." OFF)
-option(WITH_CACHED_RPC_DATA "Cached RPC data enabled." OFF)
-option(DB_TRANSACTION_UNCONFIRMED "DB Transactions Unconfirmed enabled." OFF)
-option(DB_SPENDS "DB Spends enabled." OFF)
-option(DB_HISTORY "DB History enabled." OFF)
-option(DB_STEALTH "DB Stealth enabled." OFF)
-option(DB_UNSPENT_LEGACY "DB Unspent Legacy enabled." OFF)
-option(DB_LEGACY "DB Legacy enabled." OFF)
-option(DB_NEW "DB New enabled." OFF)
-option(DB_NEW_BLOCKS "DB Blocks New enabled." OFF)
-option(DB_NEW_FULL "DB New Full enabled." OFF)
 option(JUST_KTH_SOURCES "Just Knuth source code to be linted." OFF)
 option(USE_LIBMDBX "Uses libmdbx DB library." OFF)
 
-
 option(GLOBAL_BUILD "" OFF)
-
 
 set(MARCH_ID "" CACHE STRING "Specify the Microarchitecture ID (x86_64|...).")
 message( STATUS "Knuth: Compiling for Microarchitecture ID ${MARCH_ID}")
@@ -45,56 +33,6 @@ endif()
 if (DB_READONLY_MODE)
   message(STATUS "Knuth: Readonly DB mode enabled")
   add_definitions(-DKTH_DB_READONLY)
-endif()
-
-if (WITH_CACHED_RPC_DATA)
-  message(STATUS "Knuth: Cached RPC data enabled")
-  add_definitions(-DKTH_CACHED_RPC_DATA)
-endif()
-
-if (DB_TRANSACTION_UNCONFIRMED)
-  message(STATUS "Knuth: DB Transactions Unconfirmed enabled")
-  add_definitions(-DKTH_DB_TRANSACTION_UNCONFIRMED)
-endif()
-
-if (DB_SPENDS)
-  message(STATUS "Knuth: DB Spends enabled")
-  add_definitions(-DKTH_DB_SPENDS)
-endif()
-
-if (DB_HISTORY)
-  message(STATUS "Knuth: DB History enabled")
-  add_definitions(-DKTH_DB_HISTORY)
-endif()
-
-if (DB_STEALTH)
-  message(STATUS "Knuth: DB Stealth enabled")
-  add_definitions(-DKTH_DB_STEALTH)
-endif()
-
-if (DB_UNSPENT_LEGACY)
-  message(STATUS "Knuth: DB Unspent Legacy enabled")
-  add_definitions(-DKTH_DB_UNSPENT_LEGACY)
-endif()
-
-if (DB_LEGACY)
-  message(STATUS "Knuth: DB Legacy enabled")
-  add_definitions(-DKTH_DB_LEGACY)
-endif()
-
-if (DB_NEW)
-  message(STATUS "Knuth: DB New enabled")
-  add_definitions(-DKTH_DB_NEW)
-endif()
-
-if (DB_NEW_BLOCKS)
-  message(STATUS "Knuth: DB Blocks New enabled")
-  add_definitions(-DKTH_DB_NEW_BLOCKS)
-endif()
-
-if (DB_NEW_FULL)
-  message(STATUS "Knuth: DB New Full enabled")
-  add_definitions(-DKTH_DB_NEW_FULL)
 endif()
 
 if (JUST_KTH_SOURCES)
@@ -180,113 +118,22 @@ if (ENABLE_SHARED)
     set(MODE SHARED)
 endif()
 
-set(kth_sources_just_legacy
+
+
+
+set(kth_sources_just_kth
+    ${kth_sources_just_kth}
     src/data_base.cpp
     src/settings.cpp
     src/store.cpp
     src/version.cpp
+
+    src/databases/utxo_entry.cpp
+    src/databases/history_entry.cpp
+    src/databases/transaction_entry.cpp
+    src/databases/transaction_unconfirmed_entry.cpp
 )
 
-if (DB_LEGACY)
-    set(kth_sources_just_legacy
-        ${kth_sources_just_legacy}
-        src/legacy/memory/accessor.cpp
-        src/legacy/memory/allocator.cpp
-        src/legacy/memory/memory_map.cpp
-        # src/mman-win32/mman.c
-        src/legacy/primitives/record_list.cpp
-        src/legacy/primitives/record_manager.cpp
-        src/legacy/primitives/record_multimap_iterable.cpp
-        src/legacy/primitives/record_multimap_iterator.cpp
-        src/legacy/primitives/slab_manager.cpp
-
-        src/legacy/databases/block_database.cpp
-        src/legacy/databases/transaction_database.cpp
-        src/legacy/result/block_result.cpp
-        src/legacy/result/transaction_result.cpp
-    )
-
-    if (MSVC) # OR MINGW)
-        set(kth_sources_just_legacy
-            ${kth_sources_just_legacy}
-            src/legacy/mman-win32/mman.c
-        )
-    endif()
-
-endif()
-
-
-if (DB_TRANSACTION_UNCONFIRMED)
-    set(kth_sources_just_legacy
-        ${kth_sources_just_legacy}
-        src/legacy/databases/transaction_unconfirmed_database.cpp
-        src/legacy/result/transaction_unconfirmed_result.cpp
-        )
-endif()
-
-if (DB_SPENDS)
-    set(kth_sources_just_legacy
-        ${kth_sources_just_legacy}
-        src/legacy/databases/spend_database.cpp
-    )
-endif()
-
-if (DB_HISTORY)
-    set(kth_sources_just_legacy
-        ${kth_sources_just_legacy}
-        src/legacy/databases/history_database.cpp
-    )
-endif()
-
-if (DB_STEALTH)
-    set(kth_sources_just_legacy
-        ${kth_sources_just_legacy}
-        src/legacy/databases/stealth_database.cpp
-    )
-endif()
-
-if (DB_UNSPENT_LEGACY)
-    set(kth_sources_just_legacy
-        ${kth_sources_just_legacy}
-        src/legacy/unspent_outputs.cpp
-        src/legacy/unspent_transaction.cpp
-    )
-endif()
-
-if (DB_LEGACY)
-    set(kth_sources_just_legacy
-        ${kth_sources_just_legacy}
-            src/legacy/databases/block_database.cpp
-            src/legacy/databases/transaction_database.cpp
-            src/legacy/result/block_result.cpp
-            src/legacy/result/transaction_result.cpp
-        )
-endif()
-
-set(kth_sources_just_kth
-)
-
-if (DB_NEW)
-    set(kth_sources_just_kth
-        ${kth_sources_just_kth}
-        src/databases/utxo_entry.cpp
-    )
-endif()
-
-if (DB_NEW_FULL)
-    set(kth_sources_just_kth
-        ${kth_sources_just_kth}
-        src/databases/history_entry.cpp
-        src/databases/transaction_entry.cpp
-        src/databases/transaction_unconfirmed_entry.cpp
-    )
-endif()
-
-if (NOT JUST_KTH_SOURCES)
-  set(kth_sources
-    ${kth_sources_just_legacy}
-  )
-endif()
 
 set(kth_sources
   ${kth_sources}
@@ -317,38 +164,9 @@ set(kth_headers
   include/kth/database/databases/spend_database.ipp
   include/kth/database/databases/utxo_database.ipp
   include/kth/database/databases/header_database.ipp
-  include/kth/database/legacy/result/transaction_unconfirmed_result.hpp
-  include/kth/database/legacy/result/block_result.hpp
-  include/kth/database/legacy/result/transaction_result.hpp
-  include/kth/database/legacy/primitives/hash_table_header.hpp
-  include/kth/database/legacy/primitives/record_multimap.hpp
-  include/kth/database/legacy/primitives/record_list.hpp
-  include/kth/database/legacy/primitives/slab_manager.hpp
-  include/kth/database/legacy/primitives/slab_hash_table.hpp
-  include/kth/database/legacy/primitives/record_multimap_iterator.hpp
-  include/kth/database/legacy/primitives/record_manager.hpp
-  include/kth/database/legacy/primitives/record_hash_table.hpp
-  include/kth/database/legacy/primitives/record_multimap_iterable.hpp
-  include/kth/database/legacy/databases/transaction_unconfirmed_database.hpp
-  include/kth/database/legacy/databases/transaction_database.hpp
-  include/kth/database/legacy/databases/block_database.hpp
-  include/kth/database/legacy/databases/history_database.hpp
-  include/kth/database/legacy/databases/spend_database.hpp
-  include/kth/database/legacy/databases/stealth_database.hpp
-  include/kth/database/legacy/impl/record_hash_table.ipp
-  include/kth/database/legacy/impl/slab_hash_table.ipp
-  include/kth/database/legacy/impl/record_row.ipp
-  include/kth/database/legacy/impl/hash_table_header.ipp
-  include/kth/database/legacy/impl/remainder.ipp
-  include/kth/database/legacy/impl/record_multimap.ipp
-  include/kth/database/legacy/impl/slab_row.ipp
-  include/kth/database/legacy/memory/allocator.hpp
-  include/kth/database/legacy/memory/memory_map.hpp
-  include/kth/database/legacy/memory/memory.hpp
-  include/kth/database/legacy/memory/accessor.hpp
-  include/kth/database/unspent_outputs.hpp
   include/kth/database/settings.hpp
-  include/kth/database/unspent_transaction.hpp
+  # include/kth/database/unspent_outputs.hpp
+  # include/kth/database/unspent_transaction.hpp
   include/kth/database/version.hpp
   include/kth/database.hpp
 )
@@ -386,25 +204,10 @@ if (WITH_TESTS)
     enable_testing()
     find_package(Catch2 3 REQUIRED)
 
-    if (DB_LEGACY)
-        add_executable(kth_database_test
-                test/block_database.cpp
-                test/data_base.cpp
-                test/hash_table.cpp
-                test/history_database.cpp
-                test/main.cpp
-                test/spend_database.cpp
-                test/structure.cpp
-                test/transaction_database.cpp
-                )
-    endif()
-
-    if (DB_NEW)
-        add_executable(kth_database_test
-                test/main.cpp
-                test/internal_database.cpp
-                )
-    endif()
+    add_executable(kth_database_test
+            test/main.cpp
+            test/internal_database.cpp
+            )
 
     target_include_directories(kth_database_test PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>)
 

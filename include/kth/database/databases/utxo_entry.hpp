@@ -5,8 +5,6 @@
 #ifndef KTH_DATABASE_UTXO_ENTRY_HPP_
 #define KTH_DATABASE_UTXO_ENTRY_HPP_
 
-// #ifdef KTH_DB_NEW
-
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 
@@ -97,7 +95,5 @@ private:
 };
 
 } // namespace kth::database
-
-// #endif // KTH_DB_NEW
 
 #endif // KTH_DATABASE_UTXO_ENTRY_HPP_

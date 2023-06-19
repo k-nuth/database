@@ -9,6 +9,7 @@
 #include <filesystem>
 
 #include <kth/database/define.hpp>
+#include <kth/database/databases/property_code.hpp>
 
 namespace kth::database {
 
@@ -20,42 +21,11 @@ public:
 
     /// Properties.
     kth::path directory;
-    bool flush_writes;
-    uint16_t file_growth_rate;
-    uint32_t index_start_height;
-
-#ifdef KTH_DB_NEW
+    db_mode_type db_mode;
     uint32_t reorg_pool_limit;
     uint64_t db_max_size;
     bool safe_mode;
-#endif // KTH_DB_NEW
-
-
-#ifdef KTH_DB_LEGACY
-    uint32_t block_table_buckets;
-    uint32_t transaction_table_buckets;
-#endif // KTH_DB_LEGACY
-
-#ifdef KTH_DB_TRANSACTION_UNCONFIRMED
-    uint32_t transaction_unconfirmed_table_buckets;
-#endif // KTH_DB_STEALTH
-
-#ifdef KTH_DB_SPENDS
-    uint32_t spend_table_buckets;
-#endif // KTH_DB_SPENDS
-
-#ifdef KTH_DB_HISTORY
-    uint32_t history_table_buckets;
-#endif // KTH_DB_HISTORY
-
-// #ifdef KTH_DB_UNSPENT_LEGACY
     uint32_t cache_capacity;
-// #endif // KTH_DB_UNSPENT_LEGACY
-
-#if defined(WITH_REMOTE_DATABASE)
-    infrastructure::config::endpoint replier;
-#endif //defined(WITH_REMOTE_DATABASE)
-
 };
 
 } // namespace kth::database

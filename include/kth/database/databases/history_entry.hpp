@@ -5,8 +5,6 @@
 #ifndef KTH_DATABASE_HISTORY_ENTRY_HPP_
 #define KTH_DATABASE_HISTORY_ENTRY_HPP_
 
-// #ifdef KTH_DB_NEW
-
 #include <kth/domain.hpp>
 #include <kth/database/define.hpp>
 

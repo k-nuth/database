@@ -63,18 +63,7 @@ bool internal_database_basis<Clock>::create_db_mode_property() {
         return false;
     }
 
-    db_mode_code db_mode_;
-
-#if defined(KTH_DB_NEW_FULL)
-    db_mode_ = db_mode_code::db_new_full;
-#elif defined(KTH_DB_NEW_BLOCKS)
-    db_mode_ = db_mode_code::db_new_with_blocks;
-#else
-    db_mode_ = db_mode_code::db_new;
-#endif
-
     property_code property_code_ = property_code::db_mode;
-
     auto key = kth_db_make_value(sizeof(property_code_), &property_code_);
     auto value = kth_db_make_value(sizeof(db_mode_), &db_mode_);
 
@@ -145,26 +134,18 @@ bool internal_database_basis<Clock>::verify_db_mode_property() const {
         return false;
     }
 
-    auto db_mode_ = *static_cast<db_mode_code*>(kth_db_get_data(value));
+    auto const db_mode_db = *static_cast<db_mode_type*>(kth_db_get_data(value));
 
     res = kth_db_txn_commit(db_txn);
     if (res != KTH_DB_SUCCESS) {
         return false;
     }
 
-#if defined(KTH_DB_NEW_FULL)
-    auto db_mode_node_ = db_mode_code::db_new_full;
-#elif defined(KTH_DB_NEW_BLOCKS)
-    auto db_mode_node_ = db_mode_code::db_new_with_blocks;
-#else
-    auto db_mode_node_ = db_mode_code::db_new;
-#endif
-
-    if (db_mode_ != db_mode_node_) {
+    if (db_mode_ != db_mode_db) {
         LOG_ERROR(LOG_DATABASE, "Error validating DB Mode, the node is compiled for another DB mode. Node DB Mode: "
-           , static_cast<uint32_t>(db_mode_node_)
+           , static_cast<uint32_t>(db_mode_)
            , ", Actual DB Mode: "
-           , static_cast<uint32_t>(db_mode_));
+           , static_cast<uint32_t>(db_mode_db));
         return false;
     }
 
@@ -190,24 +171,22 @@ bool internal_database_basis<Clock>::close() {
         kth_db_dbi_close(env_, dbi_reorg_block_);
         kth_db_dbi_close(env_, dbi_properties_);
 
-        #if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-        kth_db_dbi_close(env_, dbi_block_db_);
-        #endif
+        if (db_mode_ == db_mode_type::blocks || db_mode_ == db_mode_type::full) {
+            kth_db_dbi_close(env_, dbi_block_db_);
+        }
 
-        #if defined(KTH_DB_NEW_FULL)
-        kth_db_dbi_close(env_, dbi_transaction_db_);
-        kth_db_dbi_close(env_, dbi_transaction_hash_db_);
-        kth_db_dbi_close(env_, dbi_history_db_);
-        kth_db_dbi_close(env_, dbi_spend_db_);
-        kth_db_dbi_close(env_, dbi_transaction_unconfirmed_db_);
-        #endif
-
+        if (db_mode_ == db_mode_type::full) {
+            kth_db_dbi_close(env_, dbi_transaction_db_);
+            kth_db_dbi_close(env_, dbi_transaction_hash_db_);
+            kth_db_dbi_close(env_, dbi_history_db_);
+            kth_db_dbi_close(env_, dbi_spend_db_);
+            kth_db_dbi_close(env_, dbi_transaction_unconfirmed_db_);
+        }
         db_opened_ = false;
     }
 
     if (env_created_) {
         kth_db_env_close(env_);
-
         env_created_ = false;
     }
 
@@ -611,7 +590,6 @@ std::pair<result_code, utxo_pool_t> internal_database_basis<Clock>::get_utxo_poo
     return {result_code::success, pool};
 }
 
-#if defined(KTH_DB_NEW_FULL)
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
@@ -636,7 +614,6 @@ result_code internal_database_basis<Clock>::push_transaction_unconfirmed(domain:
 }
 
 #endif // ! defined(KTH_DB_READONLY)
-#endif // defined(KTH_DB_NEW_FULL)
 
 // Private functions
 // ------------------------------------------------------------------------------------------------------
@@ -684,7 +661,16 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
         return false;
     }
 
-    res = kth_db_env_set_maxdbs(env_, max_dbs_);
+    size_t max_dbs;
+    if (db_mode_ == db_mode_type::full) {
+        max_dbs = max_dbs_full_;
+    } else if (db_mode_ == db_mode_type::blocks) {
+        max_dbs = max_dbs_blocks_;
+    } else if (db_mode_ == db_mode_type::pruned) {
+        max_dbs = max_dbs_pruned_;
+    }
+
+    res = kth_db_env_set_maxdbs(env_, max_dbs);
     if (res != KTH_DB_SUCCESS) {
         return false;
     }
@@ -756,87 +742,42 @@ bool internal_database_basis<Clock>::open_databases() {
         return false;
     }
 
-    res = kth_db_dbi_open(db_txn, block_header_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_block_header_);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
+    auto open_db = [&](auto const& db_name, uint32_t flags, KTH_DB_dbi* dbi){
+        auto result = kth_db_dbi_open(db_txn, db_name, flags, dbi);
+        if (result != KTH_DB_SUCCESS) {
+            kth_db_txn_abort(db_txn);
+        }
+        return result == KTH_DB_SUCCESS;
+    };
+
+    if ( ! open_db(block_header_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_block_header_)) return false;
+    if ( ! open_db(block_header_by_hash_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_block_header_by_hash_)) return false;
+    if ( ! open_db(utxo_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_utxo_)) return false;
+    if ( ! open_db(reorg_pool_name, KTH_DB_CONDITIONAL_CREATE, &dbi_reorg_pool_)) return false;
+    if ( ! open_db(reorg_index_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_INTEGERKEY | KTH_DB_DUPFIXED, &dbi_reorg_index_)) return false;
+    if ( ! open_db(reorg_block_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_reorg_block_)) return false;
+    if ( ! open_db(db_properties_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_properties_)) return false;
+
+    if (db_mode_ == db_mode_type::blocks || db_mode_ == db_mode_type::full) {
+        if ( ! open_db(block_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_block_db_)) return false;
     }
 
-    res = kth_db_dbi_open(db_txn, block_header_by_hash_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_block_header_by_hash_);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
+    if (db_mode_ == db_mode_type::full) {
+        if ( ! open_db(block_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_INTEGERKEY | KTH_DB_DUPFIXED  | MDB_INTEGERDUP, &dbi_block_db_)) return false;
+        if ( ! open_db(transaction_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_transaction_db_)) return false;
+        if ( ! open_db(transaction_hash_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_transaction_hash_db_)) return false;
+        if ( ! open_db(history_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_DUPFIXED, &dbi_history_db_)) return false;
+        if ( ! open_db(spend_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_spend_db_)) return false;
+        if ( ! open_db(transaction_unconfirmed_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_transaction_unconfirmed_db_)) return false;
+
+        mdb_set_dupsort(db_txn, dbi_history_db_, compare_uint64);
     }
-
-    res = kth_db_dbi_open(db_txn, utxo_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_utxo_);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
-    }
-
-    res = kth_db_dbi_open(db_txn, reorg_pool_name, KTH_DB_CONDITIONAL_CREATE, &dbi_reorg_pool_);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
-    }
-
-    res = kth_db_dbi_open(db_txn, reorg_index_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_INTEGERKEY | KTH_DB_DUPFIXED, &dbi_reorg_index_);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
-    }
-
-    res = kth_db_dbi_open(db_txn, reorg_block_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_reorg_block_);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
-    }
-
-    res = kth_db_dbi_open(db_txn, db_properties_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_properties_);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
-    }
-
-#if defined(KTH_DB_NEW_BLOCKS)
-    res = kth_db_dbi_open(db_txn, block_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_block_db_);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
-    }
-#endif
-
-#if defined(KTH_DB_NEW_FULL)
-
-    res = kth_db_dbi_open(db_txn, block_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_INTEGERKEY | KTH_DB_DUPFIXED  | MDB_INTEGERDUP, &dbi_block_db_);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
-    }
-
-    res = kth_db_dbi_open(db_txn, transaction_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_transaction_db_);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
-    }
-
-    res = kth_db_dbi_open(db_txn, transaction_hash_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_transaction_hash_db_);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
-    }
-
-    res = kth_db_dbi_open(db_txn, history_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_DUPFIXED, &dbi_history_db_);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
-    }
-
-    res = kth_db_dbi_open(db_txn, spend_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_spend_db_);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
-    }
-
-    res = kth_db_dbi_open(db_txn, transaction_unconfirmed_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_transaction_unconfirmed_db_);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
-    }
-
-    mdb_set_dupsort(db_txn, dbi_history_db_, compare_uint64);
-
-#endif //KTH_DB_NEW_FULL
 
     db_opened_ = kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS;
     return db_opened_;
 }
+
+
 
 #if ! defined(KTH_DB_READONLY)
 
@@ -844,41 +785,28 @@ template <typename Clock>
 result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_id, uint32_t height, domain::chain::input::list const& inputs, bool insert_reorg, KTH_DB_txn* db_txn) {
     uint32_t pos = 0;
     for (auto const& input: inputs) {
-
         domain::chain::input_point const inpoint {tx_id, pos};
         auto const& prevout = input.previous_output();
 
-#if defined(KTH_DB_NEW_FULL)
-        auto res = insert_input_history(inpoint, height, input, db_txn);
+        if (db_mode_ == db_mode_type::full) {
+            auto res = insert_input_history(inpoint, height, input, db_txn);
+            if (res != result_code::success) {
+                return res;
+            }
+        }
+
+        auto res = remove_utxo(height, prevout, insert_reorg, db_txn);
         if (res != result_code::success) {
             return res;
         }
 
-        //set spender height in tx database
-        //Note(Knuth): Commented because we don't validate transaction duplicates (BIP-30)
-        /*res = set_spend(prevout, height, db_txn);
-        if (res != result_code::success) {
-            return res;
-        }*/
-
-#else
-    result_code res;
-#endif
-
-        res = remove_utxo(height, prevout, insert_reorg, db_txn);
-        if (res != result_code::success) {
-            return res;
+        if (db_mode_ == db_mode_type::full) {
+            //insert in spend database
+            res = insert_spend(prevout, inpoint, db_txn);
+            if (res != result_code::success) {
+                return res;
+            }
         }
-
-#if defined(KTH_DB_NEW_FULL)
-
-        //insert in spend database
-        res = insert_spend(prevout, inpoint, db_txn);
-        if (res != result_code::success) {
-            return res;
-        }
-
-#endif
 
         ++pos;
     }
@@ -895,14 +823,12 @@ result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx
             return res;
         }
 
-        #if defined(KTH_DB_NEW_FULL)
-
-        res = insert_output_history(tx_id, height, pos, output, db_txn);
-        if (res != result_code::success) {
-            return res;
+        if (db_mode_ == db_mode_type::full) {
+            res = insert_output_history(tx_id, height, pos, output, db_txn);
+            if (res != result_code::success) {
+                return res;
+            }
         }
-
-        #endif
 
         ++pos;
     }
@@ -974,31 +900,26 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
 
     auto const& txs = block.transactions();
 
-#if defined(KTH_DB_NEW_BLOCKS)
-    res = insert_block(block, height, db_txn);
-    if (res != result_code::success) {
-        // std::cout << "22222222222222" << static_cast<uint32_t>(res) << "\n";
-        return res;
+    if (db_mode_ == db_mode_type::full) {
+        auto tx_count = get_tx_count(db_txn);
+
+        res = insert_block(block, height, tx_count, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
+
+        res = insert_transactions(txs.begin(), txs.end(), height, median_time_past, tx_count, db_txn);
+        if (res == result_code::duplicated_key) {
+            res = result_code::success_duplicate_coinbase;
+        } else if (res != result_code::success) {
+            return res;
+        }
+    } else if (db_mode_ == db_mode_type::blocks) {
+        res = insert_block(block, height, 0, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
     }
-
-#elif defined(KTH_DB_NEW_FULL)
-
-    auto tx_count = get_tx_count(db_txn);
-
-    res = insert_block(block, height, tx_count, db_txn);
-    if (res != result_code::success) {
-        // std::cout << "22222222222222" << static_cast<uint32_t>(res) << "\n";
-        return res;
-    }
-
-    res = insert_transactions(txs.begin(), txs.end(), height, median_time_past, tx_count, db_txn);
-    if (res == result_code::duplicated_key) {
-        res = result_code::success_duplicate_coinbase;
-    } else if (res != result_code::success) {
-        return res;
-    }
-
-#endif
 
     if ( insert_reorg ) {
         res = push_block_reorg(block, height, db_txn);
@@ -1009,13 +930,13 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
 
     auto const& coinbase = txs.front();
 
-    auto fixed = utxo_entry::to_data_fixed(height, median_time_past, true);                                     //TODO(fernando): podría estar afuera de la DBTx
-    auto res0 = insert_outputs_error_treatment(height, fixed, coinbase.hash(), coinbase.outputs(), db_txn);     //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
+    auto fixed = utxo_entry::to_data_fixed(height, median_time_past, true);
+    auto res0 = insert_outputs_error_treatment(height, fixed, coinbase.hash(), coinbase.outputs(), db_txn);
     if ( ! succeed(res0)) {
         return res0;
     }
 
-    fixed.back() = 0;   //The last byte equal to 0 means NonCoinbaseTx
+    fixed.back() = 0;
     res = push_transactions_non_coinbase(height, fixed, txs.begin() + 1, txs.end(), insert_reorg, db_txn);
     if (res != result_code::success) {
         return res;
@@ -1034,32 +955,31 @@ result_code internal_database_basis<Clock>::push_genesis(domain::chain::block co
         return res;
     }
 
-#if defined(KTH_DB_NEW_BLOCKS)
-    res = insert_block(block, 0, db_txn);
-#elif defined(KTH_DB_NEW_FULL)
-    auto tx_count = get_tx_count(db_txn);
-    res = insert_block(block, 0, tx_count, db_txn);
+    if (db_mode_ == db_mode_type::full) {
+        auto tx_count = get_tx_count(db_txn);
+        res = insert_block(block, 0, tx_count, db_txn);
 
-    if (res != result_code::success) {
-        return res;
+        if (res != result_code::success) {
+            return res;
+        }
+
+        auto const& txs = block.transactions();
+        auto const& coinbase = txs.front();
+        auto const& hash = coinbase.hash();
+        auto const median_time_past = block.header().validation.median_time_past;
+
+        res = insert_transaction(tx_count, coinbase, 0, median_time_past, 0, db_txn);
+        if (res != result_code::success && res != result_code::duplicated_key) {
+            return res;
+        }
+
+        res = insert_output_history(hash, 0, 0, coinbase.outputs()[0], db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
+    } else if (db_mode_ == db_mode_type::blocks) {
+        res = insert_block(block, 0, 0, db_txn);
     }
-
-    auto const& txs = block.transactions();
-    auto const& coinbase = txs.front();
-    auto const& hash = coinbase.hash();
-    auto const median_time_past = block.header().validation.median_time_past;
-
-    res = insert_transaction(tx_count, coinbase, 0, median_time_past, 0, db_txn);
-    if (res != result_code::success && res != result_code::duplicated_key) {
-        return res;
-    }
-
-    res = insert_output_history(hash, 0, 0, coinbase.outputs()[0], db_txn);
-    if (res != result_code::success) {
-        return res;
-    }
-
-#endif
 
     return res;
 }
@@ -1174,23 +1094,24 @@ result_code internal_database_basis<Clock>::remove_block(domain::chain::block co
         return res;
     }
 
-#if defined(KTH_DB_NEW_FULL)
-    //Transaction Database
-    res = remove_transactions(block, height, db_txn);
-    if (res != result_code::success) {
-        return res;
+    if (db_mode_ == db_mode_type::full) {
+        //Transaction Database
+        res = remove_transactions(block, height, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
     }
-#endif //defined(KTH_DB_NEW_FULL)
 
-#if defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
-    res = remove_blocks_db(height, db_txn);
-    if (res != result_code::success) {
-        return res;
+    if (db_mode_ == db_mode_type::full || db_mode_ == db_mode_type::blocks) {
+        res = remove_blocks_db(height, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
     }
-#endif //defined(KTH_DB_NEW_BLOCKS) || defined(KTH_DB_NEW_FULL)
 
     return result_code::success;
 }
+
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_block(domain::chain::block const& block, uint32_t height) {

@@ -7,10 +7,6 @@
 
 namespace kth::database {
 
-#if defined(KTH_DB_NEW_FULL)
-
-#if ! defined(KTH_DB_READONLY)
-
 template <typename Clock>
 result_code internal_database_basis<Clock>::insert_history_db(domain::wallet::payment_address const& address, data_chunk const& entry, KTH_DB_txn* db_txn) {
 
@@ -377,8 +373,4 @@ uint64_t internal_database_basis<Clock>::get_history_count(KTH_DB_txn* db_txn) c
   return db_stats.ms_entries;
 }
 
-#endif //KTH_NEW_DB_FULL
-
 } // namespace kth::database
-
-#endif // KTH_DATABASE_HISTORY_DATABASE_IPP_
