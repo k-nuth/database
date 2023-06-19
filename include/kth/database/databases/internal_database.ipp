@@ -11,6 +11,7 @@ namespace kth::database {
 
 using utxo_pool_t = std::unordered_map<domain::chain::point, utxo_entry>;
 
+//TODO(fernando): remove Clock template parameter, use block height instead of timestamp
 template <typename Clock>
 internal_database_basis<Clock>::internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size, bool safe_mode)
     : db_dir_(db_dir)
@@ -165,10 +166,12 @@ bool internal_database_basis<Clock>::close() {
 #endif
         kth_db_dbi_close(env_, dbi_block_header_);
         kth_db_dbi_close(env_, dbi_block_header_by_hash_);
-        kth_db_dbi_close(env_, dbi_utxo_);
-        kth_db_dbi_close(env_, dbi_reorg_pool_);
-        kth_db_dbi_close(env_, dbi_reorg_index_);
-        kth_db_dbi_close(env_, dbi_reorg_block_);
+
+        // kth_db_dbi_close(env_, dbi_utxo_);
+        // kth_db_dbi_close(env_, dbi_reorg_pool_);
+        // kth_db_dbi_close(env_, dbi_reorg_index_);
+        // kth_db_dbi_close(env_, dbi_reorg_block_);
+
         kth_db_dbi_close(env_, dbi_properties_);
 
         if (db_mode_ == db_mode_type::blocks || db_mode_ == db_mode_type::full) {
@@ -248,42 +251,54 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
 
 #endif // ! defined(KTH_DB_READONLY)
 
+// template <typename Clock>
+// utxo_entry internal_database_basis<Clock>::get_utxo_lmdb(domain::chain::output_point const& point, KTH_DB_txn* db_txn) const {
 
-template <typename Clock>
-utxo_entry internal_database_basis<Clock>::get_utxo(domain::chain::output_point const& point, KTH_DB_txn* db_txn) const {
+//     auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);
+//     auto key = kth_db_make_value(keyarr.size(), keyarr.data());
+//     KTH_DB_val value;
 
-    auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);
-    auto key = kth_db_make_value(keyarr.size(), keyarr.data());
-    KTH_DB_val value;
+//     auto res0 = kth_db_get(db_txn, dbi_utxo_, &key, &value);
+//     if (res0 != KTH_DB_SUCCESS) {
+//         return utxo_entry{};
+//     }
 
-    auto res0 = kth_db_get(db_txn, dbi_utxo_, &key, &value);
-    if (res0 != KTH_DB_SUCCESS) {
-        return utxo_entry{};
-    }
+//     return domain::create<utxo_entry>(db_value_to_data_chunk(value));
+// }
 
-    return domain::create<utxo_entry>(db_value_to_data_chunk(value));
-}
+// template <typename Clock>
+// utxo_entry internal_database_basis<Clock>::get_utxo_lmdb(domain::chain::output_point const& point) const {
+
+//     KTH_DB_txn* db_txn;
+//     auto res0 = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
+//     if (res0 != KTH_DB_SUCCESS) {
+//         LOG_ERROR(LOG_DATABASE, "Error begining LMDB Transaction [get_utxo_lmdb] ", res0);
+//         return {};
+//     }
+
+//     auto ret = get_utxo_lmdb(point, db_txn);
+
+//     res0 = kth_db_txn_commit(db_txn);
+//     if (res0 != KTH_DB_SUCCESS) {
+//         LOG_ERROR(LOG_DATABASE, "Error commiting LMDB Transaction [get_utxo_lmdb] ", res0);
+//         return {};
+//     }
+
+//     return ret;
+// }
 
 template <typename Clock>
 utxo_entry internal_database_basis<Clock>::get_utxo(domain::chain::output_point const& point) const {
+    auto const key = point.to_data(KTH_INTERNAL_DB_WIRE);
 
-    KTH_DB_txn* db_txn;
-    auto res0 = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
-    if (res0 != KTH_DB_SUCCESS) {
-        LOG_ERROR(LOG_DATABASE, "Error begining LMDB Transaction [get_utxo] ", res0);
-        return {};
+    auto const it = utxoset_.find(key);
+    if (it == utxoset_.end()) {
+        return utxo_entry{};
     }
 
-    auto ret = get_utxo(point, db_txn);
-
-    res0 = kth_db_txn_commit(db_txn);
-    if (res0 != KTH_DB_SUCCESS) {
-        LOG_ERROR(LOG_DATABASE, "Error commiting LMDB Transaction [get_utxo] ", res0);
-        return {};
-    }
-
-    return ret;
+    return it->second;
 }
+
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::get_last_height(uint32_t& out_height) const {
@@ -488,103 +503,143 @@ result_code internal_database_basis<Clock>::prune() {
 //TODO(fernando): move to private
 //TODO(fernando): rename it
 //TODO(fernando): taking KTH_DB_val by value, warning!
-template <typename Clock>
-result_code internal_database_basis<Clock>::insert_reorg_into_pool(utxo_pool_t& pool, KTH_DB_val key_point, KTH_DB_txn* db_txn) const {
+// template <typename Clock>
+// result_code internal_database_basis<Clock>::insert_reorg_into_pool_lmdb(utxo_pool_t& pool, KTH_DB_val key_point, KTH_DB_txn* db_txn) const {
 
-    KTH_DB_val value;
-    auto res = kth_db_get(db_txn, dbi_reorg_pool_, &key_point, &value);
-    if (res == KTH_DB_NOTFOUND) {
-        LOG_INFO(LOG_DATABASE, "Key not found in reorg pool [insert_reorg_into_pool] ", res);
+//     KTH_DB_val value;
+//     auto res = kth_db_get(db_txn, dbi_reorg_pool_, &key_point, &value);
+//     if (res == KTH_DB_NOTFOUND) {
+//         LOG_INFO(LOG_DATABASE, "Key not found in reorg pool [insert_reorg_into_pool] ", res);
+//         return result_code::key_not_found;
+//     }
+
+//     if (res != KTH_DB_SUCCESS) {
+//         LOG_ERROR(LOG_DATABASE, "Error in reorg pool [insert_reorg_into_pool] ", res);
+//         return result_code::other;
+//     }
+
+//     auto entry_data = db_value_to_data_chunk(value);
+//     auto entry = domain::create<utxo_entry>(entry_data);
+
+//     auto point_data = db_value_to_data_chunk(key_point);
+//     auto point = domain::create<domain::chain::output_point>(point_data, KTH_INTERNAL_DB_WIRE);
+//     pool.insert({point, std::move(entry)});     //TODO(fernando): use emplace?
+
+//     return result_code::success;
+// }
+
+template <typename Clock>
+result_code internal_database_basis<Clock>::insert_reorg_into_pool(utxo_pool_t& pool, domain::chain::output_point const& point) const {
+
+    auto it = reorg_pool_.find(point);
+    if (it == reorg_pool_.end()) {
+        LOG_INFO(LOG_DATABASE, "Key not found in reorg pool [insert_reorg_into_pool]");
         return result_code::key_not_found;
     }
 
-    if (res != KTH_DB_SUCCESS) {
-        LOG_ERROR(LOG_DATABASE, "Error in reorg pool [insert_reorg_into_pool] ", res);
-        return result_code::other;
-    }
+    // Copia o mueve el utxo_entry desde reorg_pool_ a pool.
+    pool[point] = std::move(it->second);
 
-    auto entry_data = db_value_to_data_chunk(value);
-    auto entry = domain::create<utxo_entry>(entry_data);
-
-    auto point_data = db_value_to_data_chunk(key_point);
-    auto point = domain::create<domain::chain::output_point>(point_data, KTH_INTERNAL_DB_WIRE);
-    pool.insert({point, std::move(entry)});     //TODO(fernando): use emplace?
+    // Elimina el utxo_entry de reorg_pool_.
+    reorg_pool_.erase(it);
 
     return result_code::success;
 }
+
+
+// template <typename Clock>
+// std::pair<result_code, utxo_pool_t> internal_database_basis<Clock>::get_utxo_pool_from_lmdb(uint32_t from, uint32_t to) const {
+//     // precondition: from <= to
+//     utxo_pool_t pool;
+
+//     KTH_DB_txn* db_txn;
+//     auto zzz = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
+//     if (zzz != KTH_DB_SUCCESS) {
+//         return {result_code::other, pool};
+//     }
+
+//     KTH_DB_cursor* cursor;
+//     if (kth_db_cursor_open(db_txn, dbi_reorg_index_, &cursor) != KTH_DB_SUCCESS) {
+//         kth_db_txn_commit(db_txn);
+//         return {result_code::other, pool};
+//     }
+
+//     auto key = kth_db_make_value(sizeof(from), &from);
+//     KTH_DB_val value;
+
+//     // int rc = kth_db_cursor_get(cursor, &key, &value, MDB_SET);
+//     int rc = kth_db_cursor_get(cursor, &key, &value, KTH_DB_SET_RANGE);
+//     if (rc != KTH_DB_SUCCESS) {
+//         kth_db_cursor_close(cursor);
+//         kth_db_txn_commit(db_txn);
+//         return {result_code::key_not_found, pool};
+//     }
+
+//     auto current_height = *static_cast<uint32_t*>(kth_db_get_data(key));
+//     if (current_height < from) {
+//         kth_db_cursor_close(cursor);
+//         kth_db_txn_commit(db_txn);
+//         return {result_code::other, pool};
+//     }
+//     // if (current_height > from) {
+//     //     kth_db_cursor_close(cursor);
+//     //     kth_db_txn_commit(db_txn);
+//     //     return {result_code::other, pool};
+//     // }
+//     if (current_height > to) {
+//         kth_db_cursor_close(cursor);
+//         kth_db_txn_commit(db_txn);
+//         return {result_code::other, pool};
+//     }
+
+//     auto res = insert_reorg_into_pool(pool, value, db_txn);
+//     if (res != result_code::success) {
+//         kth_db_cursor_close(cursor);
+//         kth_db_txn_commit(db_txn);
+//         return {res, pool};
+//     }
+
+//     while ((rc = kth_db_cursor_get(cursor, &key, &value, KTH_DB_NEXT)) == KTH_DB_SUCCESS) {
+//         current_height = *static_cast<uint32_t*>(kth_db_get_data(key));
+//         if (current_height > to) {
+//             kth_db_cursor_close(cursor);
+//             kth_db_txn_commit(db_txn);
+//             return {result_code::other, pool};
+//         }
+
+//         res = insert_reorg_into_pool(pool, value, db_txn);
+//         if (res != result_code::success) {
+//             kth_db_cursor_close(cursor);
+//             kth_db_txn_commit(db_txn);
+//             return {res, pool};
+//         }
+//     }
+
+//     kth_db_cursor_close(cursor);
+
+//     if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
+//         return {result_code::other, pool};
+//     }
+
+//     return {result_code::success, pool};
+// }
 
 template <typename Clock>
 std::pair<result_code, utxo_pool_t> internal_database_basis<Clock>::get_utxo_pool_from(uint32_t from, uint32_t to) const {
     // precondition: from <= to
     utxo_pool_t pool;
 
-    KTH_DB_txn* db_txn;
-    auto zzz = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
-    if (zzz != KTH_DB_SUCCESS) {
-        return {result_code::other, pool};
-    }
-
-    KTH_DB_cursor* cursor;
-    if (kth_db_cursor_open(db_txn, dbi_reorg_index_, &cursor) != KTH_DB_SUCCESS) {
-        kth_db_txn_commit(db_txn);
-        return {result_code::other, pool};
-    }
-
-    auto key = kth_db_make_value(sizeof(from), &from);
-    KTH_DB_val value;
-
-    // int rc = kth_db_cursor_get(cursor, &key, &value, MDB_SET);
-    int rc = kth_db_cursor_get(cursor, &key, &value, KTH_DB_SET_RANGE);
-    if (rc != KTH_DB_SUCCESS) {
-        kth_db_cursor_close(cursor);
-        kth_db_txn_commit(db_txn);
-        return {result_code::key_not_found, pool};
-    }
-
-    auto current_height = *static_cast<uint32_t*>(kth_db_get_data(key));
-    if (current_height < from) {
-        kth_db_cursor_close(cursor);
-        kth_db_txn_commit(db_txn);
-        return {result_code::other, pool};
-    }
-    // if (current_height > from) {
-    //     kth_db_cursor_close(cursor);
-    //     kth_db_txn_commit(db_txn);
-    //     return {result_code::other, pool};
-    // }
-    if (current_height > to) {
-        kth_db_cursor_close(cursor);
-        kth_db_txn_commit(db_txn);
-        return {result_code::other, pool};
-    }
-
-    auto res = insert_reorg_into_pool(pool, value, db_txn);
-    if (res != result_code::success) {
-        kth_db_cursor_close(cursor);
-        kth_db_txn_commit(db_txn);
-        return {res, pool};
-    }
-
-    while ((rc = kth_db_cursor_get(cursor, &key, &value, KTH_DB_NEXT)) == KTH_DB_SUCCESS) {
-        current_height = *static_cast<uint32_t*>(kth_db_get_data(key));
-        if (current_height > to) {
-            kth_db_cursor_close(cursor);
-            kth_db_txn_commit(db_txn);
-            return {result_code::other, pool};
+    for (auto const& kv : reorg_index_) {
+        if (kv.first < from || kv.first > to) {
+            continue;
         }
-
-        res = insert_reorg_into_pool(pool, value, db_txn);
-        if (res != result_code::success) {
-            kth_db_cursor_close(cursor);
-            kth_db_txn_commit(db_txn);
-            return {res, pool};
+        for (auto const& utxo : kv.second) {
+            auto point = utxo.point();
+            auto res = insert_reorg_into_pool(pool, point);
+            if (res != result_code::success) {
+                return {res, pool};
+            }
         }
-    }
-
-    kth_db_cursor_close(cursor);
-
-    if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
-        return {result_code::other, pool};
     }
 
     return {result_code::success, pool};
@@ -752,10 +807,12 @@ bool internal_database_basis<Clock>::open_databases() {
 
     if ( ! open_db(block_header_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_block_header_)) return false;
     if ( ! open_db(block_header_by_hash_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_block_header_by_hash_)) return false;
-    if ( ! open_db(utxo_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_utxo_)) return false;
-    if ( ! open_db(reorg_pool_name, KTH_DB_CONDITIONAL_CREATE, &dbi_reorg_pool_)) return false;
-    if ( ! open_db(reorg_index_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_INTEGERKEY | KTH_DB_DUPFIXED, &dbi_reorg_index_)) return false;
-    if ( ! open_db(reorg_block_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_reorg_block_)) return false;
+
+    // if ( ! open_db(utxo_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_utxo_)) return false;
+    // if ( ! open_db(reorg_pool_name, KTH_DB_CONDITIONAL_CREATE, &dbi_reorg_pool_)) return false;
+    // if ( ! open_db(reorg_index_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_INTEGERKEY | KTH_DB_DUPFIXED, &dbi_reorg_index_)) return false;
+    // if ( ! open_db(reorg_block_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_reorg_block_)) return false;
+
     if ( ! open_db(db_properties_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_properties_)) return false;
 
     if (db_mode_ == db_mode_type::blocks || db_mode_ == db_mode_type::full) {

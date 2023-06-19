@@ -59,7 +59,13 @@ template <typename Clock = std::chrono::system_clock>
 class KD_API internal_database_basis {
 public:
     using path = kth::path;
-    using utxo_pool_t = std::unordered_map<domain::chain::point, utxo_entry>;
+
+    using utxo_pool_t = std::unordered_map<domain::chain::point, utxo_entry>; //TODO(fernando): remove this typedefs
+
+    using utxo_db_t = std::unordered_map<domain::chain::point, utxo_entry>;
+    using reorg_pool_t = utxo_db_t;
+    using reorg_index_t = std::unordered_map<uint32_t, std::vector<utxo_entry>>;
+    using reorg_block_t = std::unordered_map<uint32_t, domain::chain::block>;
 
     constexpr static char block_header_db_name[] = "block_header";
     constexpr static char block_header_by_hash_db_name[] = "block_header_by_hash";
@@ -101,6 +107,7 @@ public:
     result_code push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past);
 #endif
 
+    utxo_entry get_utxo_lmdb(domain::chain::output_point const& point) const;
     utxo_entry get_utxo(domain::chain::output_point const& point) const;
 
     result_code get_last_height(uint32_t& out_height) const;
@@ -115,6 +122,7 @@ public:
     result_code prune();
 #endif
 
+    std::pair<result_code, utxo_pool_t> get_utxo_pool_from_lmdb(uint32_t from, uint32_t to) const;
     std::pair<result_code, utxo_pool_t> get_utxo_pool_from(uint32_t from, uint32_t to) const;
 
     //bool set_fast_flags_environment(bool enabled);
@@ -157,10 +165,11 @@ private:
 
     bool open_databases();
 
-    utxo_entry get_utxo(domain::chain::output_point const& point, KTH_DB_txn* db_txn) const;
+    utxo_entry get_utxo_lmdb(domain::chain::output_point const& point, KTH_DB_txn* db_txn) const;
 
 #if ! defined(KTH_DB_READONLY)
-    result_code insert_reorg_pool(uint32_t height, KTH_DB_val& key, KTH_DB_txn* db_txn);
+    result_code insert_reorg_pool_lmdb(uint32_t height, KTH_DB_val& key, KTH_DB_txn* db_txn);
+    result_code insert_reorg_pool(uint32_t height, domain::chain::output_point const& point);
 
     result_code remove_utxo(uint32_t height, domain::chain::output_point const& point, bool insert_reorg, KTH_DB_txn* db_txn);
 
@@ -183,7 +192,8 @@ private:
 
     result_code push_block_header(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
 
-    result_code push_block_reorg(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
+    result_code push_block_reorg_lmdb(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
+    result_code push_block_reorg(domain::chain::block const& block, uint32_t height);
 
     result_code push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg, KTH_DB_txn* db_txn);
 
@@ -191,7 +201,8 @@ private:
 
     result_code remove_outputs(hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn);
 
-    result_code insert_output_from_reorg_and_remove(domain::chain::output_point const& point, KTH_DB_txn* db_txn);
+    result_code insert_output_from_reorg_and_remove_lmdb(domain::chain::output_point const& point, KTH_DB_txn* db_txn);
+    result_code insert_output_from_reorg_and_remove(domain::chain::output_point const& point);
 
     result_code insert_inputs(domain::chain::input::list const& inputs, KTH_DB_txn* db_txn);
 
@@ -206,16 +217,19 @@ private:
 
     result_code remove_block_header(hash_digest const& hash, uint32_t height, KTH_DB_txn* db_txn);
 
-    result_code remove_block_reorg(uint32_t height, KTH_DB_txn* db_txn);
+    result_code remove_block_reorg_lmdb(uint32_t height, KTH_DB_txn* db_txn);
+    result_code remove_block_reorg(uint32_t height);
 
-    result_code remove_reorg_index(uint32_t height, KTH_DB_txn* db_txn);
+    result_code remove_reorg_index_lmdb(uint32_t height, KTH_DB_txn* db_txn);
+    result_code remove_reorg_index(uint32_t height);
 
     result_code remove_block(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
 #endif
 
     domain::chain::header get_header(uint32_t height, KTH_DB_txn* db_txn) const;
 
-    domain::chain::block get_block_reorg(uint32_t height, KTH_DB_txn* db_txn) const;
+    domain::chain::block get_block_reorg_lmdb(uint32_t height, KTH_DB_txn* db_txn) const;
+    domain::chain::block get_block_reorg_lmdb(uint32_t height) const;
     domain::chain::block get_block_reorg(uint32_t height) const;
 
 #if ! defined(KTH_DB_READONLY)
@@ -227,7 +241,8 @@ private:
     result_code get_first_reorg_block_height(uint32_t& out_height) const;
 
     //TODO(fernando): is taking KTH_DB_val by value, is that Ok?
-    result_code insert_reorg_into_pool(utxo_pool_t& pool, KTH_DB_val key_point, KTH_DB_txn* db_txn) const;
+    result_code insert_reorg_into_pool_lmdb(utxo_pool_t& pool, KTH_DB_val key_point, KTH_DB_txn* db_txn) const;
+    result_code insert_reorg_into_pool(utxo_pool_t& pool, domain::chain::output_point const& point) const;
 
 #if ! defined(KTH_DB_READONLY)
     result_code remove_blocks_db(uint32_t height, KTH_DB_txn* db_txn);
@@ -308,13 +323,18 @@ private:
     bool safe_mode_;
     //bool fast_mode = false;
 
+    utxo_db_t utxoset_;
+    reorg_pool_t reorg_pool_;
+    reorg_index_t reorg_index_;
+    reorg_block_t reorg_block_map_;
+
     KTH_DB_env* env_;
     KTH_DB_dbi dbi_block_header_;
     KTH_DB_dbi dbi_block_header_by_hash_;
-    KTH_DB_dbi dbi_utxo_;
-    KTH_DB_dbi dbi_reorg_pool_;
-    KTH_DB_dbi dbi_reorg_index_;
-    KTH_DB_dbi dbi_reorg_block_;
+    // KTH_DB_dbi dbi_utxo_;
+    // KTH_DB_dbi dbi_reorg_pool_;
+    // KTH_DB_dbi dbi_reorg_index_;
+    // KTH_DB_dbi dbi_reorg_block_;
     KTH_DB_dbi dbi_properties_;
 
     // Blocks DB
