@@ -9,6 +9,8 @@
 #include <cctype>
 #include <istream>
 
+#include <boost/program_options.hpp>
+
 namespace kth::database {
 
 // TODO(fernando): rename
@@ -24,23 +26,25 @@ enum class db_mode_type {
 };
 
 std::istream& operator>> (std::istream &in, db_mode_type& db_mode) {
+    using namespace boost::program_options;
+
     std::string mode_str;
     in >> mode_str;
 
     std::transform(mode_str.begin(), mode_str.end(), mode_str.begin(),
         [](unsigned char c){ return std::toupper(c); });
 
-    if (token == "PRUNED") {
+    if (mode_str == "PRUNED") {
         db_mode = db_mode_type::pruned;
     }
-    else if (token == "BLOCKS") {
+    else if (mode_str == "BLOCKS") {
         db_mode = db_mode_type::blocks;
     }
-    else if (token == "FULL") {
+    else if (mode_str == "FULL") {
         db_mode = db_mode_type::full;
     }
     else {
-        throw boost::program_options::validation_error("Invalid DB Mode");
+        throw validation_error("Invalid DB Mode");
     }
 
     return in;
