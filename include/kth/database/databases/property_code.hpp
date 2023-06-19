@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <istream>
 
 namespace kth::database {
 
