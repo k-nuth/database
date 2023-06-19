@@ -915,7 +915,7 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
             return res;
         }
     } else if (db_mode_ == db_mode_type::blocks) {
-        res = insert_block(block, height, db_txn);
+        res = insert_block(block, height, 0, db_txn);
         if (res != result_code::success) {
             return res;
         }
@@ -978,7 +978,7 @@ result_code internal_database_basis<Clock>::push_genesis(domain::chain::block co
             return res;
         }
     } else if (db_mode_ == db_mode_type::blocks) {
-        res = insert_block(block, 0, db_txn);
+        res = insert_block(block, 0, 0, db_txn);
     }
 
     return res;
