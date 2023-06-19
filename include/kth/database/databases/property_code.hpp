@@ -44,7 +44,7 @@ std::istream& operator>> (std::istream &in, db_mode_type& db_mode) {
         db_mode = db_mode_type::full;
     }
     else {
-        throw validation_error("Invalid DB Mode");
+        throw validation_error(validation_error::invalid_option_value);
     }
 
     return in;
