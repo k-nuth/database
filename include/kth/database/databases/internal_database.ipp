@@ -289,16 +289,12 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
 
 template <typename Clock>
 utxo_entry internal_database_basis<Clock>::get_utxo(domain::chain::output_point const& point) const {
-    auto const key = point.to_data(KTH_INTERNAL_DB_WIRE);
-
-    auto const it = utxoset_.find(key);
+    auto const it = utxoset_.find(point);
     if (it == utxoset_.end()) {
         return utxo_entry{};
     }
-
     return it->second;
 }
-
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::get_last_height(uint32_t& out_height) const {
@@ -536,13 +532,7 @@ result_code internal_database_basis<Clock>::insert_reorg_into_pool(utxo_pool_t& 
         LOG_INFO(LOG_DATABASE, "Key not found in reorg pool [insert_reorg_into_pool]");
         return result_code::key_not_found;
     }
-
-    // Copia o mueve el utxo_entry desde reorg_pool_ a pool.
-    pool[point] = std::move(it->second);
-
-    // Elimina el utxo_entry de reorg_pool_.
-    reorg_pool_.erase(it);
-
+    pool[point] = it->second;
     return result_code::success;
 }
 
@@ -629,12 +619,13 @@ std::pair<result_code, utxo_pool_t> internal_database_basis<Clock>::get_utxo_poo
     // precondition: from <= to
     utxo_pool_t pool;
 
-    for (auto const& kv : reorg_index_) {
-        if (kv.first < from || kv.first > to) {
+    for(auto const& index_entry : reorg_index_) {
+        if (index_entry.first < from || index_entry.first > to) {
             continue;
         }
-        for (auto const& utxo : kv.second) {
-            auto point = utxo.point();
+
+        auto const& point_list = index_entry.second;
+        for (auto const& point : point_list) {
             auto res = insert_reorg_into_pool(pool, point);
             if (res != result_code::success) {
                 return {res, pool};
@@ -644,6 +635,7 @@ std::pair<result_code, utxo_pool_t> internal_database_basis<Clock>::get_utxo_poo
 
     return {result_code::success, pool};
 }
+
 
 #if ! defined(KTH_DB_READONLY)
 
@@ -852,13 +844,12 @@ result_code internal_database_basis<Clock>::remove_inputs(hash_digest const& tx_
             }
         }
 
-        auto res = remove_utxo(height, prevout, insert_reorg, db_txn);
+        auto res = remove_utxo(height, prevout, insert_reorg); //, db_txn);
         if (res != result_code::success) {
             return res;
         }
 
         if (db_mode_ == db_mode_type::full) {
-            //insert in spend database
             res = insert_spend(prevout, inpoint, db_txn);
             if (res != result_code::success) {
                 return res;
@@ -874,8 +865,7 @@ template <typename Clock>
 result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx_id, uint32_t height, domain::chain::output::list const& outputs, data_chunk const& fixed_data, KTH_DB_txn* db_txn) {
     uint32_t pos = 0;
     for (auto const& output: outputs) {
-
-        auto res = insert_utxo(domain::chain::point{tx_id, pos}, output, fixed_data, db_txn);
+        auto res = insert_utxo(domain::chain::point{tx_id, pos}, output, fixed_data); //, db_txn);
         if (res != result_code::success) {
             return res;
         }
@@ -886,7 +876,6 @@ result_code internal_database_basis<Clock>::insert_outputs(hash_digest const& tx
                 return res;
             }
         }
-
         ++pos;
     }
     return result_code::success;
@@ -978,8 +967,8 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
         }
     }
 
-    if ( insert_reorg ) {
-        res = push_block_reorg(block, height, db_txn);
+    if (insert_reorg) {
+        res = push_block_reorg(block, height); //, db_txn);
         if (res != result_code::success) {
             return res;
         }
@@ -1042,11 +1031,12 @@ result_code internal_database_basis<Clock>::push_genesis(domain::chain::block co
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_outputs(hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn) {
+// result_code internal_database_basis<Clock>::remove_outputs(hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_outputs(hash_digest const& txid, domain::chain::output::list const& outputs) {
     uint32_t pos = outputs.size() - 1;
     for (auto const& output: outputs) {
         domain::chain::output_point const point {txid, pos};
-        auto res = remove_utxo(0, point, false, db_txn);
+        auto res = remove_utxo(0, point, false); //, db_txn);
         if (res != result_code::success) {
             return res;
         }
@@ -1056,11 +1046,23 @@ result_code internal_database_basis<Clock>::remove_outputs(hash_digest const& tx
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_inputs(domain::chain::input::list const& inputs, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_inputs_lmdb(domain::chain::input::list const& inputs, KTH_DB_txn* db_txn) {
     for (auto const& input: inputs) {
         auto const& point = input.previous_output();
 
-        auto res = insert_output_from_reorg_and_remove(point, db_txn);
+        auto res = insert_output_from_reorg_and_remove_lmdb(point, db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
+    }
+    return result_code::success;
+}
+
+template <typename Clock>
+result_code internal_database_basis<Clock>::insert_inputs(domain::chain::input::list const& inputs) {
+    for (auto const& input: inputs) {
+        auto const& point = input.previous_output();
+        auto res = insert_output_from_reorg_and_remove(point);
         if (res != result_code::success) {
             return res;
         }
@@ -1070,12 +1072,12 @@ result_code internal_database_basis<Clock>::insert_inputs(domain::chain::input::
 
 template <typename Clock>
 template <typename I>
-result_code internal_database_basis<Clock>::insert_transactions_inputs_non_coinbase(I f, I l, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_transactions_inputs_non_coinbase_lmdb(I f, I l, KTH_DB_txn* db_txn) {
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
 
     while (f != l) {
         auto const& tx = *f;
-        auto res = insert_inputs(tx.inputs(), db_txn);
+        auto res = insert_inputs_lmdb(tx.inputs(), db_txn);
         if (res != result_code::success) {
             return res;
         }
@@ -1087,12 +1089,12 @@ result_code internal_database_basis<Clock>::insert_transactions_inputs_non_coinb
 
 template <typename Clock>
 template <typename I>
-result_code internal_database_basis<Clock>::remove_transactions_outputs_non_coinbase(I f, I l, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::insert_transactions_inputs_non_coinbase(I f, I l) {
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
 
     while (f != l) {
         auto const& tx = *f;
-        auto res = remove_outputs(tx.hash(), tx.outputs(), db_txn);
+        auto res = insert_inputs(tx.inputs());
         if (res != result_code::success) {
             return res;
         }
@@ -1104,14 +1106,49 @@ result_code internal_database_basis<Clock>::remove_transactions_outputs_non_coin
 
 template <typename Clock>
 template <typename I>
-result_code internal_database_basis<Clock>::remove_transactions_non_coinbase(I f, I l, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_transactions_outputs_non_coinbase_lmdb(I f, I l, KTH_DB_txn* db_txn) {
     // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
 
-    auto res = insert_transactions_inputs_non_coinbase(f, l, db_txn);
+    while (f != l) {
+        auto const& tx = *f;
+        auto res = remove_outputs_lmdb(tx.hash(), tx.outputs(), db_txn);
+        if (res != result_code::success) {
+            return res;
+        }
+        ++f;
+    }
+
+    return result_code::success;
+}
+
+template <typename Clock>
+template <typename I>
+result_code internal_database_basis<Clock>::remove_transactions_outputs_non_coinbase(I f, I l) {
+    // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
+
+    while (f != l) {
+        auto const& tx = *f;
+        auto res = remove_outputs(tx.hash(), tx.outputs());
+        if (res != result_code::success) {
+            return res;
+        }
+        ++f;
+    }
+
+    return result_code::success;
+}
+
+template <typename Clock>
+template <typename I>
+// result_code internal_database_basis<Clock>::remove_transactions_non_coinbase(I f, I l, KTH_DB_txn* db_txn) {
+result_code internal_database_basis<Clock>::remove_transactions_non_coinbase(I f, I l) {
+    // precondition: [f, l) is a valid range and there are no coinbase transactions in it.
+
+    auto res = insert_transactions_inputs_non_coinbase(f, l); //, db_txn);
     if (res != result_code::success) {
         return res;
     }
-    return remove_transactions_outputs_non_coinbase(f, l, db_txn);
+    return remove_transactions_outputs_non_coinbase(f, l); //, db_txn);
 }
 
 
@@ -1122,15 +1159,13 @@ result_code internal_database_basis<Clock>::remove_block(domain::chain::block co
     auto const& txs = block.transactions();
     auto const& coinbase = txs.front();
 
-    //UTXO
     auto res = remove_transactions_non_coinbase(txs.begin() + 1, txs.end(), db_txn);
     if (res != result_code::success) {
         return res;
     }
 
-    //UTXO Coinbase
     //TODO(fernando): tx.hash() debe ser llamado fuera de la DBTx
-    res = remove_outputs(coinbase.hash(), coinbase.outputs(), db_txn);
+    res = remove_outputs(coinbase.hash(), coinbase.outputs()); //, db_txn);
     if (res != result_code::success) {
         return res;
     }
@@ -1141,12 +1176,12 @@ result_code internal_database_basis<Clock>::remove_block(domain::chain::block co
         return res;
     }
 
-    res = remove_block_reorg(height, db_txn);
+    res = remove_block_reorg(height);//, db_txn);
     if (res != result_code::success) {
         return res;
     }
 
-    res = remove_reorg_index(height, db_txn);
+    res = remove_reorg_index(height); //, db_txn);
     if (res != result_code::success && res != result_code::key_not_found) {
         return res;
     }

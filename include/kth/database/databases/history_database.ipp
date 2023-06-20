@@ -60,7 +60,7 @@ result_code internal_database_basis<Clock>::insert_input_history(domain::chain::
             //TODO (Mario) check if we can query UTXO
             //TODO (Mario) requiere_confirmed = true ??
 
-            auto entry = get_utxo(prevout, db_txn);
+            auto entry = get_utxo(prevout); //, db_txn);
 
             //auto entry = get_transaction(prevout.hash(), max_uint32, true, db_txn);
 
@@ -87,8 +87,7 @@ result_code internal_database_basis<Clock>::insert_input_history(domain::chain::
                     }
                     ++id;
                 }
-            }
-            else {
+            } else {
                 LOG_INFO(LOG_DATABASE, "Error finding UTXO for input history [insert_input_history]");
             }
     }

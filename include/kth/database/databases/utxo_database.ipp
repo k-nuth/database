@@ -15,7 +15,7 @@ result_code internal_database_basis<Clock>::remove_utxo_lmdb(uint32_t height, do
     auto key = kth_db_make_value(keyarr.size(), keyarr.data());                 //TODO(fernando): podría estar afuera de la DBTx
 
     if (insert_reorg) {
-        auto res0 = insert_reorg_pool(height, key, db_txn);
+        auto res0 = insert_reorg_pool_lmdb(height, key, db_txn);
         if (res0 != result_code::success) return res0;
     }
 
@@ -33,14 +33,12 @@ result_code internal_database_basis<Clock>::remove_utxo_lmdb(uint32_t height, do
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::remove_utxo(uint32_t height, domain::chain::output_point const& point, bool insert_reorg) {
-    auto const key = point.to_data(KTH_INTERNAL_DB_WIRE);
-
     if (insert_reorg) {
-        auto res0 = insert_reorg_pool(height, key);
+        auto res0 = insert_reorg_pool(height, point);
         if (res0 != result_code::success) return res0;
     }
 
-    auto it = utxoset_.find(key);
+    auto it = utxoset_.find(point);
     if (it == utxoset_.end()) {
         LOG_INFO(LOG_DATABASE, "Key not found deleting UTXO [remove_utxo] ");
         return result_code::key_not_found;

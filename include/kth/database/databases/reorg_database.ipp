@@ -68,7 +68,7 @@ result_code internal_database_basis<Clock>::insert_reorg_pool(uint32_t height, d
 
     // Insertamos la entrada en reorg_index
     auto& reorg_index_height = reorg_index_[height];  // crea la entrada si no existe aún
-    reorg_index_height.push_back(it_utxo->second);
+    reorg_index_height.push_back(point);
 
     return result_code::success;
 }
@@ -97,18 +97,11 @@ result_code internal_database_basis<Clock>::insert_reorg_pool(uint32_t height, d
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::push_block_reorg(domain::chain::block const& block, uint32_t height) {
-    // Convert the block to its binary representation.
-    auto block_data = block.to_data(false);
-
-    // Attempt to insert the block into the map.
-    auto res = reorg_block_map_.insert({height, block_data});
-
-    // If the insert operation did not succeed, this means a block with the same height is already in the map.
+    auto res = reorg_block_map_.insert({height, block});
     if ( ! res.second) {
         LOG_INFO(LOG_DATABASE, "Duplicate key inserting in reorg block [push_block_reorg]");
         return result_code::duplicated_key;
     }
-
     return result_code::success;
 }
 

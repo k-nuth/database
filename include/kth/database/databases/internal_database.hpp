@@ -64,21 +64,26 @@ public:
 
     using utxo_db_t = std::unordered_map<domain::chain::point, utxo_entry>;
     using reorg_pool_t = utxo_db_t;
-    using reorg_index_t = std::unordered_map<uint32_t, std::vector<utxo_entry>>;
+    // using reorg_index_t = std::unordered_map<uint32_t, std::vector<utxo_entry>>;
+    using reorg_index_t = std::unordered_map<uint32_t, std::vector<domain::chain::point>>;
     using reorg_block_t = std::unordered_map<uint32_t, domain::chain::block>;
 
+    // Headers DB
     constexpr static char block_header_db_name[] = "block_header";
     constexpr static char block_header_by_hash_db_name[] = "block_header_by_hash";
+
+    // UTXO DB
     constexpr static char utxo_db_name[] = "utxo_db";
     constexpr static char reorg_pool_name[] = "reorg_pool";
     constexpr static char reorg_index_name[] = "reorg_index";
     constexpr static char reorg_block_name[] = "reorg_block";
+
     constexpr static char db_properties_name[] = "properties";
 
-    //Blocks DB
+    // Blocks DB
     constexpr static char block_db_name[] = "blocks";
 
-    //Transactions
+    //Transactions DB
     constexpr static char transaction_db_name[] = "transactions";
     constexpr static char transaction_hash_db_name[] = "transactions_hash";
     constexpr static char history_db_name[] = "history";
@@ -171,9 +176,11 @@ private:
     result_code insert_reorg_pool_lmdb(uint32_t height, KTH_DB_val& key, KTH_DB_txn* db_txn);
     result_code insert_reorg_pool(uint32_t height, domain::chain::output_point const& point);
 
-    result_code remove_utxo(uint32_t height, domain::chain::output_point const& point, bool insert_reorg, KTH_DB_txn* db_txn);
+    result_code remove_utxo_lmdb(uint32_t height, domain::chain::output_point const& point, bool insert_reorg, KTH_DB_txn* db_txn);
+    result_code remove_utxo(uint32_t height, domain::chain::output_point const& point, bool insert_reorg);
 
-    result_code insert_utxo(domain::chain::output_point const& point, domain::chain::output const& output, data_chunk const& fixed_data, KTH_DB_txn* db_txn);
+    result_code insert_utxo_lmdb(domain::chain::output_point const& point, domain::chain::output const& output, data_chunk const& fixed_data, KTH_DB_txn* db_txn);
+    result_code insert_utxo(domain::chain::output_point const& point, domain::chain::output const& output, data_chunk const& fixed_data);
 
     result_code remove_inputs(hash_digest const& tx_id, uint32_t height, domain::chain::input::list const& inputs, bool insert_reorg, KTH_DB_txn* db_txn);
 
@@ -199,21 +206,29 @@ private:
 
     result_code push_genesis(domain::chain::block const& block, KTH_DB_txn* db_txn);
 
-    result_code remove_outputs(hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn);
+    result_code remove_outputs_lmdb(hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn);
+    result_code remove_outputs(hash_digest const& txid, domain::chain::output::list const& outputs);
 
     result_code insert_output_from_reorg_and_remove_lmdb(domain::chain::output_point const& point, KTH_DB_txn* db_txn);
     result_code insert_output_from_reorg_and_remove(domain::chain::output_point const& point);
 
-    result_code insert_inputs(domain::chain::input::list const& inputs, KTH_DB_txn* db_txn);
+    result_code insert_inputs_lmdb(domain::chain::input::list const& inputs, KTH_DB_txn* db_txn);
+    result_code insert_inputs(domain::chain::input::list const& inputs);
 
     template <typename I>
-    result_code insert_transactions_inputs_non_coinbase(I f, I l, KTH_DB_txn* db_txn);
+    result_code insert_transactions_inputs_non_coinbase_lmdb(I f, I l, KTH_DB_txn* db_txn);
+    template <typename I>
+    result_code insert_transactions_inputs_non_coinbase(I f, I l);
 
     template <typename I>
-    result_code remove_transactions_outputs_non_coinbase(I f, I l, KTH_DB_txn* db_txn);
+    result_code remove_transactions_outputs_non_coinbase_lmdb(I f, I l, KTH_DB_txn* db_txn);
+    template <typename I>
+    result_code remove_transactions_outputs_non_coinbase(I f, I l);
 
     template <typename I>
-    result_code remove_transactions_non_coinbase(I f, I l, KTH_DB_txn* db_txn);
+    result_code remove_transactions_non_coinbase_lmdb(I f, I l, KTH_DB_txn* db_txn);
+    template <typename I>
+    result_code remove_transactions_non_coinbase(I f, I l);
 
     result_code remove_block_header(hash_digest const& hash, uint32_t height, KTH_DB_txn* db_txn);
 
