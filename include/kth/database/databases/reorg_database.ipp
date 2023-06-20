@@ -304,24 +304,42 @@ domain::chain::block internal_database_basis<Clock>::get_block_from_reorg_pool(u
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::prune_reorg_index(uint32_t remove_until) {
-    for (auto it = reorg_index_.begin(); it != reorg_index_.end();) {
-        // uint32_t, std::vector<domain::chain::point>
-        auto const& [height, points] = *it;
-        // if (it->first < remove_until) {
-        if (height < remove_until) {
-            for (auto const& point : points) {
-                auto output_it = reorg_pool_.find(point);
-                if (output_it == reorg_pool_.end()) {
-                    LOG_INFO(LOG_DATABASE, "Key not found deleting reorg pool [prune_reorg_index]");
-                    return result_code::key_not_found;
-                }
-                reorg_pool_.erase(output_it);
-            }
-            it = reorg_index_.erase(it);
-        } else {
-            ++it;
+    // for (auto it = reorg_index_.begin(); it != reorg_index_.end();) {
+    //     // uint32_t, std::vector<domain::chain::point>
+    //     auto const& [height, points] = *it;
+    //     // if (it->first < remove_until) {
+    //     if (height < remove_until) {
+    //         for (auto const& point : points) {
+    //             auto output_it = reorg_pool_.find(point);
+    //             if (output_it == reorg_pool_.end()) {
+    //                 LOG_INFO(LOG_DATABASE, "Key not found deleting reorg pool [prune_reorg_index]");
+    //                 return result_code::key_not_found;
+    //             }
+    //             reorg_pool_.erase(output_it);
+    //         }
+    //         it = reorg_index_.erase(it);
+    //     } else {
+    //         ++it;
+    //     }
+    // }
+
+    erase_if(reorg_index_, [&](std::pair<uint32_t const, std::vector<domain::chain::point>>& v) {
+        auto const& [height, points] = v;
+        if (height >= remove_until) {
+            return false;
         }
-    }
+
+        for (auto const& point : points) {
+            auto it = reorg_pool_.find(point);
+            if (it == reorg_pool_.end()) {
+                LOG_INFO(LOG_DATABASE, "Key not found deleting reorg pool [prune_reorg_index]");
+                // return result_code::key_not_found;
+                continue;
+            }
+            reorg_pool_.erase(it);
+        }
+        return true;
+    });
     return result_code::success;
 }
 
@@ -364,6 +382,7 @@ result_code internal_database_basis<Clock>::prune_reorg_block(uint32_t elements_
         reorg_block_map_.erase(it);
         if (--elements_to_delete == 0) break;
     }
+    return result_code::success;
 }
 
 #endif // ! defined(KTH_DB_READONLY)
