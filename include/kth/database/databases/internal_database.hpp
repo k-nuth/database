@@ -63,6 +63,8 @@ public:
     using utxo_pool_t = std::unordered_map<domain::chain::point, utxo_entry>; //TODO(fernando): remove this typedefs
 
     using utxo_db_t = std::unordered_map<domain::chain::point, utxo_entry>;
+    // using reorg_pool_t = std::unordered_map<domain::chain::point, utxo_entry>;
+
     using reorg_pool_t = utxo_db_t;
     // using reorg_index_t = std::unordered_map<uint32_t, std::vector<utxo_entry>>;
     using reorg_index_t = std::unordered_map<uint32_t, std::vector<domain::chain::point>>;
@@ -180,22 +182,28 @@ private:
     result_code remove_utxo(uint32_t height, domain::chain::output_point const& point, bool insert_reorg);
 
     result_code insert_utxo_lmdb(domain::chain::output_point const& point, domain::chain::output const& output, data_chunk const& fixed_data, KTH_DB_txn* db_txn);
-    result_code insert_utxo(domain::chain::output_point const& point, domain::chain::output const& output, data_chunk const& fixed_data);
+    result_code insert_utxo(domain::chain::output_point const& point, domain::chain::output const& output, uint32_t height, uint32_t median_time_past, bool coinbase);
 
     result_code remove_inputs(hash_digest const& tx_id, uint32_t height, domain::chain::input::list const& inputs, bool insert_reorg, KTH_DB_txn* db_txn);
 
-    result_code insert_outputs(hash_digest const& tx_id, uint32_t height, domain::chain::output::list const& outputs, data_chunk const& fixed_data, KTH_DB_txn* db_txn);
+    result_code insert_outputs_lmdb(hash_digest const& tx_id, uint32_t height, domain::chain::output::list const& outputs, data_chunk const& fixed_data, KTH_DB_txn* db_txn);
+    result_code insert_outputs(hash_digest const& tx_id, uint32_t height, domain::chain::output::list const& outputs, uint32_t median_time_past, bool coinbase, KTH_DB_txn* db_txn);
 
-    result_code insert_outputs_error_treatment(uint32_t height, data_chunk const& fixed_data, hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn);
+    result_code insert_outputs_error_treatment_lmdb(uint32_t height, data_chunk const& fixed_data, hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn);
+    result_code insert_outputs_error_treatment(uint32_t height, uint32_t median_time_past, bool coinbase, hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn);
 
     template <typename I>
-    result_code push_transactions_outputs_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, KTH_DB_txn* db_txn);
+    result_code push_transactions_outputs_non_coinbase_lmdb(uint32_t height, data_chunk const& fixed_data, I f, I l, KTH_DB_txn* db_txn);
+    template <typename I>
+    result_code push_transactions_outputs_non_coinbase(uint32_t height, uint32_t median_time_past, I f, I l, KTH_DB_txn* db_txn);
 
     template <typename I>
     result_code remove_transactions_inputs_non_coinbase(uint32_t height, I f, I l, bool insert_reorg, KTH_DB_txn* db_txn);
 
     template <typename I>
-    result_code push_transactions_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, bool insert_reorg, KTH_DB_txn* db_txn);
+    result_code push_transactions_non_coinbase_lmdb(uint32_t height, data_chunk const& fixed_data, I f, I l, bool insert_reorg, KTH_DB_txn* db_txn);
+    template <typename I>
+    result_code push_transactions_non_coinbase(uint32_t height, uint32_t median_time_past, I f, I l, bool insert_reorg, KTH_DB_txn* db_txn);
 
     result_code push_block_header(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
 
@@ -243,16 +251,19 @@ private:
 
     domain::chain::header get_header(uint32_t height, KTH_DB_txn* db_txn) const;
 
-    domain::chain::block get_block_reorg_lmdb(uint32_t height, KTH_DB_txn* db_txn) const;
-    domain::chain::block get_block_reorg_lmdb(uint32_t height) const;
-    domain::chain::block get_block_reorg(uint32_t height) const;
+    domain::chain::block get_block_from_reorg_pool_lmdb(uint32_t height, KTH_DB_txn* db_txn) const;
+    domain::chain::block get_block_from_reorg_pool_lmdb(uint32_t height) const;
+    domain::chain::block get_block_from_reorg_pool(uint32_t height) const;
 
 #if ! defined(KTH_DB_READONLY)
     result_code remove_block(domain::chain::block const& block, uint32_t height);
-    result_code prune_reorg_index(uint32_t remove_until, KTH_DB_txn* db_txn);
-    result_code prune_reorg_block(uint32_t amount_to_delete, KTH_DB_txn* db_txn);
+    result_code prune_reorg_index_lmdb(uint32_t remove_until, KTH_DB_txn* db_txn);
+    result_code prune_reorg_index(uint32_t remove_until);
+    result_code prune_reorg_block_lmdb(uint32_t amount_to_delete, KTH_DB_txn* db_txn);
+    result_code prune_reorg_block(uint32_t amount_to_delete);
 #endif
 
+    result_code get_first_reorg_block_height_lmdb(uint32_t& out_height) const;
     result_code get_first_reorg_block_height(uint32_t& out_height) const;
 
     //TODO(fernando): is taking KTH_DB_val by value, is that Ok?
