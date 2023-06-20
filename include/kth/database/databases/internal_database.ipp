@@ -201,7 +201,7 @@ bool internal_database_basis<Clock>::close() {
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::push_genesis(domain::chain::block const& block) {
-    std::cout << "push_block() - Current Thread ID: " << std::this_thread::get_id() << std::endl;
+    // std::cout << "push_block() - Current Thread ID: " << std::this_thread::get_id() << std::endl;
 
     KTH_DB_txn* db_txn;
     auto res0 = kth_db_txn_begin(env_, NULL, 0, &db_txn);
@@ -228,7 +228,7 @@ result_code internal_database_basis<Clock>::push_genesis(domain::chain::block co
 template <typename Clock>
 result_code internal_database_basis<Clock>::push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past) {
 
-    std::cout << "push_block() - Current Thread ID: " << std::this_thread::get_id() << std::endl;
+    // std::cout << "push_block() - Current Thread ID: " << std::this_thread::get_id() << std::endl;
 
     KTH_DB_txn* db_txn;
     auto res0 = kth_db_txn_begin(env_, NULL, 0, &db_txn);
