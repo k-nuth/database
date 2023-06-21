@@ -168,7 +168,7 @@ bool internal_database_basis<Clock>::close() {
         kth_db_dbi_close(env_, dbi_block_header_);
         kth_db_dbi_close(env_, dbi_block_header_by_hash_);
 
-        // kth_db_dbi_close(env_, dbi_utxo_);
+        kth_db_dbi_close(env_, dbi_utxo_);
         // kth_db_dbi_close(env_, dbi_reorg_pool_);
         // kth_db_dbi_close(env_, dbi_reorg_index_);
         // kth_db_dbi_close(env_, dbi_reorg_block_);
@@ -226,9 +226,68 @@ result_code internal_database_basis<Clock>::push_genesis(domain::chain::block co
 //                  avoiding inserting and erasing internal spenders
 
 template <typename Clock>
+result_code internal_database_basis<Clock>::persist_utxo_set() {
+
+    std::cout << "persist_utxo_set() BEGIN - utxoset_.size(): " << utxoset_.size() << std::endl;
+
+    KTH_DB_txn* txn;
+    if (kth_db_txn_begin(env_, NULL, 0, &txn) != KTH_DB_SUCCESS) {
+        return result_code::other;
+    }
+
+    KTH_DB_val key, value;
+    for (auto const& [point, entry] : utxoset_) {
+        // key.mv_size = sizeof(pair.first);
+        // key.mv_data = const_cast<domain::chain::point*>(&pair.first);
+
+        // value.mv_size = sizeof(pair.second);
+        // value.mv_data = &pair.second;
+
+        // if (kth_db_put(txn, dbi, &key, &value, 0) != KTH_DB_SUCCESS) {
+        //     // Handle error.
+        // }
+
+        auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);
+        // auto valuearr = utxo_entry::to_data_with_fixed(output, fixed_data);
+        auto valuearr = entry.to_data();
+
+        auto key = kth_db_make_value(keyarr.size(), keyarr.data());
+        auto value = kth_db_make_value(valuearr.size(), valuearr.data());
+        auto res = kth_db_put(txn, dbi_utxo_, &key, &value, KTH_DB_NOOVERWRITE);
+
+        if (res == KTH_DB_KEYEXIST) {
+            LOG_DEBUG(LOG_DATABASE, "Duplicate Key inserting UTXO [insert_utxo] ", res);
+            return result_code::duplicated_key;
+        }
+        if (res != KTH_DB_SUCCESS) {
+            LOG_INFO(LOG_DATABASE, "Error inserting UTXO [insert_utxo] ", res);
+            return result_code::other;
+        }
+
+    }
+
+    std::cout << "persist_utxo_set() Before Commit" << std::endl;
+    if (kth_db_txn_commit(txn) != KTH_DB_SUCCESS) {
+        return result_code::other;
+    }
+    std::cout << "persist_utxo_set() After Commit" << std::endl;
+
+    utxoset_.clear();
+
+    std::cout << "persist_utxo_set() END - utxoset_.size(): " << utxoset_.size() << std::endl;
+
+    return result_code::success;
+}
+
+template <typename Clock>
 result_code internal_database_basis<Clock>::push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past) {
 
     // std::cout << "push_block() - Current Thread ID: " << std::this_thread::get_id() << std::endl;
+
+    size_t const utxo_cache_size_ = 100'000;
+    if (utxoset_.size() >= utxo_cache_size_) {
+        persist_utxo_set();
+    }
 
     KTH_DB_txn* db_txn;
     auto res0 = kth_db_txn_begin(env_, NULL, 0, &db_txn);
@@ -840,7 +899,7 @@ bool internal_database_basis<Clock>::open_databases() {
     if ( ! open_db(block_header_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_block_header_)) return false;
     if ( ! open_db(block_header_by_hash_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_block_header_by_hash_)) return false;
 
-    // if ( ! open_db(utxo_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_utxo_)) return false;
+    if ( ! open_db(utxo_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_utxo_)) return false;
     // if ( ! open_db(reorg_pool_name, KTH_DB_CONDITIONAL_CREATE, &dbi_reorg_pool_)) return false;
     // if ( ! open_db(reorg_index_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_INTEGERKEY | KTH_DB_DUPFIXED, &dbi_reorg_index_)) return false;
     // if ( ! open_db(reorg_block_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_reorg_block_)) return false;

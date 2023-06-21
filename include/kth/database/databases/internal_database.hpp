@@ -117,6 +117,8 @@ public:
     //TODO(fernando): optimization: consider passing a list of outputs to insert and a list of inputs to delete instead of an entire Block.
     //                  avoiding inserting and erasing internal spenders
     result_code push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past);
+
+    result_code persist_utxo_set();
 #endif
 
     utxo_entry get_utxo_lmdb(domain::chain::output_point const& point) const;
@@ -362,7 +364,7 @@ private:
     KTH_DB_env* env_;
     KTH_DB_dbi dbi_block_header_;
     KTH_DB_dbi dbi_block_header_by_hash_;
-    // KTH_DB_dbi dbi_utxo_;
+    KTH_DB_dbi dbi_utxo_;
     // KTH_DB_dbi dbi_reorg_pool_;
     // KTH_DB_dbi dbi_reorg_index_;
     // KTH_DB_dbi dbi_reorg_block_;

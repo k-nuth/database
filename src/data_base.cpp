@@ -175,8 +175,8 @@ code data_base::insert(domain::chain::block const& block, size_t height) {
 
     auto const median_time_past = block.header().validation.median_time_past;
 
+    //TODO(fernando): why we need to verify_insert here?
     auto const ec = verify_insert(block, height);
-
     if (ec) return ec;
 
     auto res = internal_db_->push_block(block, height, median_time_past);
