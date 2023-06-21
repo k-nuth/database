@@ -235,18 +235,28 @@ result_code internal_database_basis<Clock>::persist_utxo_set() {
         return result_code::other;
     }
 
-    KTH_DB_val key, value;
+    std::cout << "persist_utxo_set() - Removing UTXOs - utxo_to_remove_.size(): " << utxo_to_remove_.size() << std::endl;
+
+    size_t removed = 0;
+    for (auto const& point : utxo_to_remove_) {
+        auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);
+        auto key = kth_db_make_value(keyarr.size(), keyarr.data());
+
+        auto res = kth_db_del(txn, dbi_utxo_, &key, NULL);
+        if (res == KTH_DB_NOTFOUND) {
+            LOG_INFO(LOG_DATABASE, "Key not found deleting UTXO [remove_utxo] ", res);
+            return result_code::key_not_found;
+        }
+        if (res != KTH_DB_SUCCESS) {
+            LOG_INFO(LOG_DATABASE, "Error deleting UTXO [remove_utxo] ", res);
+            return result_code::other;
+        }
+        ++removed;
+    }
+
+    std::cout << "Finished removing UTXOs - removed: " << removed << std::endl;
+
     for (auto const& [point, entry] : utxoset_) {
-        // key.mv_size = sizeof(pair.first);
-        // key.mv_data = const_cast<domain::chain::point*>(&pair.first);
-
-        // value.mv_size = sizeof(pair.second);
-        // value.mv_data = &pair.second;
-
-        // if (kth_db_put(txn, dbi, &key, &value, 0) != KTH_DB_SUCCESS) {
-        //     // Handle error.
-        // }
-
         auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);
         // auto valuearr = utxo_entry::to_data_with_fixed(output, fixed_data);
         auto valuearr = entry.to_data();

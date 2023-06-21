@@ -40,8 +40,10 @@ result_code internal_database_basis<Clock>::remove_utxo(uint32_t height, domain:
 
     auto it = utxoset_.find(point);
     if (it == utxoset_.end()) {
-        LOG_INFO(LOG_DATABASE, "Key not found deleting UTXO [remove_utxo] ");
-        return result_code::key_not_found;
+        // LOG_INFO(LOG_DATABASE, "Key not found deleting UTXO [remove_utxo] ");
+        // return result_code::key_not_found;
+        utxo_to_remove_.emplace(point);
+        return result_code::success;
     }
 
     utxoset_.erase(it);

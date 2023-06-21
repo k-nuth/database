@@ -11,6 +11,7 @@
 #include <boost/interprocess/mapped_region.hpp>
 
 #include <boost/unordered/unordered_flat_map.hpp>
+#include <boost/unordered/unordered_flat_set.hpp>
 
 
 #include <kth/database/databases/generic_db.hpp>
@@ -71,6 +72,7 @@ public:
 
     using utxo_pool_t = boost::unordered_flat_map<domain::chain::point, utxo_entry>; //TODO(fernando): remove this typedefs
     using utxo_db_t = boost::unordered_flat_map<domain::chain::point, utxo_entry>;
+    using utxo_to_remove_t = boost::unordered_flat_set<domain::chain::point>;
     using reorg_pool_t = utxo_db_t;
     using reorg_index_t = boost::unordered_flat_map<uint32_t, std::vector<domain::chain::point>>;
     using reorg_block_t = boost::unordered_flat_map<uint32_t, domain::chain::block>;
@@ -357,6 +359,7 @@ private:
     //bool fast_mode = false;
 
     utxo_db_t utxoset_;
+    utxo_to_remove_t utxo_to_remove_;
     reorg_pool_t reorg_pool_;
     reorg_index_t reorg_index_;
     reorg_block_t reorg_block_map_;
