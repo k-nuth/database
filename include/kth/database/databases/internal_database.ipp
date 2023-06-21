@@ -244,17 +244,23 @@ result_code internal_database_basis<Clock>::persist_utxo_set() {
 
         auto res = kth_db_del(txn, dbi_utxo_, &key, NULL);
         if (res == KTH_DB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE, "Key not found deleting UTXO [remove_utxo] ", res);
+            LOG_ERROR(LOG_DATABASE, "Key not found deleting UTXO [remove_utxo] ", res);
             return result_code::key_not_found;
         }
         if (res != KTH_DB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE, "Error deleting UTXO [remove_utxo] ", res);
+            LOG_ERROR(LOG_DATABASE, "Error deleting UTXO [remove_utxo] ", res);
             return result_code::other;
         }
         ++removed;
     }
 
+    if (removed != utxo_to_remove_.size()) {
+        LOG_ERROR(LOG_DATABASE, "Error removing UTXOs [remove_utxo] ", removed, " != ", utxo_to_remove_.size());
+        return result_code::other;
+    }
+    utxo_to_remove_.clear();
     std::cout << "Finished removing UTXOs - removed: " << removed << std::endl;
+
 
     for (auto const& [point, entry] : utxoset_) {
         auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);
@@ -266,11 +272,11 @@ result_code internal_database_basis<Clock>::persist_utxo_set() {
         auto res = kth_db_put(txn, dbi_utxo_, &key, &value, KTH_DB_NOOVERWRITE);
 
         if (res == KTH_DB_KEYEXIST) {
-            LOG_DEBUG(LOG_DATABASE, "Duplicate Key inserting UTXO [insert_utxo] ", res);
+            LOG_ERROR(LOG_DATABASE, "Duplicate Key inserting UTXO [insert_utxo] ", res);
             return result_code::duplicated_key;
         }
         if (res != KTH_DB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE, "Error inserting UTXO [insert_utxo] ", res);
+            LOG_ERROR(LOG_DATABASE, "Error inserting UTXO [insert_utxo] ", res);
             return result_code::other;
         }
 
@@ -296,7 +302,10 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
 
     size_t const utxo_cache_size_ = 100'000;
     if (utxoset_.size() >= utxo_cache_size_) {
-        persist_utxo_set();
+        auto const ec = persist_utxo_set();
+        if (ec != result_code::success) {
+            return ec;
+        }
     }
 
     KTH_DB_txn* db_txn;
