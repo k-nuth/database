@@ -14,11 +14,12 @@ using utxo_pool_t = boost::unordered_flat_map<domain::chain::point, utxo_entry>;
 
 //TODO(fernando): remove Clock template parameter, use block height instead of timestamp
 template <typename Clock>
-internal_database_basis<Clock>::internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size, bool safe_mode)
+internal_database_basis<Clock>::internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size, uint32_t cache_capacity, bool safe_mode)
     : db_dir_(db_dir)
     , reorg_pool_limit_(reorg_pool_limit)
     , limit_(blocks_to_seconds(reorg_pool_limit))
     , db_max_size_(db_max_size)
+    , cache_capacity_(cache_capacity)
     , safe_mode_(safe_mode)
 {}
 
@@ -300,8 +301,7 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
 
     // std::cout << "push_block() - Current Thread ID: " << std::this_thread::get_id() << std::endl;
 
-    size_t const utxo_cache_size_ = 100'000;
-    if (utxoset_.size() >= utxo_cache_size_) {
+    if (utxoset_.size() >= cache_capacity_) {
         auto const ec = persist_utxo_set();
         if (ec != result_code::success) {
             return ec;

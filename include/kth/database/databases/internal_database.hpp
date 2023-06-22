@@ -99,7 +99,7 @@ public:
     constexpr static char spend_db_name[] = "spend";
     constexpr static char transaction_unconfirmed_db_name[] = "transaction_unconfirmed";
 
-    internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size, bool safe_mode);
+    internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size, uint32_t cache_capacity, bool safe_mode);
     ~internal_database_basis();
 
     // Non-copyable, non-movable
@@ -355,6 +355,7 @@ private:
     bool db_opened_ = false;
     db_mode_type db_mode_;
     uint64_t db_max_size_;
+    uint32_t cache_capacity_;
     bool safe_mode_;
     //bool fast_mode = false;
 

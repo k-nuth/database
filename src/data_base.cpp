@@ -101,7 +101,7 @@ bool data_base::close() {
 
 // protected
 void data_base::start() {
-    internal_db_ = std::make_shared<internal_database>(internal_db_dir, settings_.reorg_pool_limit, settings_.db_max_size, settings_.safe_mode);
+    internal_db_ = std::make_shared<internal_database>(internal_db_dir, settings_.reorg_pool_limit, settings_.db_max_size, settions_.cache_capacity, settings_.safe_mode);
 }
 
 // Readers.

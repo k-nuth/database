@@ -42,7 +42,7 @@ settings::settings()
     , reorg_pool_limit(100)      //TODO(fernando): look for a good default
     , db_max_size(get_db_max_size_mainnet(db_mode))
     , safe_mode(true)
-    , cache_capacity(0)
+    , cache_capacity(1'000'000)
 {}
 
 settings::settings(domain::config::network context)
