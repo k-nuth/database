@@ -300,13 +300,19 @@ result_code internal_database_basis<Clock>:: persist_utxo_set_internal(utxo_db_t
 template <typename Clock>
 result_code internal_database_basis<Clock>::persist_utxo_set() {
 
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set() is_saving_.test_and_set(): ", is_saving_.test_and_set());
+
     while (is_saving_.test_and_set(std::memory_order_acquire));
+
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set() is_saving_.test_and_set(): ", is_saving_.test_and_set());
 
     // auto utxoset_copy = utxoset_;
     auto utxoset_copy = std::move(utxoset_);
     // utxoset_copy.clear();
     auto utxo_to_remove_copy = std::move(utxo_to_remove_);
     // utxo_to_remove_copy.clear();
+
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set() - AFTER data move");
 
     std::thread save_thread(
         [this,
@@ -316,7 +322,11 @@ result_code internal_database_basis<Clock>::persist_utxo_set() {
         persist_utxo_set_internal(utxoset_copy, utxo_to_remove_copy);
         is_saving_.clear();
     });
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set() - AFTER thread launch");
+
     save_thread.detach();
+
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set() - AFTER thread detach");
 
     return result_code::success;
 }
@@ -327,6 +337,7 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
     // std::cout << "push_block() - Current Thread ID: " << std::this_thread::get_id() << std::endl;
 
     if (utxoset_.size() >= cache_capacity_) {
+        LOG_INFO(LOG_DATABASE, "push_block() - UTXOSetCache is full - persisting utxo set");
         auto const ec = persist_utxo_set();
         if (ec != result_code::success) {
             return ec;
