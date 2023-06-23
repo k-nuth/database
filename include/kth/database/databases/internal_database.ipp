@@ -91,13 +91,17 @@ bool internal_database_basis<Clock>::create_db_mode_property() {
 template <typename Clock>
 bool internal_database_basis<Clock>::open() {
 
+    LOG_INFO(LOG_DATABASE, "Opening database at ", db_dir_.string());
     auto ret = open_internal();
     if ( ! ret ) {
+        LOG_ERROR(LOG_DATABASE, "Error opening database at ", db_dir_.string());
         return false;
     }
 
+    LOG_INFO(LOG_DATABASE, "Database opened at ", db_dir_.string());
     ret = verify_db_mode_property();
     if ( ! ret ) {
+        LOG_ERROR(LOG_DATABASE, "Error validating DB Mode.");
         return false;
     }
 
@@ -981,6 +985,7 @@ bool internal_database_basis<Clock>::open_databases() {
     auto open_db = [&](auto const& db_name, uint32_t flags, KTH_DB_dbi* dbi){
         auto result = kth_db_dbi_open(db_txn, db_name, flags, dbi);
         if (result != KTH_DB_SUCCESS) {
+            LOG_ERROR(LOG_DATABASE, "Error opening database: ", db_name, " [open_databases] ", static_cast<int32_t>(result));
             kth_db_txn_abort(db_txn);
         }
         return result == KTH_DB_SUCCESS;
