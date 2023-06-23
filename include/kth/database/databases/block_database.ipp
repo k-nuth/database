@@ -19,11 +19,11 @@ std::pair<domain::chain::block, uint32_t> internal_database_basis<Clock>::get_bl
     }
 
     KTH_DB_val value;
-    if (kth_db_get(db_txn, dbi_block_header_by_hash_, &key, &value) != KTH_DB_SUCCESS) {
-        kth_db_txn_commit(db_txn);
-        // kth_db_txn_abort(db_txn);
-        return {};
-    }
+    // if (kth_db_get(db_txn, dbi_block_header_by_hash_, &key, &value) != KTH_DB_SUCCESS) {
+    //     kth_db_txn_commit(db_txn);
+    //     // kth_db_txn_abort(db_txn);
+    //     return {};
+    // }
 
     // assert kth_db_get_size(value) == 4;
     auto height = *static_cast<uint32_t*>(kth_db_get_data(value));

@@ -17,6 +17,7 @@ namespace kth::database {
 
 enum class property_code {
     db_mode = 0,
+    last_height = 1,                //TODO(fernando): move to other database
 };
 
 enum class db_mode_type {

@@ -77,6 +77,9 @@ public:
     using reorg_index_t = boost::unordered_flat_map<uint32_t, std::vector<domain::chain::point>>;
     using reorg_block_t = boost::unordered_flat_map<uint32_t, domain::chain::block>;
 
+    using header_db_t = boost::unordered_flat_map<uint32_t, domain::chain::header>;
+    using header_by_hash_db_t = boost::unordered_flat_map<hash_digest, uint32_t>;
+
     // Headers DB
     constexpr static char block_header_db_name[] = "block_header";
     constexpr static char block_header_by_hash_db_name[] = "block_header_by_hash";
@@ -215,7 +218,8 @@ private:
     template <typename I>
     result_code push_transactions_non_coinbase(uint32_t height, uint32_t median_time_past, I f, I l, bool insert_reorg, KTH_DB_txn* db_txn);
 
-    result_code push_block_header(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
+    result_code push_block_header_lmdb(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
+    result_code push_block_header(domain::chain::block const& block, uint32_t height);
 
     result_code push_block_reorg_lmdb(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
     result_code push_block_reorg(domain::chain::block const& block, uint32_t height);
@@ -248,7 +252,8 @@ private:
     template <typename I>
     result_code remove_transactions_non_coinbase(I f, I l);
 
-    result_code remove_block_header(hash_digest const& hash, uint32_t height, KTH_DB_txn* db_txn);
+    result_code remove_block_header_lmdb(hash_digest const& hash, uint32_t height, KTH_DB_txn* db_txn);
+    result_code remove_block_header(hash_digest const& hash, uint32_t height);
 
     result_code remove_block_reorg_lmdb(uint32_t height, KTH_DB_txn* db_txn);
     result_code remove_block_reorg(uint32_t height);
@@ -367,9 +372,13 @@ private:
     reorg_index_t reorg_index_;
     reorg_block_t reorg_block_map_;
 
+    header_db_t header_db_;
+    header_by_hash_db_t header_by_hash_db_;
+    uint32_t last_height_ = 0;
+
     KTH_DB_env* env_;
-    KTH_DB_dbi dbi_block_header_;
-    KTH_DB_dbi dbi_block_header_by_hash_;
+    // KTH_DB_dbi dbi_block_header_;
+    // KTH_DB_dbi dbi_block_header_by_hash_;
     KTH_DB_dbi dbi_utxo_;
     // KTH_DB_dbi dbi_reorg_pool_;
     // KTH_DB_dbi dbi_reorg_index_;
