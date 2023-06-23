@@ -48,6 +48,7 @@ namespace kth::database {
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::push_block_header(domain::chain::block const& block, uint32_t height) {
+    last_height_ = height;
     {
     auto const [_, inserted] = header_db_.emplace(height, block.header());
     if ( ! inserted) {
