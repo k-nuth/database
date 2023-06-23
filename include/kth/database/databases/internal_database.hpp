@@ -121,6 +121,7 @@ public:
     result_code push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past);
 
     result_code persist_utxo_set();
+    result_code persist_utxo_set_internal(utxo_db_t const& utxo_db, utxo_to_remove_t const& utxo_to_remove);
 #endif
 
     utxo_entry get_utxo_lmdb(domain::chain::output_point const& point) const;
@@ -359,6 +360,7 @@ private:
     bool safe_mode_;
     //bool fast_mode = false;
 
+    std::atomic_flag is_saving_{};
     utxo_db_t utxoset_;
     utxo_to_remove_t utxo_to_remove_;
     reorg_pool_t reorg_pool_;

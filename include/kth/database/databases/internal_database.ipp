@@ -227,19 +227,19 @@ result_code internal_database_basis<Clock>::push_genesis(domain::chain::block co
 //                  avoiding inserting and erasing internal spenders
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::persist_utxo_set() {
-
-    std::cout << "persist_utxo_set() BEGIN - utxoset_.size(): " << utxoset_.size() << std::endl;
+result_code internal_database_basis<Clock>:: persist_utxo_set_internal(utxo_db_t const& utxo_db, utxo_to_remove_t const& utxo_to_remove) {
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set_internal() START ************");
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set_internal() BEGIN - utxo_db.size(): ", utxo_db.size());
 
     KTH_DB_txn* txn;
     if (kth_db_txn_begin(env_, NULL, 0, &txn) != KTH_DB_SUCCESS) {
         return result_code::other;
     }
 
-    std::cout << "persist_utxo_set() - Removing UTXOs - utxo_to_remove_.size(): " << utxo_to_remove_.size() << std::endl;
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set_internal() - Removing UTXOs - utxo_to_remove.size(): ", utxo_to_remove.size());
 
     size_t removed = 0;
-    for (auto const& point : utxo_to_remove_) {
+    for (auto const& point : utxo_to_remove) {
         auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);
         auto key = kth_db_make_value(keyarr.size(), keyarr.data());
 
@@ -255,15 +255,15 @@ result_code internal_database_basis<Clock>::persist_utxo_set() {
         ++removed;
     }
 
-    if (removed != utxo_to_remove_.size()) {
-        LOG_ERROR(LOG_DATABASE, "Error removing UTXOs [remove_utxo] ", removed, " != ", utxo_to_remove_.size());
+    if (removed != utxo_to_remove.size()) {
+        LOG_ERROR(LOG_DATABASE, "Error removing UTXOs [remove_utxo] ", removed, " != ", utxo_to_remove.size());
         return result_code::other;
     }
-    utxo_to_remove_.clear();
-    std::cout << "Finished removing UTXOs - removed: " << removed << std::endl;
+    // utxo_to_remove_.clear();
+    LOG_INFO(LOG_DATABASE, "Finished removing UTXOs - removed: ", removed);
 
 
-    for (auto const& [point, entry] : utxoset_) {
+    for (auto const& [point, entry] : utxo_db) {
         auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);
         // auto valuearr = utxo_entry::to_data_with_fixed(output, fixed_data);
         auto valuearr = entry.to_data();
@@ -283,17 +283,62 @@ result_code internal_database_basis<Clock>::persist_utxo_set() {
 
     }
 
-    std::cout << "persist_utxo_set() Before Commit" << std::endl;
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set_internal() Before Commit");
     if (kth_db_txn_commit(txn) != KTH_DB_SUCCESS) {
         return result_code::other;
     }
-    std::cout << "persist_utxo_set() After Commit" << std::endl;
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set_internal() After Commit");
 
-    utxoset_.clear();
+    // utxoset_.clear();
 
-    std::cout << "persist_utxo_set() END - utxoset_.size(): " << utxoset_.size() << std::endl;
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set_internal() END - utxo_db.size(): ", utxo_db.size());
 
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set_internal() END ************");
     return result_code::success;
+}
+
+template <typename Clock>
+result_code internal_database_basis<Clock>::persist_utxo_set() {
+
+    while (is_saving_.test_and_set(std::memory_order_acquire));
+
+    // auto utxoset_copy = utxoset_;
+    auto utxoset_copy = std::move(utxoset_);
+    // utxoset_copy.clear();
+    auto utxo_to_remove_copy = std::move(utxo_to_remove_);
+    // utxo_to_remove_copy.clear();
+
+    std::thread save_thread(
+        [this,
+         utxoset_copy = std::move(utxoset_copy),
+         utxo_to_remove_copy = std::move(utxo_to_remove_copy)]() {
+
+        persist_utxo_set_internal(utxoset_copy, utxo_to_remove_copy);
+        is_saving_.clear();
+    });
+    save_thread.detach();
+
+
+
+    // // Check if the saving thread is currently running.
+    // if (!is_saving_.test_and_set()) {
+    //     // Launch a new thread to save the data to the database.
+    //     std::thread save_thread([this, utxo_db_copy]() {
+    //         // Save the data to the database.
+    //         this->save_to_db_internal(utxo_db_copy);
+
+    //         // Reset the flag to indicate the saving thread has finished.
+    //         is_saving_.clear();
+    //     });
+
+    //     // Detach the thread so it can run independently.
+    //     save_thread.detach();
+    // } else {
+    //     // If a save operation is already in progress, block until it's finished.
+    //     while (is_saving_.test_and_set(std::memory_order_acquire));
+    //     is_saving_.clear(std::memory_order_release);
+    // }
+
 }
 
 template <typename Clock>
