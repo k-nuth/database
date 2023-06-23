@@ -337,11 +337,12 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
     // std::cout << "push_block() - Current Thread ID: " << std::this_thread::get_id() << std::endl;
 
     if (utxoset_.size() >= cache_capacity_) {
-        LOG_INFO(LOG_DATABASE, "push_block() - UTXOSetCache is full - persisting utxo set");
+        LOG_INFO(LOG_DATABASE, "push_block() - UTXOSetCache is full - persisting utxo set", " - ThreadId: ", std::this_thread::get_id());
         auto const ec = persist_utxo_set();
         if (ec != result_code::success) {
             return ec;
         }
+        LOG_INFO(LOG_DATABASE, "push_block() - UTXOSetCache is full - persisting utxo set - END", " - ThreadId: ", std::this_thread::get_id());
     }
 
     KTH_DB_txn* db_txn;
