@@ -483,6 +483,8 @@ result_code internal_database_basis<Clock>::get_last_height(uint32_t& out_height
 //     return {header, height};
 // }
 
+
+
 // template <typename Clock>
 // domain::chain::header internal_database_basis<Clock>::get_header_lmdb(uint32_t height) const {
 //     KTH_DB_txn* db_txn;

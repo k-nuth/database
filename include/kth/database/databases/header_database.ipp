@@ -97,6 +97,19 @@ domain::chain::header internal_database_basis<Clock>::get_header(uint32_t height
     return it->second;
 }
 
+template <typename Clock>
+std::pair<domain::chain::header, uint32_t> internal_database_basis<Clock>::get_header(hash_digest const& hash) const {
+    auto const it = header_by_hash_db_.find(hash);
+    if (it == header_by_hash_db_.end()) {
+        return {};
+    }
+
+    auto const height = it->second;
+    auto const header = get_header(height);
+
+    return {header, height};
+}
+
 #if ! defined(KTH_DB_READONLY)
 
 // template <typename Clock>
