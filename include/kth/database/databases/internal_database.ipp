@@ -318,27 +318,7 @@ result_code internal_database_basis<Clock>::persist_utxo_set() {
     });
     save_thread.detach();
 
-
-
-    // // Check if the saving thread is currently running.
-    // if (!is_saving_.test_and_set()) {
-    //     // Launch a new thread to save the data to the database.
-    //     std::thread save_thread([this, utxo_db_copy]() {
-    //         // Save the data to the database.
-    //         this->save_to_db_internal(utxo_db_copy);
-
-    //         // Reset the flag to indicate the saving thread has finished.
-    //         is_saving_.clear();
-    //     });
-
-    //     // Detach the thread so it can run independently.
-    //     save_thread.detach();
-    // } else {
-    //     // If a save operation is already in progress, block until it's finished.
-    //     while (is_saving_.test_and_set(std::memory_order_acquire));
-    //     is_saving_.clear(std::memory_order_release);
-    // }
-
+    return result_code::success;
 }
 
 template <typename Clock>
