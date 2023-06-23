@@ -300,11 +300,11 @@ result_code internal_database_basis<Clock>:: persist_utxo_set_internal(utxo_db_t
 template <typename Clock>
 result_code internal_database_basis<Clock>::persist_utxo_set() {
 
-    LOG_INFO(LOG_DATABASE, "persist_utxo_set() is_saving_.test_and_set(): ", is_saving_.test_and_set());
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set() is_saving_.test(): ", is_saving_.test());
 
     while (is_saving_.test_and_set(std::memory_order_acquire));
 
-    LOG_INFO(LOG_DATABASE, "persist_utxo_set() is_saving_.test_and_set(): ", is_saving_.test_and_set());
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set() is_saving_.test(): ", is_saving_.test());
 
     // auto utxoset_copy = utxoset_;
     auto utxoset_copy = std::move(utxoset_);
