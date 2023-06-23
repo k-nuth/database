@@ -61,7 +61,7 @@ domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height, 
     auto key = kth_db_make_value(sizeof(height), &height);
 
     if (db_mode_ == db_mode_type::full) {
-        auto header = get_header(height, db_txn);
+        auto header = get_header(height);   //, db_txn);
         if ( ! header.is_valid()) {
             return {};
         }

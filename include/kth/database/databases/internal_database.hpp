@@ -264,7 +264,7 @@ private:
     result_code remove_block(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
 #endif
 
-    domain::chain::header get_header(uint32_t height, KTH_DB_txn* db_txn) const;
+    // domain::chain::header get_header_lmdb(uint32_t height, KTH_DB_txn* db_txn) const;
 
     domain::chain::block get_block_from_reorg_pool_lmdb(uint32_t height, KTH_DB_txn* db_txn) const;
     domain::chain::block get_block_from_reorg_pool_lmdb(uint32_t height) const;
