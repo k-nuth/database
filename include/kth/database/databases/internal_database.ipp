@@ -228,8 +228,8 @@ result_code internal_database_basis<Clock>::push_genesis(domain::chain::block co
 
 template <typename Clock>
 result_code internal_database_basis<Clock>:: persist_utxo_set_internal(utxo_db_t const& utxo_db, utxo_to_remove_t const& utxo_to_remove) {
-    LOG_INFO(LOG_DATABASE, "persist_utxo_set_internal() START ************");
-    LOG_INFO(LOG_DATABASE, "persist_utxo_set_internal() BEGIN - utxo_db.size(): ", utxo_db.size());
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set_internal() START ************", " - ThreadId: ", std::this_thread::get_id());
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set_internal() BEGIN - utxo_db.size(): ", utxo_db.size(), " - ThreadId: ", std::this_thread::get_id());
 
     KTH_DB_txn* txn;
     if (kth_db_txn_begin(env_, NULL, 0, &txn) != KTH_DB_SUCCESS) {
@@ -293,18 +293,18 @@ result_code internal_database_basis<Clock>:: persist_utxo_set_internal(utxo_db_t
 
     LOG_INFO(LOG_DATABASE, "persist_utxo_set_internal() END - utxo_db.size(): ", utxo_db.size());
 
-    LOG_INFO(LOG_DATABASE, "persist_utxo_set_internal() END ************");
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set_internal() END ************", " - ThreadId: ", std::this_thread::get_id());
     return result_code::success;
 }
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::persist_utxo_set() {
 
-    LOG_INFO(LOG_DATABASE, "persist_utxo_set() is_saving_.test(): ", is_saving_.test());
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set() is_saving_.test(): ", is_saving_.test(), " - ThreadId: ", std::this_thread::get_id());
 
     while (is_saving_.test_and_set(std::memory_order_acquire));
 
-    LOG_INFO(LOG_DATABASE, "persist_utxo_set() is_saving_.test(): ", is_saving_.test());
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set() is_saving_.test(): ", is_saving_.test(), " - ThreadId: ", std::this_thread::get_id());
 
     // auto utxoset_copy = utxoset_;
     auto utxoset_copy = std::move(utxoset_);
@@ -312,7 +312,7 @@ result_code internal_database_basis<Clock>::persist_utxo_set() {
     auto utxo_to_remove_copy = std::move(utxo_to_remove_);
     // utxo_to_remove_copy.clear();
 
-    LOG_INFO(LOG_DATABASE, "persist_utxo_set() - AFTER data move");
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set() - AFTER data move", " - ThreadId: ", std::this_thread::get_id());
 
     std::thread save_thread(
         [this,
@@ -322,11 +322,11 @@ result_code internal_database_basis<Clock>::persist_utxo_set() {
         persist_utxo_set_internal(utxoset_copy, utxo_to_remove_copy);
         is_saving_.clear();
     });
-    LOG_INFO(LOG_DATABASE, "persist_utxo_set() - AFTER thread launch");
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set() - AFTER thread launch", " - ThreadId: ", std::this_thread::get_id());
 
     save_thread.detach();
 
-    LOG_INFO(LOG_DATABASE, "persist_utxo_set() - AFTER thread detach");
+    LOG_INFO(LOG_DATABASE, "persist_utxo_set() - AFTER thread detach", " - ThreadId: ", std::this_thread::get_id());
 
     return result_code::success;
 }
