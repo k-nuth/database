@@ -63,12 +63,12 @@ class KnuthDatabaseConan(KnuthConanFileV2):
     def requirements(self):
         self.requires("domain/0.29.0", transitive_headers=True, transitive_libs=True)
 
-        if self.options.use_libmdbx:
-            self.requires("libmdbx/0.7.0@kth/stable", transitive_headers=True, transitive_libs=True)
-            self.output.info("Using libmdbx for DB management")
-        else:
-            self.requires("lmdb/0.9.29", transitive_headers=True, transitive_libs=True)
-            self.output.info("Using lmdb for DB management")
+        # if self.options.use_libmdbx:
+        #     self.requires("libmdbx/0.7.0@kth/stable", transitive_headers=True, transitive_libs=True)
+        #     self.output.info("Using libmdbx for DB management")
+        # else:
+        #     self.requires("lmdb/0.9.29", transitive_headers=True, transitive_libs=True)
+        #     self.output.info("Using lmdb for DB management")
 
     def validate(self):
         KnuthConanFileV2.validate(self)

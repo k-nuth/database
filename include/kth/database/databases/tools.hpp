@@ -37,12 +37,6 @@ std::chrono::seconds blocks_to_seconds(uint32_t blocks) {
     return std::chrono::seconds(blocks * target_spacing_seconds);   //10 * 60
 }
 
-inline
-data_chunk db_value_to_data_chunk(KTH_DB_val const& value) {
-    return data_chunk{static_cast<uint8_t*>(kth_db_get_data(value)),
-                      static_cast<uint8_t*>(kth_db_get_data(value)) + kth_db_get_size(value)};
-}
-
 } // namespace kth::database
 
 #endif // KTH_DATABASE_TOOLS_HPP_

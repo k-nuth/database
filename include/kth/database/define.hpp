@@ -9,6 +9,21 @@
 #include <vector>
 #include <kth/domain.hpp>
 
+#include <boost/interprocess/managed_mapped_file.hpp>
+#include <boost/interprocess/allocators/allocator.hpp>
+#include <boost/interprocess/mapped_region.hpp>
+#include <boost/interprocess/containers/flat_map.hpp>
+
+#include <boost/unordered/unordered_flat_map.hpp>
+#include <boost/unordered/unordered_flat_set.hpp>
+#include <boost/unordered/concurrent_flat_map.hpp>
+
+#include <boost/container_hash/hash.hpp>
+#include <boost/interprocess/managed_mapped_file.hpp>
+#include <boost/interprocess/allocators/allocator.hpp>
+#include <boost/unordered_map.hpp>
+
+
 // Now we use the generic helper definitions to
 // define KD_API and KD_INTERNAL.
 // KD_API is used for the public API symbols. It either DLL imports or
@@ -27,7 +42,7 @@
 #endif
 
 // Log name.
-#define LOG_DATABASE "[database] "
+#define LOG_DATABASE "[db] "
 
 // Remap safety is required if the mmap file is not fully preallocated.
 #define REMAP_SAFETY
@@ -35,10 +50,19 @@
 // Allocate safety is required for support of concurrent write operations.
 #define ALLOCATE_SAFETY
 
+namespace bip = boost::interprocess;
+
+
 namespace kth::database {
 
 using array_index = uint32_t;
 using file_offset = uint64_t;
+
+using allocator_type = bip::allocator<uint8_t, bip::managed_mapped_file::segment_manager>;
+// using persistent_data_chunk = bip::vector<uint8_t, allocator_type>;
+using persistent_data_chunk = std::vector<uint8_t, allocator_type>;
+
+
 
 } // namespace kth::database
 

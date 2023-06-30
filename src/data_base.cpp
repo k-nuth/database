@@ -70,7 +70,6 @@ bool data_base::create(block const& genesis) {
     }
 
     // Store the first block.
-    // push(genesis, 0);
     push_genesis(genesis);
 
     closed_ = false;
@@ -101,7 +100,13 @@ bool data_base::close() {
 
 // protected
 void data_base::start() {
-    internal_db_ = std::make_shared<internal_database>(internal_db_dir, settings_.reorg_pool_limit, settings_.db_max_size, settings_.cache_capacity, settings_.safe_mode);
+    internal_db_ = std::make_shared<internal_database>(internal_db_dir, settings_.reorg_pool_limit,
+    // settings_.db_max_size,
+    settings_.db_utxo_size,
+    settings_.db_header_size,
+    settings_.db_header_by_hash_size,
+    settings_.too_old,
+    settings_.cache_capacity);
 }
 
 // Readers.

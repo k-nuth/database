@@ -75,7 +75,7 @@ if (NOT GLOBAL_BUILD)
   find_package(domain REQUIRED)
 endif()
 
-find_package(lmdb 0.9.29 REQUIRED)
+# find_package(lmdb 0.9.29 REQUIRED)
 
 include(CheckCXXCompilerFlag)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/ci_utils/cmake)
@@ -155,9 +155,9 @@ set(kth_headers
   include/kth/database/databases/history_database.ipp
   include/kth/database/databases/history_entry.hpp
   include/kth/database/databases/transaction_database.ipp
-  include/kth/database/databases/generic_db.hpp
+  # include/kth/database/databases/generic_db.hpp
   include/kth/database/databases/tools.hpp
-  include/kth/database/databases/lmdb_helper.hpp
+  # include/kth/database/databases/lmdb_helper.hpp
   include/kth/database/databases/result_code.hpp
   include/kth/database/databases/transaction_unconfirmed_entry.hpp
   include/kth/database/databases/utxo_entry.hpp
@@ -190,7 +190,9 @@ if (NOT ENABLE_SHARED)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC domain::domain)
-target_link_libraries(${PROJECT_NAME} PUBLIC lmdb::lmdb)
+# target_link_libraries(${PROJECT_NAME} PUBLIC lmdb::lmdb)
+# target_link_libraries(${PROJECT_NAME} PUBLIC Unordered::headers Boost::headers TBB::tbb)
+# target_link_libraries(${PROJECT_NAME} PUBLIC Boost::headers)
 
 if (MINGW)
     target_link_libraries(${PROJECT_NAME} PUBLIC ws2_32 wsock32)

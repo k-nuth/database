@@ -17,14 +17,20 @@ namespace kth::database {
 class KD_API settings {
 public:
     settings();
-    settings(domain::config::network context);
+    settings(domain::config::network net);
 
     /// Properties.
     kth::path directory;
     db_mode_type db_mode;
+    domain::config::network net;
     uint32_t reorg_pool_limit;
-    uint64_t db_max_size;
-    bool safe_mode;
+
+    // uint64_t db_max_size;
+    uint64_t db_utxo_size;
+    uint64_t db_header_size;
+    uint64_t db_header_by_hash_size;
+    uint64_t too_old;
+
     uint32_t cache_capacity;
 };
 
