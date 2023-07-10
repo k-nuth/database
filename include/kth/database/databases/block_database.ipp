@@ -109,7 +109,6 @@ domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height, 
     }
     // db_mode_ == db_mode_type::pruned {
 
-
     auto block = get_block_reorg(height, db_txn);
     return block;
 }
