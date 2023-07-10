@@ -12,8 +12,9 @@ namespace kth::database {
 using utxo_pool_t = std::unordered_map<domain::chain::point, utxo_entry>;
 
 template <typename Clock>
-internal_database_basis<Clock>::internal_database_basis(path const& db_dir, uint32_t reorg_pool_limit, uint64_t db_max_size, bool safe_mode)
+internal_database_basis<Clock>::internal_database_basis(path const& db_dir, db_mode_type mode, uint32_t reorg_pool_limit, uint64_t db_max_size, bool safe_mode)
     : db_dir_(db_dir)
+    , db_mode_(mode)
     , reorg_pool_limit_(reorg_pool_limit)
     , limit_(blocks_to_seconds(reorg_pool_limit))
     , db_max_size_(db_max_size)
