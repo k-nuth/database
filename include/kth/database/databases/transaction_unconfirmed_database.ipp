@@ -5,6 +5,8 @@
 #ifndef KTH_DATABASE_TRANSACTION_UNCONFIRMED_DATABASE_HPP_
 #define KTH_DATABASE_TRANSACTION_UNCONFIRMED_DATABASE_HPP_
 
+#include <kth/infrastructure/log/source.hpp>
+
 namespace kth::database {
 
 template <typename Clock>

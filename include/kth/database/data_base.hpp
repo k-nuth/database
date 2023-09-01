@@ -17,7 +17,9 @@
 #include <kth/database/settings.hpp>
 #include <kth/database/store.hpp>
 
+#include <kth/infrastructure/handlers.hpp>
 #include <kth/infrastructure/utility/noncopyable.hpp>
+#include <kth/infrastructure/utility/dispatcher.hpp>
 
 namespace kth::database {
 
@@ -106,13 +108,10 @@ private:
     using outputs = domain::chain::output::list;
 
 #if ! defined(KTH_DB_READONLY)
-    /// TODO comment
     code push_genesis(domain::chain::block const& block);
 
     // Synchronous writers.
     // ------------------------------------------------------------------------
-
-
     bool pop(domain::chain::block& out_block);
     bool pop_inputs(const inputs& inputs, size_t height);
     bool pop_outputs(const outputs& outputs, size_t height);
@@ -135,8 +134,6 @@ private:
 
     std::atomic<bool> closed_;
     settings const& settings_;
-
-
 };
 
 } // namespace kth::database
