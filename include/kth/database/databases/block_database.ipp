@@ -5,6 +5,8 @@
 #ifndef KTH_DATABASE_BLOCK_DATABASE_IPP_
 #define KTH_DATABASE_BLOCK_DATABASE_IPP_
 
+#include <kth/infrastructure/log/source.hpp>
+
 namespace kth::database {
 
 //public

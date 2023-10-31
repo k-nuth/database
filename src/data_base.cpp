@@ -292,7 +292,7 @@ bool data_base::pop_outputs(const output::list& outputs, size_t height) {
 // If the dispatch threadpool is shut down when this is running the handler
 // will never be invoked, resulting in a threadpool.join indefinite hang.
 void data_base::push_all(block_const_ptr_list_const_ptr in_blocks, size_t first_height, dispatcher& dispatch, result_handler handler) {
-    DEBUG_ONLY(safe_add(in_blocks->size(), first_height));
+    DEBUG_ONLY(*safe_add(in_blocks->size(), first_height));
 
     // This is the beginning of the push_all sequence.
     push_next(error::success, in_blocks, 0, first_height, dispatch, handler);
@@ -390,7 +390,9 @@ code data_base::prune_reorg() {
 #if ! defined(KTH_DB_READONLY)
 // This is designed for write exclusivity and read concurrency.
 void data_base::reorganize(infrastructure::config::checkpoint const& fork_point, block_const_ptr_list_const_ptr incoming_blocks, block_const_ptr_list_ptr outgoing_blocks, dispatcher& dispatch, result_handler handler) {
-    auto const next_height = safe_add(fork_point.height(), size_t(1));
+    auto const next_height = *safe_add(fork_point.height(), size_t(1));
+    // TODO: remove std::bind, use lambda instead.
+    // TOOD: Even better use C++20 coroutines.
     result_handler const pop_handler = std::bind(&data_base::handle_pop, this, _1, incoming_blocks, next_height, std::ref(dispatch), handler);
     pop_above(outgoing_blocks, fork_point.hash(), dispatch, pop_handler);
 }

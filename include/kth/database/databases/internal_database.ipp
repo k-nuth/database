@@ -5,7 +5,8 @@
 #ifndef KTH_DATABASE_INTERNAL_DATABASE_IPP_
 #define KTH_DATABASE_INTERNAL_DATABASE_IPP_
 
-#include <kth/infrastructure.hpp>
+// #include <kth/infrastructure.hpp>
+#include <kth/infrastructure/log/source.hpp>
 
 namespace kth::database {
 

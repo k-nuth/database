@@ -5,6 +5,8 @@
 #ifndef KTH_DATABASE_UTXO_DATABASE_HPP_
 #define KTH_DATABASE_UTXO_DATABASE_HPP_
 
+#include <kth/infrastructure/log/source.hpp>
+
 namespace kth::database {
 
 #if ! defined(KTH_DB_READONLY)

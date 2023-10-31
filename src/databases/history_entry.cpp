@@ -7,7 +7,8 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <kth/infrastructure.hpp>
+// #include <kth/infrastructure.hpp>
+#include <kth/infrastructure/utility/ostream_writer.hpp>
 
 namespace kth::database {
 
