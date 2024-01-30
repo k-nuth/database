@@ -58,7 +58,7 @@ class KnuthDatabaseConan(KnuthConanFileV2):
 
     def build_requirements(self):
         if self.options.tests:
-            self.test_requires("catch2/3.3.2")
+            self.test_requires("catch2/3.5.2")
 
     def requirements(self):
         self.requires("domain/0.33.0", transitive_headers=True, transitive_libs=True)
@@ -67,7 +67,7 @@ class KnuthDatabaseConan(KnuthConanFileV2):
             self.requires("libmdbx/0.7.0@kth/stable", transitive_headers=True, transitive_libs=True)
             self.output.info("Using libmdbx for DB management")
         else:
-            self.requires("lmdb/0.9.29", transitive_headers=True, transitive_libs=True)
+            self.requires("lmdb/0.9.31", transitive_headers=True, transitive_libs=True)
             self.output.info("Using lmdb for DB management")
 
     def validate(self):
