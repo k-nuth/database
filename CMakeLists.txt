@@ -128,6 +128,7 @@ set(kth_sources_just_kth
     src/store.cpp
     src/version.cpp
 
+    src/databases/header_abla_entry.cpp
     src/databases/utxo_entry.cpp
     src/databases/history_entry.cpp
     src/databases/transaction_entry.cpp
@@ -160,6 +161,7 @@ set(kth_headers
   include/kth/database/databases/lmdb_helper.hpp
   include/kth/database/databases/result_code.hpp
   include/kth/database/databases/transaction_unconfirmed_entry.hpp
+  include/kth/database/databases/header_abla_entry.hpp
   include/kth/database/databases/utxo_entry.hpp
   include/kth/database/databases/spend_database.ipp
   include/kth/database/databases/utxo_database.ipp

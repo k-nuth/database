@@ -18,6 +18,7 @@
 
 #include <kth/database/define.hpp>
 
+#include <kth/database/databases/header_abla_entry.hpp>
 #include <kth/database/databases/result_code.hpp>
 #include <kth/database/databases/property_code.hpp>
 #include <kth/database/databases/tools.hpp>
@@ -108,6 +109,7 @@ public:
     std::pair<domain::chain::header, uint32_t> get_header(hash_digest const& hash) const;
     domain::chain::header get_header(uint32_t height) const;
     domain::chain::header::list get_headers(uint32_t from, uint32_t to) const;
+    std::optional<header_with_abla_state_t> get_header_and_abla_state(uint32_t height) const;
 
 #if ! defined(KTH_DB_READONLY)
     result_code pop_block(domain::chain::block& out_block);
@@ -214,6 +216,7 @@ private:
 #endif
 
     domain::chain::header get_header(uint32_t height, KTH_DB_txn* db_txn) const;
+    std::optional<header_with_abla_state_t> get_header_and_abla_state(uint32_t height, KTH_DB_txn* db_txn) const;
 
     domain::chain::block get_block_reorg(uint32_t height, KTH_DB_txn* db_txn) const;
     domain::chain::block get_block_reorg(uint32_t height) const;
@@ -312,9 +315,22 @@ private:
     KTH_DB_dbi dbi_block_header_;
     KTH_DB_dbi dbi_block_header_by_hash_;
     KTH_DB_dbi dbi_utxo_;
+
     KTH_DB_dbi dbi_reorg_pool_;
+    // dbi_reorg_pool_ structure:
+    // key: output_point
+    // value: output
+
     KTH_DB_dbi dbi_reorg_index_;
+    // dbi_reorg_index_ structure:
+    //  key: height (height could be duplicated: multimap)
+    //  value: output_point
+
     KTH_DB_dbi dbi_reorg_block_;
+    // dbi_reorg_block_ structure:
+    //  key: height
+    //  value: block serialized
+
     KTH_DB_dbi dbi_properties_;
 
     // Blocks DB

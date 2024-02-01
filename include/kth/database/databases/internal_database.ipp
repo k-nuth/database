@@ -352,15 +352,32 @@ std::pair<domain::chain::header, uint32_t> internal_database_basis<Clock>::get_h
 template <typename Clock>
 domain::chain::header internal_database_basis<Clock>::get_header(uint32_t height) const {
     KTH_DB_txn* db_txn;
-    auto zzz = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
-    if (zzz != KTH_DB_SUCCESS) {
-        return domain::chain::header{};
+    auto ret1 = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
+    if (ret1 != KTH_DB_SUCCESS) {
+        return {};
     }
 
-    auto res = get_header(height, db_txn);
+    auto ret2 = get_header(height, db_txn);
 
     if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
-        return domain::chain::header{};
+        return {};
+    }
+
+    return ret2;
+}
+
+template <typename Clock>
+std::optional<header_with_abla_state_t> internal_database_basis<Clock>::get_header_and_abla_state(uint32_t height) const {
+    KTH_DB_txn* db_txn;
+    auto zzz = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
+    if (zzz != KTH_DB_SUCCESS) {
+        return {};
+    }
+
+    auto res = get_header_and_abla_state(height, db_txn);
+
+    if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
+        return {};
     }
 
     return res;
