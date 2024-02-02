@@ -5,8 +5,8 @@
 #ifndef KTH_DATABASE_HEADER_DATABASE_IPP_
 #define KTH_DATABASE_HEADER_DATABASE_IPP_
 
-// #include <kth/infrastructure.hpp>
 #include <kth/infrastructure/log/source.hpp>
+#include <kth/database/databases/header_abla_entry.hpp>
 
 namespace kth::database {
 
@@ -15,7 +15,7 @@ namespace kth::database {
 template <typename Clock>
 result_code internal_database_basis<Clock>::push_block_header(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn) {
 
-    auto valuearr = block.header().to_data(true);               //TODO(fernando): podría estar afuera de la DBTx
+    auto valuearr = to_data_with_abla_state(block);             //TODO(fernando): podría estar afuera de la DBTx
     auto key = kth_db_make_value(sizeof(height), &height);
     auto value = kth_db_make_value(valuearr.size(), valuearr.data());
 
@@ -47,19 +47,38 @@ result_code internal_database_basis<Clock>::push_block_header(domain::chain::blo
 }
 #endif // ! defined(KTH_DB_READONLY)
 
-
 template <typename Clock>
 domain::chain::header internal_database_basis<Clock>::get_header(uint32_t height, KTH_DB_txn* db_txn) const {
     auto key = kth_db_make_value(sizeof(height), &height);
     KTH_DB_val value;
 
     if (kth_db_get(db_txn, dbi_block_header_, &key, &value) != KTH_DB_SUCCESS) {
-        return domain::chain::header{};
+        return {};
     }
 
     auto data = db_value_to_data_chunk(value);
-    auto res = domain::create<domain::chain::header>(data);
-    return res;
+    auto opt = get_header_and_abla_state_from_data(data);
+    if ( ! opt) {
+        return {};
+    }
+    return std::get<0>(*opt);
+}
+
+template <typename Clock>
+std::optional<header_with_abla_state_t> internal_database_basis<Clock>::get_header_and_abla_state(uint32_t height, KTH_DB_txn* db_txn) const {
+    auto key = kth_db_make_value(sizeof(height), &height);
+    KTH_DB_val value;
+
+    if (kth_db_get(db_txn, dbi_block_header_, &key, &value) != KTH_DB_SUCCESS) {
+        return {};
+    }
+
+    auto data = db_value_to_data_chunk(value);
+    auto opt = get_header_and_abla_state_from_data(data);
+    if ( ! opt) {
+        return {};
+    }
+    return *opt;
 }
 
 #if ! defined(KTH_DB_READONLY)
@@ -93,7 +112,6 @@ result_code internal_database_basis<Clock>::remove_block_header(hash_digest cons
 }
 
 #endif // ! defined(KTH_DB_READONLY)
-
 
 } // namespace kth::database
 
