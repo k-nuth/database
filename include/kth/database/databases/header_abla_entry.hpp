@@ -18,9 +18,16 @@ void to_data_with_abla_state(std::ostream& stream, domain::chain::block const& b
 template <typename W, KTH_IS_WRITER(W)>
 void to_data_with_abla_state(W& sink, domain::chain::block const& block) {
     block.header().to_data(sink, true);
-    sink.write_8_bytes_little_endian(block.validation.state->abla_state().block_size);
-    sink.write_8_bytes_little_endian(block.validation.state->abla_state().control_block_size);
-    sink.write_8_bytes_little_endian(block.validation.state->abla_state().elastic_buffer_size);
+
+    if (block.validation.state) {
+        sink.write_8_bytes_little_endian(block.validation.state->abla_state().block_size);
+        sink.write_8_bytes_little_endian(block.validation.state->abla_state().control_block_size);
+        sink.write_8_bytes_little_endian(block.validation.state->abla_state().elastic_buffer_size);
+    } else {
+        sink.write_8_bytes_little_endian(0);
+        sink.write_8_bytes_little_endian(0);
+        sink.write_8_bytes_little_endian(0);
+    }
 }
 
 std::optional<header_with_abla_state_t> get_header_and_abla_state_from_data(data_chunk const& data);
