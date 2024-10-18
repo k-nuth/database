@@ -17,6 +17,7 @@ class KnuthDatabaseConan(KnuthConanFileV2):
     url = "https://github.com/k-nuth/database/tree/conan-build/conanfile.py"
     description = "High Performance Blockchain Database"
     settings = "os", "compiler", "build_type", "arch"
+    package_type = "library"
 
     options = {"shared": [True, False],
                "fPIC": [True, False],
