@@ -27,14 +27,14 @@ void to_data_with_abla_state(std::ostream& stream, domain::chain::block const& b
     to_data_with_abla_state(sink, block);
 }
 
-std::optional<header_with_abla_state_t> get_header_and_abla_state_from_data(data_chunk const& data) {
-    data_source istream(data);
-    return get_header_and_abla_state_from_data(istream);
-}
+// std::optional<header_with_abla_state_t> get_header_and_abla_state_from_data(data_chunk const& data) {
+//     data_source istream(data);
+//     return get_header_and_abla_state_from_data(istream);
+// }
 
-std::optional<header_with_abla_state_t> get_header_and_abla_state_from_data(std::istream& stream) {
-    istream_reader source(stream);
-    return get_header_and_abla_state_from_data(source);
-}
+// std::optional<header_with_abla_state_t> get_header_and_abla_state_from_data(std::istream& stream) {
+//     istream_reader source(stream);
+//     return get_header_and_abla_state_from_data(source);
+// }
 
 } // namespace kth::database

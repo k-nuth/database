@@ -45,11 +45,7 @@ bool transaction_unconfirmed_entry::is_valid() const {
 // constexpr
 //TODO(fernando): make this constexpr
 size_t transaction_unconfirmed_entry::serialized_size(domain::chain::transaction const& tx) {
-#if defined(KTH_CACHED_RPC_DATA)
-    return tx.serialized_size(false, true, true)
-#else
-    return tx.serialized_size(false, true)
-#endif
+    return tx.serialized_size(false)
          + sizeof(uint32_t) // arrival_time
          + sizeof(uint32_t); //height
 }

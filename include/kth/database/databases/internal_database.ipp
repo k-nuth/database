@@ -251,6 +251,7 @@ result_code internal_database_basis<Clock>::push_block(domain::chain::block cons
 #endif // ! defined(KTH_DB_READONLY)
 
 
+//TODO: change the function interface to return expect<utxo_entry>
 template <typename Clock>
 utxo_entry internal_database_basis<Clock>::get_utxo(domain::chain::output_point const& point, KTH_DB_txn* db_txn) const {
 
@@ -263,7 +264,7 @@ utxo_entry internal_database_basis<Clock>::get_utxo(domain::chain::output_point 
         return utxo_entry{};
     }
 
-    return domain::create<utxo_entry>(db_value_to_data_chunk(value));
+    return domain::create_old<utxo_entry>(db_value_to_data_chunk(value));
 }
 
 template <typename Clock>
@@ -411,13 +412,13 @@ domain::chain::header::list internal_database_basis<Clock>::get_headers(uint32_t
     }
 
     auto data = db_value_to_data_chunk(value);
-    list.push_back(domain::create<domain::chain::header>(data));
+    list.push_back(domain::create_old<domain::chain::header>(data));
 
     while ((rc = kth_db_cursor_get(cursor, &key, &value, KTH_DB_NEXT)) == KTH_DB_SUCCESS) {
         auto height = *static_cast<uint32_t*>(kth_db_get_data(key));
         if (height > to) break;
         auto data = db_value_to_data_chunk(value);
-        list.push_back(domain::create<domain::chain::header>(data));
+        list.push_back(domain::create_old<domain::chain::header>(data));
     }
 
     kth_db_cursor_close(cursor);
@@ -523,10 +524,10 @@ result_code internal_database_basis<Clock>::insert_reorg_into_pool(utxo_pool_t& 
     }
 
     auto entry_data = db_value_to_data_chunk(value);
-    auto entry = domain::create<utxo_entry>(entry_data);
+    auto entry = domain::create_old<utxo_entry>(entry_data);
 
     auto point_data = db_value_to_data_chunk(key_point);
-    auto point = domain::create<domain::chain::output_point>(point_data, KTH_INTERNAL_DB_WIRE);
+    auto point = domain::create_old<domain::chain::output_point>(point_data, KTH_INTERNAL_DB_WIRE);
     pool.insert({point, std::move(entry)});     //TODO(fernando): use emplace?
 
     return result_code::success;
@@ -674,7 +675,10 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
     //     throw0(DB_ERROR(lmdb_error("Failed to set max number of readers: ", result).c_str()));
     // ----------------------------------------------------------------------------------------------------------------
 
-    auto res = kth_db_env_set_mapsize(env_, adjust_db_size(db_max_size_));
+    LOG_DEBUG(LOG_DATABASE, "DB max size (before adjust): ", db_max_size_);
+    auto const adjusted_db_size = adjust_db_size(db_max_size_);
+    LOG_DEBUG(LOG_DATABASE, "Adjusted DB size: ", adjusted_db_size);
+    auto res = kth_db_env_set_mapsize(env_, adjusted_db_size);
     if (res != KTH_DB_SUCCESS) {
         LOG_ERROR(LOG_DATABASE, "Error setting max memory map size. Verify do you have enough free space. [create_and_open_environment] ", static_cast<int32_t>(res));
         return false;
@@ -709,6 +713,8 @@ bool internal_database_basis<Clock>::create_and_open_environment() {
         mdb_flags |= KTH_DB_WRITEMAP | KTH_DB_MAPASYNC;
     }
 
+    LOG_DEBUG(LOG_DATABASE, "Opening LMDB Environment in directory: ", db_dir_.string());
+    LOG_DEBUG(LOG_DATABASE, "LMDB open flags: ", mdb_flags);
     res = kth_db_env_open(env_, db_dir_.string().c_str(), mdb_flags, env_open_mode_);
     return res == KTH_DB_SUCCESS;
 }

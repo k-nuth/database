@@ -36,23 +36,49 @@ public:
         to_data_fixed(sink, height_, median_time_past_, coinbase_);
     }
 
-    bool from_data(const data_chunk& data);
-    bool from_data(std::istream& stream);
+    // bool from_data(const data_chunk& data);
+    // bool from_data(std::istream& stream);
 
-    template <typename R, KTH_IS_READER(R)>
-    bool from_data(R& source) {
-        reset();
+    // template <typename R, KTH_IS_READER(R)>
+    // bool from_data(R& source) {
+    //     reset();
 
-        output_.from_data(source, false);
-        height_ = source.read_4_bytes_little_endian();
-        median_time_past_ = source.read_4_bytes_little_endian();
-        coinbase_ = source.read_byte();
+    //     output_.from_data(source, false);
+    //     height_ = source.read_4_bytes_little_endian();
+    //     median_time_past_ = source.read_4_bytes_little_endian();
+    //     coinbase_ = source.read_byte();
 
-        if ( ! source) {
-            reset();
+    //     if ( ! source) {
+    //         reset();
+    //     }
+
+    //     return source;
+    // }
+
+    //TODO: move the function definition to the cpp file
+    static
+    expect<utxo_entry> from_data(byte_reader& reader) {
+        auto output = domain::chain::output::from_data(reader, false);
+        if ( ! output) {
+            return make_unexpected(output.error());
         }
 
-        return source;
+        auto const height = reader.read_little_endian<uint32_t>();
+        if ( ! height) {
+            return make_unexpected(height.error());
+        }
+
+        auto const median_time_past = reader.read_little_endian<uint32_t>();
+        if ( ! median_time_past) {
+            return make_unexpected(median_time_past.error());
+        }
+
+        auto const coinbase = reader.read_byte();
+        if ( ! coinbase) {
+            return make_unexpected(coinbase.error());
+        }
+
+        return utxo_entry(std::move(*output), *height, *median_time_past, *coinbase);
     }
 
     static

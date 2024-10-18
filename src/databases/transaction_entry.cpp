@@ -59,11 +59,7 @@ bool transaction_entry::is_valid() const {
 // constexpr
 //TODO(fernando): make this constexpr
 size_t transaction_entry::serialized_size(domain::chain::transaction const& tx) {
-#if defined(KTH_CACHED_RPC_DATA)
-    return tx.serialized_size(false, true, false)
-#else
-    return tx.serialized_size(false, true)
-#endif
+    return tx.serialized_size(false)
          + sizeof(uint32_t) + sizeof(uint32_t) + position_size;
 }
 

@@ -40,25 +40,68 @@ public:
         factory_to_data(sink,id_, point_, point_kind_, height_, index_, value_or_checksum_ );
     }
 
-    bool from_data(const data_chunk& data);
-    bool from_data(std::istream& stream);
+    // bool from_data(const data_chunk& data);
+    // bool from_data(std::istream& stream);
 
-    template <typename R, KTH_IS_READER(R)>
-    bool from_data(R& source) {
-        reset();
+    // template <typename R, KTH_IS_READER(R)>
+    // bool from_data(R& source) {
+    //     reset();
 
-        id_ = source.read_8_bytes_little_endian();
-        point_.from_data(source, false);
-        point_kind_ = static_cast<domain::chain::point_kind>(source.read_byte()),
-        height_ = source.read_4_bytes_little_endian();
-        index_ = source.read_4_bytes_little_endian();
-        value_or_checksum_ = source.read_8_bytes_little_endian();
+    //     id_ = source.read_8_bytes_little_endian();
+    //     point_.from_data(source, false);
+    //     point_kind_ = static_cast<domain::chain::point_kind>(source.read_byte()),
+    //     height_ = source.read_4_bytes_little_endian();
+    //     index_ = source.read_4_bytes_little_endian();
+    //     value_or_checksum_ = source.read_8_bytes_little_endian();
 
-        if ( ! source) {
-            reset();
+    //     if ( ! source) {
+    //         reset();
+    //     }
+
+    //     return source;
+    // }
+
+    //TODO: move to .cpp file
+    static
+    expect<history_entry> from_data(byte_reader& reader) {
+        auto const id = reader.read_little_endian<uint64_t>();
+        if ( ! id) {
+            return make_unexpected(id.error());
         }
 
-        return source;
+        auto const point = domain::chain::point::from_data(reader, false);
+        if ( ! point) {
+            return make_unexpected(point.error());
+        }
+
+        auto const point_kind = reader.read_byte();
+        if ( ! point_kind) {
+            return make_unexpected(point_kind.error());
+        }
+
+        auto const height = reader.read_little_endian<uint32_t>();
+        if ( ! height) {
+            return make_unexpected(height.error());
+        }
+
+        auto const index = reader.read_little_endian<uint32_t>();
+        if ( ! index) {
+            return make_unexpected(index.error());
+        }
+
+        auto const value_or_checksum = reader.read_little_endian<uint64_t>();
+        if ( ! value_or_checksum) {
+            return make_unexpected(value_or_checksum.error());
+        }
+
+        return history_entry(
+            *id,
+            *point,
+            domain::chain::point_kind(*point_kind),
+            *height,
+            *index,
+            *value_or_checksum
+        );
     }
 
     static
