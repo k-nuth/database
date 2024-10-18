@@ -94,12 +94,18 @@ public:
     bool open();
     bool close();
 
+    bool is_stale() const;
+
 #if ! defined(KTH_DB_READONLY)
     result_code push_genesis(domain::chain::block const& block);
 
     //TODO(fernando): optimization: consider passing a list of outputs to insert and a list of inputs to delete instead of an entire Block.
     //                  avoiding inserting and erasing internal spenders
     result_code push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past);
+
+
+    result_code push_blocks(std::vector<domain::chain::block> const& blocks, uint32_t height);
+
 #endif
 
     utxo_entry get_utxo(domain::chain::output_point const& point) const;

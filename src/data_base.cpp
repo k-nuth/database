@@ -19,6 +19,19 @@
 #include <kth/database/settings.hpp>
 #include <kth/database/store.hpp>
 #include <kth/domain.hpp>
+// #include <kth/domain/math/limits.hpp>
+#include <kth/infrastructure/utility/timer.hpp>
+
+
+namespace {
+//TODO: remove from here
+time_t floor_subtract_times(time_t left, time_t right) {
+    static auto const floor = (std::numeric_limits<time_t>::min)();
+    return right >= left ? floor : left - right;
+}
+
+} // namespace kth
+
 
 namespace kth::database {
 
@@ -69,8 +82,6 @@ bool data_base::create(block const& genesis) {
         return false;
     }
 
-    // Store the first block.
-    // push(genesis, 0);
     push_genesis(genesis);
 
     closed_ = false;
@@ -94,6 +105,7 @@ bool data_base::close() {
         return true;
     }
 
+    block_cache_->flush_to_db();
     closed_ = true;
     auto const closed = internal_db_->close();
     return closed;
@@ -106,6 +118,9 @@ void data_base::start() {
         settings_.db_mode,
         settings_.reorg_pool_limit,
         settings_.db_max_size, settings_.safe_mode);
+
+    LOG_INFO(LOG_DATABASE, "Starting a block cache with ", settings_.block_cache_capacity, " blocks capacity");
+    block_cache_ = block_cache_t(settings_.block_cache_capacity, internal_db_.get());
 }
 
 // Readers.
@@ -115,8 +130,9 @@ internal_database const& data_base::internal_db() const {
     return *internal_db_;
 }
 
-// Synchronous writers.
+// Others
 // ----------------------------------------------------------------------------
+
 
 static inline
 uint32_t get_next_height(internal_database const& db) {
@@ -129,6 +145,30 @@ uint32_t get_next_height(internal_database const& db) {
 
     return current_height + 1;
 }
+
+bool data_base::is_stale() const {
+    //TODO: Should be a config value
+    constexpr time_t notify_limit_seconds = 6 * 60 * 60; // 6 hours
+    //TODO: cache the last header
+
+    uint32_t timestamp = 0;
+    uint32_t last_height;
+    auto res = internal_db_->get_last_height(last_height);
+    if (res != result_code::success) {
+        return true;
+    }
+
+    auto last_header = internal_db_->get_header(last_height);
+    if ( ! last_header.is_valid()) {
+        return true;
+    }
+    timestamp = last_header.timestamp();
+
+    return timestamp < floor_subtract_times(zulu_time(), notify_limit_seconds);
+}
+
+// Synchronous writers.
+// ----------------------------------------------------------------------------
 
 static inline
 hash_digest get_previous_hash(internal_database const& db, size_t height) {
@@ -190,9 +230,6 @@ code data_base::insert(domain::chain::block const& block, size_t height) {
 
     return error::success;
 }
-#endif //! defined(KTH_DB_READONLY)
-
-#if ! defined(KTH_DB_READONLY)
 
 // This is designed for write exclusivity and read concurrency.
 code data_base::push(domain::chain::transaction const& tx, uint32_t forks) {
@@ -208,6 +245,7 @@ code data_base::push(domain::chain::transaction const& tx, uint32_t forks) {
 #endif // ! defined(KTH_DB_READONLY)
 
 #if ! defined(KTH_DB_READONLY)
+
 // Add a block in order (creates no gaps, must be at top).
 // This is designed for write exclusivity and read concurrency.
 code data_base::push(block const& block, size_t height) {
@@ -274,7 +312,6 @@ bool data_base::pop(block& out_block) {
 #if ! defined(KTH_DB_READONLY)
 // A false return implies store corruption.
 bool data_base::pop_inputs(const input::list& inputs, size_t height) {
-
     return true;
 }
 
@@ -294,8 +331,26 @@ bool data_base::pop_outputs(const output::list& outputs, size_t height) {
 void data_base::push_all(block_const_ptr_list_const_ptr in_blocks, size_t first_height, dispatcher& dispatch, result_handler handler) {
     DEBUG_ONLY(*safe_add(in_blocks->size(), first_height));
 
+    // Parallel version (disabled at the moment)
     // This is the beginning of the push_all sequence.
-    push_next(error::success, in_blocks, 0, first_height, dispatch, handler);
+    // push_next(error::success, in_blocks, 0, first_height, dispatch, handler);
+
+    // Sequential version
+    for (size_t i = 0; i < in_blocks->size(); ++i) {
+        auto const block_ptr = (*in_blocks)[i];
+        auto const median_time_past = block_ptr->header().validation.median_time_past;
+
+        block_ptr->validation.start_push = asio::steady_clock::now();
+
+        auto res = internal_db_->push_block(*block_ptr, first_height + i, median_time_past);
+        if ( ! succeed(res)) {
+            handler(error::operation_failed_7); //TODO(fernando): create a new operation_failed
+            return;
+        }
+
+        block_ptr->validation.end_push = asio::steady_clock::now();
+    }
+    handler(error::success);
 }
 
 // TODO(legacy): resolve inconsistency with height and median_time_past passing.
