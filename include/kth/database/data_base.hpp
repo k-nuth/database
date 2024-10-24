@@ -30,6 +30,87 @@ public:
     using result_handler = handle0;
     using path = kth::path;
 
+    struct block_cache_t {
+        using block_t = domain::chain::block;
+        using blocks_t = std::vector<block_t>;
+
+        block_cache_t(size_t max_size, internal_database* db)
+            : max_size_(max_size)
+            , db_(db)
+        {}
+
+        ~block_cache_t() {
+            flush_to_db();
+        }
+
+        void add_block(block_t const& blk, size_t height) {
+            cache_.emplace_back(blk);
+
+            if (height_ == max_size_t) {
+                height_ = height;
+            }
+
+            if (cache_.size() >= max_size_) {
+                flush_to_db();
+            }
+        }
+
+        void add_block(block_t&& blk, size_t height) {
+            cache_.emplace_back(std::move(blk));
+            if (height_ == max_size_t) {
+                height_ = height;
+            }
+            if (cache_.size() >= max_size_) {
+                flush_to_db();
+            }
+        }
+
+        void add_blocks(blocks_t const& blocks, size_t height) {
+            cache_.insert(cache_.end(), blocks.begin(), blocks.end());
+
+            if (height_ == max_size_t) {
+                height_ = height;
+            }
+
+            if (cache_.size() >= max_size_) {
+                flush_to_db();
+            }
+        }
+
+        void add_blocks(blocks_t&& blocks, size_t height) {
+            cache_.insert(
+                cache_.end(),
+                std::make_move_iterator(blocks.begin()),
+                std::make_move_iterator(blocks.end())
+            );
+
+            if (height_ == max_size_t) {
+                height_ = height;
+            }
+
+            if (cache_.size() >= max_size_) {
+                flush_to_db();
+            }
+        }
+
+        void flush_to_db() {
+            if ( ! db_) {
+                LOG_ERROR(LOG_DATABASE, "Internal database not set, when trying to flush block cache");
+                return;
+            }
+            db_->push_blocks(cache_, height_);
+            height_ = max_size_t;
+            cache_.clear();
+        }
+
+    private:
+        size_t height_ = max_size_t;
+        size_t max_size_;
+        blocks_t cache_;
+        internal_database* db_ = nullptr;
+    };
+
+
     // Construct.
     // ----------------------------------------------------------------------------
 
@@ -52,6 +133,9 @@ public:
     /// Call close on destruct.
     ~data_base();
 
+
+    bool is_stale() const;
+
     // Readers.
     // ------------------------------------------------------------------------
 
@@ -61,8 +145,6 @@ public:
     // ------------------------------------------------------------------------
 
 #if ! defined(KTH_DB_READONLY)
-
-
     /// Store a block in the database.
     /// Returns store_block_duplicate if a block already exists at height.
     code insert(domain::chain::block const& block, size_t height);
@@ -132,8 +214,10 @@ private:
     void handle_push(code const& ec, result_handler handler) const;
 #endif // ! defined(KTH_DB_READONLY)
 
+
     std::atomic<bool> closed_;
     settings const& settings_;
+    std::optional<block_cache_t> block_cache_;
 };
 
 } // namespace kth::database
