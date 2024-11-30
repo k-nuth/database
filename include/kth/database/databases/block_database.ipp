@@ -106,7 +106,7 @@ domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height, 
         }
 
         auto data = db_value_to_data_chunk(value);
-        auto res = domain::create<domain::chain::block>(data);
+        auto res = domain::create_old<domain::chain::block>(data);
         return res;
     }
     // db_mode_ == db_mode_type::pruned {

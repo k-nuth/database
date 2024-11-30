@@ -26,6 +26,7 @@ public:
     uint64_t db_max_size;
     bool safe_mode;
     uint32_t cache_capacity;
+    uint32_t block_cache_capacity;
 };
 
 } // namespace kth::database

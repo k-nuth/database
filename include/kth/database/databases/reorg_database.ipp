@@ -154,7 +154,7 @@ domain::chain::block internal_database_basis<Clock>::get_block_reorg(uint32_t he
     }
 
     auto data = db_value_to_data_chunk(value);
-    auto res = domain::create<domain::chain::block>(data);       //TODO(fernando): mover fuera de la DbTx
+    auto res = domain::create_old<domain::chain::block>(data);       //TODO(fernando): mover fuera de la DbTx
     return res;
 }
 
