@@ -55,6 +55,9 @@ settings::settings(domain::config::network context)
         case domain::config::network::testnet: {
             break;
         }
+        case domain::config::network::regtest: {
+            break;
+        }
 
 #if defined(KTH_CURRENCY_BCH)
         case domain::config::network::testnet4: {
