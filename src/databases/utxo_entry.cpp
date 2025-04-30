@@ -100,6 +100,35 @@ void utxo_entry::to_data_with_fixed(std::ostream& stream, domain::chain::output 
 }
 
 
+// Deserialization.
+//-----------------------------------------------------------------------------
+
+// static
+expect<utxo_entry> utxo_entry::from_data(byte_reader& reader) {
+    auto output = domain::chain::output::from_data(reader, false);
+    if ( ! output) {
+        return make_unexpected(output.error());
+    }
+
+    auto const height = reader.read_little_endian<uint32_t>();
+    if ( ! height) {
+        return make_unexpected(height.error());
+    }
+
+    auto const median_time_past = reader.read_little_endian<uint32_t>();
+    if ( ! median_time_past) {
+        return make_unexpected(median_time_past.error());
+    }
+
+    auto const coinbase = reader.read_byte();
+    if ( ! coinbase) {
+        return make_unexpected(coinbase.error());
+    }
+
+    return utxo_entry(std::move(*output), *height, *median_time_past, *coinbase);
+}
+
+
 // Serialization.
 //-----------------------------------------------------------------------------
 

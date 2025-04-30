@@ -76,7 +76,7 @@ transaction_entry internal_database_basis<Clock>::get_transaction(uint64_t id, K
     }
 
     auto data = db_value_to_data_chunk(value);
-    auto entry = domain::create<transaction_entry>(data);
+    auto entry = domain::create_old<transaction_entry>(data);
 
     return entry;
 }

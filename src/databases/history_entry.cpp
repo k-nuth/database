@@ -63,6 +63,51 @@ size_t history_entry::serialized_size(domain::chain::point const& point) {
     return sizeof(uint64_t) + point.serialized_size(false) + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint64_t);
 }
 
+// Deserialization.
+//-----------------------------------------------------------------------------
+
+// static
+expect<history_entry> history_entry::from_data(byte_reader& reader) {
+    auto const id = reader.read_little_endian<uint64_t>();
+    if ( ! id) {
+        return make_unexpected(id.error());
+    }
+
+    auto const point = domain::chain::point::from_data(reader, false);
+    if ( ! point) {
+        return make_unexpected(point.error());
+    }
+
+    auto const point_kind = reader.read_byte();
+    if ( ! point_kind) {
+        return make_unexpected(point_kind.error());
+    }
+
+    auto const height = reader.read_little_endian<uint32_t>();
+    if ( ! height) {
+        return make_unexpected(height.error());
+    }
+
+    auto const index = reader.read_little_endian<uint32_t>();
+    if ( ! index) {
+        return make_unexpected(index.error());
+    }
+
+    auto const value_or_checksum = reader.read_little_endian<uint64_t>();
+    if ( ! value_or_checksum) {
+        return make_unexpected(value_or_checksum.error());
+    }
+
+    return history_entry(
+        *id,
+        *point,
+        domain::chain::point_kind(*point_kind),
+        *height,
+        *index,
+        *value_or_checksum
+    );
+}
+
 // Serialization.
 //-----------------------------------------------------------------------------
 
