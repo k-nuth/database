@@ -57,7 +57,8 @@ domain::chain::header internal_database_basis<Clock>::get_header(uint32_t height
     }
 
     auto data = db_value_to_data_chunk(value);
-    auto opt = get_header_and_abla_state_from_data(data);
+    byte_reader reader(data);
+    auto opt = get_header_and_abla_state_from_data(reader);
     if ( ! opt) {
         return {};
     }
@@ -74,7 +75,8 @@ std::optional<header_with_abla_state_t> internal_database_basis<Clock>::get_head
     }
 
     auto data = db_value_to_data_chunk(value);
-    auto opt = get_header_and_abla_state_from_data(data);
+    byte_reader reader(data);
+    auto opt = get_header_and_abla_state_from_data(reader);
     if ( ! opt) {
         return {};
     }
