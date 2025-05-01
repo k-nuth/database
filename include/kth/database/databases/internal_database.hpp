@@ -60,7 +60,9 @@ template <typename Clock = std::chrono::system_clock>
 class KD_API internal_database_basis {
 public:
     using path = kth::path;
-    using utxo_pool_t = std::unordered_map<domain::chain::point, utxo_entry>;
+    // using utxo_pool_t = std::unordered_map<domain::chain::point, utxo_entry>;
+    using utxo_pool_t = boost::unordered_flat_map<domain::chain::point, utxo_entry>;
+    using utxos_to_remove_t = boost::unordered_flat_set<domain::chain::point>;
 
     constexpr static char block_header_db_name[] = "block_header";
     constexpr static char block_header_by_hash_db_name[] = "block_header_by_hash";
@@ -94,12 +96,37 @@ public:
     bool open();
     bool close();
 
+    bool is_stale() const;
+
 #if ! defined(KTH_DB_READONLY)
     result_code push_genesis(domain::chain::block const& block);
 
-    //TODO(fernando): optimization: consider passing a list of outputs to insert and a list of inputs to delete instead of an entire Block.
-    //                  avoiding inserting and erasing internal spenders
-    result_code push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past);
+
+    result_code push_block(
+        domain::chain::block const& block,
+        uint32_t height,
+        uint32_t median_time_past
+    );
+
+    result_code push_block_no_utxos(
+        domain::chain::block const& block,
+        uint32_t height,
+        uint32_t median_time_past
+    );
+
+    result_code push_blocks(
+        std::vector<domain::chain::block> const& blocks,
+        uint32_t height
+    );
+
+    result_code push_blocks_and_utxos(
+        std::vector<domain::chain::block> const& blocks,
+        uint32_t height,
+        utxo_pool_t const& utxos,
+        utxos_to_remove_t const& utxos_to_remove,
+        bool is_stale
+    );
+
 #endif
 
     utxo_entry get_utxo(domain::chain::output_point const& point) const;
@@ -166,7 +193,9 @@ private:
 
     result_code remove_utxo(uint32_t height, domain::chain::output_point const& point, bool insert_reorg, KTH_DB_txn* db_txn);
 
-    result_code insert_utxo(domain::chain::output_point const& point, domain::chain::output const& output, data_chunk const& fixed_data, KTH_DB_txn* db_txn);
+    result_code insert_utxo_with_fixed_data(domain::chain::output_point const& point, domain::chain::output const& output, data_chunk const& fixed_data, KTH_DB_txn* db_txn);
+
+    result_code insert_utxo(domain::chain::output_point const& point, utxo_entry const& entry, KTH_DB_txn* db_txn);
 
     result_code remove_inputs(hash_digest const& tx_id, uint32_t height, domain::chain::input::list const& inputs, bool insert_reorg, KTH_DB_txn* db_txn);
 
@@ -187,7 +216,31 @@ private:
 
     result_code push_block_reorg(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
 
-    result_code push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg, KTH_DB_txn* db_txn);
+    result_code push_block(
+        domain::chain::block const& block,
+        uint32_t height,
+        uint32_t median_time_past,
+        bool insert_reorg,
+        KTH_DB_txn* db_txn
+    );
+
+    result_code push_block_no_utxos(
+        domain::chain::block const& block,
+        uint32_t height,
+        uint32_t median_time_past,
+        KTH_DB_txn* db_txn
+    );
+
+    result_code push_blocks_and_utxos(
+        domain::chain::block const& block,
+        uint32_t height,
+        uint32_t median_time_past,
+        bool insert_reorg,
+        utxo_pool_t const& utxos,
+        utxos_to_remove_t const& utxos_to_remove,
+        bool is_stale,
+        KTH_DB_txn* db_txn
+    );
 
     result_code push_genesis(domain::chain::block const& block, KTH_DB_txn* db_txn);
 
