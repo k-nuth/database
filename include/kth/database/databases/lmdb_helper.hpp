@@ -7,12 +7,6 @@
 
 #include <utility>
 
-// #if defined(KTH_USE_LIBMDBX)
-// #include <mdbx.h>
-// #else
-// #include <lmdb.h>
-// #endif
-
 #include <kth/database/databases/generic_db.hpp>
 
 namespace kth::database {

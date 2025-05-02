@@ -6,9 +6,16 @@
 #define KTH_DATABASE_INTERNAL_DATABASE_HPP_
 
 #include <filesystem>
+#include <string>
 
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/interprocess/mapped_region.hpp>
+
+#include <leveldb/db.h>
+#include <leveldb/write_batch.h>
+#include <leveldb/cache.h>
+#include <leveldb/filter_policy.h>
+#include <leveldb/status.h>
 
 #include <kth/database/databases/generic_db.hpp>
 #include <kth/database/databases/property_code.hpp>
@@ -27,6 +34,8 @@
 #include <kth/database/databases/transaction_entry.hpp>
 #include <kth/database/databases/transaction_unconfirmed_entry.hpp>
 
+#include <leveldb/db.h>
+
 // #include <kth/infrastructure.hpp>
 
 #ifdef KTH_INTERNAL_DB_4BYTES_INDEX
@@ -35,17 +44,22 @@
 #define KTH_INTERNAL_DB_WIRE false
 #endif
 
+// Since LevelDB doesn't have the KTH_DB_CREATE flag, we just define this to avoid errors
 #if defined(KTH_DB_READONLY)
 #define KTH_DB_CONDITIONAL_CREATE 0
 #else
-#define KTH_DB_CONDITIONAL_CREATE KTH_DB_CREATE
+#define KTH_DB_CONDITIONAL_CREATE 1
 #endif
 
+// For compatibility with existing code
 #if defined(KTH_DB_READONLY)
-#define KTH_DB_CONDITIONAL_READONLY KTH_DB_RDONLY
+#define KTH_DB_CONDITIONAL_READONLY 1
 #else
 #define KTH_DB_CONDITIONAL_READONLY 0
 #endif
+
+// For compatibility with LMDB transaction parameters
+#define KTH_DB_txn void
 
 namespace kth::database {
 
@@ -119,8 +133,6 @@ public:
 
     std::pair<result_code, utxo_pool_t> get_utxo_pool_from(uint32_t from, uint32_t to) const;
 
-    //bool set_fast_flags_environment(bool enabled);
-
     std::pair<domain::chain::block, uint32_t> get_block(hash_digest const& hash) const;
     domain::chain::block get_block(uint32_t height) const;
 
@@ -159,189 +171,176 @@ private:
 
     bool open_databases();
 
-    utxo_entry get_utxo(domain::chain::output_point const& point, KTH_DB_txn* db_txn) const;
+    utxo_entry get_utxo(domain::chain::output_point const& point, KTH_DB_txn* /*unused*/) const;
 
 #if ! defined(KTH_DB_READONLY)
-    result_code insert_reorg_pool(uint32_t height, KTH_DB_val& key, KTH_DB_txn* db_txn);
+    result_code insert_reorg_pool(uint32_t height, domain::chain::output_point const& point, leveldb::WriteBatch& batch);
 
-    result_code remove_utxo(uint32_t height, domain::chain::output_point const& point, bool insert_reorg, KTH_DB_txn* db_txn);
+    result_code remove_utxo(uint32_t height, domain::chain::output_point const& point, bool insert_reorg, leveldb::WriteBatch& batch);
 
-    result_code insert_utxo(domain::chain::output_point const& point, domain::chain::output const& output, data_chunk const& fixed_data, KTH_DB_txn* db_txn);
+    result_code insert_utxo(domain::chain::output_point const& point, domain::chain::output const& output, data_chunk const& fixed_data, leveldb::WriteBatch& batch);
 
-    result_code remove_inputs(hash_digest const& tx_id, uint32_t height, domain::chain::input::list const& inputs, bool insert_reorg, KTH_DB_txn* db_txn);
+    result_code remove_inputs(hash_digest const& tx_id, uint32_t height, domain::chain::input::list const& inputs, bool insert_reorg, leveldb::WriteBatch& batch);
 
-    result_code insert_outputs(hash_digest const& tx_id, uint32_t height, domain::chain::output::list const& outputs, data_chunk const& fixed_data, KTH_DB_txn* db_txn);
+    result_code insert_outputs(hash_digest const& tx_id, uint32_t height, domain::chain::output::list const& outputs, data_chunk const& fixed_data, leveldb::WriteBatch& batch);
 
-    result_code insert_outputs_error_treatment(uint32_t height, data_chunk const& fixed_data, hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn);
-
-    template <typename I>
-    result_code push_transactions_outputs_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, KTH_DB_txn* db_txn);
+    result_code insert_outputs_error_treatment(uint32_t height, data_chunk const& fixed_data, hash_digest const& txid, domain::chain::output::list const& outputs, leveldb::WriteBatch& batch);
 
     template <typename I>
-    result_code remove_transactions_inputs_non_coinbase(uint32_t height, I f, I l, bool insert_reorg, KTH_DB_txn* db_txn);
+    result_code push_transactions_outputs_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, leveldb::WriteBatch& batch);
 
     template <typename I>
-    result_code push_transactions_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, bool insert_reorg, KTH_DB_txn* db_txn);
-
-    result_code push_block_header(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
-
-    result_code push_block_reorg(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
-
-    result_code push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg, KTH_DB_txn* db_txn);
-
-    result_code push_genesis(domain::chain::block const& block, KTH_DB_txn* db_txn);
-
-    result_code remove_outputs(hash_digest const& txid, domain::chain::output::list const& outputs, KTH_DB_txn* db_txn);
-
-    result_code insert_output_from_reorg_and_remove(domain::chain::output_point const& point, KTH_DB_txn* db_txn);
-
-    result_code insert_inputs(domain::chain::input::list const& inputs, KTH_DB_txn* db_txn);
+    result_code remove_transactions_inputs_non_coinbase(uint32_t height, I f, I l, bool insert_reorg, leveldb::WriteBatch& batch);
 
     template <typename I>
-    result_code insert_transactions_inputs_non_coinbase(I f, I l, KTH_DB_txn* db_txn);
+    result_code push_transactions_non_coinbase(uint32_t height, data_chunk const& fixed_data, I f, I l, bool insert_reorg, leveldb::WriteBatch& batch);
+
+    result_code push_block_header(domain::chain::block const& block, uint32_t height, leveldb::WriteBatch& batch);
+
+    result_code push_block_reorg(domain::chain::block const& block, uint32_t height, leveldb::WriteBatch& batch);
+
+    result_code push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past, bool insert_reorg, leveldb::WriteBatch& batch);
+
+    result_code push_genesis(domain::chain::block const& block, leveldb::WriteBatch& batch);
+
+    result_code remove_outputs(hash_digest const& txid, domain::chain::output::list const& outputs, leveldb::WriteBatch& batch);
+
+    result_code insert_output_from_reorg_and_remove(domain::chain::output_point const& point, leveldb::WriteBatch& batch);
+
+    result_code insert_inputs(domain::chain::input::list const& inputs, leveldb::WriteBatch& batch);
 
     template <typename I>
-    result_code remove_transactions_outputs_non_coinbase(I f, I l, KTH_DB_txn* db_txn);
+    result_code insert_transactions_inputs_non_coinbase(I f, I l, leveldb::WriteBatch& batch);
 
     template <typename I>
-    result_code remove_transactions_non_coinbase(I f, I l, KTH_DB_txn* db_txn);
+    result_code remove_transactions_outputs_non_coinbase(I f, I l, leveldb::WriteBatch& batch);
 
-    result_code remove_block_header(hash_digest const& hash, uint32_t height, KTH_DB_txn* db_txn);
+    template <typename I>
+    result_code remove_transactions_non_coinbase(I f, I l, leveldb::WriteBatch& batch);
 
-    result_code remove_block_reorg(uint32_t height, KTH_DB_txn* db_txn);
+    result_code remove_block_header(hash_digest const& hash, uint32_t height, leveldb::WriteBatch& batch);
 
-    result_code remove_reorg_index(uint32_t height, KTH_DB_txn* db_txn);
+    result_code remove_block_reorg(uint32_t height, leveldb::WriteBatch& batch);
 
-    result_code remove_block(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
+    result_code remove_reorg_index(uint32_t height, leveldb::WriteBatch& batch);
+
+    result_code remove_block(domain::chain::block const& block, uint32_t height, leveldb::WriteBatch& batch);
 #endif
 
-    domain::chain::header get_header(uint32_t height, KTH_DB_txn* db_txn) const;
-    std::optional<header_with_abla_state_t> get_header_and_abla_state(uint32_t height, KTH_DB_txn* db_txn) const;
+    domain::chain::header get_header(uint32_t height, KTH_DB_txn* /*unused*/) const;
+    std::optional<header_with_abla_state_t> get_header_and_abla_state(uint32_t height, KTH_DB_txn* /*unused*/) const;
 
-    domain::chain::block get_block_reorg(uint32_t height, KTH_DB_txn* db_txn) const;
+    domain::chain::block get_block_reorg(uint32_t height, KTH_DB_txn* /*unused*/) const;
     domain::chain::block get_block_reorg(uint32_t height) const;
 
 #if ! defined(KTH_DB_READONLY)
     result_code remove_block(domain::chain::block const& block, uint32_t height);
-    result_code prune_reorg_index(uint32_t remove_until, KTH_DB_txn* db_txn);
-    result_code prune_reorg_block(uint32_t amount_to_delete, KTH_DB_txn* db_txn);
+    result_code prune_reorg_index(uint32_t remove_until, leveldb::WriteBatch& batch);
+    result_code prune_reorg_block(uint32_t amount_to_delete, leveldb::WriteBatch& batch);
 #endif
 
     result_code get_first_reorg_block_height(uint32_t& out_height) const;
 
-    //TODO(fernando): is taking KTH_DB_val by value, is that Ok?
-    result_code insert_reorg_into_pool(utxo_pool_t& pool, KTH_DB_val key_point, KTH_DB_txn* db_txn) const;
+    // Helper function to insert reorg into pool
+    result_code insert_reorg_into_pool(utxo_pool_t& pool, const leveldb::Slice& key_point) const;
 
 #if ! defined(KTH_DB_READONLY)
-    result_code remove_blocks_db(uint32_t height, KTH_DB_txn* db_txn);
+    result_code remove_blocks_db(uint32_t height, leveldb::WriteBatch& batch);
 #endif
 
-    domain::chain::block get_block(uint32_t height, KTH_DB_txn* db_txn) const;
+    domain::chain::block get_block(uint32_t height, KTH_DB_txn* /*unused*/) const;
 
-    domain::chain::block get_block(hash_digest const& hash, KTH_DB_txn* db_txn) const;
+    domain::chain::block get_block(hash_digest const& hash, KTH_DB_txn* /*unused*/) const;
 
 #if ! defined(KTH_DB_READONLY)
-    result_code insert_block(domain::chain::block const& block, uint32_t height, uint64_t tx_count, KTH_DB_txn* db_txn);
+    result_code insert_block(domain::chain::block const& block, uint32_t height, uint64_t tx_count, leveldb::WriteBatch& batch);
 
-    result_code remove_transactions(domain::chain::block const& block, uint32_t height, KTH_DB_txn* db_txn);
+    result_code remove_transactions(domain::chain::block const& block, uint32_t height, leveldb::WriteBatch& batch);
 
-    result_code insert_transaction(uint64_t id, domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position , KTH_DB_txn* db_txn);
-    //data_chunk serialize_txs(domain::chain::block const& block);
+    result_code insert_transaction(uint64_t id, domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, leveldb::WriteBatch& batch);
 
     template <typename I>
-    result_code insert_transactions(I f, I l, uint32_t height, uint32_t median_time_past,uint64_t tx_count, KTH_DB_txn* db_txn);
+    result_code insert_transactions(I f, I l, uint32_t height, uint32_t median_time_past, uint64_t tx_count, leveldb::WriteBatch& batch);
 #endif // ! defined(KTH_DB_READONLY)
 
-    transaction_entry get_transaction(hash_digest const& hash, size_t fork_height, KTH_DB_txn* db_txn) const;
-    transaction_entry get_transaction(uint64_t id, KTH_DB_txn* db_txn) const;
-
+    transaction_entry get_transaction(hash_digest const& hash, size_t fork_height, KTH_DB_txn* /*unused*/) const;
+    transaction_entry get_transaction(uint64_t id, KTH_DB_txn* /*unused*/) const;
 
 #if ! defined(KTH_DB_READONLY)
-    result_code insert_input_history(domain::chain::input_point const& inpoint, uint32_t height, domain::chain::input const& input, KTH_DB_txn* db_txn);
+    result_code insert_input_history(domain::chain::input_point const& inpoint, uint32_t height, domain::chain::input const& input, leveldb::WriteBatch& batch);
 
-    result_code insert_output_history(hash_digest const& tx_hash,uint32_t height, uint32_t index, domain::chain::output const& output, KTH_DB_txn* db_txn);
+    result_code insert_output_history(hash_digest const& tx_hash, uint32_t height, uint32_t index, domain::chain::output const& output, leveldb::WriteBatch& batch);
 
-    result_code insert_history_db(domain::wallet::payment_address const& address, data_chunk const& entry, KTH_DB_txn* db_txn);
+    result_code insert_history_db(domain::wallet::payment_address const& address, data_chunk const& entry, leveldb::WriteBatch& batch);
 #endif // ! defined(KTH_DB_READONLY)
 
     static
     domain::chain::history_compact history_entry_to_history_compact(history_entry const& entry);
 
 #if ! defined(KTH_DB_READONLY)
-    result_code remove_history_db(short_hash const& key, size_t height, KTH_DB_txn* db_txn);
+    result_code remove_history_db(short_hash const& key, size_t height, leveldb::WriteBatch& batch);
 
-    result_code remove_transaction_history_db(domain::chain::transaction const& tx, size_t height, KTH_DB_txn* db_txn);
+    result_code remove_transaction_history_db(domain::chain::transaction const& tx, size_t height, leveldb::WriteBatch& batch);
 
-    result_code insert_spend(domain::chain::output_point const& out_point, domain::chain::input_point const& in_point, KTH_DB_txn* db_txn);
+    result_code insert_spend(domain::chain::output_point const& out_point, domain::chain::input_point const& in_point, leveldb::WriteBatch& batch);
 
-    result_code remove_spend(domain::chain::output_point const& out_point, KTH_DB_txn* db_txn);
+    result_code remove_spend(domain::chain::output_point const& out_point, leveldb::WriteBatch& batch);
 
-    result_code remove_transaction_spend_db(domain::chain::transaction const& tx, KTH_DB_txn* db_txn);
+    result_code remove_transaction_spend_db(domain::chain::transaction const& tx, leveldb::WriteBatch& batch);
 
-    result_code insert_transaction_unconfirmed(domain::chain::transaction const& tx, uint32_t height, KTH_DB_txn* db_txn);
+    result_code insert_transaction_unconfirmed(domain::chain::transaction const& tx, uint32_t height, leveldb::WriteBatch& batch);
 
-    result_code remove_transaction_unconfirmed(hash_digest const& tx_id,  KTH_DB_txn* db_txn);
+    result_code remove_transaction_unconfirmed(hash_digest const& tx_id, leveldb::WriteBatch& batch);
 #endif
 
-    transaction_unconfirmed_entry get_transaction_unconfirmed(hash_digest const& hash, KTH_DB_txn* db_txn) const;
-
+    transaction_unconfirmed_entry get_transaction_unconfirmed(hash_digest const& hash, KTH_DB_txn* /*unused*/) const;
 
 #if ! defined(KTH_DB_READONLY)
-    result_code update_transaction(domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, KTH_DB_txn* db_txn);
+    result_code update_transaction(domain::chain::transaction const& tx, uint32_t height, uint32_t median_time_past, uint32_t position, leveldb::WriteBatch& batch);
 
-    result_code set_spend(domain::chain::output_point const& point, uint32_t spender_height, KTH_DB_txn* db_txn);
+    result_code set_spend(domain::chain::output_point const& point, uint32_t spender_height, leveldb::WriteBatch& batch);
 
-    result_code set_unspend(domain::chain::output_point const& point, KTH_DB_txn* db_txn);
+    result_code set_unspend(domain::chain::output_point const& point, leveldb::WriteBatch& batch);
 #endif // ! defined(KTH_DB_READONLY)
 
     uint32_t get_clock_now() const;
 
-    uint64_t get_tx_count(KTH_DB_txn* db_txn) const;
+    uint64_t get_tx_count(KTH_DB_txn* /*unused*/) const;
 
-    uint64_t get_history_count(KTH_DB_txn* db_txn) const;
+    uint64_t get_history_count() const;
 
 // Data members ----------------------------
     path const db_dir_;
-    uint32_t reorg_pool_limit_;                 //TODO(fernando): check if uint32_max is needed for NO-LIMIT???
+    std::string db_path_;  // String version of db_dir_ for LevelDB
+    uint32_t reorg_pool_limit_;
     std::chrono::seconds const limit_;
-    bool env_created_ = false;
     bool db_opened_ = false;
     db_mode_type db_mode_;
     uint64_t db_max_size_;
     bool safe_mode_;
-    //bool fast_mode = false;
 
-    KTH_DB_env* env_;
-    KTH_DB_dbi dbi_block_header_;
-    KTH_DB_dbi dbi_block_header_by_hash_;
-    KTH_DB_dbi dbi_utxo_;
+    // LevelDB database handle
+    leveldb::DB* db_ = nullptr;
 
-    KTH_DB_dbi dbi_reorg_pool_;
-    // dbi_reorg_pool_ structure:
-    // key: output_point
-    // value: output
-
-    KTH_DB_dbi dbi_reorg_index_;
-    // dbi_reorg_index_ structure:
-    //  key: height (height could be duplicated: multimap)
-    //  value: output_point
-
-    KTH_DB_dbi dbi_reorg_block_;
-    // dbi_reorg_block_ structure:
-    //  key: height
-    //  value: block serialized
-
-    KTH_DB_dbi dbi_properties_;
-
-    // Blocks DB
-    KTH_DB_dbi dbi_block_db_;
-
-    // Transactions DB
-    KTH_DB_dbi dbi_transaction_db_;
-    KTH_DB_dbi dbi_transaction_hash_db_;
-    KTH_DB_dbi dbi_history_db_;
-    KTH_DB_dbi dbi_spend_db_;
-    KTH_DB_dbi dbi_transaction_unconfirmed_db_;
+    // Column family handles
+    leveldb::ColumnFamilyHandle* cf_default_ = nullptr;
+    leveldb::ColumnFamilyHandle* cf_block_header_ = nullptr;
+    leveldb::ColumnFamilyHandle* cf_block_header_by_hash_ = nullptr;
+    leveldb::ColumnFamilyHandle* cf_utxo_db_ = nullptr;
+    
+    leveldb::ColumnFamilyHandle* cf_reorg_pool_ = nullptr;
+    leveldb::ColumnFamilyHandle* cf_reorg_index_ = nullptr;
+    leveldb::ColumnFamilyHandle* cf_reorg_block_ = nullptr;
+    
+    leveldb::ColumnFamilyHandle* cf_properties_ = nullptr;
+    
+    leveldb::ColumnFamilyHandle* cf_block_db_ = nullptr;
+    
+    leveldb::ColumnFamilyHandle* cf_transaction_db_ = nullptr;
+    leveldb::ColumnFamilyHandle* cf_transaction_hash_db_ = nullptr;
+    leveldb::ColumnFamilyHandle* cf_history_db_ = nullptr;
+    leveldb::ColumnFamilyHandle* cf_spend_db_ = nullptr;
+    leveldb::ColumnFamilyHandle* cf_transaction_unconfirmed_db_ = nullptr;
 };
 
 template <typename Clock>

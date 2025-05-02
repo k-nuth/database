@@ -12,29 +12,18 @@ namespace kth::database {
 //public
 template <typename Clock>
 std::pair<domain::chain::block, uint32_t> internal_database_basis<Clock>::get_block(hash_digest const& hash) const {
-    auto key = kth_db_make_value(hash.size(), const_cast<hash_digest&>(hash).data());
+    // Create key from hash
+    leveldb::Slice key(reinterpret_cast<const char*>(hash.data()), hash.size());
+    std::string value;
 
-    KTH_DB_txn* db_txn;
-    auto res = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
-    if (res != KTH_DB_SUCCESS) {
+    // Get height by hash
+    leveldb::Status status = db_->Get(leveldb::ReadOptions(), cf_block_header_by_hash_, key, &value);
+    if (!status.ok()) {
         return {};
     }
 
-    KTH_DB_val value;
-    if (kth_db_get(db_txn, dbi_block_header_by_hash_, &key, &value) != KTH_DB_SUCCESS) {
-        kth_db_txn_commit(db_txn);
-        // kth_db_txn_abort(db_txn);
-        return {};
-    }
-
-    // assert kth_db_get_size(value) == 4;
-    auto height = *static_cast<uint32_t*>(kth_db_get_data(value));
-
-    auto block = get_block(height, db_txn);
-
-    if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
-        return {};
-    }
+    uint32_t height = *reinterpret_cast<const uint32_t*>(value.data());
+    auto block = get_block(height);
 
     return {block, height};
 }
@@ -42,76 +31,64 @@ std::pair<domain::chain::block, uint32_t> internal_database_basis<Clock>::get_bl
 //public
 template <typename Clock>
 domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height) const {
-    KTH_DB_txn* db_txn;
-    auto res = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
-    if (res != KTH_DB_SUCCESS) {
-        return domain::chain::block{};
-    }
-
-    auto block = get_block(height, db_txn);
-
-    if (kth_db_txn_commit(db_txn) != KTH_DB_SUCCESS) {
-        return domain::chain::block{};
-    }
-
-    return block;
+    return get_block(height, nullptr);
 }
 
 template <typename Clock>
-domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height, KTH_DB_txn* db_txn) const {
-
-    auto key = kth_db_make_value(sizeof(height), &height);
+domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height, KTH_DB_txn* /*unused*/) const {
+    leveldb::Slice key(reinterpret_cast<const char*>(&height), sizeof(height));
 
     if (db_mode_ == db_mode_type::full) {
-        auto header = get_header(height, db_txn);
-        if ( ! header.is_valid()) {
+        auto header = get_header(height);
+        if (!header.is_valid()) {
             return {};
         }
 
         domain::chain::transaction::list tx_list;
 
-        KTH_DB_cursor* cursor;
-        if (kth_db_cursor_open(db_txn, dbi_block_db_, &cursor) != KTH_DB_SUCCESS) {
+        // Iterate through all entries with this key
+        std::unique_ptr<leveldb::Iterator> it(db_->NewIterator(leveldb::ReadOptions(), cf_block_db_));
+        
+        // Seek to the first entry with this height
+        it->Seek(key);
+        
+        // Verify we found a valid entry
+        if (!it->Valid() || it->key().compare(key) != 0) {
             return {};
         }
 
-        KTH_DB_val value;
-        int rc;
-        if ((rc = kth_db_cursor_get(cursor, &key, &value, MDB_SET)) == 0) {
+        do {
+            if (it->key().compare(key) != 0) {
+                break; // No more entries with this key
+            }
 
-            auto tx_id = *static_cast<uint32_t*>(kth_db_get_data(value));;
-            auto const entry = get_transaction(tx_id, db_txn);
+            auto tx_id = *reinterpret_cast<const uint32_t*>(it->value().data());
+            auto const entry = get_transaction(tx_id);
 
-            if ( ! entry.is_valid()) {
+            if (!entry.is_valid()) {
                 return {};
             }
 
             tx_list.push_back(std::move(entry.transaction()));
-
-            while ((rc = kth_db_cursor_get(cursor, &key, &value, MDB_NEXT_DUP)) == 0) {
-                auto tx_id = *static_cast<uint32_t*>(kth_db_get_data(value));;
-                auto const entry = get_transaction(tx_id, db_txn);
-                tx_list.push_back(std::move(entry.transaction()));
-            }
-        }
-
-        kth_db_cursor_close(cursor);
+            it->Next();
+        } while (it->Valid());
 
         return domain::chain::block{header, std::move(tx_list)};
     } else if (db_mode_ == db_mode_type::blocks) {
-        KTH_DB_val value;
-
-        if (kth_db_get(db_txn, dbi_block_db_, &key, &value) != KTH_DB_SUCCESS) {
+        std::string value;
+        leveldb::Status status = db_->Get(leveldb::ReadOptions(), cf_block_db_, key, &value);
+        
+        if (!status.ok()) {
             return domain::chain::block{};
         }
 
-        auto data = db_value_to_data_chunk(value);
+        data_chunk data(value.begin(), value.end());
         auto res = domain::create_old<domain::chain::block>(data);
         return res;
     }
-    // db_mode_ == db_mode_type::pruned {
-
-    auto block = get_block_reorg(height, db_txn);
+    
+    // db_mode_ == db_mode_type::pruned
+    auto block = get_block_reorg(height);
     return block;
 }
 
@@ -119,86 +96,72 @@ domain::chain::block internal_database_basis<Clock>::get_block(uint32_t height, 
 #if ! defined(KTH_DB_READONLY)
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_block(domain::chain::block const& block, uint32_t height, uint64_t tx_count, KTH_DB_txn* db_txn) {
-
-    auto key = kth_db_make_value(sizeof(height), &height);
+result_code internal_database_basis<Clock>::insert_block(domain::chain::block const& block, uint32_t height, uint64_t tx_count, leveldb::WriteBatch& batch) {
+    leveldb::Slice key(reinterpret_cast<const char*>(&height), sizeof(height));
 
     if (db_mode_ == db_mode_type::full) {
-
         auto const& txs = block.transactions();
 
         for (uint64_t i = tx_count; i < tx_count + txs.size(); ++i) {
-            auto value = kth_db_make_value(sizeof(i), &i);
-
-            auto res = kth_db_put(db_txn, dbi_block_db_, &key, &value, MDB_APPENDDUP);
-            if (res == KTH_DB_KEYEXIST) {
-                LOG_INFO(LOG_DATABASE, "Duplicate key in Block DB [insert_block] ", res);
-                return result_code::duplicated_key;
-            }
-
-            if (res != KTH_DB_SUCCESS) {
-                LOG_INFO(LOG_DATABASE, "Error saving in Block DB [insert_block] ", res);
-                return result_code::other;
-            }
+            // For LevelDB to support duplicates, we need to encode the duplicate info in the key
+            // We could use a composite key format like: height + separator + i
+            // Or use a specific value serialization method
+            
+            // Here's a simple approach - the value contains the tx_id
+            leveldb::Slice value(reinterpret_cast<const char*>(&i), sizeof(i));
+            
+            // Create a composite key that includes the height and the transaction index
+            // This allows us to retrieve all transactions for a block by prefix scanning
+            std::string composite_key;
+            composite_key.append(reinterpret_cast<const char*>(&height), sizeof(height));
+            composite_key.append(reinterpret_cast<const char*>(&i), sizeof(i));
+            
+            leveldb::Slice comp_key(composite_key.data(), composite_key.size());
+            
+            batch.Put(cf_block_db_, comp_key, value);
         }
     } else if (db_mode_ == db_mode_type::blocks) {
         //TODO: store tx hash
         auto data = block.to_data(false);
-        auto value = kth_db_make_value(data.size(), data.data());
+        leveldb::Slice value(reinterpret_cast<const char*>(data.data()), data.size());
 
-        auto res = kth_db_put(db_txn, dbi_block_db_, &key, &value, KTH_DB_APPEND);
-        if (res == KTH_DB_KEYEXIST) {
-            LOG_INFO(LOG_DATABASE, "Duplicate key in Block DB [insert_block] ", res);
-            return result_code::duplicated_key;
-        }
-
-        if (res != KTH_DB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE, "Error saving in Block DB [insert_block] ", res);
-            return result_code::other;
-        }
+        batch.Put(cf_block_db_, key, value);
     }
 
     return result_code::success;
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_blocks_db(uint32_t height, KTH_DB_txn* db_txn) {
-    auto key = kth_db_make_value(sizeof(height), &height);
+result_code internal_database_basis<Clock>::remove_blocks_db(uint32_t height, leveldb::WriteBatch& batch) {
+    leveldb::Slice key(reinterpret_cast<const char*>(&height), sizeof(height));
 
     if (db_mode_ == db_mode_type::full) {
-        KTH_DB_cursor* cursor;
-        if (kth_db_cursor_open(db_txn, dbi_block_db_, &cursor) != KTH_DB_SUCCESS) {
-            return {};
-        }
-
-        KTH_DB_val value;
-        int rc;
-        if ((rc = kth_db_cursor_get(cursor, &key, &value, MDB_SET)) == 0) {
-
-            if (kth_db_cursor_del(cursor, 0) != KTH_DB_SUCCESS) {
-                kth_db_cursor_close(cursor);
-                return result_code::other;
+        // For LevelDB, we need to find all keys with the specified height prefix
+        std::unique_ptr<leveldb::Iterator> it(db_->NewIterator(leveldb::ReadOptions(), cf_block_db_));
+        
+        // Create a prefix to find all entries with this height
+        std::string prefix;
+        prefix.append(reinterpret_cast<const char*>(&height), sizeof(height));
+        leveldb::Slice prefix_slice(prefix.data(), prefix.size());
+        
+        // Seek to the first entry with this height
+        it->Seek(prefix_slice);
+        
+        // Delete all entries that match this prefix
+        while (it->Valid()) {
+            leveldb::Slice current_key = it->key();
+            
+            // Check if current key still starts with our prefix
+            if (current_key.size() < prefix.size() || 
+                memcmp(current_key.data(), prefix.data(), prefix.size()) != 0) {
+                break;
             }
-
-            while ((rc = kth_db_cursor_get(cursor, &key, &value, MDB_NEXT_DUP)) == 0) {
-                if (kth_db_cursor_del(cursor, 0) != KTH_DB_SUCCESS) {
-                    kth_db_cursor_close(cursor);
-                    return result_code::other;
-                }
-            }
+            
+            batch.Delete(cf_block_db_, current_key);
+            it->Next();
         }
-
-        kth_db_cursor_close(cursor);
     } else if (db_mode_ == db_mode_type::blocks) {
-        auto res = kth_db_del(db_txn, dbi_block_db_, &key, NULL);
-        if (res == KTH_DB_NOTFOUND) {
-            LOG_INFO(LOG_DATABASE, "Key not found deleting blocks DB in LMDB [remove_blocks_db] - kth_db_del: ", res);
-            return result_code::key_not_found;
-        }
-        if (res != KTH_DB_SUCCESS) {
-            LOG_INFO(LOG_DATABASE, "Error deleting blocks DB in LMDB [remove_blocks_db] - kth_db_del: ", res);
-            return result_code::other;
-        }
+        batch.Delete(cf_block_db_, key);
     }
 
     return result_code::success;

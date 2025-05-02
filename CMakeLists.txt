@@ -18,7 +18,6 @@ option(WITH_TOOLS "Compile with tools." OFF)
 option(WITH_MEASUREMENTS "Measurements enabled." OFF)
 option(DB_READONLY_MODE "Readonly DB mode enabled." OFF)
 option(JUST_KTH_SOURCES "Just Knuth source code to be linted." OFF)
-option(USE_LIBMDBX "Uses libmdbx DB library." OFF)
 
 option(GLOBAL_BUILD "" OFF)
 
@@ -37,10 +36,6 @@ endif()
 
 if (JUST_KTH_SOURCES)
   message(STATUS "Knuth: Just Knuth source code to be linted: enabled")
-endif()
-
-if (USE_LIBMDBX)
-  add_definitions(-DKTH_USE_LIBMDBX)
 endif()
 
 set(LOG_LIBRARY "boost" CACHE STRING "Setting for the logging library (boost|spdlog|binlog).")
@@ -75,7 +70,7 @@ if (NOT GLOBAL_BUILD)
   find_package(domain REQUIRED)
 endif()
 
-find_package(lmdb 0.9.29 REQUIRED)
+find_package(leveldb REQUIRED)
 
 include(CheckCXXCompilerFlag)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/ci_utils/cmake)
@@ -198,7 +193,8 @@ if (NOT ENABLE_SHARED)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC domain::domain)
-target_link_libraries(${PROJECT_NAME} PUBLIC lmdb::lmdb)
+# target_link_libraries(${PROJECT_NAME} PUBLIC lmdb::lmdb)
+target_link_libraries(${PROJECT_NAME} PUBLIC leveldb::leveldb)
 
 if (MINGW)
     target_link_libraries(${PROJECT_NAME} PUBLIC ws2_32 wsock32)

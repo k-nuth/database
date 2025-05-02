@@ -156,42 +156,43 @@ bool internal_database_basis<Clock>::verify_db_mode_property() const {
 
 template <typename Clock>
 bool internal_database_basis<Clock>::close() {
-    if (db_opened_) {
-
-        //TODO(fernando): check sync
-        //Force synchronous flush (use with KTH_DB_NOSYNC or MDB_NOMETASYNC, with other flags do nothing)
-#if defined(KTH_USE_LIBMDBX)
-        kth_db_env_sync(env_);
-#else
-        kth_db_env_sync(env_, true);
-#endif
-        kth_db_dbi_close(env_, dbi_block_header_);
-        kth_db_dbi_close(env_, dbi_block_header_by_hash_);
-        kth_db_dbi_close(env_, dbi_utxo_);
-        kth_db_dbi_close(env_, dbi_reorg_pool_);
-        kth_db_dbi_close(env_, dbi_reorg_index_);
-        kth_db_dbi_close(env_, dbi_reorg_block_);
-        kth_db_dbi_close(env_, dbi_properties_);
-
-        if (db_mode_ == db_mode_type::blocks || db_mode_ == db_mode_type::full) {
-            kth_db_dbi_close(env_, dbi_block_db_);
-        }
-
-        if (db_mode_ == db_mode_type::full) {
-            kth_db_dbi_close(env_, dbi_transaction_db_);
-            kth_db_dbi_close(env_, dbi_transaction_hash_db_);
-            kth_db_dbi_close(env_, dbi_history_db_);
-            kth_db_dbi_close(env_, dbi_spend_db_);
-            kth_db_dbi_close(env_, dbi_transaction_unconfirmed_db_);
-        }
-        db_opened_ = false;
+    if (!db_opened_) {
+        return true;
     }
 
-    if (env_created_) {
-        kth_db_env_close(env_);
-        env_created_ = false;
+    // Cierra Column Families individuales si fueron abiertos
+    auto safe_destroy = [this](leveldb::ColumnFamilyHandle*& handle) {
+        if (handle != nullptr) {
+            db_->DestroyColumnFamilyHandle(handle);
+            handle = nullptr;
+        }
+    };
+
+    safe_destroy(cf_block_header_);
+    safe_destroy(cf_block_header_by_hash_);
+    safe_destroy(cf_utxo_);
+    safe_destroy(cf_reorg_pool_);
+    safe_destroy(cf_reorg_index_);
+    safe_destroy(cf_reorg_block_);
+    safe_destroy(cf_properties_);
+
+    if (db_mode_ == db_mode_type::blocks || db_mode_ == db_mode_type::full) {
+        safe_destroy(cf_block_db_);
     }
 
+    if (db_mode_ == db_mode_type::full) {
+        safe_destroy(cf_transaction_db_);
+        safe_destroy(cf_transaction_hash_db_);
+        safe_destroy(cf_history_db_);
+        safe_destroy(cf_spend_db_);
+        safe_destroy(cf_transaction_unconfirmed_db_);
+    }
+
+    // Cierra la instancia de la base de datos
+    delete db_;
+    db_ = nullptr;
+
+    db_opened_ = false;
     return true;
 }
 
@@ -219,29 +220,31 @@ result_code internal_database_basis<Clock>::push_genesis(domain::chain::block co
     return res;
 }
 
+// Add to batch
+    batch.Put(cf_properties_, key, value);
+    return result_code::success;
+}
+
 //TODO(fernando): optimization: consider passing a list of outputs to insert and a list of inputs to delete instead of an entire Block.
 //                  avoiding inserting and erasing internal spenders
 
 template <typename Clock>
 result_code internal_database_basis<Clock>::push_block(domain::chain::block const& block, uint32_t height, uint32_t median_time_past) {
+    
+    // Create a WriteBatch for all operations
+    leveldb::WriteBatch batch;
 
-    KTH_DB_txn* db_txn;
-    auto res0 = kth_db_txn_begin(env_, NULL, 0, &db_txn);
-    if (res0 != KTH_DB_SUCCESS) {
-        LOG_ERROR(LOG_DATABASE, "Error begining LMDB Transaction [push_block] ", res0);
-        return result_code::other;
-    }
-
-    //TODO: save reorg blocks after the last checkpoint
-    auto res = push_block(block, height, median_time_past, ! is_old_block(block), db_txn);
-    if ( !  succeed(res)) {
-        kth_db_txn_abort(db_txn);
+    // TODO: save reorg blocks after the last checkpoint
+    auto res = push_block(block, height, median_time_past, !is_old_block(block), batch);
+    if (!succeed(res)) {
+        // All changes are discarded if the batch is not committed
         return res;
     }
 
-    auto res2 = kth_db_txn_commit(db_txn);
-    if (res2 != KTH_DB_SUCCESS) {
-        LOG_ERROR(LOG_DATABASE, "Error commiting LMDB Transaction [push_block] ", res2);
+    // Commit all changes atomically
+    leveldb::Status status = db_->Write(leveldb::WriteOptions(), &batch);
+    if (!status.ok()) {
+        LOG_ERROR(LOG_DATABASE, "Error committing LevelDB Transaction [push_block] ", status.ToString());
         return result_code::other;
     }
 
@@ -754,49 +757,66 @@ int compare_uint64(KTH_DB_val const* a, KTH_DB_val const* b) {
 
 template <typename Clock>
 bool internal_database_basis<Clock>::open_databases() {
-    KTH_DB_txn* db_txn;
+    leveldb::Options options;
+    options.create_if_missing = true;
+    options.create_missing_column_families = true;
 
-    auto res = kth_db_txn_begin(env_, NULL, KTH_DB_CONDITIONAL_READONLY, &db_txn);
-    if (res != KTH_DB_SUCCESS) {
-        return false;
-    }
-
-    auto open_db = [&](auto const& db_name, uint32_t flags, KTH_DB_dbi* dbi){
-        auto result = kth_db_dbi_open(db_txn, db_name, flags, dbi);
-        if (result != KTH_DB_SUCCESS) {
-            kth_db_txn_abort(db_txn);
-        }
-        return result == KTH_DB_SUCCESS;
+    std::vector<leveldb::ColumnFamilyDescriptor> column_families = {
+        { "default", leveldb::ColumnFamilyOptions() },
+        { block_header_db_name, leveldb::ColumnFamilyOptions() },
+        { block_header_by_hash_db_name, leveldb::ColumnFamilyOptions() },
+        { utxo_db_name, leveldb::ColumnFamilyOptions() },
+        { reorg_pool_name, leveldb::ColumnFamilyOptions() },
+        { reorg_index_name, leveldb::ColumnFamilyOptions() },
+        { reorg_block_name, leveldb::ColumnFamilyOptions() },
+        { db_properties_name, leveldb::ColumnFamilyOptions() },
     };
 
-    if ( ! open_db(block_header_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_block_header_)) return false;
-    if ( ! open_db(block_header_by_hash_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_block_header_by_hash_)) return false;
-    if ( ! open_db(utxo_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_utxo_)) return false;
-    if ( ! open_db(reorg_pool_name, KTH_DB_CONDITIONAL_CREATE, &dbi_reorg_pool_)) return false;
-    if ( ! open_db(reorg_index_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_INTEGERKEY | KTH_DB_DUPFIXED, &dbi_reorg_index_)) return false;
-    if ( ! open_db(reorg_block_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_reorg_block_)) return false;
-    if ( ! open_db(db_properties_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_properties_)) return false;
-
     if (db_mode_ == db_mode_type::blocks || db_mode_ == db_mode_type::full) {
-        if ( ! open_db(block_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_block_db_)) return false;
+        column_families.emplace_back(block_db_name, leveldb::ColumnFamilyOptions());
     }
 
     if (db_mode_ == db_mode_type::full) {
-        if ( ! open_db(block_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_INTEGERKEY | KTH_DB_DUPFIXED  | MDB_INTEGERDUP, &dbi_block_db_)) return false;
-        if ( ! open_db(transaction_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_INTEGERKEY, &dbi_transaction_db_)) return false;
-        if ( ! open_db(transaction_hash_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_transaction_hash_db_)) return false;
-        if ( ! open_db(history_db_name, KTH_DB_CONDITIONAL_CREATE | KTH_DB_DUPSORT | KTH_DB_DUPFIXED, &dbi_history_db_)) return false;
-        if ( ! open_db(spend_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_spend_db_)) return false;
-        if ( ! open_db(transaction_unconfirmed_db_name, KTH_DB_CONDITIONAL_CREATE, &dbi_transaction_unconfirmed_db_)) return false;
-
-        mdb_set_dupsort(db_txn, dbi_history_db_, compare_uint64);
+        column_families.emplace_back(transaction_db_name, leveldb::ColumnFamilyOptions());
+        column_families.emplace_back(transaction_hash_db_name, leveldb::ColumnFamilyOptions());
+        column_families.emplace_back(history_db_name, leveldb::ColumnFamilyOptions());
+        column_families.emplace_back(spend_db_name, leveldb::ColumnFamilyOptions());
+        column_families.emplace_back(transaction_unconfirmed_db_name, leveldb::ColumnFamilyOptions());
     }
 
-    db_opened_ = kth_db_txn_commit(db_txn) == KTH_DB_SUCCESS;
-    return db_opened_;
+    std::vector<leveldb::ColumnFamilyHandle*> handles;
+    leveldb::Status status = leveldb::DB::Open(options, db_path_, column_families, &handles, &db_);
+    if (!status.ok()) {
+        LOG_ERROR(LOG_DATABASE, "Failed to open LevelDB: ", status.ToString());
+        return false;
+    }
+
+    // Asignación de handles
+    size_t i = 0;
+    cf_default_                  = handles[i++];
+    cf_block_header_             = handles[i++];
+    cf_block_header_by_hash_     = handles[i++];
+    cf_utxo_                     = handles[i++];
+    cf_reorg_pool_               = handles[i++];
+    cf_reorg_index_              = handles[i++];
+    cf_reorg_block_              = handles[i++];
+    cf_properties_               = handles[i++];
+
+    if (db_mode_ == db_mode_type::blocks || db_mode_ == db_mode_type::full) {
+        cf_block_db_             = handles[i++];
+    }
+
+    if (db_mode_ == db_mode_type::full) {
+        cf_transaction_db_              = handles[i++];
+        cf_transaction_hash_db_         = handles[i++];
+        cf_history_db_                  = handles[i++];
+        cf_spend_db_                    = handles[i++];
+        cf_transaction_unconfirmed_db_  = handles[i++];
+    }
+
+    db_opened_ = true;
+    return true;
 }
-
-
 
 #if ! defined(KTH_DB_READONLY)
 

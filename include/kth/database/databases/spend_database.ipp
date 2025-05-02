@@ -12,105 +12,104 @@ namespace kth::database {
 //public
 template <typename Clock>
 domain::chain::input_point internal_database_basis<Clock>::get_spend(domain::chain::output_point const& point) const {
-
+    // Convert output point to key
     auto keyarr = point.to_data(KTH_INTERNAL_DB_WIRE);
-    auto key = kth_db_make_value(keyarr.size(), keyarr.data());
-    KTH_DB_val value;
-
-    KTH_DB_txn* db_txn;
-    auto res0 = kth_db_txn_begin(env_, NULL, KTH_DB_RDONLY, &db_txn);
-    if (res0 != KTH_DB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE, "Error begining LMDB Transaction [get_spend] ", res0);
+    leveldb::Slice key(reinterpret_cast<const char*>(keyarr.data()), keyarr.size());
+    
+    // Get value from database
+    std::string value;
+    leveldb::Status status = db_->Get(leveldb::ReadOptions(), cf_spend_db_, key, &value);
+    
+    // Check if the key was found
+    if (!status.ok()) {
+        if (status.IsNotFound()) {
+            LOG_INFO(LOG_DATABASE, "Key not found getting spend [get_spend]");
+        } else {
+            LOG_INFO(LOG_DATABASE, "Error getting spend [get_spend]");
+        }
         return domain::chain::input_point{};
     }
-
-    res0 = kth_db_get(db_txn, dbi_spend_db_, &key, &value);
-    if (res0 != KTH_DB_SUCCESS) {
-        kth_db_txn_commit(db_txn);
-        // kth_db_txn_abort(db_txn);
-        return domain::chain::input_point{};
-    }
-
-    auto data = db_value_to_data_chunk(value);
-
-    res0 = kth_db_txn_commit(db_txn);
-    if (res0 != KTH_DB_SUCCESS) {
-        LOG_DEBUG(LOG_DATABASE, "Error commiting LMDB Transaction [get_spend] ", res0);
-        return domain::chain::input_point{};
-    }
-
+    
+    // Convert value to data chunk
+    data_chunk data(value.begin(), value.end());
+    
+    // Deserialize input point
     auto res = domain::create_old<domain::chain::input_point>(data);
     return res;
 }
 
 #if ! defined(KTH_DB_READONLY)
 
-//pivate
+//private
 template <typename Clock>
-result_code internal_database_basis<Clock>::insert_spend(domain::chain::output_point const& out_point, domain::chain::input_point const& in_point, KTH_DB_txn* db_txn) {
-
+result_code internal_database_basis<Clock>::insert_spend(domain::chain::output_point const& out_point, domain::chain::input_point const& in_point, leveldb::WriteBatch& batch) {
+    // Convert output point to key
     auto keyarr = out_point.to_data(KTH_INTERNAL_DB_WIRE);
-    auto key = kth_db_make_value(keyarr.size(), keyarr.data());
-
-    auto value_arr = in_point.to_data();
-    auto value = kth_db_make_value(value_arr.size(), value_arr.data());
-
-    auto res = kth_db_put(db_txn, dbi_spend_db_, &key, &value, KTH_DB_NOOVERWRITE);
-    if (res == KTH_DB_KEYEXIST) {
-        LOG_INFO(LOG_DATABASE, "Duplicate key inserting spend [insert_spend] ", res);
+    leveldb::Slice key(reinterpret_cast<const char*>(keyarr.data()), keyarr.size());
+    
+    // Check if key already exists to prevent overwrite
+    std::string existing_value;
+    leveldb::Status check_status = db_->Get(leveldb::ReadOptions(), cf_spend_db_, key, &existing_value);
+    if (check_status.ok()) {
+        LOG_INFO(LOG_DATABASE, "Duplicate key inserting spend [insert_spend]");
         return result_code::duplicated_key;
     }
-    if (res != KTH_DB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE, "Error inserting spend [insert_spend] ", res);
-        return result_code::other;
-    }
-
+    
+    // Convert input point to value
+    auto value_arr = in_point.to_data();
+    leveldb::Slice value(reinterpret_cast<const char*>(value_arr.data()), value_arr.size());
+    
+    // Add to batch
+    batch.Put(cf_spend_db_, key, value);
+    
     return result_code::success;
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_transaction_spend_db(domain::chain::transaction const& tx, KTH_DB_txn* db_txn) {
-
+result_code internal_database_basis<Clock>::remove_transaction_spend_db(domain::chain::transaction const& tx, leveldb::WriteBatch& batch) {
     for (auto const& input: tx.inputs()) {
-
         auto const& prevout = input.previous_output();
-
-        auto res = remove_spend(prevout, db_txn);
+        
+        auto res = remove_spend(prevout, batch);
         if (res != result_code::success) {
             return res;
         }
-
-        /*res = set_unspend(prevout, db_txn);
+        
+        /*res = set_unspend(prevout, batch);
         if (res != result_code::success) {
             return res;
         }*/
     }
-
+    
     return result_code::success;
 }
 
 template <typename Clock>
-result_code internal_database_basis<Clock>::remove_spend(domain::chain::output_point const& out_point, KTH_DB_txn* db_txn) {
-
-    auto keyarr = out_point.to_data(KTH_INTERNAL_DB_WIRE);      //TODO(fernando): podría estar afuera de la DBTx
-    auto key = kth_db_make_value(keyarr.size(), keyarr.data());                     //TODO(fernando): podría estar afuera de la DBTx
-
-    auto res = kth_db_del(db_txn, dbi_spend_db_, &key, NULL);
-
-    if (res == KTH_DB_NOTFOUND) {
-        LOG_INFO(LOG_DATABASE, "Key not found deleting spend [remove_spend] ", res);
-        return result_code::key_not_found;
+result_code internal_database_basis<Clock>::remove_spend(domain::chain::output_point const& out_point, leveldb::WriteBatch& batch) {
+    // Convert output point to key
+    auto keyarr = out_point.to_data(KTH_INTERNAL_DB_WIRE);
+    leveldb::Slice key(reinterpret_cast<const char*>(keyarr.data()), keyarr.size());
+    
+    // Check if key exists before deleting
+    std::string existing_value;
+    leveldb::Status check_status = db_->Get(leveldb::ReadOptions(), cf_spend_db_, key, &existing_value);
+    if (!check_status.ok()) {
+        if (check_status.IsNotFound()) {
+            LOG_INFO(LOG_DATABASE, "Key not found deleting spend [remove_spend]");
+            return result_code::key_not_found;
+        } else {
+            LOG_INFO(LOG_DATABASE, "Error checking spend [remove_spend]");
+            return result_code::other;
+        }
     }
-    if (res != KTH_DB_SUCCESS) {
-        LOG_INFO(LOG_DATABASE, "Error deleting spend [remove_spend] ", res);
-        return result_code::other;
-    }
+    
+    // Add delete operation to batch
+    batch.Delete(cf_spend_db_, key);
+    
     return result_code::success;
 }
 
 #endif // ! defined(KTH_DB_READONLY)
-
-
 
 } // namespace kth::database
 
